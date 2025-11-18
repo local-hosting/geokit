@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { bearing, finalBearing, midpoint, destinationMeters } from '../src/bearing';
+import {
+  bearing,
+  finalBearing,
+  midpoint,
+  destination,
+  destinationMeters,
+  destinationKm,
+  destinationMiles,
+} from '../src/bearing';
 
 describe('bearing', () => {
   const nyc: [number, number] = [40.7128, -74.006];
@@ -213,6 +221,54 @@ describe('bearing', () => {
         const dest = moveEast(point);
         // After moving east from 179, longitude should be near 180/-180
         expect(Math.abs(dest[1])).toBeGreaterThan(179);
+      });
+    });
+
+    describe('destination with custom radius', () => {
+      it('should work with custom radius', () => {
+        const move1km = destination(1000, 90, 6371000);
+        const dest = move1km(nyc);
+        expect(dest[1]).toBeGreaterThan(nyc[1]);
+      });
+
+      it('should handle different radius values', () => {
+        const move1kmMeters = destination(1000, 90, 6371000);
+        const move1kmKm = destination(1, 90, 6371);
+        const dest1 = move1kmMeters([0, 0]);
+        const dest2 = move1kmKm([0, 0]);
+        // Results should be similar but may differ slightly due to unit conversion
+        expect(Math.abs(dest1[1] - dest2[1])).toBeLessThan(0.01);
+      });
+    });
+
+    describe('destinationKm', () => {
+      it('should calculate destination in kilometers', () => {
+        const move1km = destinationKm(1, 90);
+        const dest = move1km(nyc);
+        expect(dest[1]).toBeGreaterThan(nyc[1]);
+      });
+
+      it('should match destinationMeters with converted distance', () => {
+        const move1kmKm = destinationKm(1, 90);
+        const move1kmMeters = destinationMeters(1000, 90);
+        const dest1 = move1kmKm(nyc);
+        const dest2 = move1kmMeters(nyc);
+        // Results should be similar but may differ slightly due to unit conversion
+        expect(Math.abs(dest1[1] - dest2[1])).toBeLessThan(0.02);
+      });
+    });
+
+    describe('destinationMiles', () => {
+      it('should calculate destination in miles', () => {
+        const move1mile = destinationMiles(1, 90);
+        const dest = move1mile(nyc);
+        expect(dest[1]).toBeGreaterThan(nyc[1]);
+      });
+
+      it('should handle long distances in miles', () => {
+        const move100miles = destinationMiles(100, 90);
+        const dest = move100miles([0, 0]);
+        expect(dest[1]).toBeGreaterThan(0);
       });
     });
   });

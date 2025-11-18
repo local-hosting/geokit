@@ -228,6 +228,21 @@ describe('area', () => {
         const area = boundsArea(crossingBounds);
         expect(area).toBeGreaterThan(0);
       });
+
+      it('should return 0 for invalid bounds with NaN', () => {
+        const invalidBounds: [number, number, number, number] = [NaN, 40.71, -74.0, 40.72];
+        expect(boundsArea(invalidBounds)).toBe(0);
+      });
+
+      it('should return 0 for invalid bounds with all NaN', () => {
+        const invalidBounds: [number, number, number, number] = [NaN, NaN, NaN, NaN];
+        expect(boundsArea(invalidBounds)).toBe(0);
+      });
+
+      it('should handle boundsAreaKm with invalid bounds', () => {
+        const invalidBounds: [number, number, number, number] = [NaN, 40.71, -74.0, 40.72];
+        expect(boundsAreaKm(invalidBounds)).toBe(0);
+      });
     });
   });
 });

@@ -13,6 +13,7 @@ import {
   h3AreNeighbors,
   h3EdgeLength,
   h3CellArea,
+  h3SetToMultiPolygon,
   polygonToH3,
   // Type-safe functions
   coordinatesToH3Point,
@@ -400,6 +401,119 @@ describe('h3', () => {
       expect(Array.isArray(neighbors)).toBe(true);
       expect(neighbors.length).toBeGreaterThan(1);
       expect(neighbors).toContain(h3Area);
+    });
+  });
+
+  describe('h3SetToMultiPolygon', () => {
+    it('should convert array of H3 indices to MultiPolygon', () => {
+      const h3Index1 = coordinatesToH3(nyc, 9);
+      const h3Index2 = coordinatesToH3([40.713, -74.007], 9);
+      const multiPolygon = h3SetToMultiPolygon([h3Index1, h3Index2]);
+
+      expect(multiPolygon.type).toBe('MultiPolygon');
+      expect(Array.isArray(multiPolygon.coordinates)).toBe(true);
+      expect(multiPolygon.coordinates.length).toBeGreaterThan(0);
+    });
+
+    it('should handle single H3 cell', () => {
+      const h3Index = coordinatesToH3(nyc, 9);
+      const multiPolygon = h3SetToMultiPolygon([h3Index]);
+
+      expect(multiPolygon.type).toBe('MultiPolygon');
+      expect(multiPolygon.coordinates.length).toBeGreaterThan(0);
+    });
+
+    it('should handle empty array', () => {
+      const multiPolygon = h3SetToMultiPolygon([]);
+      expect(multiPolygon.type).toBe('MultiPolygon');
+      expect(Array.isArray(multiPolygon.coordinates)).toBe(true);
+    });
+
+    it('should handle multiple adjacent cells', () => {
+      const h3Index = coordinatesToH3(nyc, 9);
+      const neighbors = h3Neighbors(h3Index, 1);
+      const multiPolygon = h3SetToMultiPolygon([h3Index, ...neighbors]);
+
+      expect(multiPolygon.type).toBe('MultiPolygon');
+      expect(multiPolygon.coordinates.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('polygonToH3', () => {
+    it('should fill polygon with H3 cells', () => {
+      const polygon = {
+        type: 'Polygon' as const,
+        coordinates: [
+          [
+            [-74.01, 40.7],
+            [-74.0, 40.7],
+            [-74.0, 40.71],
+            [-74.01, 40.71],
+            [-74.01, 40.7],
+          ],
+        ],
+      };
+
+      const cells = polygonToH3(polygon, 9);
+      expect(Array.isArray(cells)).toBe(true);
+      expect(cells.length).toBeGreaterThan(0);
+      expect(cells.every((cell) => typeof cell === 'string')).toBe(true);
+    });
+
+    it('should return empty array for invalid polygon', () => {
+      const invalidPolygon = {
+        type: 'Polygon' as const,
+        coordinates: [],
+      };
+
+      const cells = polygonToH3(invalidPolygon, 9);
+      expect(Array.isArray(cells)).toBe(true);
+    });
+
+    it('should handle different resolutions', () => {
+      const polygon = {
+        type: 'Polygon' as const,
+        coordinates: [
+          [
+            [-74.01, 40.7],
+            [-74.0, 40.7],
+            [-74.0, 40.71],
+            [-74.01, 40.71],
+            [-74.01, 40.7],
+          ],
+        ],
+      };
+
+      const cells7 = polygonToH3(polygon, 7);
+      const cells9 = polygonToH3(polygon, 9);
+
+      expect(cells7.length).toBeLessThan(cells9.length);
+    });
+
+    it('should handle polygon with holes', () => {
+      const polygon = {
+        type: 'Polygon' as const,
+        coordinates: [
+          [
+            [-74.01, 40.7],
+            [-74.0, 40.7],
+            [-74.0, 40.71],
+            [-74.01, 40.71],
+            [-74.01, 40.7],
+          ],
+          [
+            [-74.005, 40.705],
+            [-74.002, 40.705],
+            [-74.002, 40.707],
+            [-74.005, 40.707],
+            [-74.005, 40.705],
+          ],
+        ],
+      };
+
+      const cells = polygonToH3(polygon, 9);
+      expect(Array.isArray(cells)).toBe(true);
+      expect(cells.length).toBeGreaterThan(0);
     });
   });
 });

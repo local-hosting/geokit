@@ -101,6 +101,60 @@ describe('interpolation', () => {
       const result = nearestPointOnPolyline([40.7, -74.0])([[40.71, -74.01]]);
       expect(result).toBeNull();
     });
+
+    it('should find nearest point when point is on the polyline', () => {
+      const point: [number, number] = [40.72, -74.0]; // On the polyline
+      const result = nearestPointOnPolyline(point)(polyline);
+      expect(result).not.toBeNull();
+      expect(result!.distance).toBeCloseTo(0, 1);
+    });
+
+    it('should find nearest point when point is far from polyline', () => {
+      const point: [number, number] = [50.0, -80.0]; // Far away
+      const result = nearestPointOnPolyline(point)(polyline);
+      expect(result).not.toBeNull();
+      expect(result!.distance).toBeGreaterThan(0);
+    });
+
+    it('should find nearest point at start of polyline', () => {
+      const point: [number, number] = [40.71, -74.01]; // Exactly at start
+      const result = nearestPointOnPolyline(point)(polyline);
+      expect(result).not.toBeNull();
+      expect(result!.segmentIndex).toBe(0);
+    });
+
+    it('should find nearest point at end of polyline', () => {
+      const point: [number, number] = [40.73, -73.99]; // Exactly at end
+      const result = nearestPointOnPolyline(point)(polyline);
+      expect(result).not.toBeNull();
+      // Should return a valid result with segment index and distance
+      expect(result!.segmentIndex).toBeGreaterThanOrEqual(0);
+      expect(result!.distance).toBeGreaterThanOrEqual(0);
+      expect(result!.point).toHaveLength(2);
+    });
+
+    it('should handle polyline with many segments', () => {
+      const longPolyline: [number, number][] = [
+        [40.71, -74.01],
+        [40.711, -74.009],
+        [40.712, -74.008],
+        [40.713, -74.007],
+        [40.714, -74.006],
+        [40.715, -74.005],
+      ];
+      const point: [number, number] = [40.713, -74.007];
+      const result = nearestPointOnPolyline(point)(longPolyline);
+      expect(result).not.toBeNull();
+      expect(result!.segmentIndex).toBeGreaterThanOrEqual(0);
+      expect(result!.segmentIndex).toBeLessThan(longPolyline.length - 1);
+    });
+
+    it('should handle point very close to polyline', () => {
+      const point: [number, number] = [40.72, -74.0001]; // Very close
+      const result = nearestPointOnPolyline(point)(polyline);
+      expect(result).not.toBeNull();
+      expect(result!.distance).toBeLessThan(100); // Less than 100 meters
+    });
   });
 
   describe('resample', () => {

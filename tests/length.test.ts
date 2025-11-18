@@ -4,6 +4,7 @@ import {
   lineLengthMeters,
   lineLengthKm,
   lineLengthMiles,
+  perimeter,
   perimeterMeters,
   perimeterKm,
   perimeterMiles,
@@ -189,6 +190,83 @@ describe('length', () => {
 
       const perimeter = perimeterMeters(triangle);
       expect(perimeter).toBeGreaterThan(0);
+    });
+
+    it('should handle polygon with single point (degenerate)', () => {
+      const degenerate: Polygon = {
+        type: 'Polygon',
+        coordinates: [[[0, 0]]],
+      };
+      expect(perimeterMeters(degenerate)).toBe(0);
+    });
+
+    it('should handle polygon with two points', () => {
+      const twoPoints: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [0, 0],
+            [1, 0],
+          ],
+        ],
+      };
+      const p = perimeterMeters(twoPoints);
+      expect(p).toBeGreaterThan(0);
+    });
+  });
+
+  describe('perimeter (custom distance function)', () => {
+    it('should calculate perimeter with custom distance function', () => {
+      const square: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.01, 40.7],
+            [-74.0, 40.7],
+            [-74.0, 40.71],
+            [-74.01, 40.71],
+            [-74.01, 40.7],
+          ],
+        ],
+      };
+
+      const calculatePerimeter = perimeter(haversine(6371000));
+      const p = calculatePerimeter(square);
+      expect(p).toBeGreaterThan(0);
+      expect(p).toBeGreaterThan(3000);
+    });
+
+    it('should return 0 for empty polygon', () => {
+      const empty: Polygon = {
+        type: 'Polygon',
+        coordinates: [],
+      };
+      const calculatePerimeter = perimeter(haversine(6371000));
+      expect(calculatePerimeter(empty)).toBe(0);
+    });
+
+    it('should handle polygon with single point', () => {
+      const singlePoint: Polygon = {
+        type: 'Polygon',
+        coordinates: [[[0, 0]]],
+      };
+      const calculatePerimeter = perimeter(haversine(6371000));
+      expect(calculatePerimeter(singlePoint)).toBe(0);
+    });
+
+    it('should handle polygon with two points', () => {
+      const twoPoints: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [0, 0],
+            [1, 0],
+          ],
+        ],
+      };
+      const calculatePerimeter = perimeter(haversine(6371000));
+      const p = calculatePerimeter(twoPoints);
+      expect(p).toBeGreaterThan(0);
     });
   });
 });
