@@ -87,4 +87,147 @@ describe('area', () => {
       expect(areaKm).toBeLessThan(1.5);
     });
   });
+
+  describe('edge cases', () => {
+    describe('polygonArea edge cases', () => {
+      it('should handle triangle polygon', () => {
+        const triangle = {
+          type: 'Polygon' as const,
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [0.5, 1],
+              [0, 0],
+            ],
+          ],
+        };
+        const area = polygonArea(triangle);
+        expect(area).toBeGreaterThan(0);
+      });
+
+      it('should handle polygon with holes', () => {
+        const polygonWithHole = {
+          type: 'Polygon' as const,
+          coordinates: [
+            [
+              [-74.05, 40.7],
+              [-74.0, 40.7],
+              [-74.0, 40.75],
+              [-74.05, 40.75],
+              [-74.05, 40.7],
+            ],
+            [
+              [-74.04, 40.71],
+              [-74.01, 40.71],
+              [-74.01, 40.74],
+              [-74.04, 40.74],
+              [-74.04, 40.71],
+            ],
+          ],
+        };
+        const area = polygonArea(polygonWithHole);
+        expect(area).toBeGreaterThan(0);
+      });
+
+      it('should handle very large polygon', () => {
+        const largePolygon = {
+          type: 'Polygon' as const,
+          coordinates: [
+            [
+              [-180, -85],
+              [180, -85],
+              [180, 85],
+              [-180, 85],
+              [-180, -85],
+            ],
+          ],
+        };
+        const area = polygonArea(largePolygon);
+        expect(area).toBeGreaterThan(0);
+      });
+
+      it('should handle polygon crossing antimeridian', () => {
+        const crossingPolygon = {
+          type: 'Polygon' as const,
+          coordinates: [
+            [
+              [170, 0],
+              [-170, 0],
+              [-170, 10],
+              [170, 10],
+              [170, 0],
+            ],
+          ],
+        };
+        const area = polygonArea(crossingPolygon);
+        expect(area).toBeGreaterThan(0);
+      });
+
+      it('should handle empty coordinates', () => {
+        const empty = {
+          type: 'Polygon' as const,
+          coordinates: [[]],
+        };
+        expect(polygonArea(empty)).toBe(0);
+      });
+    });
+
+    describe('circleArea edge cases', () => {
+      it('should handle negative radius', () => {
+        // Note: Math.PI * r^2 will still calculate for negative radius
+        const area = circleArea(-100);
+        expect(area).toBeGreaterThan(0);
+      });
+
+      it('should handle very small radius', () => {
+        const area = circleArea(0.001);
+        expect(area).toBeGreaterThan(0);
+        expect(area).toBeLessThan(0.01);
+      });
+
+      it('should handle very large radius', () => {
+        const area = circleAreaKm(10000); // 10,000 km radius
+        expect(area).toBeGreaterThan(0);
+      });
+    });
+
+    describe('boundsArea edge cases', () => {
+      it('should handle zero-width bounds', () => {
+        const zeroBounds: [number, number, number, number] = [-74.0, 40.71, -74.0, 40.72];
+        const area = boundsArea(zeroBounds);
+        expect(area).toBe(0);
+      });
+
+      it('should handle zero-height bounds', () => {
+        const zeroBounds: [number, number, number, number] = [-74.01, 40.71, -74.0, 40.71];
+        const area = boundsArea(zeroBounds);
+        expect(area).toBe(0);
+      });
+
+      it('should handle point bounds', () => {
+        const pointBounds: [number, number, number, number] = [-74.0, 40.71, -74.0, 40.71];
+        const area = boundsArea(pointBounds);
+        expect(area).toBe(0);
+      });
+
+      it('should handle bounds at equator', () => {
+        const equatorBounds: [number, number, number, number] = [-1, -1, 1, 1];
+        const area = boundsArea(equatorBounds);
+        expect(area).toBeGreaterThan(0);
+      });
+
+      it('should handle bounds at poles', () => {
+        const polarBounds: [number, number, number, number] = [-10, 85, 10, 89];
+        const area = boundsArea(polarBounds);
+        expect(area).toBeGreaterThan(0);
+      });
+
+      it('should handle bounds crossing antimeridian', () => {
+        const crossingBounds: [number, number, number, number] = [170, 0, -170, 10];
+        const area = boundsArea(crossingBounds);
+        expect(area).toBeGreaterThan(0);
+      });
+    });
+  });
 });
