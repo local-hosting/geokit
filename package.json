@@ -106,6 +106,9 @@
   "peerDependencies": {},
   "peerDependenciesMeta": {},
   "dependencies": {
+    "@turf/buffer": "^7.3.0",
+    "@turf/helpers": "^7.3.0",
+    "@types/geojson": "^7946.0.16",
     "h3-js": "^4.3.0",
     "latlon-geohash": "^2.0.0"
   }
