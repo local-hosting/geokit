@@ -16,4 +16,4 @@ export { greatCircle, greatCircleMeters, greatCircleKm, greatCircleMiles } from 
 export { rhumbLine, rhumbLineMeters, rhumbLineKm, rhumbLineMiles } from './rhumb-line';
 
 // Utility functions
-export { withinDistance } from './utils';
+export { withinDistance, distance } from './utils';

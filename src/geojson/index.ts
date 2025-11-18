@@ -1,5 +1,29 @@
 import type { Feature, FeatureCollection, Geometry, LonLat } from '../types';
 
+export {
+  isValidPosition,
+  isValidPoint,
+  isValidLineString,
+  isValidPolygon,
+  isValidMultiPoint,
+  isValidMultiLineString,
+  isValidMultiPolygon,
+  isValidGeometryCollection,
+  isValidGeometry,
+  isValidFeature,
+  isValidFeatureCollection,
+  validateGeoJSON,
+  type ValidationResult,
+} from './validation';
+
+export {
+  repairGeometry,
+  repairFeature,
+  repairFeatureCollection,
+  repairGeoJSON,
+  type RepairOptions,
+} from './repair';
+
 /**
  * Extract coordinates from a GeoJSON feature or geometry
  *
@@ -99,4 +123,34 @@ export function extractGeometry(feature: Feature | { geometry?: Geometry }): Geo
   }
 
   return null;
+}
+
+/**
+ * Format GeoJSON with compressed coordinate arrays but readable structure
+ * Compresses coordinate pairs [lon, lat] by removing whitespace while keeping the rest formatted
+ *
+ * @param obj - GeoJSON object (FeatureCollection, Feature, or Geometry)
+ * @param minify - If true, fully minify JSON (remove all whitespace). Default: false
+ * @returns Formatted JSON string with compressed coordinates
+ *
+ * @example
+ * ```typescript
+ * const fc = { type: 'FeatureCollection', features: [...] };
+ * const formatted = formatJSONCompact(fc);
+ * // Pretty printed JSON with compressed coordinate arrays like [lon,lat] instead of [lon, lat]
+ * ```
+ */
+export function formatJSONCompact(
+  obj: FeatureCollection | Feature | Geometry | unknown,
+  minify: boolean = false
+): string {
+  if (minify) {
+    // Fully minified - no whitespace at all
+    return JSON.stringify(obj);
+  } else {
+    // Pretty printed but with compressed coordinate arrays
+    const formatted = JSON.stringify(obj, null, 2);
+    // Compress coordinate pairs [lon, lat] - remove extra whitespace
+    return formatted.replace(/\[\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\]/g, '[$1,$2]');
+  }
 }

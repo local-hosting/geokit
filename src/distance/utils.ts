@@ -1,4 +1,5 @@
 import type { LatLon } from '../types';
+import { haversineMeters } from './haversine';
 
 /**
  * Curried function to check if two points are within a specified distance
@@ -22,4 +23,23 @@ export function withinDistance(
       return distanceFn(point1)(point2) <= threshold;
     };
   };
+}
+
+/**
+ * Simple non-curried distance function for easier use in scripts
+ * Calculates distance between two points in meters using Haversine formula
+ *
+ * @param lat1 - Latitude of first point
+ * @param lon1 - Longitude of first point
+ * @param lat2 - Latitude of second point
+ * @param lon2 - Longitude of second point
+ * @returns Distance in meters
+ *
+ * @example
+ * ```typescript
+ * const dist = distance(40.7128, -74.0060, 40.7580, -73.9855);
+ * ```
+ */
+export function distance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  return haversineMeters([lat1, lon1])([lat2, lon2]);
 }

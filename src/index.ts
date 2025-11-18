@@ -85,6 +85,7 @@ export {
   rhumbLineMiles,
   // Utilities
   withinDistance,
+  distance,
 } from './distance';
 
 // Coordinate utilities
@@ -97,10 +98,37 @@ export {
   serializeCoordinates,
   deserializeCoordinates,
   normalizeCoordinateInput,
+  roundCoordinates,
+  removeDuplicateCoordinates,
+  removeDuplicateCoordinatesFromGeometry,
 } from './coordinates';
 
 // GeoJSON utilities
-export { getCoordinates, createFeature, createFeatureCollection, extractGeometry } from './geojson';
+export {
+  getCoordinates,
+  createFeature,
+  createFeatureCollection,
+  extractGeometry,
+  formatJSONCompact,
+  isValidPosition,
+  isValidPoint,
+  isValidLineString,
+  isValidPolygon,
+  isValidMultiPoint,
+  isValidMultiLineString,
+  isValidMultiPolygon,
+  isValidGeometryCollection,
+  isValidGeometry,
+  isValidFeature,
+  isValidFeatureCollection,
+  validateGeoJSON,
+  type ValidationResult,
+  repairGeometry,
+  repairFeature,
+  repairFeatureCollection,
+  repairGeoJSON,
+  type RepairOptions,
+} from './geojson';
 
 // Normalization utilities
 export { slugify, normalize, normalizeName } from './normalize';
