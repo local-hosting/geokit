@@ -21,10 +21,27 @@ export type {
 
 // Distance utilities
 export {
+  // Haversine (most common)
   haversine,
   haversineMeters,
   haversineKm,
   haversineMiles,
+  // Vincenty (most accurate)
+  vincenty,
+  vincentyMeters,
+  vincentyKm,
+  vincentyMiles,
+  // Great Circle (simple and fast)
+  greatCircle,
+  greatCircleMeters,
+  greatCircleKm,
+  greatCircleMiles,
+  // Rhumb Line (constant bearing)
+  rhumbLine,
+  rhumbLineMeters,
+  rhumbLineKm,
+  rhumbLineMiles,
+  // Utilities
   withinDistance,
 } from './distance';
 
