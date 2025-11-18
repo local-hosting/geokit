@@ -1,7 +1,11 @@
+import turfAlong from '@turf/along';
+import { lineString } from '@turf/helpers';
 import type { LatLon } from '../types';
+import { haversineMeters } from '../distance';
 
 /**
  * Interpolate a point at a given fraction along the path between two points
+ * Uses Turf.js for robust interpolation
  *
  * @param fraction - Fraction along path (0 = start, 1 = end, 0.5 = midpoint)
  * @returns Curried function that takes two points and returns interpolated point
@@ -15,45 +19,50 @@ import type { LatLon } from '../types';
 export function interpolate(fraction: number) {
   return (point1: LatLon) => {
     return (point2: LatLon): LatLon => {
+      try {
+        const [lat1, lon1] = point1;
+        const [lat2, lon2] = point2;
+
+        // Convert to Turf format [lon, lat]
+        const line = lineString([
+          [lon1, lat1],
+          [lon2, lat2],
+        ]);
+
+        // Calculate total distance
+        const totalDistance = haversineMeters(point1)(point2);
+        const distanceAtFraction = totalDistance * Math.max(0, Math.min(1, fraction));
+
+        // Use Turf's along function
+        const interpolated = turfAlong(line, distanceAtFraction / 1000, { units: 'kilometers' });
+
+        // Type-safe extraction
+        if (
+          interpolated.geometry.type === 'Point' &&
+          Array.isArray(interpolated.geometry.coordinates) &&
+          interpolated.geometry.coordinates.length >= 2
+        ) {
+          const [lon, lat] = interpolated.geometry.coordinates;
+          if (typeof lon === 'number' && typeof lat === 'number') {
+            return [lat, lon];
+          }
+        }
+      } catch {
+        // Fall through to fallback
+      }
+
+      // Fallback: simple linear interpolation (less accurate)
       const [lat1, lon1] = point1;
       const [lat2, lon2] = point2;
-
-      const lat1Rad = (lat1 * Math.PI) / 180;
-      const lat2Rad = (lat2 * Math.PI) / 180;
-      const lon1Rad = (lon1 * Math.PI) / 180;
-      const lon2Rad = (lon2 * Math.PI) / 180;
-
-      const d =
-        2 *
-        Math.asin(
-          Math.sqrt(
-            Math.pow(Math.sin((lat1Rad - lat2Rad) / 2), 2) +
-              Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.pow(Math.sin((lon1Rad - lon2Rad) / 2), 2)
-          )
-        );
-
-      const a = Math.sin((1 - fraction) * d) / Math.sin(d);
-      const b = Math.sin(fraction * d) / Math.sin(d);
-
-      const x =
-        a * Math.cos(lat1Rad) * Math.cos(lon1Rad) + b * Math.cos(lat2Rad) * Math.cos(lon2Rad);
-      const y =
-        a * Math.cos(lat1Rad) * Math.sin(lon1Rad) + b * Math.cos(lat2Rad) * Math.sin(lon2Rad);
-      const z = a * Math.sin(lat1Rad) + b * Math.sin(lat2Rad);
-
-      const lat3Rad = Math.atan2(z, Math.sqrt(x * x + y * y));
-      const lon3Rad = Math.atan2(y, x);
-
-      const lat3 = (lat3Rad * 180) / Math.PI;
-      const lon3 = (lon3Rad * 180) / Math.PI;
-
-      return [lat3, lon3];
+      const clampedFraction = Math.max(0, Math.min(1, fraction));
+      return [lat1 + (lat2 - lat1) * clampedFraction, lon1 + (lon2 - lon1) * clampedFraction];
     };
   };
 }
 
 /**
  * Interpolate a point at a given distance along the path between two points
+ * Uses Turf.js for robust distance-based interpolation
  *
  * @param distance - Distance in meters from start point
  * @returns Curried function that takes two points and returns interpolated point
@@ -67,26 +76,37 @@ export function interpolate(fraction: number) {
 export function interpolateMeters(distance: number) {
   return (point1: LatLon) => {
     return (point2: LatLon): LatLon => {
-      const [lat1, lon1] = point1;
-      const [lat2, lon2] = point2;
+      try {
+        const [lat1, lon1] = point1;
+        const [lat2, lon2] = point2;
 
-      // Calculate total distance
-      const R = 6371000; // Earth's radius in meters
-      const lat1Rad = (lat1 * Math.PI) / 180;
-      const lat2Rad = (lat2 * Math.PI) / 180;
-      const dLat = ((lat2 - lat1) * Math.PI) / 180;
-      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        // Convert to Turf format [lon, lat]
+        const line = lineString([
+          [lon1, lat1],
+          [lon2, lat2],
+        ]);
 
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        // Use Turf's along function with distance in kilometers
+        const interpolated = turfAlong(line, distance / 1000, { units: 'kilometers' });
 
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      const totalDistance = R * c;
+        // Type-safe extraction
+        if (
+          interpolated.geometry.type === 'Point' &&
+          Array.isArray(interpolated.geometry.coordinates) &&
+          interpolated.geometry.coordinates.length >= 2
+        ) {
+          const [lon, lat] = interpolated.geometry.coordinates;
+          if (typeof lon === 'number' && typeof lat === 'number') {
+            return [lat, lon];
+          }
+        }
+      } catch {
+        // Fall through to fallback
+      }
 
-      // Calculate fraction
-      const fraction = Math.min(1, Math.max(0, distance / totalDistance));
-
+      // Fallback: calculate fraction and use interpolate
+      const totalDistance = haversineMeters(point1)(point2);
+      const fraction = totalDistance > 0 ? Math.min(1, Math.max(0, distance / totalDistance)) : 0;
       return interpolate(fraction)(point1)(point2);
     };
   };

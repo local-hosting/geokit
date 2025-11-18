@@ -1,7 +1,10 @@
+import turfBearing from '@turf/bearing';
+import { point as turfPoint } from '@turf/helpers';
 import type { LatLon } from '../types';
 
 /**
  * Calculate initial bearing (forward azimuth) between two points
+ * Uses Turf.js for robust bearing calculation
  * Returns bearing in degrees from north (0-360)
  *
  * @param point1 - Starting point [lat, lon]
@@ -15,6 +18,25 @@ import type { LatLon } from '../types';
  */
 export function bearing(point1: LatLon) {
   return (point2: LatLon): number => {
+    try {
+      const [lat1, lon1] = point1;
+      const [lat2, lon2] = point2;
+
+      // Convert to Turf format [lon, lat]
+      const pt1 = turfPoint([lon1, lat1]);
+      const pt2 = turfPoint([lon2, lat2]);
+
+      const bearingDeg = turfBearing(pt1, pt2);
+
+      // Turf returns -180 to 180, normalize to 0-360
+      if (typeof bearingDeg === 'number' && !isNaN(bearingDeg)) {
+        return (bearingDeg + 360) % 360;
+      }
+    } catch {
+      // Fall through to fallback
+    }
+
+    // Fallback: custom calculation
     const [lat1, lon1] = point1;
     const [lat2, lon2] = point2;
 
@@ -30,7 +52,6 @@ export function bearing(point1: LatLon) {
     const bearingRad = Math.atan2(y, x);
     const bearingDeg = (bearingRad * 180) / Math.PI;
 
-    // Normalize to 0-360
     return (bearingDeg + 360) % 360;
   };
 }

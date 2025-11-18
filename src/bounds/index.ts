@@ -1,8 +1,12 @@
-import type { LatLon, Bounds, Feature, FeatureCollection, Geometry, LonLat } from '../types';
-import { getCoordinates } from '../geojson';
+import turfBbox from '@turf/bbox';
+import turfBboxPolygon from '@turf/bbox-polygon';
+import turfCenter from '@turf/center';
+import { points as turfPoints, featureCollection } from '@turf/helpers';
+import type { LatLon, Bounds, Feature, FeatureCollection, Geometry } from '../types';
 
 /**
  * Calculate bounding box from coordinates or features
+ * Uses Turf.js for robust bbox calculation
  *
  * @param input - Array of coordinates, features, or a feature collection
  * @returns Bounding box as [minLon, minLat, maxLon, maxLat], or null if no valid coordinates
@@ -16,81 +20,87 @@ import { getCoordinates } from '../geojson';
 export function getBounds(
   input: LatLon[] | Feature[] | FeatureCollection | Geometry[]
 ): Bounds | null {
-  const coordinates: LonLat[] = [];
+  try {
+    let turfFeature: Feature | FeatureCollection | null = null;
 
-  // Handle FeatureCollection
-  if ('type' in input && input.type === 'FeatureCollection') {
-    const collection = input as FeatureCollection;
-    for (const feature of collection.features) {
-      const coords = getCoordinates(feature);
-      if (coords) {
-        coordinates.push(coords);
-      }
+    // Handle FeatureCollection
+    if ('type' in input && input.type === 'FeatureCollection') {
+      turfFeature = input as FeatureCollection;
     }
-  }
-  // Handle array of Features
-  else if (
-    Array.isArray(input) &&
-    input.length > 0 &&
-    'type' in input[0] &&
-    input[0].type === 'Feature'
-  ) {
-    for (const feature of input as Feature[]) {
-      const coords = getCoordinates(feature);
-      if (coords) {
-        coordinates.push(coords);
-      }
+    // Handle array of Features
+    else if (
+      Array.isArray(input) &&
+      input.length > 0 &&
+      typeof input[0] === 'object' &&
+      input[0] !== null &&
+      'type' in input[0] &&
+      input[0].type === 'Feature'
+    ) {
+      turfFeature = featureCollection(input as Feature[]);
     }
-  }
-  // Handle array of Geometries
-  else if (Array.isArray(input) && input.length > 0 && 'type' in input[0]) {
-    for (const geometry of input as Geometry[]) {
-      const coords = getCoordinates(geometry);
-      if (coords) {
-        coordinates.push(coords);
-      }
+    // Handle array of Geometries
+    else if (
+      Array.isArray(input) &&
+      input.length > 0 &&
+      typeof input[0] === 'object' &&
+      input[0] !== null &&
+      'type' in input[0]
+    ) {
+      // Convert geometries to features
+      const features = (input as Geometry[]).map((geom) => ({
+        type: 'Feature' as const,
+        geometry: geom,
+        properties: {},
+      }));
+      turfFeature = featureCollection(features);
     }
-  }
-  // Handle array of coordinates (assume [lat, lon] format)
-  else if (Array.isArray(input) && input.length > 0) {
-    for (const coord of input) {
-      if (Array.isArray(coord) && coord.length === 2) {
-        // Assume [lat, lon] and convert to [lon, lat]
-        const [lat, lon] = coord as LatLon;
-        if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
-          coordinates.push([lon, lat]);
-        }
-      }
-    }
-  }
+    // Handle array of coordinates (assume [lat, lon] format)
+    else if (Array.isArray(input) && input.length > 0) {
+      // Convert [lat, lon] to [lon, lat] for Turf
+      const coords = (input as LatLon[])
+        .filter((coord) => Array.isArray(coord) && coord.length === 2)
+        .map(([lat, lon]) => {
+          if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
+            return [lon, lat];
+          }
+          return null;
+        })
+        .filter((coord): coord is [number, number] => coord !== null);
 
-  if (coordinates.length === 0) {
+      if (coords.length === 0) {
+        return null;
+      }
+
+      turfFeature = turfPoints(coords);
+    }
+
+    if (!turfFeature) {
+      return null;
+    }
+
+    const bbox = turfBbox(turfFeature);
+
+    // Validate bbox (should be [minLon, minLat, maxLon, maxLat])
+    if (
+      Array.isArray(bbox) &&
+      bbox.length === 4 &&
+      typeof bbox[0] === 'number' &&
+      typeof bbox[1] === 'number' &&
+      typeof bbox[2] === 'number' &&
+      typeof bbox[3] === 'number'
+    ) {
+      return bbox as Bounds;
+    }
+
+    return null;
+  } catch {
     return null;
   }
-
-  let minLon = Infinity;
-  let minLat = Infinity;
-  let maxLon = -Infinity;
-  let maxLat = -Infinity;
-
-  for (const [lon, lat] of coordinates) {
-    if (typeof lon === 'number' && typeof lat === 'number' && !isNaN(lon) && !isNaN(lat)) {
-      minLon = Math.min(minLon, lon);
-      minLat = Math.min(minLat, lat);
-      maxLon = Math.max(maxLon, lon);
-      maxLat = Math.max(maxLat, lat);
-    }
-  }
-
-  if (minLon === Infinity || minLat === Infinity || maxLon === -Infinity || maxLat === -Infinity) {
-    return null;
-  }
-
-  return [minLon, minLat, maxLon, maxLat];
 }
 
 /**
  * Calculate center point from bounds or features
+ * Uses Turf.js for robust center calculation
  *
  * @param input - Bounding box or array of coordinates/features
  * @returns Center point as [latitude, longitude], or null if invalid
@@ -102,35 +112,80 @@ export function getBounds(
  * ```
  */
 export function getCenter(input: Bounds | LatLon[] | Feature[] | FeatureCollection): LatLon | null {
-  let bounds: Bounds | null = null;
+  try {
+    let turfFeature: Feature | FeatureCollection | null = null;
 
-  // If input is already bounds
-  if (Array.isArray(input) && input.length === 4) {
-    const [minLon, minLat, maxLon, maxLat] = input;
-    if (
-      typeof minLon === 'number' &&
-      typeof minLat === 'number' &&
-      typeof maxLon === 'number' &&
-      typeof maxLat === 'number'
-    ) {
-      bounds = input as Bounds;
+    // If input is already bounds, convert to polygon
+    if (Array.isArray(input) && input.length === 4) {
+      const [minLon, minLat, maxLon, maxLat] = input;
+      if (
+        typeof minLon === 'number' &&
+        typeof minLat === 'number' &&
+        typeof maxLon === 'number' &&
+        typeof maxLat === 'number'
+      ) {
+        // Create a polygon from bounds using Turf
+        const bboxPoly = turfBboxPolygon([minLon, minLat, maxLon, maxLat]);
+        turfFeature = bboxPoly;
+      }
     }
-  }
+    // Handle FeatureCollection
+    else if ('type' in input && input.type === 'FeatureCollection') {
+      turfFeature = input as FeatureCollection;
+    }
+    // Handle array of Features
+    else if (
+      Array.isArray(input) &&
+      input.length > 0 &&
+      typeof input[0] === 'object' &&
+      input[0] !== null &&
+      'type' in input[0] &&
+      input[0].type === 'Feature'
+    ) {
+      turfFeature = featureCollection(input as Feature[]);
+    }
+    // Handle array of coordinates
+    else if (Array.isArray(input) && input.length > 0) {
+      // Convert [lat, lon] to [lon, lat] for Turf
+      const coords = (input as LatLon[])
+        .filter((coord) => Array.isArray(coord) && coord.length === 2)
+        .map(([lat, lon]) => {
+          if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
+            return [lon, lat];
+          }
+          return null;
+        })
+        .filter((coord): coord is [number, number] => coord !== null);
 
-  // Otherwise calculate bounds from input
-  if (!bounds) {
-    bounds = getBounds(input as LatLon[] | Feature[] | FeatureCollection);
-  }
+      if (coords.length === 0) {
+        return null;
+      }
 
-  if (!bounds) {
+      turfFeature = turfPoints(coords);
+    }
+
+    if (!turfFeature) {
+      return null;
+    }
+
+    const center = turfCenter(turfFeature);
+
+    // Type-safe extraction
+    if (
+      center.geometry.type === 'Point' &&
+      Array.isArray(center.geometry.coordinates) &&
+      center.geometry.coordinates.length >= 2
+    ) {
+      const [lon, lat] = center.geometry.coordinates;
+      if (typeof lon === 'number' && typeof lat === 'number') {
+        return [lat, lon];
+      }
+    }
+
+    return null;
+  } catch {
     return null;
   }
-
-  const [minLon, minLat, maxLon, maxLat] = bounds;
-  const centerLon = (minLon + maxLon) / 2;
-  const centerLat = (minLat + maxLat) / 2;
-
-  return [centerLat, centerLon];
 }
 
 /**

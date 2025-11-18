@@ -1,7 +1,9 @@
 /**
- * Calculate the total length of a line or polyline
+ * Calculate the total length of a line or polyline using Turf.js
  */
 
+import turfLength from '@turf/length';
+import { lineString } from '@turf/helpers';
 import type { LatLon } from '../types';
 import { haversine } from '../distance/haversine';
 
@@ -37,6 +39,7 @@ export function lineLength(
 
 /**
  * Calculate the total length of a polyline in meters
+ * Uses Turf.js for robust length calculation
  *
  * @param coordinates - Array of coordinates as [lat, lon]
  * @returns Total length in meters
@@ -47,6 +50,24 @@ export function lineLength(
  * // ~5000 meters
  */
 export function lineLengthMeters(coordinates: LatLon[]): number {
+  if (!coordinates || coordinates.length < 2) {
+    return 0;
+  }
+
+  try {
+    // Convert from [lat, lon] to [lon, lat] for Turf
+    const coords = coordinates.map(([lat, lon]) => [lon, lat]);
+    const line = lineString(coords);
+    // Turf returns length in meters when units: 'meters' is specified
+    const length = turfLength(line, { units: 'meters' });
+    if (typeof length === 'number' && !isNaN(length) && isFinite(length)) {
+      return length;
+    }
+  } catch {
+    // Fall through to fallback
+  }
+
+  // Fallback to custom implementation
   const calculateLength = lineLength(haversine(6371000));
   return calculateLength(coordinates);
 }

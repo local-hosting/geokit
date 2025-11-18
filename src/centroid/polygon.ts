@@ -1,8 +1,10 @@
 /**
  * Calculate the centroid (geometric center) of a polygon
- * Uses the standard polygon centroid formula
+ * Uses Turf.js for robust centroid calculation
  */
 
+import turfCentroid from '@turf/centroid';
+import { polygon as turfPolygon } from '@turf/helpers';
 import type { Polygon, LatLon } from '../types';
 
 /**
@@ -40,38 +42,32 @@ export function polygonCentroid(polygon: Polygon): LatLon | null {
     return null;
   }
 
-  // Convert to [lon, lat] for calculation
-  let area = 0;
-  let x = 0;
-  let y = 0;
+  try {
+    // Turf expects GeoJSON format which already uses [lon, lat]
+    const turfPoly = turfPolygon(polygon.coordinates);
+    const centroid = turfCentroid(turfPoly);
 
-  // Calculate using the standard centroid formula
-  for (let i = 0; i < ring.length - 1; i++) {
-    const [lon1, lat1] = ring[i];
-    const [lon2, lat2] = ring[i + 1];
-
-    const f = lon1 * lat2 - lon2 * lat1;
-    area += f;
-    x += (lon1 + lon2) * f;
-    y += (lat1 + lat2) * f;
+    // Type-safe extraction with validation
+    if (
+      centroid.geometry.type === 'Point' &&
+      Array.isArray(centroid.geometry.coordinates) &&
+      centroid.geometry.coordinates.length >= 2
+    ) {
+      const [lon, lat] = centroid.geometry.coordinates;
+      if (typeof lon === 'number' && typeof lat === 'number') {
+        return [lat, lon];
+      }
+    }
+  } catch {
+    // Silently fall through to fallback
   }
 
-  area *= 0.5;
-
-  if (area === 0) {
-    // Degenerate polygon, return center of bounding box
-    const lons = ring.map(([lon]) => lon);
-    const lats = ring.map(([_, lat]) => lat);
-    const minLon = Math.min(...lons);
-    const maxLon = Math.max(...lons);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    return [(minLat + maxLat) / 2, (minLon + maxLon) / 2];
-  }
-
-  x /= 6 * area;
-  y /= 6 * area;
-
-  // Return as [lat, lon]
-  return [y, x];
+  // Fallback: return center of bounding box
+  const lons = ring.map(([lon]) => lon);
+  const lats = ring.map(([_, lat]) => lat);
+  const minLon = Math.min(...lons);
+  const maxLon = Math.max(...lons);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  return [(minLat + maxLat) / 2, (minLon + maxLon) / 2];
 }

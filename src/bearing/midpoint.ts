@@ -1,8 +1,10 @@
+import turfMidpoint from '@turf/midpoint';
+import { point as turfPoint } from '@turf/helpers';
 import type { LatLon } from '../types';
 
 /**
  * Calculate the midpoint between two points
- * Returns the geographic midpoint along a great circle
+ * Uses Turf.js for robust midpoint calculation along a great circle
  *
  * @param point1 - First point [lat, lon]
  * @returns Curried function that takes second point and returns midpoint
@@ -15,27 +17,34 @@ import type { LatLon } from '../types';
  */
 export function midpoint(point1: LatLon) {
   return (point2: LatLon): LatLon => {
+    try {
+      const [lat1, lon1] = point1;
+      const [lat2, lon2] = point2;
+
+      // Convert to Turf format [lon, lat]
+      const pt1 = turfPoint([lon1, lat1]);
+      const pt2 = turfPoint([lon2, lat2]);
+
+      const mid = turfMidpoint(pt1, pt2);
+
+      // Type-safe extraction
+      if (
+        mid.geometry.type === 'Point' &&
+        Array.isArray(mid.geometry.coordinates) &&
+        mid.geometry.coordinates.length >= 2
+      ) {
+        const [lon, lat] = mid.geometry.coordinates;
+        if (typeof lon === 'number' && typeof lat === 'number') {
+          return [lat, lon];
+        }
+      }
+    } catch {
+      // Fall through to fallback
+    }
+
+    // Fallback: simple average (less accurate but works)
     const [lat1, lon1] = point1;
     const [lat2, lon2] = point2;
-
-    const lat1Rad = (lat1 * Math.PI) / 180;
-    const lat2Rad = (lat2 * Math.PI) / 180;
-    const lon1Rad = (lon1 * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-
-    const Bx = Math.cos(lat2Rad) * Math.cos(dLon);
-    const By = Math.cos(lat2Rad) * Math.sin(dLon);
-
-    const lat3Rad = Math.atan2(
-      Math.sin(lat1Rad) + Math.sin(lat2Rad),
-      Math.sqrt((Math.cos(lat1Rad) + Bx) * (Math.cos(lat1Rad) + Bx) + By * By)
-    );
-
-    const lon3Rad = lon1Rad + Math.atan2(By, Math.cos(lat1Rad) + Bx);
-
-    const lat3 = (lat3Rad * 180) / Math.PI;
-    const lon3 = (lon3Rad * 180) / Math.PI;
-
-    return [lat3, lon3];
+    return [(lat1 + lat2) / 2, (lon1 + lon2) / 2];
   };
 }

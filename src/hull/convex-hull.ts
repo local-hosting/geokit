@@ -1,23 +1,18 @@
 /**
- * Calculate the convex hull of a set of points using Graham scan algorithm
+ * Calculate the convex hull of a set of points using Turf.js
  */
 
-import type { LatLon } from '../types';
-
-/**
- * Calculate cross product of three points
- * Positive if counter-clockwise, negative if clockwise, zero if collinear
- */
-function cross(o: LatLon, a: LatLon, b: LatLon): number {
-  return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-}
+import convexTurf from '@turf/convex';
+import { points as turfPoints } from '@turf/helpers';
+import type { LatLon, LonLat, Polygon } from '../types';
 
 /**
  * Calculate the convex hull of a set of points
- * Uses the Graham scan algorithm
+ * Uses Turf.js for robust convex hull calculation
+ * Returns a GeoJSON Polygon in [lon, lat] format
  *
  * @param points - Array of points as [lat, lon]
- * @returns Array of points forming the convex hull (counter-clockwise), or empty array if < 3 points
+ * @returns GeoJSON Polygon representing the convex hull, or null if < 3 points or calculation fails
  *
  * @example
  * const points = [
@@ -28,73 +23,27 @@ function cross(o: LatLon, a: LatLon, b: LatLon): number {
  *   [40.74, -73.98]
  * ];
  * const hull = convexHull(points);
- * // Returns points forming the convex boundary
+ * // Returns { type: 'Polygon', coordinates: [[[lon, lat], ...]] }
  */
-export function convexHull(points: LatLon[]): LatLon[] {
+export function convexHull(points: LatLon[]): Polygon | null {
   if (!points || points.length < 3) {
-    return [];
+    return null;
   }
 
-  // Remove duplicates
-  const uniquePoints: LatLon[] = [];
-  const seen = new Set<string>();
+  try {
+    // Convert from [lat, lon] to [lon, lat] for Turf
+    const coords: LonLat[] = points.map(([lat, lon]): LonLat => [lon, lat]);
+    const collection = turfPoints(coords);
 
-  for (const point of points) {
-    const key = `${point[0]},${point[1]}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      uniquePoints.push(point);
+    const hull = convexTurf(collection);
+
+    if (!hull || hull.geometry.type !== 'Polygon') {
+      return null;
     }
+
+    // Return GeoJSON Polygon directly (already in [lon, lat] format)
+    return hull.geometry;
+  } catch {
+    return null;
   }
-
-  if (uniquePoints.length < 3) {
-    return [];
-  }
-
-  // Sort points lexicographically (first by lat, then by lon)
-  const sorted = uniquePoints.slice().sort((a, b) => {
-    if (a[0] !== b[0]) {
-      return a[0] - b[0];
-    }
-    return a[1] - b[1];
-  });
-
-  // Build lower hull
-  const lower: LatLon[] = [];
-  for (const point of sorted) {
-    while (
-      lower.length >= 2 &&
-      cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0
-    ) {
-      lower.pop();
-    }
-    lower.push(point);
-  }
-
-  // Build upper hull
-  const upper: LatLon[] = [];
-  for (let i = sorted.length - 1; i >= 0; i--) {
-    const point = sorted[i];
-    while (
-      upper.length >= 2 &&
-      cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0
-    ) {
-      upper.pop();
-    }
-    upper.push(point);
-  }
-
-  // Remove last point of each half because it's repeated at the beginning of the other half
-  lower.pop();
-  upper.pop();
-
-  // Concatenate lower and upper hull
-  const hull = lower.concat(upper);
-
-  // Close the polygon by adding the first point at the end
-  if (hull.length > 0) {
-    hull.push(hull[0]);
-  }
-
-  return hull;
 }
