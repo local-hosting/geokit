@@ -1,7 +1,8 @@
 import nearestPointOnLineTurf from '@turf/nearest-point-on-line';
-import { point as turfPoint, lineString } from '@turf/helpers';
-import type { LatLon } from '../types';
+import { lineString } from '@turf/helpers';
+import type { LatLon, Polyline } from '../types';
 import { haversineMeters } from '../distance';
+import { createPoint, createLineString, toLonLatArray, extractLatLon } from '../turf-utils';
 
 /**
  * Find the nearest point on a line segment to a given point
@@ -22,29 +23,14 @@ export function nearestPointOnLine(point: LatLon) {
   return (lineStart: LatLon) => {
     return (lineEnd: LatLon): LatLon => {
       try {
-        const [lat, lon] = point;
-        const [lat1, lon1] = lineStart;
-        const [lat2, lon2] = lineEnd;
-
-        // Convert to Turf format [lon, lat]
-        const pt = turfPoint([lon, lat]);
-        const line = lineString([
-          [lon1, lat1],
-          [lon2, lat2],
-        ]);
+        const pt = createPoint(point);
+        const line = createLineString(lineStart, lineEnd);
 
         const nearest = nearestPointOnLineTurf(line, pt);
 
-        // Type-safe extraction
-        if (
-          nearest.geometry.type === 'Point' &&
-          Array.isArray(nearest.geometry.coordinates) &&
-          nearest.geometry.coordinates.length >= 2
-        ) {
-          const [nearestLon, nearestLat] = nearest.geometry.coordinates;
-          if (typeof nearestLon === 'number' && typeof nearestLat === 'number') {
-            return [nearestLat, nearestLon];
-          }
+        const result = extractLatLon(nearest);
+        if (result) {
+          return result;
         }
       } catch {
         // Fall through to fallback
@@ -85,44 +71,31 @@ export function nearestPointOnLine(point: LatLon) {
  * ```
  */
 export function nearestPointOnPolyline(point: LatLon) {
-  return (polyline: LatLon[]): { point: LatLon; segmentIndex: number; distance: number } | null => {
+  return (polyline: Polyline): { point: LatLon; segmentIndex: number; distance: number } | null => {
     if (polyline.length < 2) {
       return null;
     }
 
     try {
-      const [lat, lon] = point;
-
-      // Convert from [lat, lon] to [lon, lat] for Turf
-      const coords = polyline.map(([lat, lon]) => [lon, lat]);
-      const pt = turfPoint([lon, lat]);
+      const coords = toLonLatArray(polyline);
+      const pt = createPoint(point);
       const line = lineString(coords);
 
       const nearest = nearestPointOnLineTurf(line, pt);
 
-      // Type-safe extraction
-      if (
-        nearest.geometry.type === 'Point' &&
-        Array.isArray(nearest.geometry.coordinates) &&
-        nearest.geometry.coordinates.length >= 2
-      ) {
-        const [nearestLon, nearestLat] = nearest.geometry.coordinates;
-        if (typeof nearestLon === 'number' && typeof nearestLat === 'number') {
-          const nearestPoint: LatLon = [nearestLat, nearestLon];
+      const nearestPoint = extractLatLon(nearest);
+      if (nearestPoint) {
+        // Calculate distance using haversine for accuracy
+        const distance = haversineMeters(point)(nearestPoint);
 
-          // Calculate distance using haversine for accuracy
-          const distance = haversineMeters(point)(nearestPoint);
+        // Get segment index from Turf properties
+        const index = typeof nearest.properties?.index === 'number' ? nearest.properties.index : 0;
 
-          // Get segment index from Turf properties
-          const index =
-            typeof nearest.properties?.index === 'number' ? nearest.properties.index : 0;
-
-          return {
-            point: nearestPoint,
-            distance,
-            segmentIndex: index,
-          };
-        }
+        return {
+          point: nearestPoint,
+          distance,
+          segmentIndex: index,
+        };
       }
     } catch {
       // Fall through to fallback

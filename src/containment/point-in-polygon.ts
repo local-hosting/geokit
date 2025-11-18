@@ -1,6 +1,7 @@
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
-import { point as turfPoint, polygon as turfPolygon } from '@turf/helpers';
+import { polygon as turfPolygon } from '@turf/helpers';
 import type { LatLon, Polygon } from '../types';
+import { createPoint, validatePolygon } from '../turf-utils';
 
 /**
  * Check if a point is inside a polygon
@@ -21,16 +22,12 @@ import type { LatLon, Polygon } from '../types';
  */
 export function pointInPolygon(point: LatLon) {
   return (polygon: Polygon): boolean => {
-    // Get the outer ring (first array of coordinates)
-    const ring = polygon.coordinates[0];
-    if (!ring || ring.length < 4) {
-      return false; // Invalid polygon
+    if (!validatePolygon(polygon)) {
+      return false;
     }
 
     try {
-      // Convert [lat, lon] to [lon, lat] for Turf
-      const [lat, lon] = point;
-      const pt = turfPoint([lon, lat]);
+      const pt = createPoint(point);
       const poly = turfPolygon(polygon.coordinates);
 
       return booleanPointInPolygon(pt, poly);

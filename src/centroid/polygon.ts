@@ -6,6 +6,7 @@
 import turfCentroid from '@turf/centroid';
 import { polygon as turfPolygon } from '@turf/helpers';
 import type { Polygon, LatLon } from '../types';
+import { validatePolygon, extractLatLon } from '../turf-utils';
 
 /**
  * Calculate the centroid of a polygon
@@ -31,14 +32,7 @@ import type { Polygon, LatLon } from '../types';
  * // [40.705, -74.005]
  */
 export function polygonCentroid(polygon: Polygon): LatLon | null {
-  if (!polygon.coordinates || polygon.coordinates.length === 0) {
-    return null;
-  }
-
-  // Use the outer ring (first ring)
-  const ring = polygon.coordinates[0];
-
-  if (!ring || ring.length < 4) {
+  if (!validatePolygon(polygon)) {
     return null;
   }
 
@@ -47,22 +41,16 @@ export function polygonCentroid(polygon: Polygon): LatLon | null {
     const turfPoly = turfPolygon(polygon.coordinates);
     const centroid = turfCentroid(turfPoly);
 
-    // Type-safe extraction with validation
-    if (
-      centroid.geometry.type === 'Point' &&
-      Array.isArray(centroid.geometry.coordinates) &&
-      centroid.geometry.coordinates.length >= 2
-    ) {
-      const [lon, lat] = centroid.geometry.coordinates;
-      if (typeof lon === 'number' && typeof lat === 'number') {
-        return [lat, lon];
-      }
+    const result = extractLatLon(centroid);
+    if (result) {
+      return result;
     }
   } catch {
     // Silently fall through to fallback
   }
 
   // Fallback: return center of bounding box
+  const ring = polygon.coordinates[0];
   const lons = ring.map(([lon]) => lon);
   const lats = ring.map(([_, lat]) => lat);
   const minLon = Math.min(...lons);

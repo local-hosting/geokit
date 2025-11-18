@@ -1,5 +1,4 @@
 import turfDestination from '@turf/destination';
-import { point as turfPoint } from '@turf/helpers';
 import type { LatLon } from '../types';
 import {
   EARTH_RADIUS_METERS,
@@ -11,6 +10,7 @@ import {
   LONGITUDE_NORMALIZATION_OFFSET,
   DEGREES_IN_CIRCLE,
 } from '../constants';
+import { createPoint, extractLatLon } from '../turf-utils';
 
 /**
  * Calculate destination point given start point, distance, and bearing
@@ -34,25 +34,15 @@ export function destination(
 ) {
   return (point: LatLon): LatLon => {
     try {
-      const [lat, lon] = point;
-
-      // Convert to Turf format [lon, lat]
-      const pt = turfPoint([lon, lat]);
+      const pt = createPoint(point);
 
       // Convert distance to kilometers for Turf (Turf uses km by default)
       const distanceKm = distance / METERS_TO_KILOMETERS;
       const dest = turfDestination(pt, distanceKm, bearingDegrees, { units: 'kilometers' });
 
-      // Type-safe extraction
-      if (
-        dest.geometry.type === 'Point' &&
-        Array.isArray(dest.geometry.coordinates) &&
-        dest.geometry.coordinates.length >= 2
-      ) {
-        const [destLon, destLat] = dest.geometry.coordinates;
-        if (typeof destLon === 'number' && typeof destLat === 'number') {
-          return [destLat, destLon];
-        }
+      const result = extractLatLon(dest);
+      if (result) {
+        return result;
       }
     } catch {
       // Fall through to fallback

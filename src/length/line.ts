@@ -7,6 +7,7 @@ import { lineString } from '@turf/helpers';
 import type { LatLon } from '../types';
 import { haversine } from '../distance/haversine';
 import { EARTH_RADIUS_METERS, METERS_TO_KILOMETERS, METERS_TO_MILES } from '../constants';
+import { toLonLatArray } from '../turf-utils';
 
 /**
  * Calculate the total length of a polyline using a custom distance function
@@ -57,7 +58,7 @@ export function lineLengthMeters(coordinates: LatLon[]): number {
 
   try {
     // Convert from [lat, lon] to [lon, lat] for Turf
-    const coords = coordinates.map(([lat, lon]) => [lon, lat]);
+    const coords = toLonLatArray(coordinates);
     const line = lineString(coords);
     // Turf returns length in meters when units: 'meters' is specified
     const length = turfLength(line, { units: 'meters' });
