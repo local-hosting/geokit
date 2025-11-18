@@ -202,7 +202,9 @@ export {
   coordinatesToH3,
   h3ToCoordinates,
   h3ToBoundary,
+  h3ToPolygon,
   h3Neighbors,
+  snapToH3Cell,
   h3ToParent,
   h3ToChildren,
   h3GetResolution,
@@ -219,6 +221,8 @@ export {
   h3AreaToCoordinates,
   h3PointToBoundary,
   h3AreaToBoundary,
+  h3PointToPolygon,
+  h3AreaToPolygon,
   h3PointNeighbors,
   h3AreaNeighbors,
 } from './h3';
