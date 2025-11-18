@@ -128,3 +128,32 @@ export { simplify, simplifyMeters } from './simplify';
 // Clustering utilities
 export type { ClusterPoint, Cluster } from './clustering';
 export { gridCluster, gridClusterMeters, distanceCluster } from './clustering';
+
+// Geohash utilities
+export {
+  encodeGeohash,
+  decodeGeohash,
+  geohashBounds,
+  geohashNeighbors,
+  geohashNeighborsArray,
+  geohashNeighbor,
+  geohashesInBounds,
+  validateGeohash,
+} from './geohash';
+
+// H3 utilities
+export {
+  coordinatesToH3,
+  h3ToCoordinates,
+  h3ToBoundary,
+  h3Neighbors,
+  h3ToParent,
+  h3ToChildren,
+  h3GetResolution,
+  validateH3,
+  h3AreNeighbors,
+  h3SetToMultiPolygon,
+  polygonToH3,
+  h3EdgeLength,
+  h3CellArea,
+} from './h3';

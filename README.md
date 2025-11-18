@@ -4,7 +4,7 @@ A functional, curried geospatial utility toolkit for browser and Node.js.
 
 ## Features
 
-- **Geospatial utilities** - Distance calculations, coordinate conversions, GeoJSON operations
+- **Geospatial utilities** - Distance calculations, coordinate conversions, GeoJSON operations, geohashing, H3 indexing
 - **Functional programming** - Curried functions for composition and partial application
 - **Universal** - Works in both browser and Node.js environments
 - **Tree-shakeable** - Import only what you need
@@ -118,6 +118,64 @@ const checkPoint = isWithinBounds([40.7354, -73.99575]);
 const isWithin = checkPoint(bounds); // true
 ```
 
+### Geohashing
+
+```typescript
+import { encodeGeohash, decodeGeohash, geohashBounds, geohashNeighbors } from '@geokit/core';
+
+// Encode coordinates to geohash
+const hash = encodeGeohash([40.7128, -74.006], 9); // 'dr5regw3p'
+
+// Decode geohash to coordinates
+const coords = decodeGeohash('dr5regw3p'); // [40.7128, -74.006]
+
+// Get geohash bounding box
+const bounds = geohashBounds('dr5r'); // [minLon, minLat, maxLon, maxLat]
+
+// Get neighboring geohashes
+const neighbors = geohashNeighbors('dr5r');
+// { n: 'dr5x', ne: 'dr5z', e: 'dr5p', se: 'dr5n', s: 'dr5q', sw: 'dr5m', w: 'dr5j', nw: 'dr5k' }
+```
+
+### H3 Hexagonal Indexing
+
+```typescript
+import {
+  coordinatesToH3,
+  h3ToCoordinates,
+  h3ToBoundary,
+  h3Neighbors,
+  polygonToH3,
+} from '@geokit/core';
+
+// Convert coordinates to H3 index
+const h3Index = coordinatesToH3([40.7128, -74.006], 9);
+
+// Convert H3 index to coordinates
+const coords = h3ToCoordinates(h3Index); // [40.7128, -74.006]
+
+// Get hexagon boundary
+const boundary = h3ToBoundary(h3Index); // Array of [lat, lon] pairs
+
+// Get neighboring cells (k-ring)
+const neighbors = h3Neighbors(h3Index, 1); // Array of H3 indices
+
+// Fill polygon with H3 cells
+const polygon = {
+  type: 'Polygon',
+  coordinates: [
+    [
+      [-74.01, 40.7],
+      [-74.0, 40.7],
+      [-74.0, 40.71],
+      [-74.01, 40.71],
+      [-74.01, 40.7],
+    ],
+  ],
+};
+const cells = polygonToH3(polygon, 9); // Array of H3 indices
+```
+
 ## API Reference
 
 ### Distance
@@ -154,6 +212,31 @@ const isWithin = checkPoint(bounds); // true
 - `getBounds(coordinates|features)` - Calculate bounding box
 - `getCenter(bounds|features)` - Calculate center point
 - `isWithinBounds(point)(bounds)` - Check if point is within bounds
+
+### Geohash
+
+- `encodeGeohash(coords, precision?)` - Encode coordinates to geohash
+- `decodeGeohash(hash)` - Decode geohash to coordinates
+- `geohashBounds(hash)` - Get geohash bounding box
+- `geohashNeighbors(hash)` - Get neighboring geohashes
+- `geohashNeighbor(hash, direction)` - Get neighbor in specific direction
+- `geohashesInBounds(bounds, precision)` - Get all geohashes in bounding box
+- `validateGeohash(hash)` - Validate geohash string
+
+### H3 Hexagonal Indexing
+
+- `coordinatesToH3(coords, resolution?)` - Convert coordinates to H3 index
+- `h3ToCoordinates(h3Index)` - Convert H3 index to coordinates
+- `h3ToBoundary(h3Index)` - Get hexagon boundary
+- `h3Neighbors(h3Index, k?)` - Get k-ring neighbors
+- `h3ToParent(h3Index, resolution)` - Get parent cell
+- `h3ToChildren(h3Index, resolution)` - Get children cells
+- `h3GetResolution(h3Index)` - Get resolution level
+- `h3AreNeighbors(h3Index1, h3Index2)` - Check if cells are neighbors
+- `polygonToH3(polygon, resolution)` - Fill polygon with H3 cells
+- `h3EdgeLength(resolution)` - Get average edge length in meters
+- `h3CellArea(resolution)` - Get average cell area in square meters
+- `validateH3(h3Index)` - Validate H3 index
 
 ## Browser and Node.js Compatibility
 

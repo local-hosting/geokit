@@ -1161,6 +1161,11 @@ graphql@^16.8.1:
   resolved "https://registry.yarnpkg.com/graphql/-/graphql-16.12.0.tgz#28cc2462435b1ac3fdc6976d030cef83a0c13ac7"
   integrity sha512-DKKrynuQRne0PNpEbzuEdHlYOMksHSUI8Zc9Unei5gTsMNA2/vMpoMz/yKba50pejK56qj98qM0SjYxAKi13gQ==
 
+h3-js@^4.3.0:
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/h3-js/-/h3-js-4.3.0.tgz#d8705d50f1bf241cad90075498f168d4a6ab933f"
+  integrity sha512-zgvyHZz5bEKeuyYGh0bF9/kYSxJ2SqroopkXHqKnD3lfjaZawcxulcI9nWbNC54gakl/2eObRLHWueTf1iLSaA==
+
 has-flag@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/has-flag/-/has-flag-4.0.0.tgz#944771fd9c81c81265c4d6941860da06bb59479b"
@@ -1271,6 +1276,11 @@ keyv@^4.5.4:
   integrity sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==
   dependencies:
     json-buffer "3.0.1"
+
+latlon-geohash@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/latlon-geohash/-/latlon-geohash-2.0.0.tgz#2b0203ab30ef56a18600b0312b8c3a627cbd17d1"
+  integrity sha512-OKBswTwrvTdtenV+9C9euBmvgGuqyjJNAzpQCarRz1m8/pYD2nz9fKkXmLs2S3jeXaLi3Ry76twQplKKUlgS/g==
 
 levn@^0.4.1:
   version "0.4.1"
