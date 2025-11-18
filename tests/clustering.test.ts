@@ -101,4 +101,155 @@ describe('clustering', () => {
       expect(clusters[0].points[0].data).toEqual({ id: 1 });
     });
   });
+
+  describe('edge cases', () => {
+    describe('gridCluster edge cases', () => {
+      it('should handle single point', () => {
+        const singlePoint = [{ coordinates: [40.7128, -74.006] as [number, number] }];
+        const clusters = gridCluster(0.01, singlePoint);
+        expect(clusters.length).toBe(1);
+        expect(clusters[0].count).toBe(1);
+      });
+
+      it('should handle very small cell size', () => {
+        const clusters = gridCluster(0.0001, points);
+        expect(clusters.length).toBeGreaterThan(0);
+        expect(clusters.length).toBeLessThanOrEqual(points.length);
+      });
+
+      it('should handle very large cell size', () => {
+        const clusters = gridCluster(10, points);
+        expect(clusters.length).toBe(1); // All in one cluster
+        expect(clusters[0].count).toBe(points.length);
+      });
+
+      it('should handle points at same location', () => {
+        const samePoints = [
+          { coordinates: [40.7128, -74.006] as [number, number] },
+          { coordinates: [40.7128, -74.006] as [number, number] },
+          { coordinates: [40.7128, -74.006] as [number, number] },
+        ];
+        const clusters = gridCluster(0.01, samePoints);
+        expect(clusters.length).toBe(1);
+        expect(clusters[0].count).toBe(3);
+      });
+
+      it('should handle points across antimeridian', () => {
+        const antimerPoints = [
+          { coordinates: [0, 179.9] as [number, number] },
+          { coordinates: [0, -179.9] as [number, number] },
+        ];
+        const clusters = gridCluster(1, antimerPoints);
+        expect(clusters.length).toBeGreaterThan(0);
+      });
+
+      it('should handle points at poles', () => {
+        const polarPoints = [
+          { coordinates: [89, 0] as [number, number] },
+          { coordinates: [89, 90] as [number, number] },
+          { coordinates: [89, 180] as [number, number] },
+        ];
+        const clusters = gridCluster(1, polarPoints);
+        expect(clusters.length).toBeGreaterThan(0);
+      });
+
+      it('should handle negative coordinates', () => {
+        const negPoints = [
+          { coordinates: [-40.7128, -74.006] as [number, number] },
+          { coordinates: [-40.713, -74.0062] as [number, number] },
+        ];
+        const clusters = gridCluster(0.01, negPoints);
+        expect(clusters.length).toBeGreaterThan(0);
+      });
+    });
+
+    describe('gridClusterMeters edge cases', () => {
+      it('should handle very small distance', () => {
+        const clusters = gridClusterMeters(1, points); // 1 meter cells
+        expect(clusters.length).toBeGreaterThan(0);
+      });
+
+      it('should handle very large distance', () => {
+        const clusters = gridClusterMeters(1000000, points); // 1000km cells
+        expect(clusters.length).toBe(1);
+      });
+
+      it('should handle single point', () => {
+        const singlePoint = [{ coordinates: [40.7128, -74.006] as [number, number] }];
+        const clusters = gridClusterMeters(1000, singlePoint);
+        expect(clusters.length).toBe(1);
+      });
+    });
+
+    describe('distanceCluster edge cases', () => {
+      it('should handle zero threshold', () => {
+        const clusters = distanceCluster(0, points);
+        // Each point should be its own cluster with zero threshold
+        expect(clusters.length).toBe(points.length);
+      });
+
+      it('should handle single point', () => {
+        const singlePoint = [{ coordinates: [40.7128, -74.006] as [number, number] }];
+        const clusters = distanceCluster(1000, singlePoint);
+        expect(clusters.length).toBe(1);
+        expect(clusters[0].count).toBe(1);
+      });
+
+      it('should handle all points within threshold', () => {
+        const closePoints = [
+          { coordinates: [40.7128, -74.006] as [number, number] },
+          { coordinates: [40.71281, -74.00601] as [number, number] },
+          { coordinates: [40.71282, -74.00602] as [number, number] },
+        ];
+        const clusters = distanceCluster(1000, closePoints);
+        expect(clusters.length).toBe(1);
+        expect(clusters[0].count).toBe(3);
+      });
+
+      it('should handle all points outside threshold', () => {
+        const farPoints = [
+          { coordinates: [0, 0] as [number, number] },
+          { coordinates: [10, 10] as [number, number] },
+          { coordinates: [20, 20] as [number, number] },
+        ];
+        const clusters = distanceCluster(1, farPoints); // 1 meter threshold
+        expect(clusters.length).toBe(farPoints.length);
+      });
+
+      it('should handle points at antimeridian', () => {
+        const antimerPoints = [
+          { coordinates: [0, 179.9] as [number, number] },
+          { coordinates: [0, -179.9] as [number, number] },
+        ];
+        const clusters = distanceCluster(50000, antimerPoints); // 50km
+        expect(clusters.length).toBeGreaterThan(0);
+      });
+
+      it('should handle points at poles', () => {
+        const polarPoints = [
+          { coordinates: [89.9, 0] as [number, number] },
+          { coordinates: [89.9, 90] as [number, number] },
+        ];
+        const clusters = distanceCluster(10000, polarPoints); // 10km
+        expect(clusters.length).toBeGreaterThan(0);
+      });
+
+      it('should calculate correct cluster centers', () => {
+        const closePoints = [
+          { coordinates: [40.0, -74.0] as [number, number] },
+          { coordinates: [40.001, -74.001] as [number, number] },
+        ];
+        const clusters = distanceCluster(1000, closePoints);
+        expect(clusters[0].center).toHaveLength(2);
+        expect(clusters[0].center[0]).toBeGreaterThan(39.9);
+        expect(clusters[0].center[0]).toBeLessThan(40.1);
+      });
+
+      it('should handle very large threshold', () => {
+        const clusters = distanceCluster(40000000, points); // 40,000km (Earth's circumference)
+        expect(clusters.length).toBe(1);
+        expect(clusters[0].count).toBe(points.length);
+      });
+    });
+  });
 });

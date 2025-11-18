@@ -101,4 +101,119 @@ describe('bearing', () => {
       expect(dest[1]).toBeCloseTo(nyc[1], 5);
     });
   });
+
+  describe('edge cases', () => {
+    describe('bearing edge cases', () => {
+      it('should handle bearing from North Pole', () => {
+        const northPole: [number, number] = [90, 0];
+        const point: [number, number] = [45, 0];
+        const b = bearing(northPole)(point);
+        expect(b).toBeGreaterThanOrEqual(0);
+        expect(b).toBeLessThan(360);
+      });
+
+      it('should handle bearing from South Pole', () => {
+        const southPole: [number, number] = [-90, 0];
+        const point: [number, number] = [-45, 0];
+        const b = bearing(southPole)(point);
+        expect(b).toBeGreaterThanOrEqual(0);
+        expect(b).toBeLessThan(360);
+      });
+
+      it('should handle bearing across antimeridian', () => {
+        const point1: [number, number] = [0, 179];
+        const point2: [number, number] = [0, -179];
+        const b = bearing(point1)(point2);
+        expect(b).toBeGreaterThanOrEqual(0);
+        expect(b).toBeLessThan(360);
+      });
+
+      it('should handle south bearing correctly', () => {
+        const bearingSouth = bearing([0, 0])([-1, 0]);
+        expect(bearingSouth).toBeCloseTo(180, 0);
+      });
+
+      it('should handle west bearing correctly', () => {
+        const bearingWest = bearing([0, 0])([0, -1]);
+        expect(bearingWest).toBeCloseTo(270, 0);
+      });
+
+      it('should handle very short distances', () => {
+        const point1: [number, number] = [0, 0];
+        const point2: [number, number] = [0.000001, 0];
+        const b = bearing(point1)(point2);
+        expect(b).toBeGreaterThanOrEqual(0);
+        expect(b).toBeLessThan(360);
+      });
+    });
+
+    describe('midpoint edge cases', () => {
+      it('should handle midpoint across antimeridian', () => {
+        const point1: [number, number] = [0, 179];
+        const point2: [number, number] = [0, -179];
+        const mid = midpoint(point1)(point2);
+        expect(mid[0]).toBeCloseTo(0, 2);
+        // Midpoint longitude should be near 180/-180
+        expect(Math.abs(mid[1])).toBeGreaterThan(179);
+      });
+
+      it('should handle midpoint at poles', () => {
+        const northPole: [number, number] = [90, 0];
+        const southPole: [number, number] = [-90, 0];
+        const mid = midpoint(northPole)(southPole);
+        expect(Math.abs(mid[0])).toBeLessThan(1); // Should be near equator
+      });
+
+      it('should handle very close points', () => {
+        const point1: [number, number] = [40.7128, -74.006];
+        const point2: [number, number] = [40.7129, -74.0061];
+        const mid = midpoint(point1)(point2);
+        expect(mid[0]).toBeCloseTo((point1[0] + point2[0]) / 2, 3);
+        expect(mid[1]).toBeCloseTo((point1[1] + point2[1]) / 2, 3);
+      });
+    });
+
+    describe('destination edge cases', () => {
+      it('should handle destination south', () => {
+        const move1kmSouth = destinationMeters(1000, 180);
+        const dest = move1kmSouth(nyc);
+        expect(dest[0]).toBeLessThan(nyc[0]);
+        expect(Math.abs(dest[1] - nyc[1])).toBeLessThan(0.01);
+      });
+
+      it('should handle destination west', () => {
+        const move1kmWest = destinationMeters(1000, 270);
+        const dest = move1kmWest(nyc);
+        expect(dest[1]).toBeLessThan(nyc[1]);
+        expect(Math.abs(dest[0] - nyc[0])).toBeLessThan(0.01);
+      });
+
+      it('should handle very long distances', () => {
+        const move10000km = destinationMeters(10000000, 90);
+        const dest = move10000km([0, 0]);
+        expect(dest[1]).toBeGreaterThan(0);
+      });
+
+      it('should handle negative bearing as positive', () => {
+        const moveNorth = destinationMeters(1000, 360);
+        const dest = moveNorth(nyc);
+        expect(dest[0]).toBeGreaterThan(nyc[0]);
+      });
+
+      it('should handle destination from pole', () => {
+        const northPole: [number, number] = [89, 0];
+        const move1km = destinationMeters(1000, 180);
+        const dest = move1km(northPole);
+        expect(dest[0]).toBeLessThan(northPole[0]);
+      });
+
+      it('should handle destination crossing antimeridian', () => {
+        const point: [number, number] = [0, 179];
+        const moveEast = destinationMeters(100000, 90);
+        const dest = moveEast(point);
+        // After moving east from 179, longitude should be near 180/-180
+        expect(Math.abs(dest[1])).toBeGreaterThan(179);
+      });
+    });
+  });
 });
