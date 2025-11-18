@@ -22,7 +22,7 @@ export function h3ToBoundary(h3Index: string): LatLon[] {
  * Convert H3 cell to GeoJSON Polygon
  *
  * @param h3Index - H3 cell ID
- * @returns GeoJSON Polygon geometry
+ * @returns GeoJSON Polygon geometry, or null if the H3 index is invalid
  *
  * @example
  * ```typescript
@@ -30,12 +30,16 @@ export function h3ToBoundary(h3Index: string): LatLon[] {
  * // { type: 'Polygon', coordinates: [[[lon, lat], ...]] }
  * ```
  */
-export function h3ToPolygon(h3Index: string): Polygon {
-  const boundary = cellToBoundary(h3Index);
-  // Convert from [lat, lon] to [lon, lat] for GeoJSON format
-  const coordinates = [boundary.map(([lat, lng]) => [lng, lat] as [number, number])];
-  return {
-    type: 'Polygon',
-    coordinates,
-  };
+export function h3ToPolygon(h3Index: string): Polygon | null {
+  try {
+    const boundary = cellToBoundary(h3Index);
+    // Convert from [lat, lon] to [lon, lat] for GeoJSON format
+    const coordinates = [boundary.map(([lat, lng]) => [lng, lat] as [number, number])];
+    return {
+      type: 'Polygon',
+      coordinates,
+    };
+  } catch {
+    return null;
+  }
 }

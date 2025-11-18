@@ -8,3 +8,9 @@ export { isValidCoordinate } from './validation';
 export { extractCoordinates, normalizeCoordinateInput } from './extraction';
 export { serializeCoordinates, deserializeCoordinates } from './serialization';
 export { createPoint } from './creation';
+export {
+  roundCoordinates,
+  roundCoord,
+  removeDuplicateCoordinates,
+  removeDuplicateCoordinatesFromGeometry,
+} from './manipulation';

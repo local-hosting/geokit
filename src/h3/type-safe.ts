@@ -102,7 +102,11 @@ export function h3PointToBoundary(h3Index: H3Point): LatLon[] {
  * ```
  */
 export function h3PointToPolygon(h3Index: H3Point): Polygon {
-  return h3ToPolygon(h3Index);
+  const polygon = h3ToPolygon(h3Index);
+  if (!polygon) {
+    throw new Error(`Invalid H3 index: ${h3Index}`);
+  }
+  return polygon;
 }
 
 /**
@@ -135,7 +139,11 @@ export function h3AreaToBoundary(h3Index: H3Area): LatLon[] {
  * ```
  */
 export function h3AreaToPolygon(h3Index: H3Area): Polygon {
-  return h3ToPolygon(h3Index);
+  const polygon = h3ToPolygon(h3Index);
+  if (!polygon) {
+    throw new Error(`Invalid H3 index: ${h3Index}`);
+  }
+  return polygon;
 }
 
 /**
