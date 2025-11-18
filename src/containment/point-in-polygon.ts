@@ -1,8 +1,10 @@
+import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+import { point as turfPoint, polygon as turfPolygon } from '@turf/helpers';
 import type { LatLon, Polygon } from '../types';
 
 /**
- * Check if a point is inside a polygon using ray casting algorithm
- * Works with any polygon (convex or concave)
+ * Check if a point is inside a polygon
+ * Uses Turf.js for robust point-in-polygon testing (properly handles holes)
  *
  * @param point - Point to test [lat, lon]
  * @returns Curried function that takes polygon and returns true if point is inside
@@ -19,29 +21,22 @@ import type { LatLon, Polygon } from '../types';
  */
 export function pointInPolygon(point: LatLon) {
   return (polygon: Polygon): boolean => {
-    const [lat, lon] = point;
-
     // Get the outer ring (first array of coordinates)
     const ring = polygon.coordinates[0];
     if (!ring || ring.length < 4) {
       return false; // Invalid polygon
     }
 
-    let inside = false;
+    try {
+      // Convert [lat, lon] to [lon, lat] for Turf
+      const [lat, lon] = point;
+      const pt = turfPoint([lon, lat]);
+      const poly = turfPolygon(polygon.coordinates);
 
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      const [xi, yi] = ring[i]; // [lon, lat] in GeoJSON format
-      const [xj, yj] = ring[j];
-
-      // Ray casting algorithm - check if ray from point crosses edge
-      const intersect = yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
-
-      if (intersect) {
-        inside = !inside;
-      }
+      return booleanPointInPolygon(pt, poly);
+    } catch {
+      return false;
     }
-
-    return inside;
   };
 }
 

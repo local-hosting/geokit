@@ -1,8 +1,10 @@
+import turfDestination from '@turf/destination';
+import { point as turfPoint } from '@turf/helpers';
 import type { LatLon } from '../types';
 
 /**
  * Calculate destination point given start point, distance, and bearing
- * Uses spherical Earth model
+ * Uses Turf.js for robust destination calculation
  *
  * @param distance - Distance in the same unit as Earth's radius
  * @param bearingDegrees - Bearing in degrees (0-360)
@@ -17,8 +19,33 @@ import type { LatLon } from '../types';
  */
 export function destination(distance: number, bearingDegrees: number, radius: number = 6371000) {
   return (point: LatLon): LatLon => {
-    const [lat, lon] = point;
+    try {
+      const [lat, lon] = point;
 
+      // Convert to Turf format [lon, lat]
+      const pt = turfPoint([lon, lat]);
+
+      // Convert distance to kilometers for Turf (Turf uses km by default)
+      const distanceKm = distance / 1000;
+      const dest = turfDestination(pt, distanceKm, bearingDegrees, { units: 'kilometers' });
+
+      // Type-safe extraction
+      if (
+        dest.geometry.type === 'Point' &&
+        Array.isArray(dest.geometry.coordinates) &&
+        dest.geometry.coordinates.length >= 2
+      ) {
+        const [destLon, destLat] = dest.geometry.coordinates;
+        if (typeof destLon === 'number' && typeof destLat === 'number') {
+          return [destLat, destLon];
+        }
+      }
+    } catch {
+      // Fall through to fallback
+    }
+
+    // Fallback: simple spherical calculation
+    const [lat, lon] = point;
     const latRad = (lat * Math.PI) / 180;
     const lonRad = (lon * Math.PI) / 180;
     const bearingRad = (bearingDegrees * Math.PI) / 180;
@@ -38,8 +65,6 @@ export function destination(distance: number, bearingDegrees: number, radius: nu
 
     const lat2 = (lat2Rad * 180) / Math.PI;
     const lon2 = (lon2Rad * 180) / Math.PI;
-
-    // Normalize longitude to -180 to 180
     const lon2Normalized = ((lon2 + 540) % 360) - 180;
 
     return [lat2, lon2Normalized];

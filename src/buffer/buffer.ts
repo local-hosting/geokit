@@ -33,10 +33,7 @@ export function bufferPoint(point: LatLon, radius: number, steps: number = 64): 
     throw new Error('Failed to create buffer');
   }
 
-  return {
-    type: 'Polygon',
-    coordinates: buffered.geometry.coordinates,
-  };
+  return buffered.geometry;
 }
 
 /**
@@ -65,10 +62,7 @@ export function bufferLine(coordinates: LatLon[], radius: number, steps: number 
     throw new Error('Failed to create buffer');
   }
 
-  return {
-    type: 'Polygon',
-    coordinates: buffered.geometry.coordinates,
-  };
+  return buffered.geometry;
 }
 
 /**
@@ -102,10 +96,7 @@ export function bufferPolygon(polygon: Polygon, radius: number, steps: number = 
     throw new Error('Failed to create buffer');
   }
 
-  return {
-    type: 'Polygon',
-    coordinates: buffered.geometry.coordinates,
-  };
+  return buffered.geometry;
 }
 
 /**

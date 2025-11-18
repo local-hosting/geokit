@@ -14,7 +14,7 @@ describe('intersection', () => {
         [2, 0],
       ];
 
-      const intersection = lineIntersection(line1, line2);
+      const intersection = lineIntersection(line1)(line2);
       expect(intersection).not.toBeNull();
       expect(intersection![0]).toBeCloseTo(1, 5);
       expect(intersection![1]).toBeCloseTo(1, 5);
@@ -30,7 +30,7 @@ describe('intersection', () => {
         [1, 2],
       ];
 
-      expect(lineIntersection(line1, line2)).toBeNull();
+      expect(lineIntersection(line1)(line2)).toBeNull();
     });
 
     it('should return null for non-intersecting segments', () => {
@@ -43,7 +43,7 @@ describe('intersection', () => {
         [3, 0],
       ];
 
-      expect(lineIntersection(line1, line2)).toBeNull();
+      expect(lineIntersection(line1)(line2)).toBeNull();
     });
 
     it('should handle vertical and horizontal lines', () => {
@@ -56,7 +56,7 @@ describe('intersection', () => {
         [4, 2],
       ];
 
-      const intersection = lineIntersection(vertical, horizontal);
+      const intersection = lineIntersection(vertical)(horizontal);
       expect(intersection).not.toBeNull();
       expect(intersection![0]).toBeCloseTo(1, 5);
       expect(intersection![1]).toBeCloseTo(2, 5);
@@ -72,7 +72,7 @@ describe('intersection', () => {
         [40.71, -74.0],
       ];
 
-      const intersection = lineIntersection(line1, line2);
+      const intersection = lineIntersection(line1)(line2);
       expect(intersection).not.toBeNull();
       expect(intersection![0]).toBeCloseTo(40.705, 2);
       expect(intersection![1]).toBeCloseTo(-73.995, 2);
@@ -88,7 +88,7 @@ describe('intersection', () => {
         [4, 0],
       ];
 
-      const intersection = lineIntersection(line1, line2);
+      const intersection = lineIntersection(line1)(line2);
       expect(intersection).not.toBeNull();
       expect(intersection![0]).toBeCloseTo(2, 5);
       expect(intersection![1]).toBeCloseTo(2, 5);
@@ -105,7 +105,7 @@ describe('intersection', () => {
       ];
 
       // These are parallel, so they wouldn't intersect even if extended
-      expect(lineIntersection(line1, line2)).toBeNull();
+      expect(lineIntersection(line1)(line2)).toBeNull();
     });
 
     it('should handle T-intersection', () => {
@@ -118,7 +118,7 @@ describe('intersection', () => {
         [1, 2],
       ];
 
-      const intersection = lineIntersection(line1, line2);
+      const intersection = lineIntersection(line1)(line2);
       expect(intersection).not.toBeNull();
       expect(intersection![0]).toBeCloseTo(1, 5);
       expect(intersection![1]).toBeCloseTo(1, 5);
@@ -134,7 +134,7 @@ describe('intersection', () => {
         [40.71281, -74.006],
       ];
 
-      const intersection = lineIntersection(line1, line2);
+      const intersection = lineIntersection(line1)(line2);
       expect(intersection).not.toBeNull();
     });
   });
@@ -150,7 +150,7 @@ describe('intersection', () => {
         [2, 0],
       ];
 
-      expect(linesIntersect(line1, line2)).toBe(true);
+      expect(linesIntersect(line1)(line2)).toBe(true);
     });
 
     it('should return false for parallel lines', () => {
@@ -163,7 +163,7 @@ describe('intersection', () => {
         [1, 2],
       ];
 
-      expect(linesIntersect(line1, line2)).toBe(false);
+      expect(linesIntersect(line1)(line2)).toBe(false);
     });
 
     it('should return false for non-intersecting segments', () => {
@@ -176,7 +176,7 @@ describe('intersection', () => {
         [3, 0],
       ];
 
-      expect(linesIntersect(line1, line2)).toBe(false);
+      expect(linesIntersect(line1)(line2)).toBe(false);
     });
 
     it('should return true for T-intersection', () => {
@@ -189,7 +189,7 @@ describe('intersection', () => {
         [1, 2],
       ];
 
-      expect(linesIntersect(line1, line2)).toBe(true);
+      expect(linesIntersect(line1)(line2)).toBe(true);
     });
   });
 });

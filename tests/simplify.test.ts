@@ -14,13 +14,13 @@ describe('simplify', () => {
     ];
 
     it('should simplify polyline with given tolerance', () => {
-      const simplified = simplify(0.01, zigzag);
+      const simplified = simplify(0.01)(zigzag);
       expect(simplified.length).toBeLessThan(zigzag.length);
       expect(simplified.length).toBeGreaterThanOrEqual(2);
     });
 
     it('should keep start and end points', () => {
-      const simplified = simplify(0.01, zigzag);
+      const simplified = simplify(0.01)(zigzag);
       expect(simplified[0]).toEqual(zigzag[0]);
       expect(simplified[simplified.length - 1]).toEqual(zigzag[zigzag.length - 1]);
     });
@@ -30,12 +30,12 @@ describe('simplify', () => {
         [40.71, -74.01],
         [40.72, -74.0],
       ] as [number, number][];
-      const simplified = simplify(0.01, short);
+      const simplified = simplify(0.01)(short);
       expect(simplified).toEqual(short);
     });
 
     it('should retain most points when tolerance is very small', () => {
-      const simplified = simplify(0.0001, zigzag);
+      const simplified = simplify(0.0001)(zigzag);
       // Very small tolerance should keep most points
       expect(simplified.length).toBeGreaterThanOrEqual(2);
       expect(simplified.length).toBeLessThanOrEqual(zigzag.length);
@@ -52,19 +52,19 @@ describe('simplify', () => {
     ];
 
     it('should simplify using meters tolerance', () => {
-      const simplified = simplifyMeters(500, polyline);
+      const simplified = simplifyMeters(500)(polyline);
       expect(simplified.length).toBeLessThanOrEqual(polyline.length);
       expect(simplified.length).toBeGreaterThanOrEqual(2);
     });
 
     it('should return empty for empty polyline', () => {
-      const simplified = simplifyMeters(100, []);
+      const simplified = simplifyMeters(100)([]);
       expect(simplified).toEqual([]);
     });
 
     it('should keep more points with smaller tolerance', () => {
-      const simplified100 = simplifyMeters(100, polyline);
-      const simplified1000 = simplifyMeters(1000, polyline);
+      const simplified100 = simplifyMeters(100)(polyline);
+      const simplified1000 = simplifyMeters(1000)(polyline);
       expect(simplified100.length).toBeGreaterThanOrEqual(simplified1000.length);
     });
   });

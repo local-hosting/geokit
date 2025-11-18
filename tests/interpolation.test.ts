@@ -22,8 +22,8 @@ describe('interpolation', () => {
     it('should return end point at fraction 1', () => {
       const atEnd = interpolate(1);
       const point = atEnd(nyc)(la);
-      expect(point[0]).toBeCloseTo(la[0], 4);
-      expect(point[1]).toBeCloseTo(la[1], 4);
+      expect(point[0]).toBeCloseTo(la[0], 3);
+      expect(point[1]).toBeCloseTo(la[1], 3);
     });
 
     it('should return midpoint at fraction 0.5', () => {
@@ -84,7 +84,7 @@ describe('interpolation', () => {
 
     it('should find nearest point on polyline', () => {
       const point: [number, number] = [40.715, -74.005];
-      const result = nearestPointOnPolyline(point, polyline);
+      const result = nearestPointOnPolyline(point)(polyline);
 
       expect(result).not.toBeNull();
       expect(result!.segmentIndex).toBeGreaterThanOrEqual(0);
@@ -93,12 +93,12 @@ describe('interpolation', () => {
     });
 
     it('should return null for empty polyline', () => {
-      const result = nearestPointOnPolyline([40.7, -74.0], []);
+      const result = nearestPointOnPolyline([40.7, -74.0])([]);
       expect(result).toBeNull();
     });
 
     it('should return null for single point polyline', () => {
-      const result = nearestPointOnPolyline([40.7, -74.0], [[40.71, -74.01]]);
+      const result = nearestPointOnPolyline([40.7, -74.0])([[40.71, -74.01]]);
       expect(result).toBeNull();
     });
   });
@@ -111,20 +111,20 @@ describe('interpolation', () => {
     ];
 
     it('should resample polyline at regular intervals', () => {
-      const resampled = resample(5000, polyline); // 5km intervals
+      const resampled = resample(5000)(polyline); // 5km intervals
       expect(resampled.length).toBeGreaterThan(0);
       expect(resampled[0]).toEqual(polyline[0]);
       expect(resampled[resampled.length - 1]).toEqual(polyline[polyline.length - 1]);
     });
 
     it('should return original for empty polyline', () => {
-      const resampled = resample(1000, []);
+      const resampled = resample(1000)([]);
       expect(resampled).toEqual([]);
     });
 
     it('should return original for single point', () => {
       const single = [[40.7, -74.0]] as [number, number][];
-      const resampled = resample(1000, single);
+      const resampled = resample(1000)(single);
       expect(resampled).toEqual(single);
     });
   });

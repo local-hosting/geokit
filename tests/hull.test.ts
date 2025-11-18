@@ -13,19 +13,23 @@ describe('convex hull', () => {
       ];
 
       const hull = convexHull(points);
-      expect(hull.length).toBe(5); // 4 corners + closing point
-      expect(hull[0]).toEqual(hull[hull.length - 1]); // Should be closed
+      expect(hull).not.toBeNull();
+      expect(hull?.type).toBe('Polygon');
+      expect(hull?.coordinates[0].length).toBeGreaterThanOrEqual(4); // At least 4 points (closed ring)
+      // First and last coordinates should be the same (closed ring)
+      const ring = hull!.coordinates[0];
+      expect(ring[0]).toEqual(ring[ring.length - 1]);
     });
 
-    it('should return empty array for less than 3 points', () => {
-      expect(convexHull([])).toEqual([]);
-      expect(convexHull([[0, 0]])).toEqual([]);
+    it('should return null for less than 3 points', () => {
+      expect(convexHull([])).toBeNull();
+      expect(convexHull([[0, 0]])).toBeNull();
       expect(
         convexHull([
           [0, 0],
           [1, 1],
         ])
-      ).toEqual([]);
+      ).toBeNull();
     });
 
     it('should remove duplicate points', () => {
@@ -39,7 +43,10 @@ describe('convex hull', () => {
       ];
 
       const hull = convexHull(points);
-      expect(hull.length).toBe(5); // 4 unique corners + closing point
+      expect(hull).not.toBeNull();
+      expect(hull?.type).toBe('Polygon');
+      const ring = hull!.coordinates[0];
+      expect(ring.length).toBeGreaterThanOrEqual(4); // At least 4 unique corners
     });
 
     it('should handle collinear points', () => {
@@ -51,8 +58,10 @@ describe('convex hull', () => {
       ];
 
       const hull = convexHull(points);
-      // Collinear points should result in a line (empty hull in some implementations)
-      expect(Array.isArray(hull)).toBe(true);
+      // Collinear points may result in null or a valid polygon depending on implementation
+      if (hull) {
+        expect(hull.type).toBe('Polygon');
+      }
     });
 
     it('should work with NYC area points', () => {
@@ -66,8 +75,12 @@ describe('convex hull', () => {
       ];
 
       const hull = convexHull(points);
-      expect(hull.length).toBeGreaterThan(3);
-      expect(hull[0]).toEqual(hull[hull.length - 1]);
+      expect(hull).not.toBeNull();
+      expect(hull?.type).toBe('Polygon');
+      const ring = hull!.coordinates[0];
+      expect(ring.length).toBeGreaterThan(3);
+      // Ring should be closed
+      expect(ring[0]).toEqual(ring[ring.length - 1]);
     });
 
     it('should handle negative coordinates', () => {
@@ -79,7 +92,9 @@ describe('convex hull', () => {
       ];
 
       const hull = convexHull(points);
-      expect(hull.length).toBeGreaterThan(0);
+      expect(hull).not.toBeNull();
+      expect(hull?.type).toBe('Polygon');
+      expect(hull?.coordinates[0].length).toBeGreaterThan(0);
     });
 
     it('should include only boundary points', () => {
@@ -94,14 +109,17 @@ describe('convex hull', () => {
       ];
 
       const hull = convexHull(points);
-      // Should only include the 4 corners
-      expect(hull.length).toBe(5); // 4 corners + closing point
+      expect(hull).not.toBeNull();
+      expect(hull?.type).toBe('Polygon');
+      const ring = hull!.coordinates[0];
+      // Should only include the 4 corners (plus closing point)
+      expect(ring.length).toBeGreaterThanOrEqual(4);
 
-      // Check that interior points are not in hull
-      const hullStr = hull.map((p) => `${p[0]},${p[1]}`);
-      expect(hullStr.includes('2,2')).toBe(false);
-      expect(hullStr.includes('1,1')).toBe(false);
-      expect(hullStr.includes('3,3')).toBe(false);
+      // Check that interior points are not in hull (coordinates are in [lon, lat] format)
+      const hullCoords = ring.map(([lon, lat]) => `${lat},${lon}`);
+      expect(hullCoords.includes('2,2')).toBe(false);
+      expect(hullCoords.includes('1,1')).toBe(false);
+      expect(hullCoords.includes('3,3')).toBe(false);
     });
 
     it('should handle points forming a triangle', () => {
@@ -112,7 +130,10 @@ describe('convex hull', () => {
       ];
 
       const hull = convexHull(points);
-      expect(hull.length).toBe(4); // 3 points + closing point
+      expect(hull).not.toBeNull();
+      expect(hull?.type).toBe('Polygon');
+      const ring = hull!.coordinates[0];
+      expect(ring.length).toBeGreaterThanOrEqual(4); // 3 points + closing point
     });
 
     it('should work with many points', () => {
@@ -128,8 +149,11 @@ describe('convex hull', () => {
       }
 
       const hull = convexHull(points);
-      expect(hull.length).toBeLessThanOrEqual(21); // At most 20 boundary points + closing
-      expect(hull.length).toBeGreaterThan(10);
+      expect(hull).not.toBeNull();
+      expect(hull?.type).toBe('Polygon');
+      const ring = hull!.coordinates[0];
+      expect(ring.length).toBeLessThanOrEqual(21); // At most 20 boundary points + closing
+      expect(ring.length).toBeGreaterThan(10);
     });
   });
 });

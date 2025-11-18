@@ -1,7 +1,11 @@
+import nearestPointOnLineTurf from '@turf/nearest-point-on-line';
+import { point as turfPoint, lineString } from '@turf/helpers';
 import type { LatLon } from '../types';
+import { haversineMeters } from '../distance';
 
 /**
  * Find the nearest point on a line segment to a given point
+ * Uses Turf.js for robust nearest point calculation
  *
  * @param point - Point to find nearest point for
  * @returns Curried function that takes line endpoints and returns nearest point
@@ -17,6 +21,36 @@ import type { LatLon } from '../types';
 export function nearestPointOnLine(point: LatLon) {
   return (lineStart: LatLon) => {
     return (lineEnd: LatLon): LatLon => {
+      try {
+        const [lat, lon] = point;
+        const [lat1, lon1] = lineStart;
+        const [lat2, lon2] = lineEnd;
+
+        // Convert to Turf format [lon, lat]
+        const pt = turfPoint([lon, lat]);
+        const line = lineString([
+          [lon1, lat1],
+          [lon2, lat2],
+        ]);
+
+        const nearest = nearestPointOnLineTurf(line, pt);
+
+        // Type-safe extraction
+        if (
+          nearest.geometry.type === 'Point' &&
+          Array.isArray(nearest.geometry.coordinates) &&
+          nearest.geometry.coordinates.length >= 2
+        ) {
+          const [nearestLon, nearestLat] = nearest.geometry.coordinates;
+          if (typeof nearestLon === 'number' && typeof nearestLat === 'number') {
+            return [nearestLat, nearestLon];
+          }
+        }
+      } catch {
+        // Fall through to fallback
+      }
+
+      // Fallback to simple implementation
       const [px, py] = point;
       const [x1, y1] = lineStart;
       const [x2, y2] = lineEnd;
@@ -25,71 +59,101 @@ export function nearestPointOnLine(point: LatLon) {
       const dy = y2 - y1;
 
       if (dx === 0 && dy === 0) {
-        // Line start and end are the same point
         return lineStart;
       }
 
-      // Calculate the parameter t that represents the projection of point p onto the line
       const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)));
-
-      // Calculate the nearest point
-      const nearestX = x1 + t * dx;
-      const nearestY = y1 + t * dy;
-
-      return [nearestX, nearestY];
+      return [x1 + t * dx, y1 + t * dy];
     };
   };
 }
 
 /**
  * Find the nearest point on a polyline to a given point
+ * Uses Turf.js for robust nearest point calculation
+ * Curried function for functional composition
  *
  * @param point - Point to find nearest point for
- * @param polyline - Array of points forming a polyline
- * @returns Object with nearest point and segment index
+ * @returns Function that takes polyline and returns object with nearest point and segment index
  *
  * @example
  * ```typescript
  * const point = [40.7128, -74.0060];
  * const polyline = [[40.7000, -74.0100], [40.7100, -74.0000], [40.7200, -73.9900]];
- * const result = nearestPointOnPolyline(point, polyline);
+ * const result = nearestPointOnPolyline(point)(polyline);
  * // { point: [lat, lon], segmentIndex: 0, distance: 123.45 }
  * ```
  */
-export function nearestPointOnPolyline(
-  point: LatLon,
-  polyline: LatLon[]
-): { point: LatLon; segmentIndex: number; distance: number } | null {
-  if (polyline.length < 2) {
-    return null;
-  }
-
-  let nearestPoint: LatLon | null = null;
-  let minDistance = Infinity;
-  let nearestSegmentIndex = -1;
-
-  for (let i = 0; i < polyline.length - 1; i++) {
-    const segmentStart = polyline[i];
-    const segmentEnd = polyline[i + 1];
-    const nearest = nearestPointOnLine(point)(segmentStart)(segmentEnd);
-
-    // Calculate distance using simple Euclidean (good enough for finding nearest)
-    const [px, py] = point;
-    const [nx, ny] = nearest;
-    const distance = Math.sqrt((px - nx) ** 2 + (py - ny) ** 2);
-
-    if (distance < minDistance) {
-      minDistance = distance;
-      nearestPoint = nearest;
-      nearestSegmentIndex = i;
+export function nearestPointOnPolyline(point: LatLon) {
+  return (polyline: LatLon[]): { point: LatLon; segmentIndex: number; distance: number } | null => {
+    if (polyline.length < 2) {
+      return null;
     }
-  }
 
-  return nearestPoint
-    ? {
-        point: nearestPoint,
-        segmentIndex: nearestSegmentIndex,
-        distance: minDistance,
+    try {
+      const [lat, lon] = point;
+
+      // Convert from [lat, lon] to [lon, lat] for Turf
+      const coords = polyline.map(([lat, lon]) => [lon, lat]);
+      const pt = turfPoint([lon, lat]);
+      const line = lineString(coords);
+
+      const nearest = nearestPointOnLineTurf(line, pt);
+
+      // Type-safe extraction
+      if (
+        nearest.geometry.type === 'Point' &&
+        Array.isArray(nearest.geometry.coordinates) &&
+        nearest.geometry.coordinates.length >= 2
+      ) {
+        const [nearestLon, nearestLat] = nearest.geometry.coordinates;
+        if (typeof nearestLon === 'number' && typeof nearestLat === 'number') {
+          const nearestPoint: LatLon = [nearestLat, nearestLon];
+
+          // Calculate distance using haversine for accuracy
+          const distance = haversineMeters(point)(nearestPoint);
+
+          // Get segment index from Turf properties
+          const index =
+            typeof nearest.properties?.index === 'number' ? nearest.properties.index : 0;
+
+          return {
+            point: nearestPoint,
+            distance,
+            segmentIndex: index,
+          };
+        }
       }
-    : null;
+    } catch {
+      // Fall through to fallback
+    }
+
+    // Fallback to manual calculation
+    let nearestPoint: LatLon | null = null;
+    let minDistance = Infinity;
+    let nearestSegmentIndex = -1;
+
+    for (let i = 0; i < polyline.length - 1; i++) {
+      const segmentStart = polyline[i];
+      const segmentEnd = polyline[i + 1];
+      const nearest = nearestPointOnLine(point)(segmentStart)(segmentEnd);
+
+      // Calculate distance using haversine for accuracy
+      const distance = haversineMeters(point)(nearest);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestPoint = nearest;
+        nearestSegmentIndex = i;
+      }
+    }
+
+    return nearestPoint
+      ? {
+          point: nearestPoint,
+          segmentIndex: nearestSegmentIndex,
+          distance: minDistance,
+        }
+      : null;
+  };
 }
