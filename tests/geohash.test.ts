@@ -8,6 +8,15 @@ import {
   geohashNeighbor,
   validateGeohash,
   geohashesInBounds,
+  // Type-safe functions
+  encodeGeohashPoint,
+  encodeGeohashArea,
+  decodeGeohashPoint,
+  decodeGeohashArea,
+  geohashPointBounds,
+  geohashAreaBounds,
+  geohashPointNeighbors,
+  geohashAreaNeighbors,
 } from '../src/geohash';
 
 describe('geohash', () => {
@@ -120,6 +129,118 @@ describe('geohash', () => {
       expect(validateGeohash('')).toBe(false); // Empty string
       expect(validateGeohash('aaa')).toBe(false); // 'a' not in base32 charset
       expect(validateGeohash('lio')).toBe(false); // 'i', 'l', 'o' not in base32 charset
+    });
+  });
+
+  describe('type-safe functions', () => {
+    describe('encodeGeohashPoint', () => {
+      it('should encode coordinates to GeohashPoint', () => {
+        const hashPoint = encodeGeohashPoint(nyc, 9);
+        expect(typeof hashPoint).toBe('string');
+        expect(hashPoint).toBe('dr5regw3p');
+      });
+
+      it('should use default precision of 10', () => {
+        const hashPoint = encodeGeohashPoint(nyc);
+        expect(hashPoint).toHaveLength(10);
+      });
+
+      it('should match encodeGeohash result', () => {
+        const hashPoint = encodeGeohashPoint(nyc, 9);
+        const hash = encodeGeohash(nyc, 9);
+        expect(hashPoint).toBe(hash);
+      });
+    });
+
+    describe('encodeGeohashArea', () => {
+      it('should encode coordinates to GeohashArea', () => {
+        const hashArea = encodeGeohashArea(nyc, 7);
+        expect(typeof hashArea).toBe('string');
+        expect(hashArea).toHaveLength(7);
+      });
+
+      it('should use default precision of 10', () => {
+        const hashArea = encodeGeohashArea(nyc);
+        expect(hashArea).toHaveLength(10);
+      });
+    });
+
+    describe('decodeGeohashPoint', () => {
+      it('should decode GeohashPoint to coordinates', () => {
+        const hashPoint = encodeGeohashPoint(nyc, 9);
+        const coords = decodeGeohashPoint(hashPoint);
+        expect(coords[0]).toBeCloseTo(40.7128, 3);
+        expect(coords[1]).toBeCloseTo(-74.006, 3);
+      });
+
+      it('should roundtrip encode/decode', () => {
+        const hashPoint = encodeGeohashPoint(nyc, 9);
+        const decoded = decodeGeohashPoint(hashPoint);
+        expect(decoded[0]).toBeCloseTo(nyc[0], 3);
+        expect(decoded[1]).toBeCloseTo(nyc[1], 3);
+      });
+    });
+
+    describe('decodeGeohashArea', () => {
+      it('should decode GeohashArea to coordinates', () => {
+        const hashArea = encodeGeohashArea(nyc, 7);
+        const coords = decodeGeohashArea(hashArea);
+        expect(coords).toHaveLength(2);
+        expect(typeof coords[0]).toBe('number');
+        expect(typeof coords[1]).toBe('number');
+      });
+    });
+
+    describe('geohashPointBounds', () => {
+      it('should return bounding box of GeohashPoint', () => {
+        const hashPoint = encodeGeohashPoint(nyc, 7);
+        const bounds = geohashPointBounds(hashPoint);
+        expect(bounds).toHaveLength(4);
+        expect(bounds[0]).toBeLessThan(bounds[2]);
+        expect(bounds[1]).toBeLessThan(bounds[3]);
+      });
+
+      it('should match geohashBounds result', () => {
+        const hashPoint = encodeGeohashPoint(nyc, 7);
+        const bounds1 = geohashPointBounds(hashPoint);
+        const bounds2 = geohashBounds(hashPoint);
+        expect(bounds1).toEqual(bounds2);
+      });
+    });
+
+    describe('geohashAreaBounds', () => {
+      it('should return bounding box of GeohashArea', () => {
+        const hashArea = encodeGeohashArea(nyc, 7);
+        const bounds = geohashAreaBounds(hashArea);
+        expect(bounds).toHaveLength(4);
+        expect(bounds[0]).toBeLessThan(bounds[2]);
+        expect(bounds[1]).toBeLessThan(bounds[3]);
+      });
+    });
+
+    describe('geohashPointNeighbors', () => {
+      it('should return array of 8 neighboring GeohashPoints', () => {
+        const hashPoint = encodeGeohashPoint(nyc, 7);
+        const neighbors = geohashPointNeighbors(hashPoint);
+        expect(neighbors).toHaveLength(8);
+        expect(neighbors.every((n) => typeof n === 'string')).toBe(true);
+      });
+
+      it('should match geohashNeighborsArray result', () => {
+        const hashPoint = encodeGeohashPoint(nyc, 7);
+        const neighbors1 = geohashPointNeighbors(hashPoint);
+        const neighbors2 = geohashNeighborsArray(hashPoint);
+        expect(neighbors1).toEqual(neighbors2);
+      });
+    });
+
+    describe('geohashAreaNeighbors', () => {
+      it('should return array of 8 neighboring GeohashAreas', () => {
+        const hashArea = encodeGeohashArea(nyc, 7);
+        const neighbors = geohashAreaNeighbors(hashArea);
+        expect(neighbors).toHaveLength(8);
+        expect(neighbors.every((n) => typeof n === 'string')).toBe(true);
+      });
     });
   });
 });

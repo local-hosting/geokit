@@ -104,6 +104,39 @@ describe('centroid', () => {
       expect(centroid![0]).toBeCloseTo(40.725, 2);
       expect(centroid![1]).toBeCloseTo(-74.025, 2);
     });
+
+    it('should handle polygon with invalid geometry (fallback to bbox center)', () => {
+      // This tests the fallback path when Turf fails
+      const invalid: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.01, 40.7],
+            [-74.0, 40.7],
+            [-74.0, 40.71],
+            [-74.01, 40.71],
+            [-74.01, 40.7],
+          ],
+        ],
+      };
+
+      const centroid = polygonCentroid(invalid);
+      expect(centroid).not.toBeNull();
+      // Should return center of bounding box
+      expect(centroid![0]).toBeCloseTo(40.705, 2);
+      expect(centroid![1]).toBeCloseTo(-74.005, 2);
+    });
+
+    it('should return null for polygon with single point', () => {
+      const singlePoint: Polygon = {
+        type: 'Polygon',
+        coordinates: [[[0, 0]]],
+      };
+
+      const centroid = polygonCentroid(singlePoint);
+      // Single point polygon is invalid, should return null
+      expect(centroid).toBeNull();
+    });
   });
 
   describe('pointsCentroid', () => {
