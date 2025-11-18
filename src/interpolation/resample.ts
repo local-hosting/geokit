@@ -1,4 +1,4 @@
-import type { LatLon } from '../types';
+import type { Polyline } from '../types';
 import { interpolateMeters } from './along';
 import { EARTH_RADIUS_METERS, DEGREES_TO_RADIANS } from '../constants';
 
@@ -16,12 +16,12 @@ import { EARTH_RADIUS_METERS, DEGREES_TO_RADIANS } from '../constants';
  * ```
  */
 export function resample(interval: number) {
-  return (polyline: LatLon[]): LatLon[] => {
+  return (polyline: Polyline): Polyline => {
     if (polyline.length < 2) {
       return polyline;
     }
 
-    const result: LatLon[] = [polyline[0]];
+    const result: Polyline = [polyline[0]];
     let accumulatedDistance = 0;
     let targetDistance = interval;
 

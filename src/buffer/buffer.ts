@@ -4,13 +4,10 @@
  */
 
 import turfBuffer from '@turf/buffer';
-import {
-  point as turfPoint,
-  lineString as turfLineString,
-  polygon as turfPolygon,
-} from '@turf/helpers';
+import { lineString as turfLineString, polygon as turfPolygon } from '@turf/helpers';
 import type { LatLon, Polygon } from '../types';
 import { DEFAULT_BUFFER_STEPS, METERS_TO_KILOMETERS } from '../constants';
+import { createPoint, toLonLatArray } from '../turf-utils';
 
 /**
  * Create a buffer zone around a point
@@ -30,8 +27,7 @@ export function bufferPoint(
   radius: number,
   steps: number = DEFAULT_BUFFER_STEPS
 ): Polygon {
-  const [lat, lon] = point;
-  const pt = turfPoint([lon, lat]);
+  const pt = createPoint(point);
   const buffered = turfBuffer(pt, radius / METERS_TO_KILOMETERS, { units: 'kilometers', steps });
 
   if (!buffered || buffered.geometry.type !== 'Polygon') {
@@ -63,7 +59,7 @@ export function bufferLine(
   }
 
   // Convert to GeoJSON [lon, lat] format
-  const coords = coordinates.map(([lat, lon]) => [lon, lat]);
+  const coords = toLonLatArray(coordinates);
   const line = turfLineString(coords);
   const buffered = turfBuffer(line, radius / METERS_TO_KILOMETERS, { units: 'kilometers', steps });
 

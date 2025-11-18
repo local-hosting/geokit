@@ -4,7 +4,8 @@
 
 import convexTurf from '@turf/convex';
 import { points as turfPoints } from '@turf/helpers';
-import type { LatLon, LonLat, Polygon } from '../types';
+import type { LatLon, Polygon } from '../types';
+import { toLonLatArray } from '../turf-utils';
 
 /**
  * Calculate the convex hull of a set of points
@@ -32,7 +33,7 @@ export function convexHull(points: LatLon[]): Polygon | null {
 
   try {
     // Convert from [lat, lon] to [lon, lat] for Turf
-    const coords: LonLat[] = points.map(([lat, lon]): LonLat => [lon, lat]);
+    const coords = toLonLatArray(points);
     const collection = turfPoints(coords);
 
     const hull = convexTurf(collection);

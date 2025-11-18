@@ -45,6 +45,12 @@ export type Coordinate = [number, number];
 export type LatLon = [number, number];
 
 /**
+ * Polyline: an open sequence of points representing a path or route
+ * Alias for array of LatLon coordinates
+ */
+export type Polyline = LatLon[];
+
+/**
  * Longitude/Latitude format (GeoJSON standard): [longitude, latitude]
  * Alias for GeoJSON Position type
  */

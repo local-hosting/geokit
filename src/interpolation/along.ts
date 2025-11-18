@@ -1,8 +1,8 @@
 import turfAlong from '@turf/along';
-import { lineString } from '@turf/helpers';
 import type { LatLon } from '../types';
 import { haversineMeters } from '../distance';
 import { METERS_TO_KILOMETERS } from '../constants';
+import { createLineString, extractLatLon } from '../turf-utils';
 
 /**
  * Interpolate a point at a given fraction along the path between two points
@@ -21,14 +21,7 @@ export function interpolate(fraction: number) {
   return (point1: LatLon) => {
     return (point2: LatLon): LatLon => {
       try {
-        const [lat1, lon1] = point1;
-        const [lat2, lon2] = point2;
-
-        // Convert to Turf format [lon, lat]
-        const line = lineString([
-          [lon1, lat1],
-          [lon2, lat2],
-        ]);
+        const line = createLineString(point1, point2);
 
         // Calculate total distance
         const totalDistance = haversineMeters(point1)(point2);
@@ -39,16 +32,9 @@ export function interpolate(fraction: number) {
           units: 'kilometers',
         });
 
-        // Type-safe extraction
-        if (
-          interpolated.geometry.type === 'Point' &&
-          Array.isArray(interpolated.geometry.coordinates) &&
-          interpolated.geometry.coordinates.length >= 2
-        ) {
-          const [lon, lat] = interpolated.geometry.coordinates;
-          if (typeof lon === 'number' && typeof lat === 'number') {
-            return [lat, lon];
-          }
+        const result = extractLatLon(interpolated);
+        if (result) {
+          return result;
         }
       } catch {
         // Fall through to fallback
@@ -80,30 +66,16 @@ export function interpolateMeters(distance: number) {
   return (point1: LatLon) => {
     return (point2: LatLon): LatLon => {
       try {
-        const [lat1, lon1] = point1;
-        const [lat2, lon2] = point2;
-
-        // Convert to Turf format [lon, lat]
-        const line = lineString([
-          [lon1, lat1],
-          [lon2, lat2],
-        ]);
+        const line = createLineString(point1, point2);
 
         // Use Turf's along function with distance in kilometers
         const interpolated = turfAlong(line, distance / METERS_TO_KILOMETERS, {
           units: 'kilometers',
         });
 
-        // Type-safe extraction
-        if (
-          interpolated.geometry.type === 'Point' &&
-          Array.isArray(interpolated.geometry.coordinates) &&
-          interpolated.geometry.coordinates.length >= 2
-        ) {
-          const [lon, lat] = interpolated.geometry.coordinates;
-          if (typeof lon === 'number' && typeof lat === 'number') {
-            return [lat, lon];
-          }
+        const result = extractLatLon(interpolated);
+        if (result) {
+          return result;
         }
       } catch {
         // Fall through to fallback

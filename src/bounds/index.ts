@@ -3,6 +3,7 @@ import turfBboxPolygon from '@turf/bbox-polygon';
 import turfCenter from '@turf/center';
 import { points as turfPoints, featureCollection } from '@turf/helpers';
 import type { LatLon, Bounds, Feature, FeatureCollection, Geometry } from '../types';
+import { toLonLatArray, extractLatLon } from '../turf-utils';
 
 /**
  * Calculate bounding box from coordinates or features
@@ -56,21 +57,23 @@ export function getBounds(
     }
     // Handle array of coordinates (assume [lat, lon] format)
     else if (Array.isArray(input) && input.length > 0) {
-      // Convert [lat, lon] to [lon, lat] for Turf
-      const coords = (input as LatLon[])
-        .filter((coord) => Array.isArray(coord) && coord.length === 2)
-        .map(([lat, lon]) => {
-          if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
-            return [lon, lat];
-          }
-          return null;
-        })
-        .filter((coord): coord is [number, number] => coord !== null);
+      // Filter and validate coordinates
+      const validCoords = (input as LatLon[]).filter(
+        (coord) =>
+          Array.isArray(coord) &&
+          coord.length === 2 &&
+          typeof coord[0] === 'number' &&
+          typeof coord[1] === 'number' &&
+          !isNaN(coord[0]) &&
+          !isNaN(coord[1])
+      ) as LatLon[];
 
-      if (coords.length === 0) {
+      if (validCoords.length === 0) {
         return null;
       }
 
+      // Convert [lat, lon] to [lon, lat] for Turf
+      const coords = toLonLatArray(validCoords);
       turfFeature = turfPoints(coords);
     }
 
@@ -170,19 +173,8 @@ export function getCenter(input: Bounds | LatLon[] | Feature[] | FeatureCollecti
 
     const center = turfCenter(turfFeature);
 
-    // Type-safe extraction
-    if (
-      center.geometry.type === 'Point' &&
-      Array.isArray(center.geometry.coordinates) &&
-      center.geometry.coordinates.length >= 2
-    ) {
-      const [lon, lat] = center.geometry.coordinates;
-      if (typeof lon === 'number' && typeof lat === 'number') {
-        return [lat, lon];
-      }
-    }
-
-    return null;
+    const result = extractLatLon(center);
+    return result;
   } catch {
     return null;
   }
