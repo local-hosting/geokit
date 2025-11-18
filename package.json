@@ -104,5 +104,9 @@
     ]
   },
   "peerDependencies": {},
-  "peerDependenciesMeta": {}
+  "peerDependenciesMeta": {},
+  "dependencies": {
+    "h3-js": "^4.3.0",
+    "latlon-geohash": "^2.0.0"
+  }
 }
