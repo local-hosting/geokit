@@ -1,0 +1,108 @@
+{
+  "name": "@geokit/core",
+  "version": "0.1.0",
+  "description": "A functional, curried geospatial utility toolkit for browser and Node.js",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "browser": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "browser": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./distance": {
+      "types": "./dist/distance/index.d.ts",
+      "import": "./dist/distance/index.js",
+      "require": "./dist/distance/index.cjs",
+      "default": "./dist/distance/index.js"
+    },
+    "./coordinates": {
+      "types": "./dist/coordinates/index.d.ts",
+      "import": "./dist/coordinates/index.js",
+      "require": "./dist/coordinates/index.cjs",
+      "default": "./dist/coordinates/index.js"
+    },
+    "./geojson": {
+      "types": "./dist/geojson/index.d.ts",
+      "import": "./dist/geojson/index.js",
+      "require": "./dist/geojson/index.cjs",
+      "default": "./dist/geojson/index.js"
+    },
+    "./normalize": {
+      "types": "./dist/normalize/index.d.ts",
+      "import": "./dist/normalize/index.js",
+      "require": "./dist/normalize/index.cjs",
+      "default": "./dist/normalize/index.js"
+    },
+    "./bounds": {
+      "types": "./dist/bounds/index.d.ts",
+      "import": "./dist/bounds/index.js",
+      "require": "./dist/bounds/index.cjs",
+      "default": "./dist/bounds/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js",
+      "require": "./dist/types/index.cjs",
+      "default": "./dist/types/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc && tsc --module commonjs --outDir dist --declaration false && node scripts/rename-cjs.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:browser": "vitest --browser",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"**/*.{ts,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,json,md}\"",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "geospatial",
+    "geography",
+    "coordinates",
+    "haversine",
+    "distance",
+    "geojson",
+    "functional",
+    "curried",
+    "browser",
+    "node"
+  ],
+  "author": "",
+  "license": "MPL-2.0",
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "@vitest/browser": "^2.1.8",
+    "eslint": "^9.39.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.8"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
+  "peerDependencies": {},
+  "peerDependenciesMeta": {}
+}
