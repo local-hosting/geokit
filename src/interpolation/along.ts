@@ -2,6 +2,7 @@ import turfAlong from '@turf/along';
 import { lineString } from '@turf/helpers';
 import type { LatLon } from '../types';
 import { haversineMeters } from '../distance';
+import { METERS_TO_KILOMETERS } from '../constants';
 
 /**
  * Interpolate a point at a given fraction along the path between two points
@@ -34,7 +35,9 @@ export function interpolate(fraction: number) {
         const distanceAtFraction = totalDistance * Math.max(0, Math.min(1, fraction));
 
         // Use Turf's along function
-        const interpolated = turfAlong(line, distanceAtFraction / 1000, { units: 'kilometers' });
+        const interpolated = turfAlong(line, distanceAtFraction / METERS_TO_KILOMETERS, {
+          units: 'kilometers',
+        });
 
         // Type-safe extraction
         if (
@@ -87,7 +90,9 @@ export function interpolateMeters(distance: number) {
         ]);
 
         // Use Turf's along function with distance in kilometers
-        const interpolated = turfAlong(line, distance / 1000, { units: 'kilometers' });
+        const interpolated = turfAlong(line, distance / METERS_TO_KILOMETERS, {
+          units: 'kilometers',
+        });
 
         // Type-safe extraction
         if (

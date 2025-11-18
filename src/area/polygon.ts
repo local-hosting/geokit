@@ -1,6 +1,11 @@
 import turfArea from '@turf/area';
 import { polygon as turfPolygon } from '@turf/helpers';
 import type { Polygon } from '../types';
+import {
+  SQUARE_METERS_TO_SQUARE_KILOMETERS,
+  SQUARE_METERS_TO_SQUARE_MILES,
+  SQUARE_METERS_TO_ACRES,
+} from '../constants';
 
 /**
  * Calculate the area of a polygon in square meters
@@ -47,7 +52,7 @@ export function polygonArea(polygon: Polygon): number {
  * @returns Area in square kilometers
  */
 export function polygonAreaKm(polygon: Polygon): number {
-  return polygonArea(polygon) / 1000000; // Convert m² to km²
+  return polygonArea(polygon) / SQUARE_METERS_TO_SQUARE_KILOMETERS;
 }
 
 /**
@@ -57,7 +62,7 @@ export function polygonAreaKm(polygon: Polygon): number {
  * @returns Area in square miles
  */
 export function polygonAreaMiles(polygon: Polygon): number {
-  return polygonArea(polygon) / 2589988.110336; // Convert m² to mi²
+  return polygonArea(polygon) / SQUARE_METERS_TO_SQUARE_MILES;
 }
 
 /**
@@ -67,5 +72,5 @@ export function polygonAreaMiles(polygon: Polygon): number {
  * @returns Area in acres
  */
 export function polygonAreaAcres(polygon: Polygon): number {
-  return polygonArea(polygon) / 4046.8564224; // Convert m² to acres
+  return polygonArea(polygon) / SQUARE_METERS_TO_ACRES;
 }

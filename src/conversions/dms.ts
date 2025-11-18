@@ -1,3 +1,5 @@
+import { SECONDS_PER_MINUTE, SECONDS_PER_DEGREE } from '../constants';
+
 /**
  * Degrees Minutes Seconds format
  */
@@ -24,9 +26,9 @@ export interface DMS {
 export function toDMS(decimal: number, isLongitude: boolean = false): DMS {
   const absolute = Math.abs(decimal);
   const degrees = Math.floor(absolute);
-  const minutesDecimal = (absolute - degrees) * 60;
+  const minutesDecimal = (absolute - degrees) * SECONDS_PER_MINUTE;
   const minutes = Math.floor(minutesDecimal);
-  const seconds = (minutesDecimal - minutes) * 60;
+  const seconds = (minutesDecimal - minutes) * SECONDS_PER_MINUTE;
 
   let direction: 'N' | 'S' | 'E' | 'W';
   if (isLongitude) {
@@ -52,7 +54,7 @@ export function toDMS(decimal: number, isLongitude: boolean = false): DMS {
  */
 export function fromDMS(dms: DMS): number {
   const { degrees, minutes, seconds, direction } = dms;
-  let decimal = degrees + minutes / 60 + seconds / 3600;
+  let decimal = degrees + minutes / SECONDS_PER_MINUTE + seconds / SECONDS_PER_DEGREE;
 
   if (direction === 'S' || direction === 'W') {
     decimal = -decimal;

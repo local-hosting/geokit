@@ -1,4 +1,5 @@
 import type { LatLon, LonLat, Coordinate, CoordinateObject, Point } from '../types';
+import { MIN_LATITUDE, MAX_LATITUDE, MIN_LONGITUDE, MAX_LONGITUDE } from '../constants';
 
 /**
  * Convert GeoJSON format [lon, lat] to [lat, lon]
@@ -58,12 +59,12 @@ export function isValidCoordinate(coords: Coordinate): boolean {
   }
 
   // Latitude must be between -90 and 90
-  if (lat < -90 || lat > 90) {
+  if (lat < MIN_LATITUDE || lat > MAX_LATITUDE) {
     return false;
   }
 
   // Longitude must be between -180 and 180
-  if (lon < -180 || lon > 180) {
+  if (lon < MIN_LONGITUDE || lon > MAX_LONGITUDE) {
     return false;
   }
 
@@ -107,13 +108,13 @@ export function extractCoordinates(
 
     // If first value is outside valid latitude range (-90 to 90), it must be longitude
     // So convert from [lon, lat] to [lat, lon]
-    if (Math.abs(first) > 90) {
+    if (Math.abs(first) > MAX_LATITUDE) {
       return [second, first] as LatLon;
     }
 
     // If second value is outside valid latitude range, first must be latitude
     // Already in [lat, lon] format
-    if (Math.abs(second) > 90) {
+    if (Math.abs(second) > MAX_LATITUDE) {
       return [first, second] as LatLon;
     }
 

@@ -1,4 +1,10 @@
 import type { LatLon } from '../types';
+import {
+  EARTH_RADIUS_METERS,
+  EARTH_RADIUS_KM,
+  EARTH_RADIUS_MILES,
+  DEGREES_TO_RADIANS,
+} from '../constants';
 
 /**
  * Great Circle distance using spherical law of cosines
@@ -19,9 +25,9 @@ export function greatCircle(radius: number) {
       const [lat1, lon1] = point1;
       const [lat2, lon2] = point2;
 
-      const lat1Rad = (lat1 * Math.PI) / 180;
-      const lat2Rad = (lat2 * Math.PI) / 180;
-      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+      const lat1Rad = lat1 * DEGREES_TO_RADIANS;
+      const lat2Rad = lat2 * DEGREES_TO_RADIANS;
+      const dLon = (lon2 - lon1) * DEGREES_TO_RADIANS;
 
       const distance =
         Math.acos(
@@ -33,21 +39,6 @@ export function greatCircle(radius: number) {
     };
   };
 }
-
-/**
- * Earth's radius in meters
- */
-const EARTH_RADIUS_METERS = 6371000;
-
-/**
- * Earth's radius in kilometers
- */
-const EARTH_RADIUS_KM = 6371;
-
-/**
- * Earth's radius in miles
- */
-const EARTH_RADIUS_MILES = 3959;
 
 /**
  * Great Circle distance in meters

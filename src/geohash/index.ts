@@ -1,5 +1,6 @@
 import Geohash from 'latlon-geohash';
 import type { LatLon, GeohashPoint, GeohashArea, Bounds } from '../types';
+import { MIN_LATITUDE, MAX_LATITUDE, MIN_LONGITUDE, MAX_LONGITUDE } from '../constants';
 
 /**
  * Encode coordinates to a geohash string
@@ -185,7 +186,12 @@ export function validateGeohash(hash: string): boolean {
   try {
     const decoded = Geohash.decode(hash);
     // Check if decoded values are in valid ranges
-    return decoded.lat >= -90 && decoded.lat <= 90 && decoded.lon >= -180 && decoded.lon <= 180;
+    return (
+      decoded.lat >= MIN_LATITUDE &&
+      decoded.lat <= MAX_LATITUDE &&
+      decoded.lon >= MIN_LONGITUDE &&
+      decoded.lon <= MAX_LONGITUDE
+    );
   } catch {
     return false;
   }

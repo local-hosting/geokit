@@ -10,6 +10,7 @@ import {
   polygon as turfPolygon,
 } from '@turf/helpers';
 import type { LatLon, Polygon } from '../types';
+import { DEFAULT_BUFFER_STEPS, METERS_TO_KILOMETERS } from '../constants';
 
 /**
  * Create a buffer zone around a point
@@ -24,10 +25,14 @@ import type { LatLon, Polygon } from '../types';
  * const point = [40.7128, -74.006];
  * const buffer = bufferPoint(point, 1000); // 1km buffer
  */
-export function bufferPoint(point: LatLon, radius: number, steps: number = 64): Polygon {
+export function bufferPoint(
+  point: LatLon,
+  radius: number,
+  steps: number = DEFAULT_BUFFER_STEPS
+): Polygon {
   const [lat, lon] = point;
   const pt = turfPoint([lon, lat]);
-  const buffered = turfBuffer(pt, radius / 1000, { units: 'kilometers', steps });
+  const buffered = turfBuffer(pt, radius / METERS_TO_KILOMETERS, { units: 'kilometers', steps });
 
   if (!buffered || buffered.geometry.type !== 'Polygon') {
     throw new Error('Failed to create buffer');
@@ -48,7 +53,11 @@ export function bufferPoint(point: LatLon, radius: number, steps: number = 64): 
  * const line = [[40.7128, -74.006], [40.758, -73.9855]];
  * const buffer = bufferLine(line, 500); // 500m buffer
  */
-export function bufferLine(coordinates: LatLon[], radius: number, steps: number = 64): Polygon {
+export function bufferLine(
+  coordinates: LatLon[],
+  radius: number,
+  steps: number = DEFAULT_BUFFER_STEPS
+): Polygon {
   if (coordinates.length < 2) {
     throw new Error('Line must have at least 2 coordinates');
   }
@@ -56,7 +65,7 @@ export function bufferLine(coordinates: LatLon[], radius: number, steps: number 
   // Convert to GeoJSON [lon, lat] format
   const coords = coordinates.map(([lat, lon]) => [lon, lat]);
   const line = turfLineString(coords);
-  const buffered = turfBuffer(line, radius / 1000, { units: 'kilometers', steps });
+  const buffered = turfBuffer(line, radius / METERS_TO_KILOMETERS, { units: 'kilometers', steps });
 
   if (!buffered || buffered.geometry.type !== 'Polygon') {
     throw new Error('Failed to create buffer');
@@ -88,9 +97,13 @@ export function bufferLine(coordinates: LatLon[], radius: number, steps: number 
  * };
  * const buffer = bufferPolygon(polygon, 100); // 100m buffer
  */
-export function bufferPolygon(polygon: Polygon, radius: number, steps: number = 64): Polygon {
+export function bufferPolygon(
+  polygon: Polygon,
+  radius: number,
+  steps: number = DEFAULT_BUFFER_STEPS
+): Polygon {
   const poly = turfPolygon(polygon.coordinates);
-  const buffered = turfBuffer(poly, radius / 1000, { units: 'kilometers', steps });
+  const buffered = turfBuffer(poly, radius / METERS_TO_KILOMETERS, { units: 'kilometers', steps });
 
   if (!buffered || buffered.geometry.type !== 'Polygon') {
     throw new Error('Failed to create buffer');
@@ -113,7 +126,7 @@ export function bufferPolygon(polygon: Polygon, radius: number, steps: number = 
  */
 export function buffer(
   radius: number,
-  steps: number = 64
+  steps: number = DEFAULT_BUFFER_STEPS
 ): (input: LatLon | LatLon[] | Polygon) => Polygon {
   return (input: LatLon | LatLon[] | Polygon): Polygon => {
     // Check if it's a polygon

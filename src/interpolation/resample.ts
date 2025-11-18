@@ -1,5 +1,6 @@
 import type { LatLon } from '../types';
 import { interpolateMeters } from './along';
+import { EARTH_RADIUS_METERS, DEGREES_TO_RADIANS } from '../constants';
 
 /**
  * Resample a polyline at regular distance intervals
@@ -31,18 +32,17 @@ export function resample(interval: number) {
       // Calculate segment length
       const [lat1, lon1] = start;
       const [lat2, lon2] = end;
-      const R = 6371000;
-      const lat1Rad = (lat1 * Math.PI) / 180;
-      const lat2Rad = (lat2 * Math.PI) / 180;
-      const dLat = ((lat2 - lat1) * Math.PI) / 180;
-      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+      const lat1Rad = lat1 * DEGREES_TO_RADIANS;
+      const lat2Rad = lat2 * DEGREES_TO_RADIANS;
+      const dLat = (lat2 - lat1) * DEGREES_TO_RADIANS;
+      const dLon = (lon2 - lon1) * DEGREES_TO_RADIANS;
 
       const a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
         Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
 
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      const segmentLength = R * c;
+      const segmentLength = EARTH_RADIUS_METERS * c;
 
       // Add points along this segment
       while (accumulatedDistance + segmentLength >= targetDistance) {

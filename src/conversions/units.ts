@@ -1,4 +1,12 @@
 import type { LatLon } from '../types';
+import {
+  DEGREES_TO_RADIANS,
+  RADIANS_TO_DEGREES,
+  LONGITUDE_NORMALIZATION_OFFSET,
+  DEGREES_IN_CIRCLE,
+  MIN_LATITUDE,
+  MAX_LATITUDE,
+} from '../constants';
 
 /**
  * Convert decimal degrees to radians
@@ -12,7 +20,7 @@ import type { LatLon } from '../types';
  * ```
  */
 export function toRadians(degrees: number): number {
-  return (degrees * Math.PI) / 180;
+  return degrees * DEGREES_TO_RADIANS;
 }
 
 /**
@@ -27,7 +35,7 @@ export function toRadians(degrees: number): number {
  * ```
  */
 export function toDegrees(radians: number): number {
-  return (radians * 180) / Math.PI;
+  return radians * RADIANS_TO_DEGREES;
 }
 
 /**
@@ -42,7 +50,7 @@ export function toDegrees(radians: number): number {
  * ```
  */
 export function normalizeLongitude(lon: number): number {
-  return ((lon + 540) % 360) - 180;
+  return ((lon + LONGITUDE_NORMALIZATION_OFFSET) % DEGREES_IN_CIRCLE) - 180;
 }
 
 /**
@@ -57,7 +65,7 @@ export function normalizeLongitude(lon: number): number {
  * ```
  */
 export function normalizeLatitude(lat: number): number {
-  return Math.max(-90, Math.min(90, lat));
+  return Math.max(MIN_LATITUDE, Math.min(MAX_LATITUDE, lat));
 }
 
 /**

@@ -1,3 +1,5 @@
+import { SQUARE_METERS_TO_SQUARE_KILOMETERS, SQUARE_METERS_TO_SQUARE_MILES } from '../constants';
+
 /**
  * Calculate the area of a circle given its radius
  *
@@ -20,7 +22,7 @@ export function circleArea(radius: number): number {
  * @returns Area in square kilometers
  */
 export function circleAreaKm(radius: number): number {
-  return circleArea(radius) / 1000000;
+  return circleArea(radius) / SQUARE_METERS_TO_SQUARE_KILOMETERS;
 }
 
 /**
@@ -30,5 +32,5 @@ export function circleAreaKm(radius: number): number {
  * @returns Area in square miles
  */
 export function circleAreaMiles(radius: number): number {
-  return circleArea(radius) / 2589988.110336;
+  return circleArea(radius) / SQUARE_METERS_TO_SQUARE_MILES;
 }
