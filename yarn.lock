@@ -454,6 +454,83 @@
   resolved "https://registry.yarnpkg.com/@testing-library/user-event/-/user-event-14.6.1.tgz#13e09a32d7a8b7060fe38304788ebf4197cd2149"
   integrity sha512-vq7fv0rnt+QTXgPxr5Hjc210p6YKq2kmdziLgnsZGgLJ9e6VAShx1pACLuRjd/AS/sr7phAR58OIIpf0LlmQNw==
 
+"@turf/bbox@7.3.0":
+  version "7.3.0"
+  resolved "https://registry.yarnpkg.com/@turf/bbox/-/bbox-7.3.0.tgz#806c8bd1e851f83a4a7ff0dca39b98ceb145d877"
+  integrity sha512-EC5GSUJlhXSiCVCEmgCSheZYm0s1ouKzUNqeEOsEYlqTbMAZ19RWgsg/xH2tjnuUw2JP9eGAUzQnCFX6JEV53w==
+  dependencies:
+    "@turf/helpers" "7.3.0"
+    "@turf/meta" "7.3.0"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
+
+"@turf/buffer@^7.3.0":
+  version "7.3.0"
+  resolved "https://registry.yarnpkg.com/@turf/buffer/-/buffer-7.3.0.tgz#03e93aa4f1dbc43fce7274e33c14728fd610e6df"
+  integrity sha512-egIGQjDYiJTYDeXgS9rf569KYCQ9OOE5+FM/lNIYkP2xRrGbSMB/2zT6VPZvcvjfiawNkOZEa8OlwhygacK2gA==
+  dependencies:
+    "@turf/bbox" "7.3.0"
+    "@turf/center" "7.3.0"
+    "@turf/helpers" "7.3.0"
+    "@turf/jsts" "^2.7.1"
+    "@turf/meta" "7.3.0"
+    "@turf/projection" "7.3.0"
+    "@types/geojson" "^7946.0.10"
+    d3-geo "1.7.1"
+
+"@turf/center@7.3.0":
+  version "7.3.0"
+  resolved "https://registry.yarnpkg.com/@turf/center/-/center-7.3.0.tgz#a39900c44e1744bcb1de8b93be554efa76d57efe"
+  integrity sha512-OrXgY9Hz9qnfhuEUrB2PHJnyiC0T1al292ZNTvG382G9ZdjUTRhzz4ajT5a4Mtar/QF+p2KwN8SiFlB2H2N7oQ==
+  dependencies:
+    "@turf/bbox" "7.3.0"
+    "@turf/helpers" "7.3.0"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
+
+"@turf/clone@7.3.0":
+  version "7.3.0"
+  resolved "https://registry.yarnpkg.com/@turf/clone/-/clone-7.3.0.tgz#dfac0a7a0e229ec39b42671ffb602b7a8644d902"
+  integrity sha512-mf6TFxrNrNs64hyXjkFqhEXi3m+0WduQ8Ixqh4VcHV7LdkXg+rW0CxuSGoOlLgjYa6iscHoGCycOrTDyYyD6EA==
+  dependencies:
+    "@turf/helpers" "7.3.0"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
+
+"@turf/helpers@7.3.0", "@turf/helpers@^7.3.0":
+  version "7.3.0"
+  resolved "https://registry.yarnpkg.com/@turf/helpers/-/helpers-7.3.0.tgz#e72d9b8c83c8f1faf9b73aab2b9adb8cc8229499"
+  integrity sha512-5kWdgwI6e2vGbkt2qOD+Z2BiKQ7dfKN/PtWRLCpvzyOO59rk19R53CHi8nUT/Y1vQLgWmT6eNpiKwsWwPZGIdg==
+  dependencies:
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
+
+"@turf/jsts@^2.7.1":
+  version "2.7.2"
+  resolved "https://registry.yarnpkg.com/@turf/jsts/-/jsts-2.7.2.tgz#b327aa54ef065cbf1768ad69bd6ae1087385d32b"
+  integrity sha512-zAezGlwWHPyU0zxwcX2wQY3RkRpwuoBmhhNE9HY9kWhFDkCxZ3aWK5URKwa/SWKJbj9aztO+8vtdiBA28KVJFg==
+  dependencies:
+    jsts "2.7.1"
+
+"@turf/meta@7.3.0":
+  version "7.3.0"
+  resolved "https://registry.yarnpkg.com/@turf/meta/-/meta-7.3.0.tgz#fc0c1e84589aab3ee146ec716b7d967583af9a84"
+  integrity sha512-fTLqdQqRm8qA2zHHUbBMY++YT9LDQejLG7OD70XF2dwg9nPiF9mUxO7nrsDp2IY8vNmH9OTAiMtlIjb0ssYccg==
+  dependencies:
+    "@turf/helpers" "7.3.0"
+    "@types/geojson" "^7946.0.10"
+
+"@turf/projection@7.3.0":
+  version "7.3.0"
+  resolved "https://registry.yarnpkg.com/@turf/projection/-/projection-7.3.0.tgz#b2b7d9e6f0315a0e57ab2ebc9a4ef23f10aafd73"
+  integrity sha512-Dd0E77RnhyBdL5jvZP/FvXsKKnxXrDuHKr2iFBsNTc4OwonUrmvC/UVSMhRxHl7GI4S0shi0VI/NQ5dsAleMKg==
+  dependencies:
+    "@turf/clone" "7.3.0"
+    "@turf/helpers" "7.3.0"
+    "@turf/meta" "7.3.0"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
+
 "@types/aria-query@^5.0.1":
   version "5.0.4"
   resolved "https://registry.yarnpkg.com/@types/aria-query/-/aria-query-5.0.4.tgz#1a31c3d378850d2778dabb6374d036dcba4ba708"
@@ -463,6 +540,11 @@
   version "1.0.8"
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-1.0.8.tgz#958b91c991b1867ced318bedea0e215ee050726e"
   integrity sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==
+
+"@types/geojson@^7946.0.10", "@types/geojson@^7946.0.16":
+  version "7946.0.16"
+  resolved "https://registry.yarnpkg.com/@types/geojson/-/geojson-7946.0.16.tgz#8ebe53d69efada7044454e3305c19017d97ced2a"
+  integrity sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg==
 
 "@types/json-schema@^7.0.15":
   version "7.0.15"
@@ -854,6 +936,18 @@ cross-spawn@^7.0.6:
     path-key "^3.1.0"
     shebang-command "^2.0.0"
     which "^2.0.1"
+
+d3-array@1:
+  version "1.2.4"
+  resolved "https://registry.yarnpkg.com/d3-array/-/d3-array-1.2.4.tgz#635ce4d5eea759f6f605863dbcfc30edc737f71f"
+  integrity sha512-KHW6M86R+FUPYGb3R5XiYjXPq7VzwxZ22buHhAEVG5ztoEcZZMLov530mmccaqA1GghZArjQV46fuc8kUqhhHw==
+
+d3-geo@1.7.1:
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/d3-geo/-/d3-geo-1.7.1.tgz#44bbc7a218b1fd859f3d8fd7c443ca836569ce99"
+  integrity sha512-O4AempWAr+P5qbk2bC2FuN/sDW4z+dN2wDf9QV3bxQt4M5HfOEeXLgJ/UKQW0+o1Dj8BE+L5kiDbdWUMjsmQpw==
+  dependencies:
+    d3-array "1"
 
 debug@^4.3.1, debug@^4.3.2, debug@^4.3.4, debug@^4.3.7:
   version "4.4.3"
@@ -1269,6 +1363,11 @@ json-stable-stringify-without-jsonify@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/json-stable-stringify-without-jsonify/-/json-stable-stringify-without-jsonify-1.0.1.tgz#9db7b59496ad3f3cfef30a75142d2d930ad72651"
   integrity sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==
+
+jsts@2.7.1:
+  version "2.7.1"
+  resolved "https://registry.yarnpkg.com/jsts/-/jsts-2.7.1.tgz#a921c0cc9eefeef588bd53e952e0a7782d812d52"
+  integrity sha512-x2wSZHEBK20CY+Wy+BPE7MrFQHW6sIsdaGUMEqmGAio+3gFzQaBYPwLRonUfQf9Ak8pBieqj9tUofX1+WtAEIg==
 
 keyv@^4.5.4:
   version "4.5.4"
@@ -1826,6 +1925,11 @@ ts-api-utils@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/ts-api-utils/-/ts-api-utils-2.1.0.tgz#595f7094e46eed364c13fd23e75f9513d29baf91"
   integrity sha512-CUgTZL1irw8u29bzrOD/nH85jqyc74D6SshFgujOIA7osm2Rz7dYH77agkx7H4FBNxDq7Cjf+IjaX/8zwFW+ZQ==
+
+tslib@^2.8.1:
+  version "2.8.1"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.8.1.tgz#612efe4ed235d567e8aba5f2a5fab70280ade83f"
+  integrity sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==
 
 type-check@^0.4.0, type-check@~0.4.0:
   version "0.4.0"

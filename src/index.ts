@@ -12,11 +12,24 @@ export type {
   Point,
   Polygon,
   MultiPolygon,
+  LineString,
+  MultiLineString,
+  MultiPoint,
+  GeometryCollection,
   Geometry,
   Feature,
   FeatureCollection,
+  Position,
+  BBox,
   Bounds,
   CoordinateObject,
+  LatitudeLongitudeObject,
+  CoordinateInput,
+  GeohashPoint,
+  GeohashArea,
+  H3Point,
+  H3Area,
+  SpatialIndex,
 } from './types';
 
 // Distance utilities
@@ -52,6 +65,9 @@ export {
   isValidCoordinate,
   extractCoordinates,
   createPoint,
+  serializeCoordinates,
+  deserializeCoordinates,
+  normalizeCoordinateInput,
 } from './coordinates';
 
 // GeoJSON utilities
@@ -131,6 +147,7 @@ export { gridCluster, gridClusterMeters, distanceCluster } from './clustering';
 
 // Geohash utilities
 export {
+  // Legacy functions (backward compatible)
   encodeGeohash,
   decodeGeohash,
   geohashBounds,
@@ -139,10 +156,20 @@ export {
   geohashNeighbor,
   geohashesInBounds,
   validateGeohash,
+  // Type-safe functions
+  encodeGeohashPoint,
+  encodeGeohashArea,
+  decodeGeohashPoint,
+  decodeGeohashArea,
+  geohashPointBounds,
+  geohashAreaBounds,
+  geohashPointNeighbors,
+  geohashAreaNeighbors,
 } from './geohash';
 
 // H3 utilities
 export {
+  // Legacy functions (backward compatible)
   coordinatesToH3,
   h3ToCoordinates,
   h3ToBoundary,
@@ -156,4 +183,65 @@ export {
   polygonToH3,
   h3EdgeLength,
   h3CellArea,
+  // Type-safe functions
+  coordinatesToH3Point,
+  coordinatesToH3Area,
+  h3PointToCoordinates,
+  h3AreaToCoordinates,
+  h3PointToBoundary,
+  h3AreaToBoundary,
+  h3PointNeighbors,
+  h3AreaNeighbors,
 } from './h3';
+
+// Centroid utilities
+export { polygonCentroid, pointsCentroid } from './centroid';
+
+// Length utilities
+export {
+  lineLength,
+  lineLengthMeters,
+  lineLengthKm,
+  lineLengthMiles,
+  perimeter,
+  perimeterMeters,
+  perimeterKm,
+  perimeterMiles,
+} from './length';
+
+// Convex hull utilities
+export { convexHull } from './hull';
+
+// Intersection utilities
+export type { LineSegment } from './intersection';
+export { lineIntersection, linesIntersect } from './intersection';
+
+// Buffer utilities
+export { buffer, bufferPoint, bufferLine, bufferPolygon } from './buffer';
+
+// Spatial index interoperability utilities
+export {
+  // Type guards
+  isGeohash,
+  isH3,
+  isGeohashPoint,
+  isGeohashArea,
+  isH3Point,
+  isH3Area,
+  getSpatialIndexType,
+  // Branded type constructors
+  asGeohashPoint,
+  asGeohashArea,
+  asH3Point,
+  asH3Area,
+  // Conversion functions
+  geohashPointToH3Point,
+  geohashAreaToH3Area,
+  h3PointToGeohashPoint,
+  h3AreaToGeohashArea,
+  // Universal functions
+  decodePointToCoordinates,
+  decodeAreaToCoordinates,
+  getBoundsFromPoint,
+  getBoundsFromArea,
+} from './spatial';

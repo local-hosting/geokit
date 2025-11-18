@@ -5,6 +5,8 @@ A functional, curried geospatial utility toolkit for browser and Node.js.
 ## Features
 
 - **Geospatial utilities** - Distance calculations, coordinate conversions, GeoJSON operations, geohashing, H3 indexing
+- **Geometry operations** - Centroid calculation, convex hull, line intersection, buffering
+- **Measurements** - Line length, polygon perimeter, area calculations
 - **Functional programming** - Curried functions for composition and partial application
 - **Universal** - Works in both browser and Node.js environments
 - **Tree-shakeable** - Import only what you need

@@ -2,6 +2,38 @@
  * Type definitions for geospatial utilities
  */
 
+// Import and re-export official GeoJSON types
+import type {
+  Point,
+  Polygon,
+  MultiPolygon,
+  LineString,
+  MultiLineString,
+  MultiPoint,
+  GeometryCollection,
+  Geometry,
+  Feature,
+  FeatureCollection,
+  Position,
+  BBox,
+} from 'geojson';
+
+// Re-export official GeoJSON types
+export type {
+  Point,
+  Polygon,
+  MultiPolygon,
+  LineString,
+  MultiLineString,
+  MultiPoint,
+  GeometryCollection,
+  Geometry,
+  Feature,
+  FeatureCollection,
+  Position,
+  BBox,
+};
+
 /**
  * A coordinate pair as [number, number]
  */
@@ -14,54 +46,9 @@ export type LatLon = [number, number];
 
 /**
  * Longitude/Latitude format (GeoJSON standard): [longitude, latitude]
+ * Alias for GeoJSON Position type
  */
-export type LonLat = [number, number];
-
-/**
- * GeoJSON Point geometry
- */
-export interface Point {
-  type: 'Point';
-  coordinates: LonLat;
-}
-
-/**
- * GeoJSON Polygon geometry
- */
-export interface Polygon {
-  type: 'Polygon';
-  coordinates: number[][][];
-}
-
-/**
- * GeoJSON MultiPolygon geometry
- */
-export interface MultiPolygon {
-  type: 'MultiPolygon';
-  coordinates: number[][][][];
-}
-
-/**
- * GeoJSON geometry union type
- */
-export type Geometry = Point | Polygon | MultiPolygon;
-
-/**
- * GeoJSON Feature
- */
-export interface Feature {
-  type: 'Feature';
-  geometry: Geometry;
-  properties?: Record<string, unknown>;
-}
-
-/**
- * GeoJSON FeatureCollection
- */
-export interface FeatureCollection {
-  type: 'FeatureCollection';
-  features: Feature[];
-}
+export type LonLat = Position;
 
 /**
  * Bounding box as [minLon, minLat, maxLon, maxLat]
@@ -69,9 +56,47 @@ export interface FeatureCollection {
 export type Bounds = [number, number, number, number];
 
 /**
- * Coordinate object format (alternative to array)
+ * Coordinate object format (alternative to array): {lat, lon}
  */
 export interface CoordinateObject {
   lat: number;
   lon: number;
 }
+
+/**
+ * Coordinate object format (alternative to array): {latitude, longitude}
+ */
+export interface LatitudeLongitudeObject {
+  latitude: number;
+  longitude: number;
+}
+
+/**
+ * Union type accepting all coordinate input formats
+ */
+export type CoordinateInput = LatLon | LonLat | CoordinateObject | LatitudeLongitudeObject | Point;
+
+/**
+ * Branded type for Geohash representing a point location
+ */
+export type GeohashPoint = string & { __brand: 'GeohashPoint' };
+
+/**
+ * Branded type for Geohash representing an area/region
+ */
+export type GeohashArea = string & { __brand: 'GeohashArea' };
+
+/**
+ * Branded type for H3 index representing a point location
+ */
+export type H3Point = string & { __brand: 'H3Point' };
+
+/**
+ * Branded type for H3 index representing an area/region
+ */
+export type H3Area = string & { __brand: 'H3Area' };
+
+/**
+ * Union type for all spatial index types
+ */
+export type SpatialIndex = GeohashPoint | GeohashArea | H3Point | H3Area;

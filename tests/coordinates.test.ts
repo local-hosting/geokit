@@ -5,6 +5,9 @@ import {
   isValidCoordinate,
   extractCoordinates,
   createPoint,
+  serializeCoordinates,
+  deserializeCoordinates,
+  normalizeCoordinateInput,
 } from '../src/coordinates';
 
 describe('coordinates', () => {
@@ -85,6 +88,79 @@ describe('coordinates', () => {
         type: 'Point',
         coordinates: [-74.006, 40.7128],
       });
+    });
+  });
+
+  describe('serializeCoordinates', () => {
+    it('should serialize coordinates to JSON string', () => {
+      const json = serializeCoordinates([40.7128, -74.006]);
+      expect(json).toBe('{"lat":40.7128,"lon":-74.006}');
+    });
+
+    it('should handle negative coordinates', () => {
+      const json = serializeCoordinates([-33.8688, 151.2093]);
+      expect(json).toBe('{"lat":-33.8688,"lon":151.2093}');
+    });
+  });
+
+  describe('deserializeCoordinates', () => {
+    it('should deserialize from {lat, lon} JSON', () => {
+      const coords = deserializeCoordinates('{"lat":40.7128,"lon":-74.006}');
+      expect(coords).toEqual([40.7128, -74.006]);
+    });
+
+    it('should deserialize from {latitude, longitude} JSON', () => {
+      const coords = deserializeCoordinates('{"latitude":40.7128,"longitude":-74.006}');
+      expect(coords).toEqual([40.7128, -74.006]);
+    });
+
+    it('should deserialize from array JSON', () => {
+      const coords = deserializeCoordinates('[40.7128,-74.006]');
+      expect(coords).toEqual([40.7128, -74.006]);
+    });
+
+    it('should return null for invalid JSON', () => {
+      expect(deserializeCoordinates('invalid')).toBe(null);
+      expect(deserializeCoordinates('{}')).toBe(null);
+      expect(deserializeCoordinates('{"lat":40.7128}')).toBe(null);
+    });
+
+    it('should roundtrip serialize/deserialize', () => {
+      const original: [number, number] = [40.7128, -74.006];
+      const json = serializeCoordinates(original);
+      const deserialized = deserializeCoordinates(json);
+      expect(deserialized).toEqual(original);
+    });
+  });
+
+  describe('normalizeCoordinateInput', () => {
+    it('should normalize [lat, lon] array', () => {
+      const coords = normalizeCoordinateInput([40.7128, -74.006]);
+      expect(coords).toEqual([40.7128, -74.006]);
+    });
+
+    it('should normalize {lat, lon} object', () => {
+      const coords = normalizeCoordinateInput({ lat: 40.7128, lon: -74.006 });
+      expect(coords).toEqual([40.7128, -74.006]);
+    });
+
+    it('should normalize {latitude, longitude} object', () => {
+      const coords = normalizeCoordinateInput({ latitude: 40.7128, longitude: -74.006 });
+      expect(coords).toEqual([40.7128, -74.006]);
+    });
+
+    it('should normalize GeoJSON Point', () => {
+      const point = {
+        type: 'Point' as const,
+        coordinates: [-74.006, 40.7128] as [number, number],
+      };
+      const coords = normalizeCoordinateInput(point);
+      expect(coords).toEqual([40.7128, -74.006]);
+    });
+
+    it('should return null for invalid input', () => {
+      expect(normalizeCoordinateInput(null)).toBe(null);
+      expect(normalizeCoordinateInput(undefined)).toBe(null);
     });
   });
 });
