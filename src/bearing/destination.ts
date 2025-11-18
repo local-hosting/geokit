@@ -1,6 +1,16 @@
 import turfDestination from '@turf/destination';
 import { point as turfPoint } from '@turf/helpers';
 import type { LatLon } from '../types';
+import {
+  EARTH_RADIUS_METERS,
+  EARTH_RADIUS_KM,
+  EARTH_RADIUS_MILES,
+  METERS_TO_KILOMETERS,
+  DEGREES_TO_RADIANS,
+  RADIANS_TO_DEGREES,
+  LONGITUDE_NORMALIZATION_OFFSET,
+  DEGREES_IN_CIRCLE,
+} from '../constants';
 
 /**
  * Calculate destination point given start point, distance, and bearing
@@ -17,7 +27,11 @@ import type { LatLon } from '../types';
  * const dest = destination50km([40.7128, -74.0060]);
  * ```
  */
-export function destination(distance: number, bearingDegrees: number, radius: number = 6371000) {
+export function destination(
+  distance: number,
+  bearingDegrees: number,
+  radius: number = EARTH_RADIUS_METERS
+) {
   return (point: LatLon): LatLon => {
     try {
       const [lat, lon] = point;
@@ -26,7 +40,7 @@ export function destination(distance: number, bearingDegrees: number, radius: nu
       const pt = turfPoint([lon, lat]);
 
       // Convert distance to kilometers for Turf (Turf uses km by default)
-      const distanceKm = distance / 1000;
+      const distanceKm = distance / METERS_TO_KILOMETERS;
       const dest = turfDestination(pt, distanceKm, bearingDegrees, { units: 'kilometers' });
 
       // Type-safe extraction
@@ -46,9 +60,9 @@ export function destination(distance: number, bearingDegrees: number, radius: nu
 
     // Fallback: simple spherical calculation
     const [lat, lon] = point;
-    const latRad = (lat * Math.PI) / 180;
-    const lonRad = (lon * Math.PI) / 180;
-    const bearingRad = (bearingDegrees * Math.PI) / 180;
+    const latRad = lat * DEGREES_TO_RADIANS;
+    const lonRad = lon * DEGREES_TO_RADIANS;
+    const bearingRad = bearingDegrees * DEGREES_TO_RADIANS;
     const angularDistance = distance / radius;
 
     const lat2Rad = Math.asin(
@@ -63,9 +77,9 @@ export function destination(distance: number, bearingDegrees: number, radius: nu
         Math.cos(angularDistance) - Math.sin(latRad) * Math.sin(lat2Rad)
       );
 
-    const lat2 = (lat2Rad * 180) / Math.PI;
-    const lon2 = (lon2Rad * 180) / Math.PI;
-    const lon2Normalized = ((lon2 + 540) % 360) - 180;
+    const lat2 = lat2Rad * RADIANS_TO_DEGREES;
+    const lon2 = lon2Rad * RADIANS_TO_DEGREES;
+    const lon2Normalized = ((lon2 + LONGITUDE_NORMALIZATION_OFFSET) % DEGREES_IN_CIRCLE) - 180;
 
     return [lat2, lon2Normalized];
   };
@@ -86,7 +100,7 @@ export function destination(distance: number, bearingDegrees: number, radius: nu
  * ```
  */
 export function destinationMeters(distance: number, bearingDegrees: number) {
-  return destination(distance, bearingDegrees, 6371000);
+  return destination(distance, bearingDegrees, EARTH_RADIUS_METERS);
 }
 
 /**
@@ -97,7 +111,7 @@ export function destinationMeters(distance: number, bearingDegrees: number) {
  * @returns Curried function that takes start point and returns destination
  */
 export function destinationKm(distance: number, bearingDegrees: number) {
-  return destination(distance, bearingDegrees, 6371);
+  return destination(distance, bearingDegrees, EARTH_RADIUS_KM);
 }
 
 /**
@@ -108,5 +122,5 @@ export function destinationKm(distance: number, bearingDegrees: number) {
  * @returns Curried function that takes start point and returns destination
  */
 export function destinationMiles(distance: number, bearingDegrees: number) {
-  return destination(distance, bearingDegrees, 3959);
+  return destination(distance, bearingDegrees, EARTH_RADIUS_MILES);
 }

@@ -1,4 +1,11 @@
 import type { LatLon } from '../types';
+import {
+  EARTH_RADIUS_METERS,
+  EARTH_RADIUS_KM,
+  EARTH_RADIUS_MILES,
+  DEGREES_TO_RADIANS,
+  TWO_PI,
+} from '../constants';
 
 /**
  * Rhumb line (loxodrome) distance
@@ -20,14 +27,14 @@ export function rhumbLine(radius: number) {
       const [lat1, lon1] = point1;
       const [lat2, lon2] = point2;
 
-      const lat1Rad = (lat1 * Math.PI) / 180;
-      const lat2Rad = (lat2 * Math.PI) / 180;
+      const lat1Rad = lat1 * DEGREES_TO_RADIANS;
+      const lat2Rad = lat2 * DEGREES_TO_RADIANS;
       const dLat = lat2Rad - lat1Rad;
-      let dLon = ((lon2 - lon1) * Math.PI) / 180;
+      let dLon = (lon2 - lon1) * DEGREES_TO_RADIANS;
 
       // Ensure dLon takes the shortest path
       if (Math.abs(dLon) > Math.PI) {
-        dLon = dLon > 0 ? -(2 * Math.PI - dLon) : 2 * Math.PI + dLon;
+        dLon = dLon > 0 ? -(TWO_PI - dLon) : TWO_PI + dLon;
       }
 
       // E-W course becomes ill-conditioned with 0/0
@@ -42,21 +49,6 @@ export function rhumbLine(radius: number) {
     };
   };
 }
-
-/**
- * Earth's radius in meters
- */
-const EARTH_RADIUS_METERS = 6371000;
-
-/**
- * Earth's radius in kilometers
- */
-const EARTH_RADIUS_KM = 6371;
-
-/**
- * Earth's radius in miles
- */
-const EARTH_RADIUS_MILES = 3959;
 
 /**
  * Rhumb line distance in meters

@@ -1,4 +1,10 @@
 import type { LatLon } from '../types';
+import {
+  EARTH_RADIUS_METERS,
+  EARTH_RADIUS_KM,
+  EARTH_RADIUS_MILES,
+  DEGREES_TO_RADIANS,
+} from '../constants';
 
 /**
  * Curried Haversine distance function
@@ -19,13 +25,13 @@ export function haversine(radius: number) {
       const [lat1, lon1] = point1;
       const [lat2, lon2] = point2;
 
-      const dLat = ((lat2 - lat1) * Math.PI) / 180;
-      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+      const dLat = (lat2 - lat1) * DEGREES_TO_RADIANS;
+      const dLon = (lon2 - lon1) * DEGREES_TO_RADIANS;
 
       const a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos((lat1 * Math.PI) / 180) *
-          Math.cos((lat2 * Math.PI) / 180) *
+        Math.cos(lat1 * DEGREES_TO_RADIANS) *
+          Math.cos(lat2 * DEGREES_TO_RADIANS) *
           Math.sin(dLon / 2) *
           Math.sin(dLon / 2);
 
@@ -34,21 +40,6 @@ export function haversine(radius: number) {
     };
   };
 }
-
-/**
- * Earth's radius in meters
- */
-const EARTH_RADIUS_METERS = 6371000;
-
-/**
- * Earth's radius in kilometers
- */
-const EARTH_RADIUS_KM = 6371;
-
-/**
- * Earth's radius in miles
- */
-const EARTH_RADIUS_MILES = 3959;
 
 /**
  * Haversine distance in meters

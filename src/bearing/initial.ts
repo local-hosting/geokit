@@ -1,6 +1,7 @@
 import turfBearing from '@turf/bearing';
 import { point as turfPoint } from '@turf/helpers';
 import type { LatLon } from '../types';
+import { DEGREES_TO_RADIANS, RADIANS_TO_DEGREES, DEGREES_IN_CIRCLE } from '../constants';
 
 /**
  * Calculate initial bearing (forward azimuth) between two points
@@ -30,7 +31,7 @@ export function bearing(point1: LatLon) {
 
       // Turf returns -180 to 180, normalize to 0-360
       if (typeof bearingDeg === 'number' && !isNaN(bearingDeg)) {
-        return (bearingDeg + 360) % 360;
+        return (bearingDeg + DEGREES_IN_CIRCLE) % DEGREES_IN_CIRCLE;
       }
     } catch {
       // Fall through to fallback
@@ -40,9 +41,9 @@ export function bearing(point1: LatLon) {
     const [lat1, lon1] = point1;
     const [lat2, lon2] = point2;
 
-    const lat1Rad = (lat1 * Math.PI) / 180;
-    const lat2Rad = (lat2 * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const lat1Rad = lat1 * DEGREES_TO_RADIANS;
+    const lat2Rad = lat2 * DEGREES_TO_RADIANS;
+    const dLon = (lon2 - lon1) * DEGREES_TO_RADIANS;
 
     const y = Math.sin(dLon) * Math.cos(lat2Rad);
     const x =
@@ -50,9 +51,9 @@ export function bearing(point1: LatLon) {
       Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
 
     const bearingRad = Math.atan2(y, x);
-    const bearingDeg = (bearingRad * 180) / Math.PI;
+    const bearingDeg = bearingRad * RADIANS_TO_DEGREES;
 
-    return (bearingDeg + 360) % 360;
+    return (bearingDeg + DEGREES_IN_CIRCLE) % DEGREES_IN_CIRCLE;
   };
 }
 
@@ -73,6 +74,6 @@ export function finalBearing(point1: LatLon) {
   return (point2: LatLon): number => {
     // Final bearing is the reverse of the initial bearing from destination to origin
     const reverseBearing = bearing(point2)(point1);
-    return (reverseBearing + 180) % 360;
+    return (reverseBearing + 180) % DEGREES_IN_CIRCLE;
   };
 }

@@ -1,4 +1,12 @@
 import type { LatLon } from '../types';
+import {
+  EARTH_RADIUS_WGS84_METERS,
+  EARTH_RADIUS_WGS84_KM,
+  EARTH_RADIUS_WGS84_MILES,
+  EARTH_FLATTENING_WGS84,
+  DEGREES_TO_RADIANS,
+  TWO_PI,
+} from '../constants';
 
 /**
  * Vincenty formula for calculating geodesic distance on an ellipsoid
@@ -14,15 +22,15 @@ import type { LatLon } from '../types';
  * const distance = vincentyM([40.7128, -74.0060])([40.7580, -73.9855]);
  * ```
  */
-export function vincenty(radius: number, flattening: number = 1 / 298.257223563) {
+export function vincenty(radius: number, flattening: number = EARTH_FLATTENING_WGS84) {
   return (point1: LatLon) => {
     return (point2: LatLon): number => {
       const [lat1, lon1] = point1;
       const [lat2, lon2] = point2;
 
-      const L = ((lon2 - lon1) * Math.PI) / 180;
-      const U1 = Math.atan((1 - flattening) * Math.tan((lat1 * Math.PI) / 180));
-      const U2 = Math.atan((1 - flattening) * Math.tan((lat2 * Math.PI) / 180));
+      const L = (lon2 - lon1) * DEGREES_TO_RADIANS;
+      const U1 = Math.atan((1 - flattening) * Math.tan(lat1 * DEGREES_TO_RADIANS));
+      const U2 = Math.atan((1 - flattening) * Math.tan(lat2 * DEGREES_TO_RADIANS));
 
       const sinU1 = Math.sin(U1);
       const cosU1 = Math.cos(U1);
@@ -30,7 +38,7 @@ export function vincenty(radius: number, flattening: number = 1 / 298.257223563)
       const cosU2 = Math.cos(U2);
 
       let lambda = L;
-      let lambdaP = 2 * Math.PI;
+      let lambdaP = TWO_PI;
       let iterLimit = 100;
       let cosSqAlpha = 0;
       let sinSigma = 0;
@@ -93,21 +101,6 @@ export function vincenty(radius: number, flattening: number = 1 / 298.257223563)
 }
 
 /**
- * Earth's radius in meters (WGS-84)
- */
-const EARTH_RADIUS_METERS = 6378137;
-
-/**
- * Earth's radius in kilometers (WGS-84)
- */
-const EARTH_RADIUS_KM = 6378.137;
-
-/**
- * Earth's radius in miles (WGS-84)
- */
-const EARTH_RADIUS_MILES = 3963.191;
-
-/**
  * Vincenty distance in meters
  * Pre-configured for calculating distances in meters using WGS-84 ellipsoid
  *
@@ -116,7 +109,7 @@ const EARTH_RADIUS_MILES = 3963.191;
  * const distance = vincentyMeters([40.7128, -74.0060])([40.7580, -73.9855]);
  * ```
  */
-export const vincentyMeters = vincenty(EARTH_RADIUS_METERS);
+export const vincentyMeters = vincenty(EARTH_RADIUS_WGS84_METERS);
 
 /**
  * Vincenty distance in kilometers
@@ -127,7 +120,7 @@ export const vincentyMeters = vincenty(EARTH_RADIUS_METERS);
  * const distance = vincentyKm([40.7128, -74.0060])([40.7580, -73.9855]);
  * ```
  */
-export const vincentyKm = vincenty(EARTH_RADIUS_KM);
+export const vincentyKm = vincenty(EARTH_RADIUS_WGS84_KM);
 
 /**
  * Vincenty distance in miles
@@ -138,4 +131,4 @@ export const vincentyKm = vincenty(EARTH_RADIUS_KM);
  * const distance = vincentyMiles([40.7128, -74.0060])([40.7580, -73.9855]);
  * ```
  */
-export const vincentyMiles = vincenty(EARTH_RADIUS_MILES);
+export const vincentyMiles = vincenty(EARTH_RADIUS_WGS84_MILES);

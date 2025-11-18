@@ -1,6 +1,12 @@
 import turfBboxPolygon from '@turf/bbox-polygon';
 import turfArea from '@turf/area';
 import type { Bounds } from '../types';
+import {
+  EARTH_RADIUS_METERS,
+  SQUARE_METERS_TO_SQUARE_KILOMETERS,
+  SQUARE_METERS_TO_SQUARE_MILES,
+  DEGREES_TO_RADIANS,
+} from '../constants';
 
 /**
  * Calculate the area of a bounding box in square meters
@@ -47,12 +53,11 @@ export function boundsArea(bounds: Bounds): number {
 
   // Fallback: simple rectangular approximation
   const [minLon, minLat, maxLon, maxLat] = bounds;
-  const R = 6371000; // Earth's radius in meters
   const avgLat = (minLat + maxLat) / 2;
-  const dLon = ((maxLon - minLon) * Math.PI) / 180;
-  const width = R * Math.cos((avgLat * Math.PI) / 180) * dLon;
-  const dLat = ((maxLat - minLat) * Math.PI) / 180;
-  const height = R * dLat;
+  const dLon = (maxLon - minLon) * DEGREES_TO_RADIANS;
+  const width = EARTH_RADIUS_METERS * Math.cos(avgLat * DEGREES_TO_RADIANS) * dLon;
+  const dLat = (maxLat - minLat) * DEGREES_TO_RADIANS;
+  const height = EARTH_RADIUS_METERS * dLat;
   return Math.abs(width * height);
 }
 
@@ -63,7 +68,7 @@ export function boundsArea(bounds: Bounds): number {
  * @returns Area in square kilometers
  */
 export function boundsAreaKm(bounds: Bounds): number {
-  return boundsArea(bounds) / 1000000;
+  return boundsArea(bounds) / SQUARE_METERS_TO_SQUARE_KILOMETERS;
 }
 
 /**
@@ -73,5 +78,5 @@ export function boundsAreaKm(bounds: Bounds): number {
  * @returns Area in square miles
  */
 export function boundsAreaMiles(bounds: Bounds): number {
-  return boundsArea(bounds) / 2589988.110336;
+  return boundsArea(bounds) / SQUARE_METERS_TO_SQUARE_MILES;
 }

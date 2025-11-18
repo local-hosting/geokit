@@ -1,4 +1,5 @@
 import type { LatLon } from '../types';
+import { EARTH_RADIUS_METERS, DEGREES_TO_RADIANS } from '../constants';
 
 /**
  * Check if a point is within a circle
@@ -21,19 +22,18 @@ export function pointInCircle(radius: number) {
       const [lat2, lon2] = point;
 
       // Haversine formula for distance
-      const R = 6371000; // Earth's radius in meters
-      const dLat = ((lat2 - lat1) * Math.PI) / 180;
-      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+      const dLat = (lat2 - lat1) * DEGREES_TO_RADIANS;
+      const dLon = (lon2 - lon1) * DEGREES_TO_RADIANS;
 
       const a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos((lat1 * Math.PI) / 180) *
-          Math.cos((lat2 * Math.PI) / 180) *
+        Math.cos(lat1 * DEGREES_TO_RADIANS) *
+          Math.cos(lat2 * DEGREES_TO_RADIANS) *
           Math.sin(dLon / 2) *
           Math.sin(dLon / 2);
 
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      const distance = R * c;
+      const distance = EARTH_RADIUS_METERS * c;
 
       return distance <= radius;
     };

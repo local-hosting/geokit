@@ -1,4 +1,5 @@
 import type { LatLon } from '../types';
+import { METERS_PER_DEGREE_EQUATOR, DEGREES_TO_RADIANS } from '../constants';
 
 /**
  * Cluster point with metadata
@@ -95,7 +96,7 @@ export function gridClusterMeters<T = unknown>(
 
   // Use average latitude to convert meters to degrees
   const avgLat = points.reduce((sum, point) => sum + point.coordinates[0], 0) / points.length;
-  const metersPerDegree = 111320 * Math.cos((avgLat * Math.PI) / 180);
+  const metersPerDegree = METERS_PER_DEGREE_EQUATOR * Math.cos(avgLat * DEGREES_TO_RADIANS);
   const cellSizeDegrees = cellSizeMeters / metersPerDegree;
 
   return gridCluster(cellSizeDegrees, points);

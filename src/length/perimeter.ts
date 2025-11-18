@@ -4,6 +4,7 @@
 
 import type { Polygon } from '../types';
 import { lineLengthMeters } from './line';
+import { METERS_TO_KILOMETERS, METERS_TO_MILES } from '../constants';
 
 /**
  * Calculate the perimeter of a polygon in meters
@@ -74,7 +75,7 @@ export function perimeter(
  * @returns Perimeter in kilometers
  */
 export function perimeterKm(polygon: Polygon): number {
-  return perimeterMeters(polygon) / 1000;
+  return perimeterMeters(polygon) / METERS_TO_KILOMETERS;
 }
 
 /**
@@ -84,5 +85,5 @@ export function perimeterKm(polygon: Polygon): number {
  * @returns Perimeter in miles
  */
 export function perimeterMiles(polygon: Polygon): number {
-  return perimeterMeters(polygon) / 1609.34;
+  return perimeterMeters(polygon) / METERS_TO_MILES;
 }
