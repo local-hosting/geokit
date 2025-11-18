@@ -3,7 +3,9 @@ import {
   coordinatesToH3,
   h3ToCoordinates,
   h3ToBoundary,
+  h3ToPolygon,
   h3Neighbors,
+  snapToH3Cell,
   h3ToParent,
   h3ToChildren,
   h3GetResolution,
@@ -12,6 +14,17 @@ import {
   h3EdgeLength,
   h3CellArea,
   polygonToH3,
+  // Type-safe functions
+  coordinatesToH3Point,
+  coordinatesToH3Area,
+  h3PointToCoordinates,
+  h3AreaToCoordinates,
+  h3PointToBoundary,
+  h3AreaToBoundary,
+  h3PointToPolygon,
+  h3AreaToPolygon,
+  h3PointNeighbors,
+  h3AreaNeighbors,
 } from '../src/h3';
 
 describe('h3', () => {
@@ -54,6 +67,84 @@ describe('h3', () => {
       expect(Array.isArray(boundary)).toBe(true);
       expect(boundary.length).toBeGreaterThan(0);
       expect(boundary[0]).toHaveLength(2);
+    });
+  });
+
+  describe('h3ToPolygon', () => {
+    it('should return GeoJSON Polygon', () => {
+      const h3Index = coordinatesToH3(nyc, 9);
+      const polygon = h3ToPolygon(h3Index);
+      expect(polygon.type).toBe('Polygon');
+      expect(Array.isArray(polygon.coordinates)).toBe(true);
+      expect(polygon.coordinates.length).toBe(1);
+      expect(polygon.coordinates[0].length).toBeGreaterThan(0);
+      // GeoJSON uses [lon, lat] format
+      expect(polygon.coordinates[0][0]).toHaveLength(2);
+    });
+
+    it('should have valid polygon structure', () => {
+      const h3Index = coordinatesToH3(nyc, 9);
+      const polygon = h3ToPolygon(h3Index);
+      const ring = polygon.coordinates[0];
+      // H3 boundaries should have at least 6 points (hexagon)
+      expect(ring.length).toBeGreaterThanOrEqual(6);
+      // All points should be valid coordinates
+      ring.forEach((point) => {
+        expect(point).toHaveLength(2);
+        expect(typeof point[0]).toBe('number');
+        expect(typeof point[1]).toBe('number');
+      });
+    });
+
+    it('should match boundary coordinates in GeoJSON format', () => {
+      const h3Index = coordinatesToH3(nyc, 9);
+      const boundary = h3ToBoundary(h3Index);
+      const polygon = h3ToPolygon(h3Index);
+      const ring = polygon.coordinates[0];
+      // Boundary is [lat, lon], polygon is [lon, lat]
+      expect(ring.length).toBe(boundary.length);
+      for (let i = 0; i < boundary.length; i++) {
+        expect(ring[i][0]).toBeCloseTo(boundary[i][1], 5); // lon
+        expect(ring[i][1]).toBeCloseTo(boundary[i][0], 5); // lat
+      }
+    });
+  });
+
+  describe('snapToH3Cell', () => {
+    it('should snap coordinates to cell center', () => {
+      const coords: [number, number] = [40.7128, -74.006];
+      const snapped = snapToH3Cell(coords, 9);
+      expect(snapped).toHaveLength(2);
+      expect(typeof snapped[0]).toBe('number');
+      expect(typeof snapped[1]).toBe('number');
+    });
+
+    it('should use default resolution of 9', () => {
+      const coords: [number, number] = [40.7128, -74.006];
+      const snapped1 = snapToH3Cell(coords, 9);
+      const snapped2 = snapToH3Cell(coords);
+      expect(snapped1[0]).toBeCloseTo(snapped2[0], 5);
+      expect(snapped1[1]).toBeCloseTo(snapped2[1], 5);
+    });
+
+    it('should return same result as h3ToCoordinates after coordinatesToH3', () => {
+      const coords: [number, number] = [40.7128, -74.006];
+      const snapped = snapToH3Cell(coords, 9);
+      const h3Index = coordinatesToH3(coords, 9);
+      const cellCenter = h3ToCoordinates(h3Index);
+      expect(snapped[0]).toBeCloseTo(cellCenter[0], 5);
+      expect(snapped[1]).toBeCloseTo(cellCenter[1], 5);
+    });
+
+    it('should snap to different centers at different resolutions', () => {
+      const coords: [number, number] = [40.7128, -74.006];
+      const snapped9 = snapToH3Cell(coords, 9);
+      const snapped10 = snapToH3Cell(coords, 10);
+      // Higher resolution should be closer to original (or same if already aligned)
+      const dist9 = Math.abs(snapped9[0] - coords[0]) + Math.abs(snapped9[1] - coords[1]);
+      const dist10 = Math.abs(snapped10[0] - coords[0]) + Math.abs(snapped10[1] - coords[1]);
+      // At higher resolution, cells are smaller, so snap might be closer
+      expect(dist10).toBeLessThanOrEqual(dist9);
     });
   });
 
@@ -172,6 +263,143 @@ describe('h3', () => {
       const cells = polygonToH3(polygon, 9);
       expect(Array.isArray(cells)).toBe(true);
       expect(cells.length).toBeGreaterThan(0);
+    });
+  });
+
+  // ============================================================================
+  // Type-safe functions with branded types
+  // ============================================================================
+
+  describe('coordinatesToH3Point (type-safe)', () => {
+    it('should convert coordinates to H3Point', () => {
+      const h3Point = coordinatesToH3Point(nyc, 9);
+      expect(typeof h3Point).toBe('string');
+      expect(h3Point.length).toBeGreaterThan(0);
+    });
+
+    it('should use default resolution of 9', () => {
+      const h3Point = coordinatesToH3Point(nyc);
+      const resolution = h3GetResolution(h3Point);
+      expect(resolution).toBe(9);
+    });
+  });
+
+  describe('coordinatesToH3Area (type-safe)', () => {
+    it('should convert coordinates to H3Area', () => {
+      const h3Area = coordinatesToH3Area(nyc, 7);
+      expect(typeof h3Area).toBe('string');
+      expect(h3Area.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('h3PointToCoordinates (type-safe)', () => {
+    it('should convert H3Point to coordinates', () => {
+      const h3Point = coordinatesToH3Point(nyc, 9);
+      const coords = h3PointToCoordinates(h3Point);
+      expect(coords[0]).toBeCloseTo(nyc[0], 2);
+      expect(coords[1]).toBeCloseTo(nyc[1], 2);
+    });
+
+    it('should roundtrip coordinates', () => {
+      const h3Point = coordinatesToH3Point(nyc, 9);
+      const coords = h3PointToCoordinates(h3Point);
+      const h3Point2 = coordinatesToH3Point(coords, 9);
+      expect(h3Point2).toBe(h3Point);
+    });
+  });
+
+  describe('h3AreaToCoordinates (type-safe)', () => {
+    it('should convert H3Area to coordinates', () => {
+      const h3Area = coordinatesToH3Area(nyc, 7);
+      const coords = h3AreaToCoordinates(h3Area);
+      expect(coords).toHaveLength(2);
+      expect(typeof coords[0]).toBe('number');
+      expect(typeof coords[1]).toBe('number');
+    });
+  });
+
+  describe('h3PointToBoundary (type-safe)', () => {
+    it('should return cell boundary as polygon', () => {
+      const h3Point = coordinatesToH3Point(nyc, 9);
+      const boundary = h3PointToBoundary(h3Point);
+      expect(Array.isArray(boundary)).toBe(true);
+      expect(boundary.length).toBeGreaterThan(0);
+      expect(boundary[0]).toHaveLength(2);
+    });
+  });
+
+  describe('h3AreaToBoundary (type-safe)', () => {
+    it('should return cell boundary as polygon', () => {
+      const h3Area = coordinatesToH3Area(nyc, 7);
+      const boundary = h3AreaToBoundary(h3Area);
+      expect(Array.isArray(boundary)).toBe(true);
+      expect(boundary.length).toBeGreaterThan(0);
+      expect(boundary[0]).toHaveLength(2);
+    });
+  });
+
+  describe('h3PointToPolygon (type-safe)', () => {
+    it('should return GeoJSON Polygon', () => {
+      const h3Point = coordinatesToH3Point(nyc, 9);
+      const polygon = h3PointToPolygon(h3Point);
+      expect(polygon.type).toBe('Polygon');
+      expect(Array.isArray(polygon.coordinates)).toBe(true);
+      expect(polygon.coordinates.length).toBe(1);
+      expect(polygon.coordinates[0].length).toBeGreaterThan(0);
+    });
+
+    it('should match h3ToPolygon result', () => {
+      const h3Point = coordinatesToH3Point(nyc, 9);
+      const polygon1 = h3PointToPolygon(h3Point);
+      const polygon2 = h3ToPolygon(h3Point);
+      expect(polygon1.type).toBe(polygon2.type);
+      expect(polygon1.coordinates.length).toBe(polygon2.coordinates.length);
+    });
+  });
+
+  describe('h3AreaToPolygon (type-safe)', () => {
+    it('should return GeoJSON Polygon', () => {
+      const h3Area = coordinatesToH3Area(nyc, 7);
+      const polygon = h3AreaToPolygon(h3Area);
+      expect(polygon.type).toBe('Polygon');
+      expect(Array.isArray(polygon.coordinates)).toBe(true);
+      expect(polygon.coordinates.length).toBe(1);
+      expect(polygon.coordinates[0].length).toBeGreaterThan(0);
+    });
+
+    it('should match h3ToPolygon result', () => {
+      const h3Area = coordinatesToH3Area(nyc, 7);
+      const polygon1 = h3AreaToPolygon(h3Area);
+      const polygon2 = h3ToPolygon(h3Area);
+      expect(polygon1.type).toBe(polygon2.type);
+      expect(polygon1.coordinates.length).toBe(polygon2.coordinates.length);
+    });
+  });
+
+  describe('h3PointNeighbors (type-safe)', () => {
+    it('should return neighbors including center', () => {
+      const h3Point = coordinatesToH3Point(nyc, 9);
+      const neighbors = h3PointNeighbors(h3Point, 1);
+      expect(Array.isArray(neighbors)).toBe(true);
+      expect(neighbors.length).toBeGreaterThan(1);
+      expect(neighbors).toContain(h3Point);
+    });
+
+    it('should return more cells with larger k', () => {
+      const h3Point = coordinatesToH3Point(nyc, 9);
+      const neighbors1 = h3PointNeighbors(h3Point, 1);
+      const neighbors2 = h3PointNeighbors(h3Point, 2);
+      expect(neighbors2.length).toBeGreaterThan(neighbors1.length);
+    });
+  });
+
+  describe('h3AreaNeighbors (type-safe)', () => {
+    it('should return neighbors including center', () => {
+      const h3Area = coordinatesToH3Area(nyc, 7);
+      const neighbors = h3AreaNeighbors(h3Area, 1);
+      expect(Array.isArray(neighbors)).toBe(true);
+      expect(neighbors.length).toBeGreaterThan(1);
+      expect(neighbors).toContain(h3Area);
     });
   });
 });
