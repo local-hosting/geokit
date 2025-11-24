@@ -9,9 +9,33 @@ describe('bounds', () => {
   const point3: [number, number] = [40.7354, -73.99575];
 
   describe('getBounds', () => {
-    it('should calculate bounds from coordinates', () => {
+    it('should calculate bounds from [lat, lon] coordinates', () => {
       const bounds = getBounds([point1, point2]);
       expect(bounds).toEqual([-74.006, 40.7128, -73.9855, 40.758]);
+    });
+
+    it('should calculate bounds from [lon, lat] GeoJSON coordinates', () => {
+      const lonLatCoords: [number, number][] = [
+        [-74.006, 40.7128],
+        [-73.9855, 40.758],
+      ];
+      const bounds = getBounds(lonLatCoords);
+      expect(bounds).toEqual([-74.006, 40.7128, -73.9855, 40.758]);
+    });
+
+    it('should return same result for both coordinate formats', () => {
+      const latLon: [number, number][] = [
+        [40.7128, -74.006],
+        [40.758, -73.9855],
+      ];
+      const lonLat: [number, number][] = [
+        [-74.006, 40.7128],
+        [-73.9855, 40.758],
+      ];
+
+      const bounds1 = getBounds(latLon);
+      const bounds2 = getBounds(lonLat);
+      expect(bounds1).toEqual(bounds2);
     });
 
     it('should calculate bounds from features', () => {

@@ -108,3 +108,88 @@ export function normalizeCoordinateInput(
 ): LatLon | null {
   return extractCoordinates(input);
 }
+
+/**
+ * Normalize an array of coordinates to a specific format
+ * Handles batch conversion of coordinate arrays with format detection
+ *
+ * @param coordinates - Array of coordinate pairs in various formats
+ * @param outputFormat - Desired output format: 'latlon' (default) or 'lonlat' (GeoJSON)
+ * @param inputFormat - Input format hint: 'auto' (detect), 'latlng', or 'lnglat'
+ * @returns Array of coordinates in the specified output format
+ *
+ * @example
+ * ```typescript
+ * // Auto-detect and convert to [lat, lon]
+ * const coords = normalizeCoordinatesArray([[-74.0060, 40.7128], [-73.9855, 40.7580]]);
+ * // [[40.7128, -74.0060], [40.7580, -73.9855]]
+ *
+ * // Convert to GeoJSON format [lon, lat]
+ * const geoJson = normalizeCoordinatesArray([[40.7128, -74.0060]], 'lonlat', 'latlng');
+ * // [[-74.0060, 40.7128]]
+ * ```
+ */
+export function normalizeCoordinatesArray(
+  coordinates: (LatLon | LonLat)[],
+  outputFormat: 'latlon' | 'lonlat' = 'latlon',
+  inputFormat: 'auto' | 'latlng' | 'lnglat' = 'auto'
+): LatLon[] | LonLat[] {
+  if (!Array.isArray(coordinates) || coordinates.length === 0) {
+    return [];
+  }
+
+  // First, normalize all coordinates to [lat, lon] format
+  const normalized: LatLon[] = coordinates
+    .map((coord) => {
+      if (!Array.isArray(coord) || coord.length < 2) {
+        return null;
+      }
+
+      if (inputFormat === 'lnglat') {
+        // Input is [lon, lat], convert to [lat, lon]
+        const [lon, lat] = coord;
+        return [lat, lon] as LatLon;
+      } else if (inputFormat === 'latlng') {
+        // Already in [lat, lon] format
+        return coord as LatLon;
+      } else {
+        // Auto-detect: use extractCoordinates logic
+        const [first, second] = coord;
+
+        // If first value is outside valid latitude range (-90 to 90), it must be longitude
+        // So convert from [lon, lat] to [lat, lon]
+        if (Math.abs(first) > 90) {
+          return [second, first] as LatLon;
+        }
+
+        // If second value is outside valid latitude range, first must be latitude
+        // Already in [lat, lon] format
+        if (Math.abs(second) > 90) {
+          return [first, second] as LatLon;
+        }
+
+        // Special case: if first value is exactly 90 or -90, it's definitely latitude
+        if (Math.abs(first) === 90) {
+          return [first, second] as LatLon;
+        }
+
+        // If both values are within latitude range, use a heuristic:
+        // If first value has larger absolute value AND it's not a pole, it's more likely to be longitude
+        // (as most populated areas are closer to the equator)
+        if (Math.abs(first) > Math.abs(second) && Math.abs(first) < 90) {
+          return [second, first] as LatLon;
+        }
+
+        // Otherwise assume it's already in [lat, lon] format
+        return [first, second] as LatLon;
+      }
+    })
+    .filter((coord): coord is LatLon => coord !== null);
+
+  // Convert to output format if needed
+  if (outputFormat === 'lonlat') {
+    return normalized.map(([lat, lon]) => [lon, lat] as LonLat);
+  }
+
+  return normalized;
+}

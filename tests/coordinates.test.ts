@@ -8,6 +8,7 @@ import {
   serializeCoordinates,
   deserializeCoordinates,
   normalizeCoordinateInput,
+  normalizeCoordinatesArray,
 } from '../src/coordinates';
 
 describe('coordinates', () => {
@@ -161,6 +162,69 @@ describe('coordinates', () => {
     it('should return null for invalid input', () => {
       expect(normalizeCoordinateInput(null)).toBe(null);
       expect(normalizeCoordinateInput(undefined)).toBe(null);
+    });
+  });
+
+  describe('normalizeCoordinatesArray', () => {
+    it('should normalize [lat, lon] array to [lat, lon]', () => {
+      const coords = [
+        [40.7128, -74.006],
+        [40.758, -73.9855],
+      ];
+      const normalized = normalizeCoordinatesArray(coords, 'latlon', 'latlng');
+      expect(normalized).toEqual([
+        [40.7128, -74.006],
+        [40.758, -73.9855],
+      ]);
+    });
+
+    it('should normalize [lon, lat] array to [lat, lon]', () => {
+      const coords = [
+        [-74.006, 40.7128],
+        [-73.9855, 40.758],
+      ];
+      const normalized = normalizeCoordinatesArray(coords, 'latlon', 'lnglat');
+      expect(normalized).toEqual([
+        [40.7128, -74.006],
+        [40.758, -73.9855],
+      ]);
+    });
+
+    it('should normalize to [lon, lat] (GeoJSON) format', () => {
+      const coords = [
+        [40.7128, -74.006],
+        [40.758, -73.9855],
+      ];
+      const normalized = normalizeCoordinatesArray(coords, 'lonlat', 'latlng');
+      expect(normalized).toEqual([
+        [-74.006, 40.7128],
+        [-73.9855, 40.758],
+      ]);
+    });
+
+    it('should auto-detect format and normalize to [lat, lon]', () => {
+      const coords = [
+        [-74.006, 40.7128], // [lon, lat] - first value > 90
+        [-73.9855, 40.758],
+      ];
+      const normalized = normalizeCoordinatesArray(coords, 'latlon', 'auto');
+      expect(normalized).toEqual([
+        [40.7128, -74.006],
+        [40.758, -73.9855],
+      ]);
+    });
+
+    it('should return empty array for empty input', () => {
+      expect(normalizeCoordinatesArray([], 'latlon', 'auto')).toEqual([]);
+    });
+
+    it('should handle invalid coordinates gracefully', () => {
+      const coords = [
+        [40.7128, -74.006],
+        [40.758, -73.9855],
+      ];
+      const normalized = normalizeCoordinatesArray(coords, 'latlon', 'auto');
+      expect(normalized.length).toBe(coords.length);
     });
   });
 });
