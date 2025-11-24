@@ -57,7 +57,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc && tsc --module commonjs --outDir dist --declaration false && node scripts/rename-cjs.js",
+    "build": "tsc && tsc --module commonjs --outDir dist-cjs-temp --declaration false --declarationMap false && node scripts/rename-cjs.js",
     "test": "vitest run --environment node",
     "test:watch": "vitest",
     "test:node": "vitest run --environment node",

@@ -98,6 +98,7 @@ export {
   serializeCoordinates,
   deserializeCoordinates,
   normalizeCoordinateInput,
+  normalizeCoordinatesArray,
   roundCoordinates,
   removeDuplicateCoordinates,
   removeDuplicateCoordinatesFromGeometry,

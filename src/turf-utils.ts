@@ -63,6 +63,25 @@ export function toLonLatArray(points: LatLon[]): LonLat[] {
 }
 
 /**
+ * Convert an array of LonLat coordinates (GeoJSON format) to LatLon format
+ *
+ * @param points - Array of points in [lon, lat] format
+ * @returns Array of points in [lat, lon] format
+ *
+ * @example
+ * ```typescript
+ * const latLonCoords = toLatLonArray([
+ *   [-74.0060, 40.7128],
+ *   [-118.2437, 34.0522]
+ * ]);
+ * // [[40.7128, -74.0060], [34.0522, -118.2437]]
+ * ```
+ */
+export function toLatLonArray(points: LonLat[]): LatLon[] {
+  return points.map(([lon, lat]): LatLon => [lat, lon]);
+}
+
+/**
  * Extract LatLon coordinates from a Point Feature
  * Performs type-safe extraction with validation
  *

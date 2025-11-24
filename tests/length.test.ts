@@ -46,7 +46,7 @@ describe('length', () => {
   });
 
   describe('lineLengthMeters', () => {
-    it('should calculate length in meters', () => {
+    it('should calculate length in meters with [lat, lon] format', () => {
       const polyline: [number, number][] = [
         [40.7128, -74.006],
         [40.758, -73.9855],
@@ -57,6 +57,50 @@ describe('length', () => {
       expect(length).toBeGreaterThan(0);
       expect(length).toBeGreaterThan(5000);
       expect(length).toBeLessThan(10000);
+    });
+
+    it('should calculate length in meters with [lon, lat] GeoJSON format', () => {
+      const polyline: [number, number][] = [
+        [-74.006, 40.7128],
+        [-73.9855, 40.758],
+        [-73.99575, 40.7354],
+      ];
+
+      const length = lineLengthMeters(polyline);
+      expect(length).toBeGreaterThan(0);
+      expect(length).toBeGreaterThan(5000);
+      expect(length).toBeLessThan(10000);
+    });
+
+    it('should calculate length from LineString geometry', () => {
+      const lineString = {
+        type: 'LineString' as const,
+        coordinates: [
+          [-74.006, 40.7128],
+          [-73.9855, 40.758],
+          [-73.99575, 40.7354],
+        ],
+      };
+
+      const length = lineLengthMeters(lineString);
+      expect(length).toBeGreaterThan(0);
+      expect(length).toBeGreaterThan(5000);
+      expect(length).toBeLessThan(10000);
+    });
+
+    it('should return same result for both formats', () => {
+      const latLon: [number, number][] = [
+        [40.7128, -74.006],
+        [40.758, -73.9855],
+      ];
+      const lonLat: [number, number][] = [
+        [-74.006, 40.7128],
+        [-73.9855, 40.758],
+      ];
+
+      const length1 = lineLengthMeters(latLon);
+      const length2 = lineLengthMeters(lonLat);
+      expect(length1).toBeCloseTo(length2, 5);
     });
 
     it('should return 0 for empty polyline', () => {
