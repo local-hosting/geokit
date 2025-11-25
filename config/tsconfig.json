@@ -6,8 +6,8 @@
     "moduleResolution": "node",
     "declaration": true,
     "declarationMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "outDir": "../dist/esm",
+    "rootDir": "../src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -16,6 +16,6 @@
     "isolatedModules": true,
     "noEmit": false
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "dist-cjs-temp", "tests"]
+  "include": ["../src/**/*"],
+  "exclude": ["../node_modules", "../dist", "../tests"]
 }

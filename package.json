@@ -3,53 +3,53 @@
   "version": "0.1.0",
   "description": "A functional, curried geospatial utility toolkit for browser and Node.js",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "browser": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "browser": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "browser": "./dist/index.js",
-      "default": "./dist/index.js"
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.cjs",
+      "browser": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
     },
     "./distance": {
-      "types": "./dist/distance/index.d.ts",
-      "import": "./dist/distance/index.js",
-      "require": "./dist/distance/index.cjs",
-      "default": "./dist/distance/index.js"
+      "types": "./dist/esm/distance/index.d.ts",
+      "import": "./dist/esm/distance/index.js",
+      "require": "./dist/cjs/distance/index.cjs",
+      "default": "./dist/esm/distance/index.js"
     },
     "./coordinates": {
-      "types": "./dist/coordinates/index.d.ts",
-      "import": "./dist/coordinates/index.js",
-      "require": "./dist/coordinates/index.cjs",
-      "default": "./dist/coordinates/index.js"
+      "types": "./dist/esm/coordinates/index.d.ts",
+      "import": "./dist/esm/coordinates/index.js",
+      "require": "./dist/cjs/coordinates/index.cjs",
+      "default": "./dist/esm/coordinates/index.js"
     },
     "./geojson": {
-      "types": "./dist/geojson/index.d.ts",
-      "import": "./dist/geojson/index.js",
-      "require": "./dist/geojson/index.cjs",
-      "default": "./dist/geojson/index.js"
+      "types": "./dist/esm/geojson/index.d.ts",
+      "import": "./dist/esm/geojson/index.js",
+      "require": "./dist/cjs/geojson/index.cjs",
+      "default": "./dist/esm/geojson/index.js"
     },
     "./normalize": {
-      "types": "./dist/normalize/index.d.ts",
-      "import": "./dist/normalize/index.js",
-      "require": "./dist/normalize/index.cjs",
-      "default": "./dist/normalize/index.js"
+      "types": "./dist/esm/normalize/index.d.ts",
+      "import": "./dist/esm/normalize/index.js",
+      "require": "./dist/cjs/normalize/index.cjs",
+      "default": "./dist/esm/normalize/index.js"
     },
     "./bounds": {
-      "types": "./dist/bounds/index.d.ts",
-      "import": "./dist/bounds/index.js",
-      "require": "./dist/bounds/index.cjs",
-      "default": "./dist/bounds/index.js"
+      "types": "./dist/esm/bounds/index.d.ts",
+      "import": "./dist/esm/bounds/index.js",
+      "require": "./dist/cjs/bounds/index.cjs",
+      "default": "./dist/esm/bounds/index.js"
     },
     "./types": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/types/index.js",
-      "require": "./dist/types/index.cjs",
-      "default": "./dist/types/index.js"
+      "types": "./dist/esm/types/index.d.ts",
+      "import": "./dist/esm/types/index.js",
+      "require": "./dist/cjs/types/index.cjs",
+      "default": "./dist/esm/types/index.js"
     }
   },
   "files": [
@@ -57,17 +57,18 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc && tsc --module commonjs --outDir dist-cjs-temp --declaration false --declarationMap false && node scripts/rename-cjs.js",
-    "test": "vitest run --environment node",
-    "test:watch": "vitest",
-    "test:node": "vitest run --environment node",
-    "test:browser": "vitest run --environment jsdom",
+    "build": "tsc -p config/tsconfig.json && tsc -p config/tsconfig.cjs.json && node scripts/fix-esm-imports.js && node scripts/rename-cjs.js",
+    "postinstall": "yarn build",
+    "test": "vitest run --config config/vitest.config.ts --environment node",
+    "test:watch": "vitest --config config/vitest.config.ts",
+    "test:node": "vitest run --config config/vitest.config.ts --environment node",
+    "test:browser": "vitest run --config config/vitest.config.ts --environment jsdom",
     "test:all": "yarn test:node && yarn test:browser",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix",
-    "format": "prettier --write \"**/*.{ts,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,json,md}\"",
+    "typecheck": "tsc -p config/tsconfig.json --noEmit",
+    "lint": "eslint --config config/eslint.config.mjs . --ext .ts",
+    "lint:fix": "eslint --config config/eslint.config.mjs . --ext .ts --fix",
+    "format": "prettier --config config/.prettierrc.json --write \"**/*.{ts,json,md}\"",
+    "format:check": "prettier --config config/.prettierrc.json --check \"**/*.{ts,json,md}\"",
     "prepare": "husky"
   },
   "keywords": [
@@ -84,6 +85,9 @@
   ],
   "author": "",
   "license": "MPL-2.0",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
@@ -101,11 +105,11 @@
   },
   "lint-staged": {
     "*.ts": [
-      "prettier --write",
-      "eslint --fix"
+      "prettier --config config/.prettierrc.json --write",
+      "eslint --config config/eslint.config.mjs --fix"
     ],
     "*.{json,md}": [
-      "prettier --write"
+      "prettier --config config/.prettierrc.json --write"
     ]
   },
   "peerDependencies": {},
