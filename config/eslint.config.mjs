@@ -1,5 +1,11 @@
 import tsParser from '@typescript-eslint/parser';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const projectRoot = resolve(__dirname, '..');
 
 export default [
   {
@@ -12,7 +18,8 @@ export default [
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
-        project: './config/tsconfig.json',
+        project: resolve(projectRoot, 'config/tsconfig.json'),
+        tsconfigRootDir: projectRoot,
       },
     },
     plugins: {

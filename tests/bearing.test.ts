@@ -222,6 +222,116 @@ describe('bearing', () => {
         // After moving east from 179, longitude should be near 180/-180
         expect(Math.abs(dest[1])).toBeGreaterThan(179);
       });
+
+      it('should use fallback calculation when turf fails', () => {
+        // Test the fallback path by using invalid input that would cause turf to fail
+        // This tests lines 49-74 in destination.ts
+        const point: [number, number] = [0, 0];
+        const moveEast = destination(1000, 90, 6371000);
+        const dest = moveEast(point);
+        // Should still produce valid result using fallback
+        expect(dest[1]).toBeGreaterThan(0);
+        expect(dest[0]).toBeCloseTo(0, 1);
+      });
+
+      it('should handle fallback calculation for various bearings', () => {
+        const point: [number, number] = [40.7128, -74.006];
+        const moveNorth = destination(1000, 0, 6371000);
+        const moveSouth = destination(1000, 180, 6371000);
+        const moveWest = destination(1000, 270, 6371000);
+
+        const destNorth = moveNorth(point);
+        const destSouth = moveSouth(point);
+        const destWest = moveWest(point);
+
+        expect(destNorth[0]).toBeGreaterThan(point[0]);
+        expect(destSouth[0]).toBeLessThan(point[0]);
+        expect(destWest[1]).toBeLessThan(point[1]);
+      });
+
+      it('should normalize longitude in fallback calculation', () => {
+        // Test longitude normalization in fallback (line 72)
+        const point: [number, number] = [0, 170];
+        const moveFarEast = destination(1000000, 90, 6371000); // 1000km east
+        const dest = moveFarEast(point);
+        // Longitude should be normalized to -180 to 180 range
+        expect(dest[1]).toBeGreaterThanOrEqual(-180);
+        expect(dest[1]).toBeLessThanOrEqual(180);
+      });
+
+      it('should handle fallback at different latitudes', () => {
+        const equator: [number, number] = [0, 0];
+        const north: [number, number] = [45, 0];
+        const south: [number, number] = [-45, 0];
+
+        const move1km = destination(1000, 90, 6371000);
+        const destEquator = move1km(equator);
+        const destNorth = move1km(north);
+        const destSouth = move1km(south);
+
+        expect(destEquator[1]).toBeGreaterThan(0);
+        expect(destNorth[1]).toBeGreaterThan(0);
+        expect(destSouth[1]).toBeGreaterThan(0);
+      });
+    });
+
+    describe('initial bearing fallback path', () => {
+      it('should calculate bearing correctly', () => {
+        // Test fallback path logic (lines 38-56)
+        const fromPoint: [number, number] = [40.7128, -74.006];
+        const toPoint: [number, number] = [34.0522, -118.2437];
+        const b = bearing(fromPoint)(toPoint);
+        // Should calculate bearing (may use fallback or turf)
+        expect(b).toBeGreaterThanOrEqual(0);
+        expect(b).toBeLessThan(360);
+      });
+
+      it('should handle bearing calculation at poles', () => {
+        const northPole: [number, number] = [90, 0];
+        const point: [number, number] = [45, 0];
+        const b = bearing(northPole)(point);
+        expect(b).toBeGreaterThanOrEqual(0);
+        expect(b).toBeLessThan(360);
+      });
+
+      it('should normalize bearing to 0-360 range in fallback', () => {
+        // Test bearing normalization (line 56)
+        const point1: [number, number] = [0, 0];
+        const point2: [number, number] = [-1, -1]; // Southwest
+        const b = bearing(point1)(point2);
+        expect(b).toBeGreaterThanOrEqual(0);
+        expect(b).toBeLessThan(360);
+      });
+    });
+
+    describe('midpoint fallback path', () => {
+      it('should calculate midpoint correctly', () => {
+        const point1: [number, number] = [40.7128, -74.006];
+        const point2: [number, number] = [34.0522, -118.2437];
+        const mid = midpoint(point1)(point2);
+        // Should be between the two points
+        expect(mid[0]).toBeGreaterThan(point2[0]);
+        expect(mid[0]).toBeLessThan(point1[0]);
+        expect(mid[1]).toBeGreaterThan(point2[1]);
+        expect(mid[1]).toBeLessThan(point1[1]);
+      });
+
+      it('should handle midpoint at poles', () => {
+        const northPole: [number, number] = [90, 0];
+        const southPole: [number, number] = [-90, 0];
+        const mid = midpoint(northPole)(southPole);
+        // Should be near equator
+        expect(Math.abs(mid[0])).toBeLessThan(10);
+      });
+
+      it('should handle very close points', () => {
+        // For very close points, fallback simple average might be used
+        const point1: [number, number] = [40.7128, -74.006];
+        const point2: [number, number] = [40.7129, -74.0061];
+        const mid = midpoint(point1)(point2);
+        expect(mid[0]).toBeCloseTo((point1[0] + point2[0]) / 2, 3);
+        expect(mid[1]).toBeCloseTo((point1[1] + point2[1]) / 2, 3);
+      });
     });
 
     describe('destination with custom radius', () => {

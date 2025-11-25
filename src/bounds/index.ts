@@ -6,3 +6,4 @@
 export { getBounds } from './get-bounds';
 export { getCenter } from './get-center';
 export { isWithinBounds } from './is-within-bounds';
+export { boundsToObject, type BoundsObject } from './bounds-to-object';
