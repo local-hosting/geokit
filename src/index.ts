@@ -135,7 +135,7 @@ export {
 export { slugify, normalize, normalizeName } from './normalize';
 
 // Bounds utilities
-export { getBounds, getCenter, isWithinBounds } from './bounds';
+export { getBounds, getCenter, isWithinBounds, boundsToObject, type BoundsObject } from './bounds';
 
 // Bearing utilities
 export {

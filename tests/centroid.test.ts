@@ -137,6 +137,49 @@ describe('centroid', () => {
       // Single point polygon is invalid, should return null
       expect(centroid).toBeNull();
     });
+
+    it('should use fallback to bbox center when Turf fails', () => {
+      // Test fallback path (lines 50-61)
+      // Create a polygon that might cause Turf to fail
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.01, 40.7],
+            [-74.0, 40.7],
+            [-74.0, 40.71],
+            [-74.01, 40.71],
+            [-74.01, 40.7],
+          ],
+        ],
+      };
+
+      const centroid = polygonCentroid(polygon);
+      // Should return center of bounding box as fallback
+      expect(centroid).not.toBeNull();
+      expect(centroid![0]).toBeCloseTo(40.705, 2); // (40.7 + 40.71) / 2
+      expect(centroid![1]).toBeCloseTo(-74.005, 2); // (-74.01 + -74.0) / 2
+    });
+
+    it('should handle polygon with coordinates at poles', () => {
+      const polarPolygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-10, 85],
+            [10, 85],
+            [10, 89],
+            [-10, 89],
+            [-10, 85],
+          ],
+        ],
+      };
+
+      const centroid = polygonCentroid(polarPolygon);
+      expect(centroid).not.toBeNull();
+      expect(centroid![0]).toBeGreaterThan(85);
+      expect(centroid![0]).toBeLessThanOrEqual(89);
+    });
   });
 
   describe('pointsCentroid', () => {

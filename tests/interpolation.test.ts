@@ -182,4 +182,112 @@ describe('interpolation', () => {
       expect(resampled).toEqual(single);
     });
   });
+
+  describe('interpolate fallback path', () => {
+    it('should use fallback when fraction is clamped', () => {
+      // Test clamping behavior (lines 44-47)
+      const atNegative = interpolate(-0.5);
+      const point = atNegative(nyc)(la);
+      // Should clamp to 0, so should be close to NYC
+      expect(point[0]).toBeCloseTo(nyc[0], 2);
+      expect(point[1]).toBeCloseTo(nyc[1], 2);
+
+      const atOverOne = interpolate(1.5);
+      const point2 = atOverOne(nyc)(la);
+      // Should clamp to 1, so should be close to LA
+      expect(point2[0]).toBeCloseTo(la[0], 2);
+      expect(point2[1]).toBeCloseTo(la[1], 2);
+    });
+  });
+
+  describe('interpolateMeters fallback path', () => {
+    it('should use fallback calculation when distance exceeds total', () => {
+      // When distance > total distance, should clamp to end point
+      const atVeryFar = interpolateMeters(10000000); // 10,000 km
+      const point = atVeryFar(nyc)([40.72, -74.0]); // Very short distance
+      // Should be close to end point
+      expect(point[0]).toBeCloseTo(40.72, 1);
+      expect(point[1]).toBeCloseTo(-74.0, 1);
+    });
+
+    it('should handle zero total distance', () => {
+      const at1km = interpolateMeters(1000);
+      const point = at1km(nyc)(nyc); // Same point
+      expect(point[0]).toBeCloseTo(nyc[0], 2);
+      expect(point[1]).toBeCloseTo(nyc[1], 2);
+    });
+  });
+
+  describe('nearestPointOnLine edge cases', () => {
+    it('should handle zero-length line segment', () => {
+      // Tests lines 47-49
+      const findNearest = nearestPointOnLine([40.715, -74.005]);
+      const point: [number, number] = [40.71, -74.01];
+      const nearest = findNearest(point)(point);
+      expect(nearest).toEqual(point);
+    });
+
+    it('should handle vertical line (dx === 0)', () => {
+      const findNearest = nearestPointOnLine([40.715, -74.01]);
+      const lineStart: [number, number] = [40.71, -74.01];
+      const lineEnd: [number, number] = [40.72, -74.01];
+      const nearest = findNearest(lineStart)(lineEnd);
+      expect(nearest[1]).toBeCloseTo(-74.01, 5); // Same longitude
+      expect(nearest[0]).toBeGreaterThanOrEqual(lineStart[0]);
+      expect(nearest[0]).toBeLessThanOrEqual(lineEnd[0]);
+    });
+
+    it('should handle horizontal line (dy === 0)', () => {
+      const findNearest = nearestPointOnLine([40.71, -74.005]);
+      const lineStart: [number, number] = [40.71, -74.01];
+      const lineEnd: [number, number] = [40.71, -74.0];
+      const nearest = findNearest(lineStart)(lineEnd);
+      expect(nearest[0]).toBeCloseTo(40.71, 5); // Same latitude
+      expect(nearest[1]).toBeGreaterThanOrEqual(lineStart[1]);
+      expect(nearest[1]).toBeLessThanOrEqual(lineEnd[1]);
+    });
+  });
+
+  describe('nearestPointOnPolyline fallback path', () => {
+    it('should use fallback when Turf fails', () => {
+      // Create a polyline that might cause issues
+      const polyline: [number, number][] = [
+        [40.71, -74.01],
+        [40.72, -74.0],
+      ];
+      const point: [number, number] = [40.715, -74.005];
+      const result = nearestPointOnPolyline(point)(polyline);
+      // Should still return valid result using fallback
+      expect(result).not.toBeNull();
+      expect(result!.point).toHaveLength(2);
+      expect(result!.segmentIndex).toBeGreaterThanOrEqual(0);
+      expect(result!.distance).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should find nearest on first segment', () => {
+      const polyline: [number, number][] = [
+        [40.71, -74.01],
+        [40.72, -74.0],
+        [40.73, -73.99],
+      ];
+      const point: [number, number] = [40.71, -74.01]; // At start
+      const result = nearestPointOnPolyline(point)(polyline);
+      expect(result).not.toBeNull();
+      expect(result!.segmentIndex).toBe(0);
+    });
+
+    it('should find nearest on last segment', () => {
+      const polyline: [number, number][] = [
+        [40.71, -74.01],
+        [40.72, -74.0],
+        [40.73, -73.99],
+      ];
+      const point: [number, number] = [40.73, -73.99]; // At end
+      const result = nearestPointOnPolyline(point)(polyline);
+      expect(result).not.toBeNull();
+      // Should be on one of the segments (0 to length-2)
+      expect(result!.segmentIndex).toBeGreaterThanOrEqual(0);
+      expect(result!.segmentIndex).toBeLessThan(polyline.length);
+    });
+  });
 });

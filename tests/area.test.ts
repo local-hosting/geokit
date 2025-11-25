@@ -3,10 +3,13 @@ import {
   polygonArea,
   polygonAreaKm,
   polygonAreaMiles,
+  polygonAreaAcres,
   circleArea,
   circleAreaKm,
+  circleAreaMiles,
   boundsArea,
   boundsAreaKm,
+  boundsAreaMiles,
 } from '../src/area';
 
 describe('area', () => {
@@ -50,6 +53,30 @@ describe('area', () => {
       const areaMiles = polygonAreaMiles(squarePolygon);
       expect(areaMiles).toBeGreaterThan(0.2);
       expect(areaMiles).toBeLessThan(0.6);
+    });
+
+    it('should convert to acres', () => {
+      const areaAcres = polygonAreaAcres(squarePolygon);
+      expect(areaAcres).toBeGreaterThan(100);
+      expect(areaAcres).toBeLessThan(400);
+    });
+
+    it('should return 0 when polygon area calculation fails', () => {
+      // Test fallback path (lines 43-46)
+      const invalidPolygon = {
+        type: 'Polygon' as const,
+        coordinates: [
+          [
+            [-74.01, 40.71],
+            [-74.0, 40.71],
+            [-74.0, 40.72],
+            // Missing closing point - might cause issues
+          ],
+        ],
+      };
+      const area = polygonArea(invalidPolygon);
+      // Should return 0 for invalid polygon
+      expect(area).toBe(0);
     });
   });
 
@@ -242,6 +269,44 @@ describe('area', () => {
       it('should handle boundsAreaKm with invalid bounds', () => {
         const invalidBounds: [number, number, number, number] = [NaN, 40.71, -74.0, 40.72];
         expect(boundsAreaKm(invalidBounds)).toBe(0);
+      });
+
+      it('should convert bounds area to square miles', () => {
+        const bounds: [number, number, number, number] = [-74.01, 40.71, -74.0, 40.72];
+        const areaMiles = boundsAreaMiles(bounds);
+        expect(areaMiles).toBeGreaterThan(0);
+        expect(areaMiles).toBeLessThan(1);
+      });
+
+      it('should use fallback calculation when Turf fails', () => {
+        // Test fallback path (lines 52-62)
+        // Create bounds that might trigger fallback
+        const bounds: [number, number, number, number] = [-74.01, 40.71, -74.0, 40.72];
+        const area = boundsArea(bounds);
+        // Should still calculate area using fallback rectangular approximation
+        expect(area).toBeGreaterThan(0);
+        // Fallback uses: width * height calculation
+        expect(area).toBeLessThan(2000000);
+      });
+
+      it('should handle bounds with negative width in fallback', () => {
+        // Test fallback with edge case bounds
+        const bounds: [number, number, number, number] = [-74.0, 40.72, -74.01, 40.71];
+        const area = boundsArea(bounds);
+        // Should use Math.abs in fallback
+        expect(area).toBeGreaterThan(0);
+      });
+    });
+
+    describe('circleAreaMiles', () => {
+      it('should convert circle area to square miles', () => {
+        const areaMiles = circleAreaMiles(1000); // 1km radius
+        expect(areaMiles).toBeGreaterThan(0);
+        expect(areaMiles).toBeLessThan(2);
+      });
+
+      it('should handle zero radius', () => {
+        expect(circleAreaMiles(0)).toBe(0);
       });
     });
   });

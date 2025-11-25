@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getBounds, getCenter, isWithinBounds } from '../src/bounds';
+import { getBounds, getCenter, isWithinBounds, boundsToObject } from '../src/bounds';
 import { createFeature } from '../src/geojson';
 import type { Point } from '../src/types';
 
@@ -92,6 +92,59 @@ describe('bounds', () => {
       const bounds: [number, number, number, number] = [-74.006, 40.7128, -73.9855, 40.758];
       const checkPoint = isWithinBounds(point3);
       expect(checkPoint(bounds)).toBe(true);
+    });
+  });
+
+  describe('boundsToObject', () => {
+    it('should convert bounds array to object format', () => {
+      const bounds: [number, number, number, number] = [-74.006, 40.7128, -73.9855, 40.758];
+      const obj = boundsToObject(bounds);
+      expect(obj).toEqual({
+        minLng: -74.006,
+        minLat: 40.7128,
+        maxLng: -73.9855,
+        maxLat: 40.758,
+      });
+    });
+
+    it('should return null for null input', () => {
+      expect(boundsToObject(null)).toBe(null);
+    });
+
+    it('should return null for invalid array length', () => {
+      expect(boundsToObject([-74.006, 40.7128] as any)).toBe(null);
+      expect(boundsToObject([-74.006, 40.7128, -73.9855, 40.758, 0] as any)).toBe(null);
+    });
+
+    it('should return null for array with NaN values', () => {
+      expect(boundsToObject([NaN, 40.7128, -73.9855, 40.758] as any)).toBe(null);
+      expect(boundsToObject([-74.006, NaN, -73.9855, 40.758] as any)).toBe(null);
+    });
+
+    it('should return null for array with non-number values', () => {
+      expect(boundsToObject(['-74.006', 40.7128, -73.9855, 40.758] as any)).toBe(null);
+    });
+
+    it('should handle negative coordinates', () => {
+      const bounds: [number, number, number, number] = [-120, -45, -100, -30];
+      const obj = boundsToObject(bounds);
+      expect(obj).toEqual({
+        minLng: -120,
+        minLat: -45,
+        maxLng: -100,
+        maxLat: -30,
+      });
+    });
+
+    it('should handle bounds at antimeridian', () => {
+      const bounds: [number, number, number, number] = [170, 0, -170, 10];
+      const obj = boundsToObject(bounds);
+      expect(obj).toEqual({
+        minLng: 170,
+        minLat: 0,
+        maxLng: -170,
+        maxLat: 10,
+      });
     });
   });
 
