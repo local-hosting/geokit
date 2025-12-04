@@ -103,11 +103,15 @@ describe('h3', () => {
       const polygon = h3ToPolygon(h3Index);
       const ring = polygon.coordinates[0];
       // Boundary is [lat, lon], polygon is [lon, lat]
-      expect(ring.length).toBe(boundary.length);
+      // Ring has +1 point because GeoJSON requires closed rings (first = last)
+      expect(ring.length).toBe(boundary.length + 1);
       for (let i = 0; i < boundary.length; i++) {
         expect(ring[i][0]).toBeCloseTo(boundary[i][1], 5); // lon
         expect(ring[i][1]).toBeCloseTo(boundary[i][0], 5); // lat
       }
+      // Verify ring is closed (first point equals last point)
+      expect(ring[0][0]).toBeCloseTo(ring[ring.length - 1][0], 10);
+      expect(ring[0][1]).toBeCloseTo(ring[ring.length - 1][1], 10);
     });
   });
 
