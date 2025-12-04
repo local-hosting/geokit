@@ -34,10 +34,14 @@ export function h3ToPolygon(h3Index: string): Polygon | null {
   try {
     const boundary = cellToBoundary(h3Index);
     // Convert from [lat, lon] to [lon, lat] for GeoJSON format
-    const coordinates = [boundary.map(([lat, lng]) => [lng, lat] as [number, number])];
+    const ring = boundary.map(([lat, lng]) => [lng, lat] as [number, number]);
+    // Close the ring (GeoJSON requires first and last coordinate to be identical)
+    if (ring.length > 0) {
+      ring.push(ring[0]);
+    }
     return {
       type: 'Polygon',
-      coordinates,
+      coordinates: [ring],
     };
   } catch {
     return null;
