@@ -5,7 +5,7 @@ import type { Polygon } from '../types';
  * Convert H3 cells to a GeoJSON MultiPolygon
  *
  * @param h3Indices - Array of H3 cell IDs
- * @returns GeoJSON MultiPolygon geometry
+ * @returns GeoJSON MultiPolygon geometry with [lng, lat] coordinates
  *
  * @example
  * ```typescript
@@ -16,10 +16,20 @@ export function h3SetToMultiPolygon(h3Indices: string[]): {
   type: 'MultiPolygon';
   coordinates: number[][][][];
 } {
-  const coords = cellsToMultiPolygon(h3Indices, true);
+  // h3-js cellsToMultiPolygon returns [lat, lng] format
+  // Convert to GeoJSON [lng, lat] format
+  const h3Coords = cellsToMultiPolygon(h3Indices, true);
+  
+  // Swap [lat, lng] to [lng, lat] for each coordinate
+  const geoJsonCoords = h3Coords.map((polygon) =>
+    polygon.map((ring) =>
+      ring.map(([lat, lng]) => [lng, lat])
+    )
+  );
+  
   return {
     type: 'MultiPolygon',
-    coordinates: coords,
+    coordinates: geoJsonCoords,
   };
 }
 
