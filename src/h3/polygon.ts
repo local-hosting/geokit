@@ -16,20 +16,15 @@ export function h3SetToMultiPolygon(h3Indices: string[]): {
   type: 'MultiPolygon';
   coordinates: number[][][][];
 } {
-  // h3-js cellsToMultiPolygon without formatAsGeoJson returns [lat, lng] format (H3 convention)
-  // We need to manually convert to GeoJSON [lng, lat] format
-  const h3Coords = cellsToMultiPolygon(h3Indices);
-  
-  // Swap each coordinate from [lat, lng] to [lng, lat]
-  const geoJsonCoords = h3Coords.map((polygon) =>
-    polygon.map((ring) =>
-      ring.map((coord) => [coord[1], coord[0]])
-    )
-  );
+  // h3-js cellsToMultiPolygon:
+  // - Without flag: returns [lat, lng] (H3 native format)
+  // - With formatAsGeoJson=true: returns [lng, lat] (GeoJSON format)
+  // We need GeoJSON format, so pass true
+  const coords = cellsToMultiPolygon(h3Indices, true);
   
   return {
     type: 'MultiPolygon',
-    coordinates: geoJsonCoords,
+    coordinates: coords,
   };
 }
 
@@ -50,7 +45,8 @@ export function h3SetToMultiPolygon(h3Indices: string[]): {
  * ```
  */
 export function polygonToH3(polygon: Polygon, resolution: number): string[] {
-  // Convert our Polygon type to h3-js format
-  const h3Polygon = polygon.coordinates.map((ring) => ring.map(([lon, lat]) => [lat, lon]));
-  return polygonToCells(h3Polygon, resolution, true);
+  // GeoJSON uses [lng, lat] format
+  // h3-js polygonToCells with isGeoJson=true expects [lng, lat] format
+  // So we pass the coordinates directly without swapping
+  return polygonToCells(polygon.coordinates, resolution, true);
 }
