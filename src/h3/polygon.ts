@@ -16,14 +16,14 @@ export function h3SetToMultiPolygon(h3Indices: string[]): {
   type: 'MultiPolygon';
   coordinates: number[][][][];
 } {
-  // h3-js cellsToMultiPolygon returns [lat, lng] format
-  // Convert to GeoJSON [lng, lat] format
-  const h3Coords = cellsToMultiPolygon(h3Indices, true);
+  // h3-js cellsToMultiPolygon without formatAsGeoJson returns [lat, lng] format (H3 convention)
+  // We need to manually convert to GeoJSON [lng, lat] format
+  const h3Coords = cellsToMultiPolygon(h3Indices);
   
-  // Swap [lat, lng] to [lng, lat] for each coordinate
+  // Swap each coordinate from [lat, lng] to [lng, lat]
   const geoJsonCoords = h3Coords.map((polygon) =>
     polygon.map((ring) =>
-      ring.map(([lat, lng]) => [lng, lat])
+      ring.map((coord) => [coord[1], coord[0]])
     )
   );
   
