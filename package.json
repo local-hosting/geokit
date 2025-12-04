@@ -1,6 +1,6 @@
 {
-  "name": "@geokit/core",
-  "version": "0.1.0",
+  "name": "@twinfile/geokit",
+  "version": "0.1.1",
   "description": "A functional, curried geospatial utility toolkit for browser and Node.js",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
@@ -58,7 +58,6 @@
   ],
   "scripts": {
     "build": "tsc -p config/tsconfig.json && tsc -p config/tsconfig.cjs.json && node scripts/fix-esm-imports.js && node scripts/rename-cjs.js",
-    "postinstall": "yarn build",
     "test": "vitest run --config config/vitest.config.ts --environment node",
     "test:watch": "vitest --config config/vitest.config.ts",
     "test:node": "vitest run --config config/vitest.config.ts --environment node",
@@ -69,7 +68,10 @@
     "lint:fix": "eslint --config config/eslint.config.mjs . --ext .ts --fix",
     "format": "prettier --config config/.prettierrc.json --write \"**/*.{ts,json,md}\"",
     "format:check": "prettier --config config/.prettierrc.json --check \"**/*.{ts,json,md}\"",
-    "prepare": "husky"
+    "prepare": "husky",
+    "prepublishOnly": "yarn build && yarn test",
+    "postinstall": "",
+    "publish": "npm publish"
   },
   "keywords": [
     "geospatial",
@@ -86,7 +88,8 @@
   "author": "",
   "license": "MIT",
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://npm.pkg.github.com",
+    "@twinfile:registry": "https://npm.pkg.github.com"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
