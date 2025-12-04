@@ -274,6 +274,9 @@ export {
 // Convex hull utilities
 export { convexHull } from './hull';
 
+// Union utilities
+export { unionPolygons, unionAll, unionFeatures } from './union';
+
 // Intersection utilities
 export type { LineSegment } from './intersection';
 export { lineIntersection, linesIntersect } from './intersection';
