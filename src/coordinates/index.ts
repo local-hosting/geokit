@@ -18,3 +18,5 @@ export {
   removeDuplicateCoordinates,
   removeDuplicateCoordinatesFromGeometry,
 } from './manipulation';
+export { geojsonPolygonToLatLon } from './polygon-conversion';
+export { countPointsInGeometry } from './count-points';
