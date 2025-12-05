@@ -13,8 +13,10 @@ import {
   roundCoord,
   removeDuplicateCoordinates,
   removeDuplicateCoordinatesFromGeometry,
+  geojsonPolygonToLatLon,
+  countPointsInGeometry,
 } from '../src/coordinates';
-import type { Point, LineString, Polygon } from '../src/types';
+import type { Point, LineString, Polygon, MultiPolygon } from '../src/types';
 
 describe('coordinates', () => {
   describe('toLatLon', () => {
@@ -481,6 +483,825 @@ describe('coordinates', () => {
       const invalid = null as any;
       const cleaned = removeDuplicateCoordinatesFromGeometry(invalid);
       expect(cleaned).toBe(invalid);
+    });
+  });
+
+  describe('geojsonPolygonToLatLon', () => {
+    it('should convert Polygon from [lon, lat] to [lat, lon]', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.1, 40.6],
+            [-73.9, 40.6],
+            [-73.9, 40.8],
+            [-74.1, 40.8],
+            [-74.1, 40.6],
+          ],
+        ],
+      };
+      const result = geojsonPolygonToLatLon(polygon);
+      expect(result).not.toBe(null);
+      expect(result).toHaveLength(1);
+      expect(result![0]).toEqual([
+        [40.6, -74.1],
+        [40.6, -73.9],
+        [40.8, -73.9],
+        [40.8, -74.1],
+        [40.6, -74.1],
+      ]);
+    });
+
+    it('should convert MultiPolygon to array of [lat, lon] polygons', () => {
+      const multiPolygon: MultiPolygon = {
+        type: 'MultiPolygon',
+        coordinates: [
+          [
+            [
+              [-74.1, 40.6],
+              [-73.9, 40.6],
+              [-73.9, 40.8],
+              [-74.1, 40.8],
+              [-74.1, 40.6],
+            ],
+          ],
+          [
+            [
+              [-74.2, 40.5],
+              [-74.0, 40.5],
+              [-74.0, 40.7],
+              [-74.2, 40.7],
+              [-74.2, 40.5],
+            ],
+          ],
+        ],
+      };
+      const result = geojsonPolygonToLatLon(multiPolygon);
+      expect(result).not.toBe(null);
+      expect(result).toHaveLength(2);
+      expect(result![0]).toEqual([
+        [40.6, -74.1],
+        [40.6, -73.9],
+        [40.8, -73.9],
+        [40.8, -74.1],
+        [40.6, -74.1],
+      ]);
+      expect(result![1]).toEqual([
+        [40.5, -74.2],
+        [40.5, -74.0],
+        [40.7, -74.0],
+        [40.7, -74.2],
+        [40.5, -74.2],
+      ]);
+    });
+
+    it('should return null for invalid polygon', () => {
+      const invalid = {
+        type: 'Polygon',
+        coordinates: [],
+      } as Polygon;
+      const result = geojsonPolygonToLatLon(invalid);
+      expect(result).toBe(null);
+    });
+
+    it('should return null for null input', () => {
+      const result = geojsonPolygonToLatLon(null as any);
+      expect(result).toBe(null);
+    });
+
+    it('should handle polygon with multiple rings (use largest ring)', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          // Small ring (should be ignored if there's a larger one)
+          [
+            [-74.05, 40.71],
+            [-74.04, 40.71],
+            [-74.04, 40.72],
+            [-74.05, 40.72],
+            [-74.05, 40.71],
+          ],
+          // Large ring (should be used)
+          [
+            [-74.1, 40.6],
+            [-73.9, 40.6],
+            [-73.9, 40.8],
+            [-74.1, 40.8],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+          ],
+        ],
+      };
+      const result = geojsonPolygonToLatLon(polygon);
+      expect(result).not.toBe(null);
+      // Should use the larger ring
+      expect(result![0].length).toBeGreaterThan(5);
+    });
+
+    it('should handle empty MultiPolygon', () => {
+      const multiPolygon: MultiPolygon = {
+        type: 'MultiPolygon',
+        coordinates: [],
+      };
+      const result = geojsonPolygonToLatLon(multiPolygon);
+      expect(result).toBe(null);
+    });
+
+    it('should handle MultiPolygon with invalid polygons', () => {
+      const multiPolygon: MultiPolygon = {
+        type: 'MultiPolygon',
+        coordinates: [
+          [
+            [
+              [-74.1, 40.6],
+              [-73.9, 40.6],
+              [-73.9, 40.8],
+              [-74.1, 40.8],
+              [-74.1, 40.6],
+            ],
+          ],
+          [[]], // Invalid empty polygon
+        ],
+      };
+      const result = geojsonPolygonToLatLon(multiPolygon);
+      expect(result).not.toBe(null);
+      // Should return valid polygons only
+      expect(result!.length).toBeGreaterThan(0);
+    });
+
+    it('should handle polygon with exactly 10 points in first ring (boundary case)', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          // First ring with exactly 10 points
+          [
+            [-74.1, 40.6],
+            [-74.0, 40.6],
+            [-73.9, 40.6],
+            [-73.8, 40.6],
+            [-73.7, 40.6],
+            [-73.6, 40.6],
+            [-73.5, 40.6],
+            [-73.4, 40.6],
+            [-73.3, 40.6],
+            [-73.2, 40.6],
+          ],
+          // Second ring with more points (should not be used since first has >= 10)
+          [
+            [-74.1, 40.6],
+            [-73.9, 40.6],
+            [-73.9, 40.8],
+            [-74.1, 40.8],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+          ],
+        ],
+      };
+      const result = geojsonPolygonToLatLon(polygon);
+      expect(result).not.toBe(null);
+      // Should use first ring since it has >= 10 points
+      expect(result![0].length).toBe(10);
+    });
+
+    it('should handle polygon with first ring having 9 points and second having 20', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          // First ring with 9 points (< 10)
+          [
+            [-74.1, 40.6],
+            [-74.0, 40.6],
+            [-73.9, 40.6],
+            [-73.8, 40.6],
+            [-73.7, 40.6],
+            [-73.6, 40.6],
+            [-73.5, 40.6],
+            [-73.4, 40.6],
+            [-73.3, 40.6],
+          ],
+          // Second ring with 20 points (should be used since it's > 2x first)
+          Array.from({ length: 20 }, (_, i) => [-74.1 + (i / 20) * 0.2, 40.6 + (i / 20) * 0.2]),
+        ],
+      };
+      const result = geojsonPolygonToLatLon(polygon);
+      expect(result).not.toBe(null);
+      // Should use larger ring
+      expect(result![0].length).toBe(20);
+    });
+
+    it('should handle polygon with multiple rings where largest is not 2x first', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          // First ring with 8 points
+          [
+            [-74.1, 40.6],
+            [-74.0, 40.6],
+            [-73.9, 40.6],
+            [-73.8, 40.6],
+            [-73.7, 40.6],
+            [-73.6, 40.6],
+            [-73.5, 40.6],
+            [-73.4, 40.6],
+          ],
+          // Second ring with 10 points (not 2x, so first should be used)
+          [
+            [-74.1, 40.6],
+            [-73.9, 40.6],
+            [-73.9, 40.8],
+            [-74.1, 40.8],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+            [-74.1, 40.6],
+          ],
+        ],
+      };
+      const result = geojsonPolygonToLatLon(polygon);
+      expect(result).not.toBe(null);
+      // Should use first ring since second is not 2x larger
+      expect(result![0].length).toBe(8);
+    });
+
+    it('should handle polygon with 3D coordinates', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.1, 40.6, 100],
+            [-73.9, 40.6, 100],
+            [-73.9, 40.8, 100],
+            [-74.1, 40.8, 100],
+            [-74.1, 40.6, 100],
+          ],
+        ],
+      };
+      const result = geojsonPolygonToLatLon(polygon);
+      expect(result).not.toBe(null);
+      expect(result![0]).toEqual([
+        [40.6, -74.1],
+        [40.6, -73.9],
+        [40.8, -73.9],
+        [40.8, -74.1],
+        [40.6, -74.1],
+      ]);
+    });
+
+    it('should handle polygon with coordinates at antimeridian', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [179, 0],
+            [180, 0],
+            [180, 1],
+            [179, 1],
+            [179, 0],
+          ],
+        ],
+      };
+      const result = geojsonPolygonToLatLon(polygon);
+      expect(result).not.toBe(null);
+      expect(result![0]).toEqual([
+        [0, 179],
+        [0, 180],
+        [1, 180],
+        [1, 179],
+        [0, 179],
+      ]);
+    });
+
+    it('should handle polygon with coordinates at poles', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-10, 89],
+            [10, 89],
+            [10, 90],
+            [-10, 90],
+            [-10, 89],
+          ],
+        ],
+      };
+      const result = geojsonPolygonToLatLon(polygon);
+      expect(result).not.toBe(null);
+      expect(result![0]).toEqual([
+        [89, -10],
+        [89, 10],
+        [90, 10],
+        [90, -10],
+        [89, -10],
+      ]);
+    });
+
+    it('should handle polygon with negative coordinates', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-120, -45],
+            [-100, -45],
+            [-100, -30],
+            [-120, -30],
+            [-120, -45],
+          ],
+        ],
+      };
+      const result = geojsonPolygonToLatLon(polygon);
+      expect(result).not.toBe(null);
+      expect(result![0]).toEqual([
+        [-45, -120],
+        [-45, -100],
+        [-30, -100],
+        [-30, -120],
+        [-45, -120],
+      ]);
+    });
+
+    it('should handle MultiPolygon with many polygons', () => {
+      const multiPolygon: MultiPolygon = {
+        type: 'MultiPolygon',
+        coordinates: Array.from({ length: 10 }, (_, i) => [
+          [
+            [-74.1 - i * 0.1, 40.6],
+            [-73.9 - i * 0.1, 40.6],
+            [-73.9 - i * 0.1, 40.8],
+            [-74.1 - i * 0.1, 40.8],
+            [-74.1 - i * 0.1, 40.6],
+          ],
+        ]),
+      };
+      const result = geojsonPolygonToLatLon(multiPolygon);
+      expect(result).not.toBe(null);
+      expect(result!.length).toBe(10);
+    });
+
+    it('should handle polygon with single coordinate point (degenerate)', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.0, 40.71],
+            [-74.0, 40.71],
+            [-74.0, 40.71],
+          ],
+        ],
+      };
+      const result = geojsonPolygonToLatLon(polygon);
+      expect(result).not.toBe(null);
+      expect(result![0].length).toBe(3);
+    });
+
+    it('should handle polygon with very small coordinates', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.000001, 40.710001],
+            [-74.000002, 40.710001],
+            [-74.000002, 40.710002],
+            [-74.000001, 40.710002],
+            [-74.000001, 40.710001],
+          ],
+        ],
+      };
+      const result = geojsonPolygonToLatLon(polygon);
+      expect(result).not.toBe(null);
+      expect(result![0].length).toBe(5);
+    });
+  });
+
+  describe('countPointsInGeometry', () => {
+    it('should count points in Point geometry', () => {
+      const point: Point = {
+        type: 'Point',
+        coordinates: [-74.006, 40.7128],
+      };
+      expect(countPointsInGeometry(point)).toBe(1);
+    });
+
+    it('should count points in LineString geometry', () => {
+      const lineString: LineString = {
+        type: 'LineString',
+        coordinates: [
+          [-74.006, 40.7128],
+          [-73.9855, 40.758],
+          [-73.97, 40.77],
+        ],
+      };
+      expect(countPointsInGeometry(lineString)).toBe(3);
+    });
+
+    it('should count points in Polygon geometry', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.01, 40.71],
+            [-74.0, 40.71],
+            [-74.0, 40.72],
+            [-74.01, 40.72],
+            [-74.01, 40.71],
+          ],
+        ],
+      };
+      expect(countPointsInGeometry(polygon)).toBe(5);
+    });
+
+    it('should count points in Polygon with holes', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.01, 40.71],
+            [-74.0, 40.71],
+            [-74.0, 40.72],
+            [-74.01, 40.72],
+            [-74.01, 40.71],
+          ],
+          [
+            [-74.005, 40.715],
+            [-74.002, 40.715],
+            [-74.002, 40.717],
+            [-74.005, 40.717],
+            [-74.005, 40.715],
+          ],
+        ],
+      };
+      expect(countPointsInGeometry(polygon)).toBe(10);
+    });
+
+    it('should count points in MultiPolygon', () => {
+      const multiPolygon: MultiPolygon = {
+        type: 'MultiPolygon',
+        coordinates: [
+          [
+            [
+              [-74.01, 40.71],
+              [-74.0, 40.71],
+              [-74.0, 40.72],
+              [-74.01, 40.72],
+              [-74.01, 40.71],
+            ],
+          ],
+          [
+            [
+              [-75.0, 40.5],
+              [-74.9, 40.5],
+              [-74.9, 40.6],
+              [-75.0, 40.6],
+              [-75.0, 40.5],
+            ],
+          ],
+        ],
+      };
+      expect(countPointsInGeometry(multiPolygon)).toBe(10);
+    });
+
+    it('should return 0 for null geometry', () => {
+      expect(countPointsInGeometry(null)).toBe(0);
+    });
+
+    it('should return 0 for undefined geometry', () => {
+      expect(countPointsInGeometry(undefined)).toBe(0);
+    });
+
+    it('should return 0 for invalid geometry', () => {
+      const invalid = {} as any;
+      expect(countPointsInGeometry(invalid)).toBe(0);
+    });
+
+    it('should count points in MultiPoint', () => {
+      const multiPoint = {
+        type: 'MultiPoint',
+        coordinates: [
+          [-74.006, 40.7128],
+          [-73.9855, 40.758],
+          [-73.97, 40.77],
+        ],
+      };
+      expect(countPointsInGeometry(multiPoint)).toBe(3);
+    });
+
+    it('should count points in MultiLineString', () => {
+      const multiLineString = {
+        type: 'MultiLineString',
+        coordinates: [
+          [
+            [-74.006, 40.7128],
+            [-73.9855, 40.758],
+          ],
+          [
+            [-75.0, 40.5],
+            [-74.9, 40.5],
+          ],
+        ],
+      };
+      expect(countPointsInGeometry(multiLineString)).toBe(4);
+    });
+
+    it('should handle empty coordinates', () => {
+      const emptyLineString: LineString = {
+        type: 'LineString',
+        coordinates: [],
+      };
+      expect(countPointsInGeometry(emptyLineString)).toBe(0);
+    });
+
+    it('should return 0 for GeometryCollection (not supported - uses geometries not coordinates)', () => {
+      const geometryCollection = {
+        type: 'GeometryCollection',
+        geometries: [
+          {
+            type: 'Point',
+            coordinates: [-74.006, 40.7128],
+          },
+          {
+            type: 'LineString',
+            coordinates: [
+              [-73.9855, 40.758],
+              [-73.97, 40.77],
+            ],
+          },
+        ],
+      };
+      // GeometryCollection doesn't have 'coordinates' property, it has 'geometries'
+      // So countPointsInGeometry returns 0 for unsupported types
+      expect(countPointsInGeometry(geometryCollection as any)).toBe(0);
+    });
+
+    it('should count points in geometry with 3D coordinates', () => {
+      const point3D: Point = {
+        type: 'Point',
+        coordinates: [-74.006, 40.7128, 100],
+      };
+      expect(countPointsInGeometry(point3D)).toBe(1);
+
+      const lineString3D: LineString = {
+        type: 'LineString',
+        coordinates: [
+          [-74.006, 40.7128, 100],
+          [-73.9855, 40.758, 200],
+          [-73.97, 40.77, 300],
+        ],
+      };
+      expect(countPointsInGeometry(lineString3D)).toBe(3);
+    });
+
+    it('should count points in polygon with many holes', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          // Outer ring
+          [
+            [-74.01, 40.71],
+            [-74.0, 40.71],
+            [-74.0, 40.72],
+            [-74.01, 40.72],
+            [-74.01, 40.71],
+          ],
+          // Hole 1
+          [
+            [-74.005, 40.715],
+            [-74.002, 40.715],
+            [-74.002, 40.717],
+            [-74.005, 40.717],
+            [-74.005, 40.715],
+          ],
+          // Hole 2
+          [
+            [-74.008, 40.712],
+            [-74.007, 40.712],
+            [-74.007, 40.713],
+            [-74.008, 40.713],
+            [-74.008, 40.712],
+          ],
+          // Hole 3
+          [
+            [-74.003, 40.718],
+            [-74.001, 40.718],
+            [-74.001, 40.719],
+            [-74.003, 40.719],
+            [-74.003, 40.718],
+          ],
+        ],
+      };
+      expect(countPointsInGeometry(polygon)).toBe(20);
+    });
+
+    it('should count points in MultiPolygon with many polygons and holes', () => {
+      const multiPolygon: MultiPolygon = {
+        type: 'MultiPolygon',
+        coordinates: [
+          // Polygon 1 with 2 holes: outer ring (5) + hole1 (5) + hole2 (5) = 15
+          [
+            [
+              [-74.01, 40.71],
+              [-74.0, 40.71],
+              [-74.0, 40.72],
+              [-74.01, 40.72],
+              [-74.01, 40.71],
+            ],
+            [
+              [-74.005, 40.715],
+              [-74.002, 40.715],
+              [-74.002, 40.717],
+              [-74.005, 40.717],
+              [-74.005, 40.715],
+            ],
+            [
+              [-74.008, 40.712],
+              [-74.007, 40.712],
+              [-74.007, 40.713],
+              [-74.008, 40.713],
+              [-74.008, 40.712],
+            ],
+          ],
+          // Polygon 2 with 1 hole: outer ring (5) + hole (5) = 10
+          [
+            [
+              [-75.0, 40.5],
+              [-74.9, 40.5],
+              [-74.9, 40.6],
+              [-75.0, 40.6],
+              [-75.0, 40.5],
+            ],
+            [
+              [-74.95, 40.55],
+              [-74.92, 40.55],
+              [-74.92, 40.57],
+              [-74.95, 40.57],
+              [-74.95, 40.55],
+            ],
+          ],
+        ],
+      };
+      // Total: 15 + 10 = 25
+      expect(countPointsInGeometry(multiPolygon)).toBe(25);
+    });
+
+    it('should count points in complex nested MultiLineString', () => {
+      const multiLineString = {
+        type: 'MultiLineString',
+        coordinates: [
+          [
+            [-74.006, 40.7128],
+            [-73.9855, 40.758],
+            [-73.97, 40.77],
+          ],
+          [
+            [-75.0, 40.5],
+            [-74.9, 40.5],
+            [-74.8, 40.5],
+            [-74.7, 40.5],
+          ],
+          [
+            [-76.0, 40.4],
+            [-75.9, 40.4],
+          ],
+        ],
+      };
+      expect(countPointsInGeometry(multiLineString)).toBe(9);
+    });
+
+    it('should handle geometry with coordinates at antimeridian', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [179, 0],
+            [180, 0],
+            [-180, 1],
+            [-179, 1],
+            [179, 0],
+          ],
+        ],
+      };
+      expect(countPointsInGeometry(polygon)).toBe(5);
+    });
+
+    it('should handle geometry with coordinates at poles', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-10, 89],
+            [10, 89],
+            [10, 90],
+            [-10, 90],
+            [-10, 89],
+          ],
+        ],
+      };
+      expect(countPointsInGeometry(polygon)).toBe(5);
+    });
+
+    it('should handle geometry with negative coordinates', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-120, -45],
+            [-100, -45],
+            [-100, -30],
+            [-120, -30],
+            [-120, -45],
+          ],
+        ],
+      };
+      expect(countPointsInGeometry(polygon)).toBe(5);
+    });
+
+    it('should handle geometry with very small coordinate differences', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.000001, 40.710001],
+            [-74.000002, 40.710001],
+            [-74.000002, 40.710002],
+            [-74.000001, 40.710002],
+            [-74.000001, 40.710001],
+          ],
+        ],
+      };
+      expect(countPointsInGeometry(polygon)).toBe(5);
+    });
+
+    it('should handle geometry with many duplicate coordinates', () => {
+      const lineString: LineString = {
+        type: 'LineString',
+        coordinates: [
+          [-74.006, 40.7128],
+          [-74.006, 40.7128],
+          [-74.006, 40.7128],
+          [-73.9855, 40.758],
+          [-73.9855, 40.758],
+          [-73.97, 40.77],
+        ],
+      };
+      expect(countPointsInGeometry(lineString)).toBe(6);
+    });
+
+    it('should return 0 for empty GeometryCollection (not supported)', () => {
+      const geometryCollection = {
+        type: 'GeometryCollection',
+        geometries: [],
+      };
+      // GeometryCollection doesn't have 'coordinates' property
+      expect(countPointsInGeometry(geometryCollection as any)).toBe(0);
+    });
+
+    it('should handle geometry with single point repeated', () => {
+      const multiPoint = {
+        type: 'MultiPoint',
+        coordinates: Array(100).fill([-74.006, 40.7128]),
+      };
+      expect(countPointsInGeometry(multiPoint)).toBe(100);
+    });
+
+    it('should handle very large polygon with many vertices', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          Array.from({ length: 1000 }, (_, i) => [
+            -74.0 + Math.cos((i / 1000) * Math.PI * 2) * 0.01,
+            40.71 + Math.sin((i / 1000) * Math.PI * 2) * 0.01,
+          ]).concat([[-74.0, 40.71]]), // Close the ring
+        ],
+      };
+      expect(countPointsInGeometry(polygon)).toBe(1001);
     });
   });
 });

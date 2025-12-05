@@ -102,6 +102,8 @@ export {
   roundCoordinates,
   removeDuplicateCoordinates,
   removeDuplicateCoordinatesFromGeometry,
+  geojsonPolygonToLatLon,
+  countPointsInGeometry,
 } from './coordinates';
 
 // GeoJSON utilities
@@ -135,7 +137,17 @@ export {
 export { slugify, normalize, normalizeName } from './normalize';
 
 // Bounds utilities
-export { getBounds, getCenter, isWithinBounds, boundsToObject, type BoundsObject } from './bounds';
+export {
+  getBounds,
+  getCenter,
+  isWithinBounds,
+  boundsToObject,
+  type BoundsObject,
+  bboxToPolygon,
+  bboxToPolygonGeometry,
+  calculateZoomFromBounds,
+  calculateCenterAndZoom,
+} from './bounds';
 
 // Bearing utilities
 export {
@@ -157,6 +169,8 @@ export {
   boundsContains,
   boundsContainsBounds,
   boundsIntersects,
+  pointInGeometry,
+  pointInGeometryCurried,
 } from './containment';
 
 // Area utilities
@@ -197,7 +211,15 @@ export {
 } from './conversions';
 
 // Simplification utilities
-export { simplify, simplifyMeters } from './simplify';
+export {
+  simplify,
+  simplifyMeters,
+  simplifyPolygonRing,
+  simplifyPolygonRingMeters,
+  simplifyPolygonRingToMaxPoints,
+  simplifyGeometry,
+  simplifyGeometryMeters,
+} from './simplify';
 
 // Clustering utilities
 export type { ClusterPoint, Cluster } from './clustering';
