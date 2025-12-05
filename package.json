@@ -70,8 +70,7 @@
     "format:check": "prettier --config config/.prettierrc.json --check \"**/*.{ts,json,md}\"",
     "prepare": "husky",
     "prepublishOnly": "yarn build && yarn test",
-    "postinstall": "",
-    "publish": "npm publish"
+    "postinstall": ""
   },
   "keywords": [
     "geospatial",
@@ -130,6 +129,7 @@
     "@turf/centroid": "^7.3.0",
     "@turf/convex": "^7.3.0",
     "@turf/destination": "^7.3.0",
+    "@turf/difference": "^7.3.1",
     "@turf/helpers": "^7.3.0",
     "@turf/length": "^7.3.0",
     "@turf/line-intersect": "^7.3.0",
