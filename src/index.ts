@@ -134,6 +134,9 @@ export {
   repairFeatureCollection,
   repairGeoJSON,
   type RepairOptions,
+  fixPolygonRingOrder,
+  filterTinyPolygons,
+  cleanGeometry,
 } from './geojson';
 
 // Normalization utilities

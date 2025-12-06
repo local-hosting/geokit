@@ -21,6 +21,9 @@ import {
   repairFeature,
   repairFeatureCollection,
   repairGeoJSON,
+  fixPolygonRingOrder,
+  filterTinyPolygons,
+  cleanGeometry,
 } from '../src/geojson';
 import type {
   Feature,
@@ -722,6 +725,293 @@ describe('geojson', () => {
       if (repaired && 'type' in repaired && repaired.type === 'FeatureCollection') {
         expect(repaired.features).toEqual([]);
       }
+    });
+  });
+
+  describe('fixPolygonRingOrder', () => {
+    it('should reorder rings so largest is first', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          // Small ring (5 points)
+          [
+            [-74.0, 40.7],
+            [-73.9, 40.7],
+            [-73.9, 40.8],
+            [-74.0, 40.8],
+            [-74.0, 40.7],
+          ],
+          // Large ring (10 points) - should be moved to first
+          [
+            [-75.0, 40.0],
+            [-73.0, 40.0],
+            [-73.0, 41.0],
+            [-75.0, 41.0],
+            [-75.0, 40.5],
+            [-74.5, 40.5],
+            [-74.5, 40.2],
+            [-75.0, 40.2],
+            [-75.0, 40.0],
+            [-75.0, 40.0],
+          ],
+        ],
+      };
+
+      const fixed = fixPolygonRingOrder(polygon);
+      expect(fixed.coordinates[0].length).toBe(10);
+      expect(fixed.coordinates[1].length).toBe(5);
+    });
+
+    it('should not reorder if largest ring is already first', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          // Large ring first
+          [
+            [-75.0, 40.0],
+            [-73.0, 40.0],
+            [-73.0, 41.0],
+            [-75.0, 41.0],
+            [-75.0, 40.0],
+          ],
+          // Small ring
+          [
+            [-74.0, 40.7],
+            [-73.9, 40.7],
+            [-73.9, 40.8],
+            [-74.0, 40.8],
+            [-74.0, 40.7],
+          ],
+        ],
+      };
+
+      const fixed = fixPolygonRingOrder(polygon);
+      expect(fixed.coordinates[0].length).toBe(5);
+      expect(fixed.coordinates[1].length).toBe(5);
+    });
+
+    it('should return unchanged for single ring', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.0, 40.7],
+            [-73.9, 40.7],
+            [-73.9, 40.8],
+            [-74.0, 40.8],
+            [-74.0, 40.7],
+          ],
+        ],
+      };
+
+      const fixed = fixPolygonRingOrder(polygon);
+      expect(fixed).toEqual(polygon);
+    });
+
+    it('should return unchanged for non-Polygon geometry', () => {
+      const point: Point = {
+        type: 'Point',
+        coordinates: [-74.0, 40.7],
+      };
+
+      // @ts-expect-error - testing invalid input
+      const result = fixPolygonRingOrder(point);
+      expect(result).toEqual(point);
+    });
+  });
+
+  describe('filterTinyPolygons', () => {
+    it('should filter out polygons below minimum point count', () => {
+      const multiPolygon: MultiPolygon = {
+        type: 'MultiPolygon',
+        coordinates: [
+          // Tiny polygon (5 points) - should be removed
+          [
+            [
+              [-74.0, 40.7],
+              [-73.9, 40.7],
+              [-73.9, 40.8],
+              [-74.0, 40.8],
+              [-74.0, 40.7],
+            ],
+          ],
+          // Large polygon (15 points) - should be kept
+          [
+            [
+              [-75.0, 40.0],
+              [-73.0, 40.0],
+              [-73.0, 41.0],
+              [-75.0, 41.0],
+              [-75.0, 40.5],
+              [-74.5, 40.5],
+              [-74.5, 40.2],
+              [-75.0, 40.2],
+              [-75.0, 40.1],
+              [-74.8, 40.1],
+              [-74.8, 40.3],
+              [-74.6, 40.3],
+              [-74.6, 40.4],
+              [-74.7, 40.4],
+              [-75.0, 40.0],
+            ],
+          ],
+        ],
+      };
+
+      const filtered = filterTinyPolygons(multiPolygon, 10);
+      expect(filtered.coordinates.length).toBe(1);
+      expect(filtered.coordinates[0][0].length).toBe(15);
+    });
+
+    it('should keep at least the largest polygon if all are filtered', () => {
+      const multiPolygon: MultiPolygon = {
+        type: 'MultiPolygon',
+        coordinates: [
+          [
+            [
+              [-74.0, 40.7],
+              [-73.9, 40.7],
+              [-73.9, 40.8],
+              [-74.0, 40.8],
+              [-74.0, 40.7],
+            ],
+          ],
+          [
+            [
+              [-75.0, 40.0],
+              [-73.0, 40.0],
+              [-73.0, 41.0],
+              [-75.0, 41.0],
+              [-75.0, 40.0],
+            ],
+          ],
+        ],
+      };
+
+      // Filter with high threshold - all should be filtered, but largest kept
+      const filtered = filterTinyPolygons(multiPolygon, 20);
+      expect(filtered.coordinates.length).toBe(1);
+      expect(filtered.coordinates[0][0].length).toBe(5); // Largest one
+    });
+
+    it('should return unchanged for non-MultiPolygon geometry', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.0, 40.7],
+            [-73.9, 40.7],
+            [-73.9, 40.8],
+            [-74.0, 40.8],
+            [-74.0, 40.7],
+          ],
+        ],
+      };
+
+      // @ts-expect-error - testing invalid input
+      const result = filterTinyPolygons(polygon, 10);
+      expect(result).toEqual(polygon);
+    });
+  });
+
+  describe('cleanGeometry', () => {
+    it('should remove NaN coordinates from Polygon', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.0, 40.7],
+            [NaN, 40.7],
+            [-73.9, 40.8],
+            [-74.0, NaN],
+            [-74.0, 40.7],
+          ],
+        ],
+      };
+
+      const cleaned = cleanGeometry(polygon);
+      expect(cleaned.coordinates[0].length).toBe(3); // NaN coordinates removed
+      expect(cleaned.coordinates[0].every((coord) => !isNaN(coord[0]) && !isNaN(coord[1]))).toBe(
+        true
+      );
+    });
+
+    it('should remove null coordinates from MultiPolygon', () => {
+      const multiPolygon: MultiPolygon = {
+        type: 'MultiPolygon',
+        coordinates: [
+          [[[-74.0, 40.7], null as unknown as [number, number], [-73.9, 40.8], [-74.0, 40.7]]],
+        ],
+      };
+
+      const cleaned = cleanGeometry(multiPolygon);
+      expect(cleaned.coordinates[0][0].length).toBe(3); // null coordinate removed
+    });
+
+    it('should remove invalid coordinates (non-finite)', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.0, 40.7],
+            [Infinity, 40.7],
+            [-73.9, 40.8],
+            [-74.0, -Infinity],
+            [-74.0, 40.7],
+          ],
+        ],
+      };
+
+      const cleaned = cleanGeometry(polygon);
+      expect(cleaned.coordinates[0].length).toBe(3); // Invalid coordinates removed
+      expect(
+        cleaned.coordinates[0].every((coord) => isFinite(coord[0]) && isFinite(coord[1]))
+      ).toBe(true);
+    });
+
+    it('should return original if all rings are invalid', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [NaN, NaN],
+            [Infinity, Infinity],
+          ],
+        ],
+      };
+
+      const cleaned = cleanGeometry(polygon);
+      // Should return original since all rings are invalid
+      expect(cleaned).toEqual(polygon);
+    });
+
+    it('should handle nested coordinate arrays correctly', () => {
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-74.0, 40.7],
+            [-73.9, 40.7],
+            [-73.9, 40.8],
+            [-74.0, 40.8],
+            [-74.0, 40.7],
+          ],
+        ],
+      };
+
+      const cleaned = cleanGeometry(polygon);
+      expect(cleaned).toEqual(polygon);
+    });
+
+    it('should return unchanged for non-Polygon/MultiPolygon geometry', () => {
+      const point: Point = {
+        type: 'Point',
+        coordinates: [-74.0, 40.7],
+      };
+
+      // @ts-expect-error - testing invalid input
+      const result = cleanGeometry(point);
+      expect(result).toEqual(point);
     });
   });
 });
