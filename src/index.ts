@@ -99,7 +99,10 @@ export {
   deserializeCoordinates,
   normalizeCoordinateInput,
   normalizeCoordinatesArray,
-  roundCoordinates,
+  roundGeometry,
+  roundCoordinate,
+  roundCoordinates, // deprecated, use roundGeometry
+  roundCoord, // deprecated, use roundCoordinate
   removeDuplicateCoordinates,
   removeDuplicateCoordinatesFromGeometry,
   geojsonPolygonToLatLon,
