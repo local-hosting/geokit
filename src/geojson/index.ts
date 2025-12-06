@@ -24,6 +24,8 @@ export {
   type RepairOptions,
 } from './repair';
 
+export { fixPolygonRingOrder, filterTinyPolygons, cleanGeometry } from './polygon-utils';
+
 /**
  * Extract coordinates from a GeoJSON feature or geometry
  *
