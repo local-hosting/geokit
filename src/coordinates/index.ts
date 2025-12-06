@@ -3,7 +3,7 @@
  * Convert, validate, extract, and serialize coordinates in various formats
  */
 
-export { toLatLon, toLonLat } from './conversion';
+export { toLatLon, toLonLat, toLonLatArray, toLatLonArray } from './conversion';
 export { isValidCoordinate } from './validation';
 export {
   extractCoordinates,

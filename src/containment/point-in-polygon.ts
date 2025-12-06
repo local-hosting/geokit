@@ -1,7 +1,7 @@
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { polygon as turfPolygon } from '@turf/helpers';
 import type { LatLon, Polygon } from '../types';
-import { createPoint, validatePolygon } from '../turf-utils';
+import { createPointFeature, validatePolygon } from '../turf-utils';
 
 /**
  * Check if a point is inside a polygon
@@ -27,7 +27,7 @@ export function pointInPolygon(point: LatLon) {
     }
 
     try {
-      const pt = createPoint(point);
+      const pt = createPointFeature(point);
       const poly = turfPolygon(polygon.coordinates);
 
       return booleanPointInPolygon(pt, poly);

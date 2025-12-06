@@ -1,29 +1,29 @@
 import { describe, it, expect } from 'vitest';
 import {
-  createPoint,
+  createPointFeature,
   createLineString,
-  toLonLatArray,
   extractLatLon,
   validatePolygon,
 } from '../src/turf-utils';
+import { toLonLatArray } from '../src/coordinates/conversion';
 import type { Feature, Point, Polygon } from '../src/types';
 
 describe('turf-utils', () => {
-  describe('createPoint', () => {
+  describe('createPointFeature', () => {
     it('should create a Point Feature from LatLon', () => {
-      const point = createPoint([40.7128, -74.006]);
+      const point = createPointFeature([40.7128, -74.006]);
       expect(point.type).toBe('Feature');
       expect(point.geometry.type).toBe('Point');
       expect(point.geometry.coordinates).toEqual([-74.006, 40.7128]);
     });
 
     it('should handle negative coordinates', () => {
-      const point = createPoint([-33.8688, 151.2093]);
+      const point = createPointFeature([-33.8688, 151.2093]);
       expect(point.geometry.coordinates).toEqual([151.2093, -33.8688]);
     });
 
     it('should handle zero coordinates', () => {
-      const point = createPoint([0, 0]);
+      const point = createPointFeature([0, 0]);
       expect(point.geometry.coordinates).toEqual([0, 0]);
     });
   });
@@ -125,9 +125,9 @@ describe('turf-utils', () => {
       expect(result).toEqual([-33.8688, 151.2093]);
     });
 
-    it('should roundtrip with createPoint', () => {
+    it('should roundtrip with createPointFeature', () => {
       const original: [number, number] = [40.7128, -74.006];
-      const feature = createPoint(original);
+      const feature = createPointFeature(original);
       const extracted = extractLatLon(feature);
       expect(extracted).toEqual(original);
     });

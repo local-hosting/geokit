@@ -7,7 +7,8 @@ import turfBuffer from '@turf/buffer';
 import { lineString as turfLineString, polygon as turfPolygon } from '@turf/helpers';
 import type { LatLon, Polygon } from '../types';
 import { DEFAULT_BUFFER_STEPS, METERS_TO_KILOMETERS } from '../constants';
-import { createPoint, toLonLatArray } from '../turf-utils';
+import { createPointFeature } from '../turf-utils';
+import { toLonLatArray } from '../coordinates/conversion';
 
 /**
  * Create a buffer zone around a point
@@ -27,7 +28,7 @@ export function bufferPoint(
   radius: number,
   steps: number = DEFAULT_BUFFER_STEPS
 ): Polygon {
-  const pt = createPoint(point);
+  const pt = createPointFeature(point);
   const buffered = turfBuffer(pt, radius / METERS_TO_KILOMETERS, { units: 'kilometers', steps });
 
   if (!buffered || buffered.geometry.type !== 'Polygon') {

@@ -5,7 +5,7 @@
 import convexTurf from '@turf/convex';
 import { points as turfPoints } from '@turf/helpers';
 import type { LatLon, Polygon } from '../types';
-import { toLonLatArray } from '../turf-utils';
+import { toLonLatArray } from '../coordinates/conversion';
 
 /**
  * Calculate the convex hull of a set of points

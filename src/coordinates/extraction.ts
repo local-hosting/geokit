@@ -2,6 +2,46 @@ import type { LatLon, LonLat, CoordinateObject, Point } from '../types';
 import { toLatLon } from './conversion';
 
 /**
+ * Detect and convert coordinate array format from [lat, lon] or [lon, lat] to [lat, lon]
+ * Uses heuristics to auto-detect the format when both values are within valid latitude range
+ *
+ * @param coord - Coordinate pair as [first, second]
+ * @returns Coordinates in [latitude, longitude] format
+ *
+ * @internal
+ */
+export function detectAndConvertCoordinateFormat(coord: [number, number]): LatLon {
+  const [first, second] = coord;
+
+  // If first value is outside valid latitude range (-90 to 90), it must be longitude
+  // So convert from [lon, lat] to [lat, lon]
+  if (Math.abs(first) > 90) {
+    return [second, first] as LatLon;
+  }
+
+  // If second value is outside valid latitude range, first must be latitude
+  // Already in [lat, lon] format
+  if (Math.abs(second) > 90) {
+    return [first, second] as LatLon;
+  }
+
+  // Special case: if first value is exactly 90 or -90, it's definitely latitude
+  if (Math.abs(first) === 90) {
+    return [first, second] as LatLon;
+  }
+
+  // If both values are within latitude range, use a heuristic:
+  // If first value has larger absolute value AND it's not a pole, it's more likely to be longitude
+  // (as most populated areas are closer to the equator)
+  if (Math.abs(first) > Math.abs(second) && Math.abs(first) < 90) {
+    return [second, first] as LatLon;
+  }
+
+  // Otherwise assume it's already in [lat, lon] format
+  return [first, second] as LatLon;
+}
+
+/**
  * Extract coordinates from various input formats
  * Supports: [lat, lon], [lon, lat], {lat, lon}, {latitude, longitude}, GeoJSON Point
  *
@@ -34,29 +74,7 @@ export function extractCoordinates(
     if (input.length !== 2) {
       return null;
     }
-    const [first, second] = input;
-
-    // If first value is outside valid latitude range (-90 to 90), it must be longitude
-    // So convert from [lon, lat] to [lat, lon]
-    if (Math.abs(first) > 90) {
-      return [second, first] as LatLon;
-    }
-
-    // If second value is outside valid latitude range, first must be latitude
-    // Already in [lat, lon] format
-    if (Math.abs(second) > 90) {
-      return [first, second] as LatLon;
-    }
-
-    // If both values are within latitude range, use a heuristic:
-    // If first value has larger absolute value, it's more likely to be longitude
-    // (as most populated areas are closer to the equator)
-    if (Math.abs(first) > Math.abs(second)) {
-      return [second, first] as LatLon;
-    }
-
-    // Otherwise assume it's already in [lat, lon] format
-    return [first, second] as LatLon;
+    return detectAndConvertCoordinateFormat([input[0], input[1]]);
   }
 
   // Object format {lat, lon} or {latitude, longitude}
@@ -153,35 +171,8 @@ export function normalizeCoordinatesArray(
         // Already in [lat, lon] format
         return coord as LatLon;
       } else {
-        // Auto-detect: use extractCoordinates logic
-        const [first, second] = coord;
-
-        // If first value is outside valid latitude range (-90 to 90), it must be longitude
-        // So convert from [lon, lat] to [lat, lon]
-        if (Math.abs(first) > 90) {
-          return [second, first] as LatLon;
-        }
-
-        // If second value is outside valid latitude range, first must be latitude
-        // Already in [lat, lon] format
-        if (Math.abs(second) > 90) {
-          return [first, second] as LatLon;
-        }
-
-        // Special case: if first value is exactly 90 or -90, it's definitely latitude
-        if (Math.abs(first) === 90) {
-          return [first, second] as LatLon;
-        }
-
-        // If both values are within latitude range, use a heuristic:
-        // If first value has larger absolute value AND it's not a pole, it's more likely to be longitude
-        // (as most populated areas are closer to the equator)
-        if (Math.abs(first) > Math.abs(second) && Math.abs(first) < 90) {
-          return [second, first] as LatLon;
-        }
-
-        // Otherwise assume it's already in [lat, lon] format
-        return [first, second] as LatLon;
+        // Auto-detect: use shared detection logic
+        return detectAndConvertCoordinateFormat([coord[0], coord[1]]);
       }
     })
     .filter((coord): coord is LatLon => coord !== null);

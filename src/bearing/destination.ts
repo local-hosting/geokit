@@ -10,7 +10,7 @@ import {
   LONGITUDE_NORMALIZATION_OFFSET,
   DEGREES_IN_CIRCLE,
 } from '../constants';
-import { createPoint, extractLatLon } from '../turf-utils';
+import { createPointFeature, extractLatLon } from '../turf-utils';
 
 /**
  * Calculate destination point given start point, distance, and bearing
@@ -34,7 +34,7 @@ export function destination(
 ) {
   return (point: LatLon): LatLon => {
     try {
-      const pt = createPoint(point);
+      const pt = createPointFeature(point);
 
       // Convert distance to kilometers for Turf (Turf uses km by default)
       const distanceKm = distance / METERS_TO_KILOMETERS;

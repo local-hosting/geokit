@@ -2,7 +2,8 @@ import nearestPointOnLineTurf from '@turf/nearest-point-on-line';
 import { lineString } from '@turf/helpers';
 import type { LatLon, Polyline } from '../types';
 import { haversineMeters } from '../distance';
-import { createPoint, createLineString, toLonLatArray, extractLatLon } from '../turf-utils';
+import { createPointFeature, createLineString, extractLatLon } from '../turf-utils';
+import { toLonLatArray } from '../coordinates/conversion';
 
 /**
  * Find the nearest point on a line segment to a given point
@@ -23,7 +24,7 @@ export function nearestPointOnLine(point: LatLon) {
   return (lineStart: LatLon) => {
     return (lineEnd: LatLon): LatLon => {
       try {
-        const pt = createPoint(point);
+        const pt = createPointFeature(point);
         const line = createLineString(lineStart, lineEnd);
 
         const nearest = nearestPointOnLineTurf(line, pt);
@@ -78,7 +79,7 @@ export function nearestPointOnPolyline(point: LatLon) {
 
     try {
       const coords = toLonLatArray(polyline);
-      const pt = createPoint(point);
+      const pt = createPointFeature(point);
       const line = lineString(coords);
 
       const nearest = nearestPointOnLineTurf(line, pt);
