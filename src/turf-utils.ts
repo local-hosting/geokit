@@ -4,20 +4,18 @@
  */
 
 import { point as turfPoint, lineString } from '@turf/helpers';
-import type { Feature, Point, LatLon, LonLat, Polygon } from './types';
+import type { Feature, Point, LatLon, Polygon } from './types';
 
 /**
  * Create a Point Feature from a LatLon coordinate
+ * Internal utility for Turf.js integration
  *
  * @param point - Point in [lat, lon] format
  * @returns Point Feature
  *
- * @example
- * ```typescript
- * const pt = createPoint([40.7128, -74.0060]);
- * ```
+ * @internal
  */
-export function createPoint(point: LatLon): Feature<Point> {
+export function createPointFeature(point: LatLon): Feature<Point> {
   const [lat, lon] = point;
   return turfPoint([lon, lat]);
 }
@@ -44,44 +42,6 @@ export function createLineString(point1: LatLon, point2: LatLon) {
 }
 
 /**
- * Convert an array of LatLon coordinates to LonLat format
- *
- * @param points - Array of points in [lat, lon] format
- * @returns Array of points in [lon, lat] format
- *
- * @example
- * ```typescript
- * const lonLatCoords = toLonLatArray([
- *   [40.7128, -74.0060],
- *   [34.0522, -118.2437]
- * ]);
- * // [[-74.0060, 40.7128], [-118.2437, 34.0522]]
- * ```
- */
-export function toLonLatArray(points: LatLon[]): LonLat[] {
-  return points.map(([lat, lon]): LonLat => [lon, lat]);
-}
-
-/**
- * Convert an array of LonLat coordinates (GeoJSON format) to LatLon format
- *
- * @param points - Array of points in [lon, lat] format
- * @returns Array of points in [lat, lon] format
- *
- * @example
- * ```typescript
- * const latLonCoords = toLatLonArray([
- *   [-74.0060, 40.7128],
- *   [-118.2437, 34.0522]
- * ]);
- * // [[40.7128, -74.0060], [34.0522, -118.2437]]
- * ```
- */
-export function toLatLonArray(points: LonLat[]): LatLon[] {
-  return points.map(([lon, lat]): LatLon => [lat, lon]);
-}
-
-/**
  * Extract LatLon coordinates from a Point Feature
  * Performs type-safe extraction with validation
  *
@@ -90,7 +50,7 @@ export function toLatLonArray(points: LonLat[]): LatLon[] {
  *
  * @example
  * ```typescript
- * const pt = createPoint([40.7128, -74.0060]);
+ * const pt = createPointFeature([40.7128, -74.0060]);
  * const latLon = extractLatLon(pt);
  * // [40.7128, -74.0060]
  * ```

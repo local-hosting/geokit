@@ -1,6 +1,6 @@
 import turfMidpoint from '@turf/midpoint';
 import type { LatLon } from '../types';
-import { createPoint, extractLatLon } from '../turf-utils';
+import { createPointFeature, extractLatLon } from '../turf-utils';
 
 /**
  * Calculate the midpoint between two points
@@ -18,8 +18,8 @@ import { createPoint, extractLatLon } from '../turf-utils';
 export function midpoint(point1: LatLon) {
   return (point2: LatLon): LatLon => {
     try {
-      const pt1 = createPoint(point1);
-      const pt2 = createPoint(point2);
+      const pt1 = createPointFeature(point1);
+      const pt2 = createPointFeature(point2);
 
       const mid = turfMidpoint(pt1, pt2);
 

@@ -2,7 +2,7 @@ import simplifyTurf from '@turf/simplify';
 import { lineString } from '@turf/helpers';
 import type { LatLon, Polyline } from '../types';
 import { METERS_PER_DEGREE_EQUATOR, DEGREES_TO_RADIANS } from '../constants';
-import { toLonLatArray } from '../turf-utils';
+import { toLonLatArray } from '../coordinates/conversion';
 
 /**
  * Simplify a polyline using the Douglas-Peucker algorithm via Turf.js

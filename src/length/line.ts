@@ -7,7 +7,8 @@ import { lineString } from '@turf/helpers';
 import type { LatLon, LonLat, LineString } from '../types';
 import { haversine } from '../distance/haversine';
 import { EARTH_RADIUS_METERS, METERS_TO_KILOMETERS, METERS_TO_MILES } from '../constants';
-import { toLonLatArray } from '../turf-utils';
+import { toLonLatArray } from '../coordinates/conversion';
+import { detectAndConvertCoordinateFormat } from '../coordinates/extraction';
 
 /**
  * Calculate the total length of a polyline using a custom distance function
@@ -42,7 +43,7 @@ export function lineLength(
 /**
  * Normalize coordinates to LatLon format for internal calculations
  * Accepts both [lat, lon] and [lon, lat] formats
- * Uses same detection logic as extractCoordinates
+ * Uses shared detection logic from coordinates/extraction
  */
 function normalizeToLatLon(coords: LatLon[] | LonLat[]): LatLon[] {
   if (!coords || coords.length === 0) {
@@ -55,34 +56,7 @@ function normalizeToLatLon(coords: LatLon[] | LonLat[]): LatLon[] {
         return null;
       }
 
-      const [first, second] = coord;
-
-      // If first value is outside valid latitude range (-90 to 90), it must be longitude
-      // So convert from [lon, lat] to [lat, lon]
-      if (Math.abs(first) > 90) {
-        return [second, first] as LatLon;
-      }
-
-      // If second value is outside valid latitude range, first must be latitude
-      // Already in [lat, lon] format
-      if (Math.abs(second) > 90) {
-        return [first, second] as LatLon;
-      }
-
-      // Special case: if first value is exactly 90 or -90, it's definitely latitude
-      if (Math.abs(first) === 90) {
-        return [first, second] as LatLon;
-      }
-
-      // If both values are within latitude range, use a heuristic:
-      // If first value has larger absolute value AND it's not a pole, it's more likely to be longitude
-      // (as most populated areas are closer to the equator)
-      if (Math.abs(first) > Math.abs(second) && Math.abs(first) < 90) {
-        return [second, first] as LatLon;
-      }
-
-      // Otherwise assume it's already in [lat, lon] format
-      return [first, second] as LatLon;
+      return detectAndConvertCoordinateFormat([coord[0], coord[1]]);
     })
     .filter((coord): coord is LatLon => coord !== null);
 }
