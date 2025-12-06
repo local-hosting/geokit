@@ -10,6 +10,7 @@ import type {
   MultiPolygon,
   Position,
 } from '../types';
+import { roundCoordinate } from '../coordinates/manipulation';
 
 /**
  * Repair options for fixing GeoJSON
@@ -75,9 +76,8 @@ function repairPosition(position: unknown, options: RepairOptions): Position | n
   let fixedLon = lon;
   let fixedLat = lat;
   if (options.coordinatePrecision !== undefined) {
-    const factor = Math.pow(10, options.coordinatePrecision);
-    fixedLon = Math.round(lon * factor) / factor;
-    fixedLat = Math.round(lat * factor) / factor;
+    fixedLon = roundCoordinate(lon, options.coordinatePrecision);
+    fixedLat = roundCoordinate(lat, options.coordinatePrecision);
   }
 
   // Handle optional elevation

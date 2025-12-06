@@ -13,8 +13,10 @@ export {
 export { serializeCoordinates, deserializeCoordinates } from './serialization';
 export { createPoint } from './creation';
 export {
-  roundCoordinates,
-  roundCoord,
+  roundGeometry,
+  roundCoordinate,
+  roundCoordinates, // deprecated, use roundGeometry
+  roundCoord, // deprecated, use roundCoordinate
   removeDuplicateCoordinates,
   removeDuplicateCoordinatesFromGeometry,
 } from './manipulation';

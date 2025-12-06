@@ -1,7 +1,7 @@
 import type { Geometry, Position } from '../types';
 
 /**
- * Round coordinates to specified decimal places
+ * Round coordinates in a GeoJSON geometry to specified decimal places
  * Useful for reducing file size and handling precision issues
  *
  * @param geometry - GeoJSON Geometry to round
@@ -11,25 +11,27 @@ import type { Geometry, Position } from '../types';
  * @example
  * ```typescript
  * const point = { type: 'Point', coordinates: [-74.0060123456, 40.7128123456] };
- * const rounded = roundCoordinates(point, 6);
+ * const rounded = roundGeometry(point, 6);
  * // { type: 'Point', coordinates: [-74.006012, 40.712812] }
  * ```
  */
-export function roundCoordinates(geometry: Geometry, precision: number = 6): Geometry {
+export function roundGeometry(geometry: Geometry, precision: number = 6): Geometry {
   if (!geometry || !('coordinates' in geometry)) {
     return geometry;
   }
-
-  const round = (n: number) => Math.round(n * Math.pow(10, precision)) / Math.pow(10, precision);
 
   const roundCoordArray = (coords: unknown): unknown => {
     if (Array.isArray(coords)) {
       if (typeof coords[0] === 'number') {
         // Single coordinate [lon, lat] or [lon, lat, elev]
         if (coords.length === 2) {
-          return [round(coords[0]), round(coords[1])];
+          return [roundCoordinate(coords[0], precision), roundCoordinate(coords[1], precision)];
         } else if (coords.length === 3) {
-          return [round(coords[0]), round(coords[1]), coords[2]];
+          return [
+            roundCoordinate(coords[0], precision),
+            roundCoordinate(coords[1], precision),
+            coords[2],
+          ];
         }
         return coords;
       } else {
@@ -58,13 +60,25 @@ export function roundCoordinates(geometry: Geometry, precision: number = 6): Geo
  *
  * @example
  * ```typescript
- * const rounded = roundCoord(40.7128123456, 6);
+ * const rounded = roundCoordinate(40.7128123456, 6);
  * // 40.712812
  * ```
  */
-export function roundCoord(coord: number, precision: number = 6): number {
+export function roundCoordinate(coord: number, precision: number = 6): number {
   return Math.round(coord * Math.pow(10, precision)) / Math.pow(10, precision);
 }
+
+/**
+ * @deprecated Use roundCoordinate instead
+ * @see roundCoordinate
+ */
+export const roundCoord = roundCoordinate;
+
+/**
+ * @deprecated Use roundGeometry instead
+ * @see roundGeometry
+ */
+export const roundCoordinates = roundGeometry;
 
 /**
  * Remove duplicate consecutive coordinates from a coordinate array
