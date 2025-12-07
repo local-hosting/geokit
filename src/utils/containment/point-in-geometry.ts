@@ -1,4 +1,4 @@
-import type { LatLon, Polygon, MultiPolygon } from '../types';
+import type { LatLon, Polygon, MultiPolygon } from '../../types';
 import { isPointInPolygon } from './point-in-polygon';
 
 /**

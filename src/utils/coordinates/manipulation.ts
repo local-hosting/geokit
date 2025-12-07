@@ -1,4 +1,4 @@
-import type { Geometry, Position } from '../types';
+import type { Geometry, Position } from '../../types';
 
 /**
  * Round coordinates in a GeoJSON geometry to specified decimal places

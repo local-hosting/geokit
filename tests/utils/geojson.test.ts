@@ -24,7 +24,7 @@ import {
   fixPolygonRingOrder,
   filterTinyPolygons,
   cleanGeometry,
-} from '../src/geojson';
+} from '../../src/utils/geojson';
 import type {
   Feature,
   Point,
@@ -35,7 +35,7 @@ import type {
   MultiPolygon,
   GeometryCollection,
   FeatureCollection,
-} from '../src/types';
+} from '../../src/utils/types';
 
 describe('geojson', () => {
   const pointGeometry: Point = {

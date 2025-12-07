@@ -8,9 +8,9 @@ import {
   perimeterMeters,
   perimeterKm,
   perimeterMiles,
-} from '../src/length';
-import { haversine } from '../src/distance';
-import type { Polygon } from '../src/types';
+} from '../../src/utils/length';
+import { haversine } from '../../src/utils/distance';
+import type { Polygon } from '../../src/utils/types';
 
 describe('length', () => {
   describe('lineLength', () => {

@@ -2,9 +2,9 @@
  * Calculate the perimeter of a polygon
  */
 
-import type { Polygon } from '../types';
+import type { Polygon } from '../../types';
 import { lineLengthMeters } from './line';
-import { METERS_TO_KILOMETERS, METERS_TO_MILES } from '../constants';
+import { METERS_TO_KILOMETERS, METERS_TO_MILES } from '../../constants';
 
 /**
  * Calculate the perimeter of a polygon in meters

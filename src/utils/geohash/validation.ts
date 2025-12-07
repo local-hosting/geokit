@@ -1,5 +1,5 @@
 import Geohash from 'latlon-geohash';
-import { MIN_LATITUDE, MAX_LATITUDE, MIN_LONGITUDE, MAX_LONGITUDE } from '../constants';
+import { MIN_LATITUDE, MAX_LATITUDE, MIN_LONGITUDE, MAX_LONGITUDE } from '../../constants';
 
 /**
  * Validate a geohash string

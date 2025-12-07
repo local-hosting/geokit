@@ -1,4 +1,4 @@
-import type { Polygon, MultiPolygon, Position } from '../types';
+import type { Polygon, MultiPolygon, Position } from '../../types';
 
 /**
  * Fix ring ordering for Polygon geometries

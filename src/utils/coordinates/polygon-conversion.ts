@@ -1,4 +1,4 @@
-import type { Polygon, MultiPolygon, LatLon } from '../types';
+import type { Polygon, MultiPolygon, LatLon } from '../../types';
 
 /**
  * Convert GeoJSON Polygon coordinates to [lat, lon] format

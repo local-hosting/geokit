@@ -1,4 +1,4 @@
-import type { Bounds, LatLon, Polygon } from '../types';
+import type { Bounds, LatLon, Polygon } from '../../types';
 import turfBboxPolygon from '@turf/bbox-polygon';
 
 /**

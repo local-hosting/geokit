@@ -15,8 +15,8 @@ import {
   removeDuplicateCoordinatesFromGeometry,
   geojsonPolygonToLatLon,
   countPointsInGeometry,
-} from '../src/coordinates';
-import type { Point, LineString, Polygon, MultiPolygon } from '../src/types';
+} from '../../src/utils/coordinates';
+import type { Point, LineString, Polygon, MultiPolygon } from '../../src/utils/types';
 
 describe('coordinates', () => {
   describe('toLatLon', () => {

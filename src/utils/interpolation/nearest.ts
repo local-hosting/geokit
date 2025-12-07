@@ -1,6 +1,6 @@
 import nearestPointOnLineTurf from '@turf/nearest-point-on-line';
 import { lineString } from '@turf/helpers';
-import type { LatLon, Polyline } from '../types';
+import type { LatLon, Polyline } from '../../types';
 import { haversineMeters } from '../distance';
 import { createPointFeature, createLineString, extractLatLon } from '../turf-utils';
 import { toLonLatArray } from '../coordinates/conversion';

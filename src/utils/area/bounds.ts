@@ -1,12 +1,12 @@
 import turfBboxPolygon from '@turf/bbox-polygon';
 import turfArea from '@turf/area';
-import type { Bounds } from '../types';
+import type { Bounds } from '../../types';
 import {
   EARTH_RADIUS_METERS,
   SQUARE_METERS_TO_SQUARE_KILOMETERS,
   SQUARE_METERS_TO_SQUARE_MILES,
   DEGREES_TO_RADIANS,
-} from '../constants';
+} from '../../constants';
 
 /**
  * Calculate the area of a bounding box in square meters

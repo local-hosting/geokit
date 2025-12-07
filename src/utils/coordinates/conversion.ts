@@ -1,4 +1,4 @@
-import type { LatLon, LonLat } from '../types';
+import type { LatLon, LonLat } from '../../types';
 
 /**
  * Convert GeoJSON format [lon, lat] to [lat, lon]

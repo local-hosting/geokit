@@ -1,5 +1,5 @@
 import turfDestination from '@turf/destination';
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 import {
   EARTH_RADIUS_METERS,
   EARTH_RADIUS_KM,
@@ -9,7 +9,7 @@ import {
   RADIANS_TO_DEGREES,
   LONGITUDE_NORMALIZATION_OFFSET,
   DEGREES_IN_CIRCLE,
-} from '../constants';
+} from '../../constants';
 import { createPointFeature, extractLatLon } from '../turf-utils';
 
 /**

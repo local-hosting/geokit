@@ -1,5 +1,5 @@
 import Geohash from 'latlon-geohash';
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 
 /**
  * Encode coordinates to a geohash string

@@ -1,4 +1,4 @@
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 import {
   EARTH_RADIUS_WGS84_METERS,
   EARTH_RADIUS_WGS84_KM,
@@ -6,7 +6,7 @@ import {
   EARTH_FLATTENING_WGS84,
   DEGREES_TO_RADIANS,
   TWO_PI,
-} from '../constants';
+} from '../../constants';
 
 /**
  * Vincenty formula for calculating geodesic distance on an ellipsoid

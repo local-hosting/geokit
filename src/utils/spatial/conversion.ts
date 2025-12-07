@@ -1,4 +1,4 @@
-import type { GeohashPoint, GeohashArea, H3Point, H3Area } from '../types';
+import type { GeohashPoint, GeohashArea, H3Point, H3Area } from '../../types';
 import { decodeGeohash, encodeGeohash } from '../geohash';
 import { h3ToCoordinates, coordinatesToH3 } from '../h3';
 

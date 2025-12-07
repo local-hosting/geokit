@@ -1,4 +1,4 @@
-import { SECONDS_PER_MINUTE, SECONDS_PER_DEGREE } from '../constants';
+import { SECONDS_PER_MINUTE, SECONDS_PER_DEGREE } from '../../constants';
 
 /**
  * Degrees Minutes Seconds format

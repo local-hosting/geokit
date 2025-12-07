@@ -4,7 +4,7 @@
 
 import convexTurf from '@turf/convex';
 import { points as turfPoints } from '@turf/helpers';
-import type { LatLon, Polygon } from '../types';
+import type { LatLon, Polygon } from '../../types';
 import { toLonLatArray } from '../coordinates/conversion';
 
 /**

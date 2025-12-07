@@ -10,7 +10,7 @@ import {
   boundsArea,
   boundsAreaKm,
   boundsAreaMiles,
-} from '../src/area';
+} from '../../src/utils/area';
 
 describe('area', () => {
   describe('polygonArea', () => {

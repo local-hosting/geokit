@@ -1,11 +1,11 @@
 import turfArea from '@turf/area';
 import { polygon as turfPolygon } from '@turf/helpers';
-import type { Polygon } from '../types';
+import type { Polygon } from '../../types';
 import {
   SQUARE_METERS_TO_SQUARE_KILOMETERS,
   SQUARE_METERS_TO_SQUARE_MILES,
   SQUARE_METERS_TO_ACRES,
-} from '../constants';
+} from '../../constants';
 
 /**
  * Calculate the area of a polygon in square meters

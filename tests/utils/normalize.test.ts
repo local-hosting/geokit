@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { slugify, normalize, normalizeName } from '../src/normalize';
+import { slugify, normalize, normalizeName } from '../../src/utils/normalize';
 
 describe('normalize', () => {
   describe('slugify', () => {

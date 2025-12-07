@@ -1,11 +1,11 @@
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 import {
   EARTH_RADIUS_METERS,
   EARTH_RADIUS_KM,
   EARTH_RADIUS_MILES,
   DEGREES_TO_RADIANS,
   TWO_PI,
-} from '../constants';
+} from '../../constants';
 
 /**
  * Rhumb line (loxodrome) distance

@@ -5,7 +5,7 @@
 
 import turfCentroid from '@turf/centroid';
 import { polygon as turfPolygon } from '@turf/helpers';
-import type { Polygon, LatLon } from '../types';
+import type { Polygon, LatLon } from '../../types';
 import { validatePolygon, extractLatLon } from '../turf-utils';
 
 /**

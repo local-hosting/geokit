@@ -1,7 +1,7 @@
 import turfAlong from '@turf/along';
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 import { haversineMeters } from '../distance';
-import { METERS_TO_KILOMETERS } from '../constants';
+import { METERS_TO_KILOMETERS } from '../../constants';
 import { createLineString, extractLatLon } from '../turf-utils';
 
 /**

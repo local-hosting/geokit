@@ -1,5 +1,5 @@
 import Geohash from 'latlon-geohash';
-import type { LatLon, GeohashPoint, GeohashArea, Bounds } from '../types';
+import type { LatLon, GeohashPoint, GeohashArea, Bounds } from '../../types';
 import { geohashBounds } from './bounds';
 import { geohashNeighbors } from './neighbors';
 

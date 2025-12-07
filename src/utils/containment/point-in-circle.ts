@@ -1,5 +1,5 @@
-import type { LatLon } from '../types';
-import { EARTH_RADIUS_METERS, DEGREES_TO_RADIANS } from '../constants';
+import type { LatLon } from '../../types';
+import { EARTH_RADIUS_METERS, DEGREES_TO_RADIANS } from '../../constants';
 
 /**
  * Check if a point is within a circle

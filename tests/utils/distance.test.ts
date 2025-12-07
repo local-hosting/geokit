@@ -17,7 +17,7 @@ import {
   rhumbLineKm,
   rhumbLineMiles,
   withinDistance,
-} from '../src/distance';
+} from '../../src/utils/distance';
 
 describe('distance', () => {
   const nyc: [number, number] = [40.7128, -74.006];

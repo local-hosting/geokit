@@ -1,4 +1,4 @@
-import type { Geometry } from '../types';
+import type { Geometry } from '../../types';
 
 /**
  * Count total number of coordinate points in a geometry

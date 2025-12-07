@@ -1,4 +1,4 @@
-import type { LatLon, Bounds } from '../types';
+import type { LatLon, Bounds } from '../../types';
 
 /**
  * Check if a point is within bounding box

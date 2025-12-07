@@ -1,5 +1,5 @@
 import Geohash from 'latlon-geohash';
-import type { Bounds } from '../types';
+import type { Bounds } from '../../types';
 
 /**
  * Get the bounding box of a geohash

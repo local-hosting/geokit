@@ -4,7 +4,7 @@
  */
 
 import { point as turfPoint, lineString } from '@turf/helpers';
-import type { Feature, Point, LatLon, Polygon } from './types';
+import type { Feature, Point, LatLon, Polygon } from '../types';
 
 /**
  * Create a Point Feature from a LatLon coordinate

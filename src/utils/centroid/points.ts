@@ -2,7 +2,7 @@
  * Calculate the centroid (geometric center) of a set of points
  */
 
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 
 /**
  * Calculate the centroid of a set of points

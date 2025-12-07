@@ -1,4 +1,4 @@
-import type { GeohashPoint, GeohashArea, H3Point, H3Area } from '../types';
+import type { GeohashPoint, GeohashArea, H3Point, H3Area } from '../../types';
 
 /**
  * Check if a string is a valid Geohash

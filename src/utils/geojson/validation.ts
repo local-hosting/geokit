@@ -10,7 +10,7 @@ import type {
   MultiPolygon,
   GeometryCollection,
   Position,
-} from '../types';
+} from '../../types';
 
 /**
  * Validation result with success status and optional error message

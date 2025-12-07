@@ -1,10 +1,10 @@
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 import {
   EARTH_RADIUS_METERS,
   EARTH_RADIUS_KM,
   EARTH_RADIUS_MILES,
   DEGREES_TO_RADIANS,
-} from '../constants';
+} from '../../constants';
 
 /**
  * Curried Haversine distance function

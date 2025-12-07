@@ -1,5 +1,5 @@
-import type { LatLon } from '../types';
-import { METERS_PER_DEGREE_EQUATOR, DEGREES_TO_RADIANS } from '../constants';
+import type { LatLon } from '../../types';
+import { METERS_PER_DEGREE_EQUATOR, DEGREES_TO_RADIANS } from '../../constants';
 
 /**
  * Cluster point with metadata

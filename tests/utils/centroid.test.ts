@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { polygonCentroid, pointsCentroid } from '../src/centroid';
-import type { Polygon } from '../src/types';
+import { polygonCentroid, pointsCentroid } from '../../src/utils/centroid';
+import type { Polygon } from '../../src/utils/types';
 
 describe('centroid', () => {
   describe('polygonCentroid', () => {

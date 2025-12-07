@@ -26,7 +26,7 @@ import {
   h3AreaToPolygon,
   h3PointNeighbors,
   h3AreaNeighbors,
-} from '../src/h3';
+} from '../../src/utils/h3';
 
 describe('h3', () => {
   const nyc: [number, number] = [40.7128, -74.006];
