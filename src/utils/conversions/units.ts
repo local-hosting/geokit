@@ -1,4 +1,4 @@
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 import {
   DEGREES_TO_RADIANS,
   RADIANS_TO_DEGREES,
@@ -6,7 +6,7 @@ import {
   DEGREES_IN_CIRCLE,
   MIN_LATITUDE,
   MAX_LATITUDE,
-} from '../constants';
+} from '../../constants';
 
 /**
  * Convert decimal degrees to radians

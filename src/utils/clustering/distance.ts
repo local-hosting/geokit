@@ -1,6 +1,6 @@
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 import type { ClusterPoint, Cluster } from './grid';
-import { EARTH_RADIUS_METERS, DEGREES_TO_RADIANS } from '../constants';
+import { EARTH_RADIUS_METERS, DEGREES_TO_RADIANS } from '../../constants';
 
 /**
  * Distance-based clustering using a simple greedy algorithm

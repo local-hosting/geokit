@@ -86,7 +86,7 @@ export {
   // Utilities
   withinDistance,
   distance,
-} from './distance';
+} from './utils/distance';
 
 // Coordinate utilities
 export {
@@ -107,7 +107,7 @@ export {
   removeDuplicateCoordinatesFromGeometry,
   geojsonPolygonToLatLon,
   countPointsInGeometry,
-} from './coordinates';
+} from './utils/coordinates';
 
 // GeoJSON utilities
 export {
@@ -137,10 +137,10 @@ export {
   fixPolygonRingOrder,
   filterTinyPolygons,
   cleanGeometry,
-} from './geojson';
+} from './utils/geojson';
 
 // Normalization utilities
-export { slugify, normalize, normalizeName } from './normalize';
+export { slugify, normalize, normalizeName } from './utils/normalize';
 
 // Bounds utilities
 export {
@@ -153,7 +153,7 @@ export {
   bboxToPolygonGeometry,
   calculateZoomFromBounds,
   calculateCenterAndZoom,
-} from './bounds';
+} from './utils/bounds';
 
 // Bearing utilities
 export {
@@ -164,7 +164,7 @@ export {
   destinationMeters,
   destinationKm,
   destinationMiles,
-} from './bearing';
+} from './utils/bearing';
 
 // Containment utilities
 export {
@@ -177,7 +177,7 @@ export {
   boundsIntersects,
   pointInGeometry,
   pointInGeometryCurried,
-} from './containment';
+} from './utils/containment';
 
 // Area utilities
 export {
@@ -191,7 +191,7 @@ export {
   boundsArea,
   boundsAreaKm,
   boundsAreaMiles,
-} from './area';
+} from './utils/area';
 
 // Interpolation utilities
 export {
@@ -200,10 +200,10 @@ export {
   nearestPointOnLine,
   nearestPointOnPolyline,
   resample,
-} from './interpolation';
+} from './utils/interpolation';
 
 // Conversion utilities
-export type { DMS } from './conversions';
+export type { DMS } from './utils/conversions';
 export {
   toDMS,
   fromDMS,
@@ -214,7 +214,7 @@ export {
   normalizeLongitude,
   normalizeLatitude,
   normalizeCoordinates,
-} from './conversions';
+} from './utils/conversions';
 
 // Simplification utilities
 export {
@@ -225,11 +225,11 @@ export {
   simplifyPolygonRingToMaxPoints,
   simplifyGeometry,
   simplifyGeometryMeters,
-} from './simplify';
+} from './utils/simplify';
 
 // Clustering utilities
-export type { ClusterPoint, Cluster } from './clustering';
-export { gridCluster, gridClusterMeters, distanceCluster } from './clustering';
+export type { ClusterPoint, Cluster } from './utils/clustering';
+export { gridCluster, gridClusterMeters, distanceCluster } from './utils/clustering';
 
 // Geohash utilities
 export {
@@ -251,7 +251,7 @@ export {
   geohashAreaBounds,
   geohashPointNeighbors,
   geohashAreaNeighbors,
-} from './geohash';
+} from './utils/geohash';
 
 // H3 utilities
 export {
@@ -282,10 +282,10 @@ export {
   h3AreaToPolygon,
   h3PointNeighbors,
   h3AreaNeighbors,
-} from './h3';
+} from './utils/h3';
 
 // Centroid utilities
-export { polygonCentroid, pointsCentroid } from './centroid';
+export { polygonCentroid, pointsCentroid } from './utils/centroid';
 
 // Length utilities
 export {
@@ -297,23 +297,23 @@ export {
   perimeterMeters,
   perimeterKm,
   perimeterMiles,
-} from './length';
+} from './utils/length';
 
 // Convex hull utilities
-export { convexHull } from './hull';
+export { convexHull } from './utils/hull';
 
 // Union utilities
-export { unionPolygons, unionAll, unionFeatures } from './union';
+export { unionPolygons, unionAll, unionFeatures } from './utils/union';
 
 // Difference utilities
-export { differencePolygons, differenceFeatures } from './difference';
+export { differencePolygons, differenceFeatures } from './utils/difference';
 
 // Intersection utilities
-export type { LineSegment } from './intersection';
-export { lineIntersection, linesIntersect } from './intersection';
+export type { LineSegment } from './utils/intersection';
+export { lineIntersection, linesIntersect } from './utils/intersection';
 
 // Buffer utilities
-export { buffer, bufferPoint, bufferLine, bufferPolygon } from './buffer';
+export { buffer, bufferPoint, bufferLine, bufferPolygon } from './utils/buffer';
 
 // Spatial index interoperability utilities
 export {
@@ -340,4 +340,4 @@ export {
   decodeAreaToCoordinates,
   getBoundsFromPoint,
   getBoundsFromArea,
-} from './spatial';
+} from './utils/spatial';

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { unionPolygons, unionAll, unionFeatures } from '../src/union';
-import { createFeature } from '../src/geojson';
-import type { Polygon, MultiPolygon, Feature } from '../src/types';
+import { unionPolygons, unionAll, unionFeatures } from '../../src/utils/union';
+import { createFeature } from '../../src/utils/geojson';
+import type { Polygon, MultiPolygon, Feature } from '../../src/utils/types';
 
 describe('union', () => {
   const polygon1: Polygon = {

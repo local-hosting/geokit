@@ -1,4 +1,4 @@
-import type { LatLon, Bounds } from '../types';
+import type { LatLon, Bounds } from '../../types';
 
 /**
  * Curried function to check if a point is within bounds

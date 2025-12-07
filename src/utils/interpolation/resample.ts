@@ -1,6 +1,6 @@
-import type { Polyline } from '../types';
+import type { Polyline } from '../../types';
 import { interpolateMeters } from './along';
-import { EARTH_RADIUS_METERS, DEGREES_TO_RADIANS } from '../constants';
+import { EARTH_RADIUS_METERS, DEGREES_TO_RADIANS } from '../../constants';
 
 /**
  * Resample a polyline at regular distance intervals

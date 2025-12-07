@@ -4,9 +4,9 @@ import {
   createLineString,
   extractLatLon,
   validatePolygon,
-} from '../src/turf-utils';
-import { toLonLatArray } from '../src/coordinates/conversion';
-import type { Feature, Point, Polygon } from '../src/types';
+} from '../../src/utils/turf-utils';
+import { toLonLatArray } from '../../src/utils/coordinates/conversion';
+import type { Feature, Point, Polygon } from '../../src/utils/types';
 
 describe('turf-utils', () => {
   describe('createPointFeature', () => {

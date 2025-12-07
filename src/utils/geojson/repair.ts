@@ -9,7 +9,7 @@ import type {
   MultiLineString,
   MultiPolygon,
   Position,
-} from '../types';
+} from '../../types';
 import { roundCoordinate } from '../coordinates/manipulation';
 
 /**

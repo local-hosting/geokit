@@ -4,9 +4,9 @@
 
 import turfLength from '@turf/length';
 import { lineString } from '@turf/helpers';
-import type { LatLon, LonLat, LineString } from '../types';
+import type { LatLon, LonLat, LineString } from '../../types';
 import { haversine } from '../distance/haversine';
-import { EARTH_RADIUS_METERS, METERS_TO_KILOMETERS, METERS_TO_MILES } from '../constants';
+import { EARTH_RADIUS_METERS, METERS_TO_KILOMETERS, METERS_TO_MILES } from '../../constants';
 import { toLonLatArray } from '../coordinates/conversion';
 import { detectAndConvertCoordinateFormat } from '../coordinates/extraction';
 

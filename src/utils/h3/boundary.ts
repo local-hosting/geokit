@@ -1,5 +1,5 @@
 import { cellToBoundary } from 'h3-js';
-import type { LatLon, Polygon } from '../types';
+import type { LatLon, Polygon } from '../../types';
 
 /**
  * Get the boundary of an H3 cell as a polygon

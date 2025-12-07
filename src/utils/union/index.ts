@@ -4,7 +4,7 @@
 
 import turfUnion from '@turf/union';
 import { polygon as turfPolygon, multiPolygon as turfMultiPolygon } from '@turf/helpers';
-import type { Polygon, MultiPolygon, Feature } from '../types';
+import type { Polygon, MultiPolygon, Feature } from '../../types';
 import type { Feature as GeoJSONFeature, Polygon as GeoJSONPolygon, MultiPolygon as GeoJSONMultiPolygon, FeatureCollection, GeoJsonProperties } from 'geojson';
 
 type PolygonFeature = GeoJSONFeature<GeoJSONPolygon | GeoJSONMultiPolygon, GeoJsonProperties>;

@@ -1,4 +1,4 @@
-import { SQUARE_METERS_TO_SQUARE_KILOMETERS, SQUARE_METERS_TO_SQUARE_MILES } from '../constants';
+import { SQUARE_METERS_TO_SQUARE_KILOMETERS, SQUARE_METERS_TO_SQUARE_MILES } from '../../constants';
 
 /**
  * Calculate the area of a circle given its radius

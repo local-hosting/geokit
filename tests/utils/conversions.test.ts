@@ -9,7 +9,7 @@ import {
   normalizeLongitude,
   normalizeLatitude,
   normalizeCoordinates,
-} from '../src/conversions';
+} from '../../src/utils/conversions';
 
 describe('conversions', () => {
   describe('DMS conversions', () => {

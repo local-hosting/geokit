@@ -19,15 +19,15 @@ import {
   decodeAreaToCoordinates,
   getBoundsFromPoint,
   getBoundsFromArea,
-} from '../src/spatial';
-import { encodeGeohashPoint, encodeGeohashArea } from '../src/geohash';
-import { coordinatesToH3Point, coordinatesToH3Area } from '../src/h3';
+} from '../../src/utils/spatial';
+import { encodeGeohashPoint, encodeGeohashArea } from '../../src/utils/geohash';
+import { coordinatesToH3Point, coordinatesToH3Area } from '../../src/utils/h3';
 import {
   serializeCoordinates,
   deserializeCoordinates,
   normalizeCoordinateInput,
   createPoint,
-} from '../src/coordinates';
+} from '../../src/utils/coordinates';
 
 describe('spatial', () => {
   const nyc: [number, number] = [40.7128, -74.006];

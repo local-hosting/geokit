@@ -1,5 +1,5 @@
-import type { Coordinate } from '../types';
-import { MIN_LATITUDE, MAX_LATITUDE, MIN_LONGITUDE, MAX_LONGITUDE } from '../constants';
+import type { Coordinate } from '../../types';
+import { MIN_LATITUDE, MAX_LATITUDE, MIN_LONGITUDE, MAX_LONGITUDE } from '../../constants';
 
 /**
  * Validate that coordinates are valid numbers within valid ranges

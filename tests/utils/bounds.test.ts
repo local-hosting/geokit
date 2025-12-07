@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { getBounds, getCenter, isWithinBounds, boundsToObject } from '../src/bounds';
-import { createFeature } from '../src/geojson';
-import type { Point } from '../src/types';
+import { getBounds, getCenter, isWithinBounds, boundsToObject } from '../../src/utils/bounds';
+import { createFeature } from '../../src/utils/geojson';
+import type { Point } from '../../src/utils/types';
 
 describe('bounds', () => {
   const point1: [number, number] = [40.7128, -74.006];

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { convexHull } from '../src/hull';
+import { convexHull } from '../../src/utils/hull';
 
 describe('convex hull', () => {
   describe('convexHull', () => {

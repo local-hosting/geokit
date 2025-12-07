@@ -5,8 +5,8 @@
 
 import turfBuffer from '@turf/buffer';
 import { lineString as turfLineString, polygon as turfPolygon } from '@turf/helpers';
-import type { LatLon, Polygon } from '../types';
-import { DEFAULT_BUFFER_STEPS, METERS_TO_KILOMETERS } from '../constants';
+import type { LatLon, Polygon } from '../../types';
+import { DEFAULT_BUFFER_STEPS, METERS_TO_KILOMETERS } from '../../constants';
 import { createPointFeature } from '../turf-utils';
 import { toLonLatArray } from '../coordinates/conversion';
 

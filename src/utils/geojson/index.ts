@@ -1,4 +1,4 @@
-import type { Feature, FeatureCollection, Geometry, LonLat } from '../types';
+import type { Feature, FeatureCollection, Geometry, LonLat } from '../../types';
 
 export {
   isValidPosition,

@@ -7,7 +7,7 @@ import {
   boundsContains,
   boundsContainsBounds,
   boundsIntersects,
-} from '../src/containment';
+} from '../../src/utils/containment';
 
 describe('containment', () => {
   describe('pointInPolygon', () => {

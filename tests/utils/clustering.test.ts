@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { gridCluster, gridClusterMeters, distanceCluster } from '../src/clustering';
+import { gridCluster, gridClusterMeters, distanceCluster } from '../../src/utils/clustering';
 
 describe('clustering', () => {
   const points = [

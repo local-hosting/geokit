@@ -1,5 +1,5 @@
 import { latLngToCell, cellToLatLng, cellToBoundary, gridDisk } from 'h3-js';
-import type { LatLon, Polygon, H3Point, H3Area } from '../types';
+import type { LatLon, Polygon, H3Point, H3Area } from '../../types';
 import { h3ToPolygon } from './boundary';
 
 /**

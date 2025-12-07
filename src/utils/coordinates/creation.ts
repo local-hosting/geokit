@@ -1,4 +1,4 @@
-import type { LatLon, Point } from '../types';
+import type { LatLon, Point } from '../../types';
 import { toLonLat } from './conversion';
 
 /**

@@ -1,5 +1,5 @@
 import turfMidpoint from '@turf/midpoint';
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 import { createPointFeature, extractLatLon } from '../turf-utils';
 
 /**

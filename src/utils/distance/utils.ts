@@ -1,4 +1,4 @@
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 import { haversineMeters } from './haversine';
 
 /**

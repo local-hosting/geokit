@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { lineIntersection, linesIntersect } from '../src/intersection';
-import type { LineSegment } from '../src/intersection';
+import { lineIntersection, linesIntersect } from '../../src/utils/intersection';
+import type { LineSegment } from '../../src/utils/intersection';
 
 describe('intersection', () => {
   describe('lineIntersection', () => {

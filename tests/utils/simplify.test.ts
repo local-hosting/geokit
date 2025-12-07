@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { simplify, simplifyMeters } from '../src/simplify';
+import { simplify, simplifyMeters } from '../../src/utils/simplify';
 
 describe('simplify', () => {
   describe('simplify', () => {

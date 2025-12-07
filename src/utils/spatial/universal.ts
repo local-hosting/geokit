@@ -1,4 +1,4 @@
-import type { LatLon, Bounds, GeohashPoint, GeohashArea, H3Point, H3Area } from '../types';
+import type { LatLon, Bounds, GeohashPoint, GeohashArea, H3Point, H3Area } from '../../types';
 import { decodeGeohash, geohashBounds } from '../geohash';
 import { h3ToCoordinates, h3ToBoundary } from '../h3';
 import { getSpatialIndexType } from './type-guards';

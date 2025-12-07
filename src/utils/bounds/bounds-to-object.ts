@@ -1,4 +1,4 @@
-import type { Bounds } from '../types';
+import type { Bounds } from '../../types';
 
 /**
  * Bounds object format with named properties

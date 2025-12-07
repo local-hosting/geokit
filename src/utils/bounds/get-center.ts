@@ -1,7 +1,7 @@
 import turfBboxPolygon from '@turf/bbox-polygon';
 import turfCenter from '@turf/center';
 import { points as turfPoints, featureCollection } from '@turf/helpers';
-import type { LatLon, Bounds, Feature, FeatureCollection } from '../types';
+import type { LatLon, Bounds, Feature, FeatureCollection } from '../../types';
 import { extractLatLon } from '../turf-utils';
 
 /**

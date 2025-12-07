@@ -4,7 +4,7 @@
 
 import lineIntersectTurf from '@turf/line-intersect';
 import { lineString } from '@turf/helpers';
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 
 export type LineSegment = [LatLon, LatLon];
 

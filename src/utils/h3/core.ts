@@ -1,5 +1,5 @@
 import { latLngToCell, cellToLatLng, getResolution, isValidCell } from 'h3-js';
-import type { LatLon } from '../types';
+import type { LatLon } from '../../types';
 
 /**
  * Convert coordinates to H3 cell ID

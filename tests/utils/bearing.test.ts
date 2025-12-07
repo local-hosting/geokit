@@ -7,7 +7,7 @@ import {
   destinationMeters,
   destinationKm,
   destinationMiles,
-} from '../src/bearing';
+} from '../../src/utils/bearing';
 
 describe('bearing', () => {
   const nyc: [number, number] = [40.7128, -74.006];
