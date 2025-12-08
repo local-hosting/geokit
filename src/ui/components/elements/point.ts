@@ -149,7 +149,7 @@ export class PointElement extends BaseElement {
       return;
     }
 
-    if (!isValidCoordinate([lng, lat])) {
+    if (!isValidCoordinate([lat, lng])) {
       console.warn('Point: Invalid lat/lng coordinates', { lat, lng });
       return;
     }
