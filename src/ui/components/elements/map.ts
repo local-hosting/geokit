@@ -8,6 +8,8 @@
  */
 
 import { BaseElement } from '../base-element';
+import { registerUIProvider, setUIProvider, getUIProvider as getRegistryUIProvider } from '../../providers/registry';
+import { MapTilerUIProvider } from '../../providers/maptiler-provider';
 
 export class MapElement extends BaseElement {
   static observedAttributes = [
@@ -83,6 +85,21 @@ export class MapElement extends BaseElement {
 
   async initializeMap(): Promise<void> {
     try {
+      // Auto-initialize MapTiler provider if api-key is present and no provider is set
+      const apiKey = this.getAttribute('api-key');
+      try {
+        this.getUIProvider(); // Check if provider exists
+      } catch (err) {
+        // No provider set, auto-initialize MapTiler if we have an API key
+        if (apiKey) {
+          console.log('[geokit] Auto-initializing MapTiler provider from api-key attribute');
+          registerUIProvider('maptiler', new MapTilerUIProvider());
+          await setUIProvider('maptiler', { apiKey });
+        } else {
+          throw new Error('No UI provider set and no api-key attribute found. Either set a UI provider or add api-key attribute to <mapi-map>');
+        }
+      }
+      
       const provider = this.getUIProvider();
       const container = this.shadowRoot?.querySelector('#map') as HTMLElement;
       
