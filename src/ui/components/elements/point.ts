@@ -84,7 +84,7 @@ export class PointElement extends BaseElement {
 
   protected override async onMapReady(): Promise<void> {
     await super.onMapReady();
-    this.addPoint();
+    this.waitForStyleLoaded(() => this.addPoint());
   }
 
   private setupEventListeners(): void {

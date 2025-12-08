@@ -41,7 +41,7 @@ export class PolygonElement extends BaseElement {
 
   protected async onMapReady(): Promise<void> {
     await super.onMapReady();
-    this.createPolygon();
+    this.waitForStyleLoaded(() => this.createPolygon());
   }
 
   private createPolygon(): void {

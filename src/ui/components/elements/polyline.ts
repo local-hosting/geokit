@@ -44,7 +44,7 @@ export class PolylineElement extends BaseElement {
 
   protected override async onMapReady(): Promise<void> {
     await super.onMapReady();
-    this.createPolyline();
+    this.waitForStyleLoaded(() => this.createPolyline());
   }
 
   override async connectedCallback() {
@@ -284,7 +284,7 @@ export class PolylineElement extends BaseElement {
 
     switch (name) {
       case 'points':
-        this.createPolyline();
+        this.waitForStyleLoaded(() => this.createPolyline());
         break;
       case 'color':
       case 'opacity':

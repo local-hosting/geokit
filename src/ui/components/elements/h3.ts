@@ -48,7 +48,7 @@ export class H3Element extends BaseElement {
 
   protected override async onMapReady(): Promise<void> {
     await super.onMapReady();
-    this.renderH3();
+    this.waitForStyleLoaded(() => this.renderH3());
   }
 
   override async connectedCallback() {
@@ -193,7 +193,7 @@ export class H3Element extends BaseElement {
       if (name === 'visible') {
         this.toggleVisibility();
       } else {
-        this.renderH3();
+        this.waitForStyleLoaded(() => this.renderH3());
       }
     }
   }
