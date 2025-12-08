@@ -16,40 +16,52 @@
       "default": "./dist/esm/index.js"
     },
     "./distance": {
-      "types": "./dist/esm/distance/index.d.ts",
-      "import": "./dist/esm/distance/index.js",
-      "require": "./dist/cjs/distance/index.cjs",
-      "default": "./dist/esm/distance/index.js"
+      "types": "./dist/esm/utils/distance/index.d.ts",
+      "import": "./dist/esm/utils/distance/index.js",
+      "require": "./dist/cjs/utils/distance/index.cjs",
+      "default": "./dist/esm/utils/distance/index.js"
     },
     "./coordinates": {
-      "types": "./dist/esm/coordinates/index.d.ts",
-      "import": "./dist/esm/coordinates/index.js",
-      "require": "./dist/cjs/coordinates/index.cjs",
-      "default": "./dist/esm/coordinates/index.js"
+      "types": "./dist/esm/utils/coordinates/index.d.ts",
+      "import": "./dist/esm/utils/coordinates/index.js",
+      "require": "./dist/cjs/utils/coordinates/index.cjs",
+      "default": "./dist/esm/utils/coordinates/index.js"
     },
     "./geojson": {
-      "types": "./dist/esm/geojson/index.d.ts",
-      "import": "./dist/esm/geojson/index.js",
-      "require": "./dist/cjs/geojson/index.cjs",
-      "default": "./dist/esm/geojson/index.js"
+      "types": "./dist/esm/utils/geojson/index.d.ts",
+      "import": "./dist/esm/utils/geojson/index.js",
+      "require": "./dist/cjs/utils/geojson/index.cjs",
+      "default": "./dist/esm/utils/geojson/index.js"
     },
     "./normalize": {
-      "types": "./dist/esm/normalize/index.d.ts",
-      "import": "./dist/esm/normalize/index.js",
-      "require": "./dist/cjs/normalize/index.cjs",
-      "default": "./dist/esm/normalize/index.js"
+      "types": "./dist/esm/utils/normalize/index.d.ts",
+      "import": "./dist/esm/utils/normalize/index.js",
+      "require": "./dist/cjs/utils/normalize/index.cjs",
+      "default": "./dist/esm/utils/normalize/index.js"
     },
     "./bounds": {
-      "types": "./dist/esm/bounds/index.d.ts",
-      "import": "./dist/esm/bounds/index.js",
-      "require": "./dist/cjs/bounds/index.cjs",
-      "default": "./dist/esm/bounds/index.js"
+      "types": "./dist/esm/utils/bounds/index.d.ts",
+      "import": "./dist/esm/utils/bounds/index.js",
+      "require": "./dist/cjs/utils/bounds/index.cjs",
+      "default": "./dist/esm/utils/bounds/index.js"
     },
     "./types": {
-      "types": "./dist/esm/types/index.d.ts",
-      "import": "./dist/esm/types/index.js",
-      "require": "./dist/cjs/types/index.cjs",
-      "default": "./dist/esm/types/index.js"
+      "types": "./dist/esm/utils/types/index.d.ts",
+      "import": "./dist/esm/utils/types/index.js",
+      "require": "./dist/cjs/utils/types/index.cjs",
+      "default": "./dist/esm/utils/types/index.js"
+    },
+    "./ui": {
+      "types": "./dist/esm/ui/index.d.ts",
+      "import": "./dist/esm/ui/index.js",
+      "require": "./dist/cjs/ui/index.cjs",
+      "default": "./dist/esm/ui/index.js"
+    },
+    "./api": {
+      "types": "./dist/esm/api/index.d.ts",
+      "import": "./dist/esm/api/index.js",
+      "require": "./dist/cjs/api/index.cjs",
+      "default": "./dist/esm/api/index.js"
     }
   },
   "files": [
@@ -82,7 +94,11 @@
     "functional",
     "curried",
     "browser",
-    "node"
+    "node",
+    "map",
+    "ui",
+    "components",
+    "web-components"
   ],
   "author": "",
   "license": "MPL-2.0",
@@ -91,6 +107,7 @@
     "@twinfile:registry": "https://npm.pkg.github.com"
   },
   "devDependencies": {
+    "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
     "@typescript-eslint/parser": "^8.47.0",
@@ -117,6 +134,7 @@
   "peerDependencies": {},
   "peerDependenciesMeta": {},
   "dependencies": {
+    "@maptiler/sdk": "^3.9.0",
     "@turf/along": "^7.3.0",
     "@turf/area": "^7.3.0",
     "@turf/bbox": "^7.3.0",
@@ -139,6 +157,8 @@
     "@turf/union": "^7.3.1",
     "@types/geojson": "^7946.0.16",
     "h3-js": "^4.3.0",
-    "latlon-geohash": "^2.0.0"
+    "latlon-geohash": "^2.0.0",
+    "lru-cache": "^11.2.4",
+    "mapbox-gl": "^3.17.0"
   }
 }

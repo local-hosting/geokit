@@ -13,6 +13,8 @@ class MockAPIProvider implements BaseAPIProvider {
   private config: MapProviderConfig | null = null;
   private initialized = false;
   private capabilities: APICapability[];
+  private cache = new Map<string, any>();
+  private fetchCount = 0;
 
   constructor(capabilities: APICapability[] = ['isochrone']) {
     this.capabilities = capabilities;
@@ -33,7 +35,19 @@ class MockAPIProvider implements BaseAPIProvider {
 
   async fetchIsochrone(options: any): Promise<GeoJSON.FeatureCollection> {
     if (!this.initialized) throw new Error('Provider not initialized');
-    return {
+    
+    // Check cache first (before incrementing)
+    const cacheKey = `${options.lat},${options.lng},${options.minutes?.join(',') || options.time},${options.mode}`;
+    
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey); // Cache hit - don't increment
+    }
+
+    // Only increment on actual fetch
+    this.fetchCount++;
+
+    // Simulate API response
+    const response: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
       features: [
         {
@@ -46,6 +60,14 @@ class MockAPIProvider implements BaseAPIProvider {
         },
       ],
     };
+
+    // Store in cache
+    this.cache.set(cacheKey, response);
+    return response;
+  }
+
+  getFetchCount(): number {
+    return this.fetchCount;
   }
 }
 
@@ -167,7 +189,7 @@ describe('API Providers', () => {
       const result = await provider.fetchIsochrone?.({
         lat: 40.7128,
         lng: -74.006,
-        time: 15,
+        minutes: [15],
         mode: 'driving',
       });
 
@@ -180,8 +202,28 @@ describe('API Providers', () => {
       const provider = new MockAPIProvider(['isochrone']);
       
       await expect(
-        provider.fetchIsochrone?.({ lat: 0, lng: 0, time: 15, mode: 'driving' })
+        provider.fetchIsochrone?.({ lat: 0, lng: 0, minutes: [15], mode: 'driving' })
       ).rejects.toThrow('Provider not initialized');
+    });
+
+    it('should use LRU cache for repeated requests', async () => {
+      const provider = new MockAPIProvider(['isochrone']);
+      registerAPIProvider('cache-test', provider);
+      await initAPIProvider('cache-test');
+
+      const options = { lat: 40.7128, lng: -74.006, minutes: [15], mode: 'driving' as const };
+
+      // First call - cache miss
+      await provider.fetchIsochrone?.(options);
+      expect(provider.getFetchCount()).toBe(1);
+
+      // Second call with exact same params - cache hit
+      await provider.fetchIsochrone?.(options);
+      expect(provider.getFetchCount()).toBe(1); // Still 1 - cached!
+
+      // Different params - cache miss
+      await provider.fetchIsochrone?.({ ...options, minutes: [30] });
+      expect(provider.getFetchCount()).toBe(2);
     });
   });
 
@@ -220,3 +262,7 @@ describe('API Providers', () => {
     });
   });
 });
+
+
+
+
