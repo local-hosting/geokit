@@ -162,122 +162,130 @@ describe('Real Provider Integration Tests', () => {
       expect(capabilities).toContain('directions');
     });
 
-    it.skip('should fetch real isochrone from Mapbox API', async () => {
-      // SKIPPED: Token from MAPI has URL restrictions (403 Forbidden in Node.js)
-      // See tests/integration/README.md for token setup
-      await provider.initialize({ accessToken: MAPBOX_TOKEN! });
+    it.skipIf(!MAPBOX_TOKEN)(
+      'should fetch real isochrone from Mapbox API',
+      async () => {
+        await provider.initialize({ accessToken: MAPBOX_TOKEN! });
 
-      const options: IsochroneOptions = {
-        lng: -122.4194,
-        lat: 37.7749, // San Francisco
-        mode: 'driving',
-        minutes: [10, 20],
-      };
+        const options: IsochroneOptions = {
+          lng: -122.4194,
+          lat: 37.7749, // San Francisco
+          mode: 'driving',
+          minutes: [10, 20],
+        };
 
-      const result = await provider.fetchIsochrone(options);
+        const result = await provider.fetchIsochrone(options);
 
-      // Validate GeoJSON structure
-      expect(result).toBeDefined();
-      expect(result.type).toBe('FeatureCollection');
-      expect(result.features).toBeDefined();
-      expect(result.features.length).toBeGreaterThan(0);
+        // Validate GeoJSON structure
+        expect(result).toBeDefined();
+        expect(result.type).toBe('FeatureCollection');
+        expect(result.features).toBeDefined();
+        expect(result.features.length).toBeGreaterThan(0);
 
-      // Validate feature properties
-      const feature = result.features[0];
-      expect(feature.type).toBe('Feature');
-      expect(feature.geometry).toBeDefined();
-      expect(feature.geometry.type).toBe('Polygon');
-      expect(feature.geometry.coordinates).toBeDefined();
-      expect(feature.properties).toBeDefined();
+        // Validate feature properties
+        const feature = result.features[0];
+        expect(feature.type).toBe('Feature');
+        expect(feature.geometry).toBeDefined();
+        expect(feature.geometry.type).toBe('Polygon');
+        expect(feature.geometry.coordinates).toBeDefined();
+        expect(feature.properties).toBeDefined();
 
-      // Validate contour values match requested minutes
-      const contours = result.features.map((f) => f.properties?.contour);
-      expect(contours).toContain(10);
-      expect(contours).toContain(20);
-    }, 10000); // 10s timeout for network request
+        // Validate contour values match requested minutes
+        const contours = result.features.map((f) => f.properties?.contour);
+        expect(contours).toContain(10);
+        expect(contours).toContain(20);
+      },
+      10000
+    ); // 10s timeout for network request
 
-    it.skip('should cache isochrone responses', async () => {
-      // SKIPPED: Token from MAPI has URL restrictions (403 Forbidden in Node.js)
-      // See tests/integration/README.md for token setup
-      await provider.initialize({ accessToken: MAPBOX_TOKEN! });
+    it.skipIf(!MAPBOX_TOKEN)(
+      'should cache isochrone responses',
+      async () => {
+        await provider.initialize({ accessToken: MAPBOX_TOKEN! });
 
-      const options: IsochroneOptions = {
-        lng: -73.9857,
-        lat: 40.7484, // NYC (Empire State)
-        mode: 'walking',
-        minutes: [15],
-      };
+        const options: IsochroneOptions = {
+          lng: -73.9857,
+          lat: 40.7484, // NYC (Empire State)
+          mode: 'walking',
+          minutes: [15],
+        };
 
-      // First call - should hit API
-      const start1 = Date.now();
-      const result1 = await provider.fetchIsochrone(options);
-      const duration1 = Date.now() - start1;
+        // First call - should hit API
+        const start1 = Date.now();
+        const result1 = await provider.fetchIsochrone(options);
+        const duration1 = Date.now() - start1;
 
-      // Second call - should hit cache (much faster)
-      const start2 = Date.now();
-      const result2 = await provider.fetchIsochrone(options);
-      const duration2 = Date.now() - start2;
+        // Second call - should hit cache (much faster)
+        const start2 = Date.now();
+        const result2 = await provider.fetchIsochrone(options);
+        const duration2 = Date.now() - start2;
 
-      // Validate both results are identical
-      expect(result2).toEqual(result1);
+        // Validate both results are identical
+        expect(result2).toEqual(result1);
 
-      // Cache hit should be significantly faster (< 10ms vs > 500ms)
-      expect(duration2).toBeLessThan(50);
-      console.log(`First fetch: ${duration1}ms, Cached fetch: ${duration2}ms`);
-    }, 10000);
+        // Cache hit should be significantly faster (< 10ms vs > 500ms)
+        expect(duration2).toBeLessThan(50);
+        console.log(`First fetch: ${duration1}ms, Cached fetch: ${duration2}ms`);
+      },
+      10000
+    );
 
-    it.skip('should handle different travel modes', async () => {
-      // SKIPPED: Token from MAPI has URL restrictions (403 Forbidden in Node.js)
-      // See tests/integration/README.md for token setup
-      await provider.initialize({ accessToken: MAPBOX_TOKEN! });
+    it.skipIf(!MAPBOX_TOKEN)(
+      'should handle different travel modes',
+      async () => {
+        await provider.initialize({ accessToken: MAPBOX_TOKEN! });
 
-      const baseOptions = {
-        lng: -118.2437,
-        lat: 34.0522, // Los Angeles
-        minutes: [15],
-      };
+        const baseOptions = {
+          lng: -118.2437,
+          lat: 34.0522, // Los Angeles
+          minutes: [15],
+        };
 
-      // Test different modes
-      const drivingResult = await provider.fetchIsochrone({ ...baseOptions, mode: 'driving' });
-      const walkingResult = await provider.fetchIsochrone({ ...baseOptions, mode: 'walking' });
-      const cyclingResult = await provider.fetchIsochrone({ ...baseOptions, mode: 'cycling' });
+        // Test different modes
+        const drivingResult = await provider.fetchIsochrone({ ...baseOptions, mode: 'driving' });
+        const walkingResult = await provider.fetchIsochrone({ ...baseOptions, mode: 'walking' });
+        const cyclingResult = await provider.fetchIsochrone({ ...baseOptions, mode: 'cycling' });
 
-      // All should return valid results
-      expect(drivingResult.features.length).toBeGreaterThan(0);
-      expect(walkingResult.features.length).toBeGreaterThan(0);
-      expect(cyclingResult.features.length).toBeGreaterThan(0);
+        // All should return valid results
+        expect(drivingResult.features.length).toBeGreaterThan(0);
+        expect(walkingResult.features.length).toBeGreaterThan(0);
+        expect(cyclingResult.features.length).toBeGreaterThan(0);
 
-      // Driving should cover largest area (rough heuristic)
-      const getDrivingArea = (geojson: any) => {
-        // Simple area estimation - not precise, just for sanity check
-        const coords = geojson.features[0].geometry.coordinates[0];
-        return coords.length; // More points = larger perimeter = larger area (rough)
-      };
+        // Driving should cover largest area (rough heuristic)
+        const getDrivingArea = (geojson: any) => {
+          // Simple area estimation - not precise, just for sanity check
+          const coords = geojson.features[0].geometry.coordinates[0];
+          return coords.length; // More points = larger perimeter = larger area (rough)
+        };
 
-      expect(getDrivingArea(drivingResult)).toBeGreaterThan(getDrivingArea(walkingResult) * 0.5);
-    }, 20000);
+        expect(getDrivingArea(drivingResult)).toBeGreaterThan(getDrivingArea(walkingResult) * 0.5);
+      },
+      20000
+    );
 
-    it.skip('should handle multiple time contours', async () => {
-      // SKIPPED: Token from MAPI has URL restrictions (403 Forbidden in Node.js)
-      // See tests/integration/README.md for token setup
-      await provider.initialize({ accessToken: MAPBOX_TOKEN! });
+    it.skipIf(!MAPBOX_TOKEN)(
+      'should handle multiple time contours',
+      async () => {
+        await provider.initialize({ accessToken: MAPBOX_TOKEN! });
 
-      const options: IsochroneOptions = {
-        lng: -87.6298,
-        lat: 41.8781, // Chicago
-        mode: 'driving',
-        minutes: [5, 10, 15, 20],
-      };
+        const options: IsochroneOptions = {
+          lng: -87.6298,
+          lat: 41.8781, // Chicago
+          mode: 'driving',
+          minutes: [5, 10, 15, 20],
+        };
 
-      const result = await provider.fetchIsochrone(options);
+        const result = await provider.fetchIsochrone(options);
 
-      // Should have 4 features (one per time contour)
-      expect(result.features.length).toBe(4);
+        // Should have 4 features (one per time contour)
+        expect(result.features.length).toBe(4);
 
-      // Contours should be in order (largest to smallest)
-      const contours = result.features.map((f) => f.properties?.contour);
-      expect(contours).toEqual([20, 15, 10, 5]);
-    }, 10000);
+        // Contours should be in order (largest to smallest)
+        const contours = result.features.map((f) => f.properties?.contour);
+        expect(contours).toEqual([20, 15, 10, 5]);
+      },
+      10000
+    );
 
     it.skipIf(!MAPBOX_TOKEN)(
       'should handle API errors gracefully',
