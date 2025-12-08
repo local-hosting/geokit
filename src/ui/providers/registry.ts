@@ -94,3 +94,9 @@ export function clearUIProviders(): void {
   uiProviders.clear();
   currentUIProvider = null;
 }
+
+// For testing: alias for clearUIProviders
+export function _resetRegistries(): void {
+  clearUIProviders();
+}
+
