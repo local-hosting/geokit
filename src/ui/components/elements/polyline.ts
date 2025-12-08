@@ -42,7 +42,8 @@ export class PolylineElement extends BaseElement {
     this.attachShadow({ mode: 'open' });
   }
 
-  protected override onMapReady(): void {
+  protected override async onMapReady(): Promise<void> {
+    await super.onMapReady();
     this.createPolyline();
   }
 

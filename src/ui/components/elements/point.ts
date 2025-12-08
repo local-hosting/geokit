@@ -82,7 +82,8 @@ export class PointElement extends BaseElement {
     this.isInitialized = true;
   }
 
-  protected override onMapReady(): void {
+  protected override async onMapReady(): Promise<void> {
+    await super.onMapReady();
     this.addPoint();
   }
 

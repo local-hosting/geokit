@@ -79,21 +79,30 @@ export class BaseElement extends HTMLElement {
     if (this.isInitialized) return;
 
     try {
-      // Create the control (implemented by subclass)
-      this.control = await this.createControl();
-
-      // Set up event forwarding if control exists
-      if (this.control) {
-        this.setupEventForwarding();
-      }
-
-      // Find parent map and add control/element
+      // Find parent map first - controls will be created when map is ready
       this.addToParentMap();
+      
+      // For non-control elements (markers, etc), create immediately if needed
+      if (!this.shouldWaitForMap()) {
+        this.control = await this.createControl();
+        if (this.control) {
+          this.setupEventForwarding();
+        }
+      }
 
       this.isInitialized = true;
     } catch (error) {
       console.error(`${this.constructor.name}: Failed to initialize:`, error);
     }
+  }
+  
+  /**
+   * Override in subclasses to indicate if component should wait for map
+   * Controls should wait, geometry elements might not need to
+   */
+  protected shouldWaitForMap(): boolean {
+    // Default: wait for map if this is a control (has a control-specific position)
+    return this.hasAttribute('position') || this.constructor.name.includes('Control');
   }
 
   disconnectedCallback(): void {
@@ -219,8 +228,20 @@ export class BaseElement extends HTMLElement {
    * Called when map is ready
    * Controls call addControlToMap(), other components can override
    */
-  protected onMapReady(): void {
-    if (this.control) {
+  protected async onMapReady(): Promise<void> {
+    // Create control now that map is ready and provider is initialized
+    if (this.shouldWaitForMap() && !this.control) {
+      try {
+        this.control = await this.createControl();
+        if (this.control) {
+          this.setupEventForwarding();
+          this.addControlToMap();
+        }
+      } catch (error) {
+        console.error(`${this.constructor.name}: Failed to create control:`, error);
+      }
+    } else if (this.control) {
+      // Control already created, just add to map
       this.addControlToMap();
     }
   }
