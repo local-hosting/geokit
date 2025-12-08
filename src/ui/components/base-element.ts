@@ -75,6 +75,20 @@ export class BaseElement extends HTMLElement {
     return getProviderForCapability(capability);
   }
 
+  /**
+   * Wait for map style to be loaded before executing callback
+   * Prevents "Style is not done loading" errors
+   */
+  protected waitForStyleLoaded(callback: () => void): void {
+    if (!this.map) return;
+    
+    if (this.map.isStyleLoaded()) {
+      callback();
+    } else {
+      this.map.once('load', callback);
+    }
+  }
+
   async connectedCallback(): Promise<void> {
     if (this.isInitialized) return;
 

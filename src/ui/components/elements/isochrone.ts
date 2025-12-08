@@ -46,7 +46,7 @@ export class IsochroneElement extends BaseElement {
 
   protected override async onMapReady(): Promise<void> {
     await super.onMapReady();
-    this.fetchAndRenderIsochrone();
+    this.waitForStyleLoaded(() => this.fetchAndRenderIsochrone());
   }
 
   override async connectedCallback() {
@@ -171,7 +171,7 @@ export class IsochroneElement extends BaseElement {
       if (name === 'visible') {
         this.toggleVisibility();
       } else {
-        this.fetchAndRenderIsochrone();
+        this.waitForStyleLoaded(() => this.fetchAndRenderIsochrone());
       }
     }
   }
@@ -229,7 +229,7 @@ export class IsochroneElement extends BaseElement {
   // Public API
   async refresh(): Promise<void> {
     this.currentCacheKey = null; // Force refresh
-    await this.fetchAndRenderIsochrone();
+    await this.waitForStyleLoaded(() => this.fetchAndRenderIsochrone());
   }
 
   show(): void {
