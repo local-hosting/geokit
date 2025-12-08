@@ -3,8 +3,14 @@
  * 
  * Implements BaseAPIProvider for Mapbox services
  * Provides isochrone, directions, and matrix capabilities
+ * 
+ * Features:
+ * - LRU cache with 10-minute TTL
+ * - Max 100 cached entries
+ * - Automatic cache eviction
  */
 
+import { LRUCache } from 'lru-cache';
 import {
   BaseAPIProvider,
   type MapProviderConfig,
@@ -14,9 +20,29 @@ import {
 } from './types';
 import type { FeatureCollection } from 'geojson';
 
+interface CacheEntry {
+  data: FeatureCollection;
+  timestamp: number;
+}
+
 export class MapboxAPIProvider extends BaseAPIProvider {
   protected config: MapProviderConfig | null = null;
   private accessToken: string | null = null;
+  
+  // LRU Cache: 100 entries, 10-minute TTL
+  private cache: LRUCache<string, CacheEntry>;
+  private cacheHits = 0;
+  private cacheMisses = 0;
+
+  constructor() {
+    super();
+    this.cache = new LRUCache<string, CacheEntry>({
+      max: 100,                    // Maximum 100 entries
+      ttl: 1000 * 60 * 10,        // 10 minutes TTL
+      updateAgeOnGet: true,        // LRU: reset age on access
+      updateAgeOnHas: false,       // Don't reset age on has() check
+    });
+  }
 
   getName(): string {
     return 'mapbox';
@@ -49,6 +75,17 @@ export class MapboxAPIProvider extends BaseAPIProvider {
     if (!lat || !lng || !minutes || minutes.length === 0) {
       throw new Error('Mapbox API Provider: Invalid isochrone parameters');
     }
+
+    // Generate cache key (round to 4 decimals = ~11m precision for better cache hits)
+    const cacheKey = this.getCacheKey(lat, lng, minutes, mode);
+
+    // Check cache
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      this.cacheHits++;
+      return cached.data;
+    }
+    this.cacheMisses++;
 
     // Map mode to Mapbox profile
     const modeMap: Record<string, string> = {
@@ -98,7 +135,15 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       }
 
       const data = await response.json();
-      return data as FeatureCollection;
+      const result = data as FeatureCollection;
+
+      // Store in cache
+      this.cache.set(cacheKey, {
+        data: result,
+        timestamp: Date.now(),
+      });
+
+      return result;
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to fetch isochrone: ${error.message}`);
@@ -176,6 +221,44 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       }
       throw new Error('Failed to fetch directions');
     }
+  }
+
+  /**
+   * Generate cache key for isochrone request
+   * Rounds coordinates to 4 decimals (~11m precision) for better cache hits
+   */
+  private getCacheKey(
+    lat: number,
+    lng: number,
+    minutes: number[],
+    mode: string
+  ): string {
+    const roundedLat = Math.round(lat * 10000) / 10000;
+    const roundedLng = Math.round(lng * 10000) / 10000;
+    return `iso:${roundedLat},${roundedLng}:${minutes.join(',')}:${mode}`;
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getCacheStats() {
+    return {
+      size: this.cache.size,
+      hits: this.cacheHits,
+      misses: this.cacheMisses,
+      hitRate: this.cacheHits + this.cacheMisses > 0 
+        ? (this.cacheHits / (this.cacheHits + this.cacheMisses) * 100).toFixed(1) + '%'
+        : '0%',
+    };
+  }
+
+  /**
+   * Clear the cache (useful for testing or memory pressure)
+   */
+  clearCache(): void {
+    this.cache.clear();
+    this.cacheHits = 0;
+    this.cacheMisses = 0;
   }
 }
 
