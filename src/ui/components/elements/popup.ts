@@ -123,6 +123,6 @@ export class PopupElement extends BaseElement {
 
 // Register the custom element
 if (!customElements.get('gk-popup')) {
-  customElements.define('gk-popup', PopupElement);
+  customElements.define('mapi-popup', PopupElement);
 }
 
