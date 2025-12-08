@@ -1,7 +1,7 @@
-node_modules/
-dist/
-*.log
+node_modules
+dist
+coverage
 .DS_Store
-coverage/
-*.tsbuildinfo
-.npmrc
+*.log
+.env
+.env.local

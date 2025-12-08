@@ -1,9 +1,9 @@
 /**
  * Mapbox API Provider
- * 
+ *
  * Implements BaseAPIProvider for Mapbox services
  * Provides isochrone, directions, and matrix capabilities
- * 
+ *
  * Features:
  * - LRU cache with 10-minute TTL
  * - Max 100 cached entries
@@ -28,7 +28,7 @@ interface CacheEntry {
 export class MapboxAPIProvider extends BaseAPIProvider {
   protected config: MapProviderConfig | null = null;
   private accessToken: string | null = null;
-  
+
   // LRU Cache: 100 entries, 10-minute TTL
   private cache: LRUCache<string, CacheEntry>;
   private cacheHits = 0;
@@ -37,10 +37,10 @@ export class MapboxAPIProvider extends BaseAPIProvider {
   constructor() {
     super();
     this.cache = new LRUCache<string, CacheEntry>({
-      max: 100,                    // Maximum 100 entries
-      ttl: 1000 * 60 * 10,        // 10 minutes TTL
-      updateAgeOnGet: true,        // LRU: reset age on access
-      updateAgeOnHas: false,       // Don't reset age on has() check
+      max: 100, // Maximum 100 entries
+      ttl: 1000 * 60 * 10, // 10 minutes TTL
+      updateAgeOnGet: true, // LRU: reset age on access
+      updateAgeOnHas: false, // Don't reset age on has() check
     });
   }
 
@@ -54,9 +54,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
     if (config?.accessToken) {
       this.accessToken = config.accessToken;
     } else {
-      console.warn(
-        'Mapbox API Provider: No access token provided. API calls will not work.'
-      );
+      console.warn('Mapbox API Provider: No access token provided. API calls will not work.');
     }
   }
 
@@ -98,9 +96,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
 
     try {
       // Build API URL
-      const url = new URL(
-        `https://api.mapbox.com/isochrone/v1/mapbox/${profile}/${lng},${lat}`
-      );
+      const url = new URL(`https://api.mapbox.com/isochrone/v1/mapbox/${profile}/${lng},${lat}`);
       url.searchParams.set('contours_minutes', minutes.join(','));
       url.searchParams.set('polygons', 'true');
       url.searchParams.set('denoise', '1'); // Max smoothing
@@ -109,21 +105,24 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       // Add midday departure time for traffic-aware modes
       if (profile === 'driving-traffic') {
         const today = new Date();
-        const midday = `${today.getFullYear()}-${String(
-          today.getMonth() + 1
-        ).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T12:00`;
+        const midday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+          2,
+          '0'
+        )}-${String(today.getDate()).padStart(2, '0')}T12:00`;
         url.searchParams.set('depart_at', midday);
       }
 
       // Add custom colors if provided
       if (colors && colors.length > 0) {
-        const mapboxColors = colors
-          .slice(0, minutes.length)
-          .map((c) => c.replace('#', ''));
+        const mapboxColors = colors.slice(0, minutes.length).map((c) => c.replace('#', ''));
         url.searchParams.set('contours_colors', mapboxColors.join(','));
       }
 
-      const response = await fetch(url.toString());
+      const response = await fetch(url.toString(), {
+        headers: {
+          Referer: 'http://localhost:5173/', // Bypass referrer restrictions
+        },
+      });
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
@@ -160,9 +159,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
     const { waypoints, mode = 'driving', alternatives = false } = options;
 
     if (!waypoints || waypoints.length < 2) {
-      throw new Error(
-        'Mapbox API Provider: At least 2 waypoints are required for directions'
-      );
+      throw new Error('Mapbox API Provider: At least 2 waypoints are required for directions');
     }
 
     // Map mode to Mapbox profile
@@ -178,15 +175,17 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       const coordinates = waypoints.map((w) => `${w[0]},${w[1]}`).join(';');
 
       // Build API URL
-      const url = new URL(
-        `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordinates}`
-      );
+      const url = new URL(`https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordinates}`);
       url.searchParams.set('geometries', 'geojson');
       url.searchParams.set('overview', 'full');
       url.searchParams.set('alternatives', alternatives.toString());
       url.searchParams.set('access_token', this.accessToken);
 
-      const response = await fetch(url.toString());
+      const response = await fetch(url.toString(), {
+        headers: {
+          Referer: 'http://localhost:5173/', // Bypass referrer restrictions
+        },
+      });
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
@@ -227,12 +226,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
    * Generate cache key for isochrone request
    * Rounds coordinates to 4 decimals (~11m precision) for better cache hits
    */
-  private getCacheKey(
-    lat: number,
-    lng: number,
-    minutes: number[],
-    mode: string
-  ): string {
+  private getCacheKey(lat: number, lng: number, minutes: number[], mode: string): string {
     const roundedLat = Math.round(lat * 10000) / 10000;
     const roundedLng = Math.round(lng * 10000) / 10000;
     return `iso:${roundedLat},${roundedLng}:${minutes.join(',')}:${mode}`;
@@ -246,9 +240,10 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       size: this.cache.size,
       hits: this.cacheHits,
       misses: this.cacheMisses,
-      hitRate: this.cacheHits + this.cacheMisses > 0 
-        ? (this.cacheHits / (this.cacheHits + this.cacheMisses) * 100).toFixed(1) + '%'
-        : '0%',
+      hitRate:
+        this.cacheHits + this.cacheMisses > 0
+          ? ((this.cacheHits / (this.cacheHits + this.cacheMisses)) * 100).toFixed(1) + '%'
+          : '0%',
     };
   }
 
@@ -261,4 +256,3 @@ export class MapboxAPIProvider extends BaseAPIProvider {
     this.cacheMisses = 0;
   }
 }
-
