@@ -415,6 +415,6 @@ export class PolylineElement extends BaseElement {
 
 // Register the custom element
 if (!customElements.get('gk-polyline')) {
-  customElements.define('gk-polyline', PolylineElement);
+  customElements.define('mapi-polyline', PolylineElement);
 }
 

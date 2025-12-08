@@ -614,6 +614,6 @@ export class PointElement extends BaseElement {
 
 // Register the custom element
 if (!customElements.get('gk-point')) {
-  customElements.define('gk-point', PointElement);
+  customElements.define('mapi-point', PointElement);
 }
 

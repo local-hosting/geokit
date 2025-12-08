@@ -270,6 +270,6 @@ export class H3Element extends BaseElement {
 
 // Register the custom element
 if (!customElements.get('gk-h3')) {
-  customElements.define('gk-h3', H3Element);
+  customElements.define('mapi-h3', H3Element);
 }
 
