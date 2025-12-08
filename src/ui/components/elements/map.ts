@@ -125,8 +125,8 @@ export class MapElement extends BaseElement {
         loading.classList.add('hidden');
       }
 
-      // Wait for map to be fully loaded
-      this.map.on('load', () => {
+      // Check if map is already loaded (style might load synchronously or very fast)
+      if (this.map.isStyleLoaded && this.map.isStyleLoaded()) {
         this.isInitialized = true;
         this.dispatchEvent(
           new CustomEvent('mapi-ready', {
@@ -134,7 +134,18 @@ export class MapElement extends BaseElement {
             bubbles: true,
           })
         );
-      });
+      } else {
+        // Wait for map to be fully loaded
+        this.map.on('load', () => {
+          this.isInitialized = true;
+          this.dispatchEvent(
+            new CustomEvent('mapi-ready', {
+              detail: { map: this.map },
+              bubbles: true,
+            })
+          );
+        });
+      }
     } catch (error) {
       console.error('Failed to initialize map:', error);
       const loading = this.shadowRoot?.querySelector('#loading');
