@@ -25,5 +25,11 @@ import './components/controls/fullscreen-control';
 import './components/controls/geolocate-control';
 import './components/elements/map';
 import './components/elements/marker';
+import './components/elements/point';
 import './components/elements/polygon';
+import './components/elements/polyline';
+import './components/elements/popup';
+import './components/elements/h3';
+import './components/elements/isochrone';
+
 
