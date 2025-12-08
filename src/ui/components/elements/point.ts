@@ -144,8 +144,13 @@ export class PointElement extends BaseElement {
     const lat = parseFloat(this.getAttribute('lat') || '');
     const lng = parseFloat(this.getAttribute('lng') || '');
 
+    // Skip if attributes haven't been set yet
+    if (isNaN(lat) || isNaN(lng)) {
+      return;
+    }
+
     if (!isValidCoordinate([lng, lat])) {
-      console.warn('Point: Invalid lat/lng coordinates');
+      console.warn('Point: Invalid lat/lng coordinates', { lat, lng });
       return;
     }
 
