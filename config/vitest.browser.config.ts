@@ -18,7 +18,8 @@ export default defineConfig({
     hookTimeout: 60000, // 60 seconds for hooks (map initialization can take time)
     testTimeout: 30000, // 30 seconds for individual tests
     // Only include browser tests (Playwright required)
-    include: ['**/tests/ui/browser/**'],
+    include: ['**/tests/ui/browser/**/*.test.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/__screenshots__/**'],
     setupFiles: [path.resolve(__dirname, '..', 'tests', 'setup', 'browser-console-suppress.ts')],
     coverage: {
       provider: 'v8',
