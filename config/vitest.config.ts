@@ -8,8 +8,12 @@ dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'jsdom', // Use jsdom for DOM API support
-    setupFiles: ['./tests/setup/jsdom-polyfills.ts'],
+    environment: 'happy-dom', // Happy-DOM has better Custom Elements support than jsdom
+    setupFiles: ['./tests/setup/happy-dom-polyfills.ts'],
+    hookTimeout: 60000, // 60 seconds for hooks (map initialization can take time)
+    testTimeout: 30000, // 30 seconds for individual tests
+    // Exclude browser-only tests (they require Playwright)
+    exclude: ['**/node_modules/**', '**/dist/**', '**/tests/ui/browser/**'],
     pool: 'forks',
     poolOptions: {
       forks: {
