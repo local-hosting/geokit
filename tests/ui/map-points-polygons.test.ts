@@ -125,7 +125,7 @@ describe('Multiple Points Rendering', () => {
     await import('../../src/ui/components/elements/polygon');
 
     mockMap = new MockMap();
-    mapElement = document.createElement('mapi-map');
+    mapElement = document.createElement('gk-map');
 
     // Set API key if available (allows map to initialize properly)
     if (MAPTILER_KEY) {

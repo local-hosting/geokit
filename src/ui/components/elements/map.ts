@@ -25,62 +25,26 @@ export class MapElement extends BaseElement {
     'pitch',
     'bearing',
     'interactive',
+    'hide-controls',
   ];
 
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
     this.map = null;
     this.isInitialized = false;
-    this.setupShadowDOM();
-  }
-
-  setupShadowDOM(): void {
-    if (!this.shadowRoot) return;
-
-    this.shadowRoot.innerHTML = `
-      <style>
-        :host {
-          display: block;
-          width: 100%;
-          height: 100%;
-          position: relative;
-        }
-        
-        #container {
-          width: 100%;
-          height: 100%;
-          position: relative;
-        }
-        
-        #map {
-          width: 100%;
-          height: 100%;
-        }
-        
-        #loading {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          color: #666;
-          font-family: system-ui, -apple-system, sans-serif;
-          z-index: 1000;
-        }
-        
-        #loading.hidden {
-          display: none;
-        }
-      </style>
-      
-      <div id="container">
-        <div id="loading">Loading map...</div>
-        <div id="map"></div>
-      </div>
-    `;
   }
 
   async connectedCallback(): Promise<void> {
+    // Setup DOM structure if not already present
+    if (!this.querySelector('.gk-map-container')) {
+      const container = document.createElement('div');
+      container.className = 'gk-map-container';
+      container.style.width = '100%';
+      container.style.height = '100%';
+      container.style.position = 'relative';
+      this.appendChild(container);
+    }
+
     // Prevent re-initialization if map already exists (important for map pool reuse)
     // When maps are moved between cards, connectedCallback can be called again,
     // but we should reuse the existing map instance to avoid creating new WebGL contexts
@@ -130,7 +94,7 @@ export class MapElement extends BaseElement {
       }
 
       const provider = this.getUIProvider();
-      const container = this.shadowRoot?.querySelector('#map') as HTMLElement;
+      const container = this.querySelector('.gk-map-container') as HTMLElement;
 
       if (!container) {
         throw new Error('Map container not found');
@@ -148,12 +112,6 @@ export class MapElement extends BaseElement {
 
       this.map = await provider.createMap(container, options);
 
-      // Hide loading indicator
-      const loading = this.shadowRoot?.querySelector('#loading');
-      if (loading) {
-        loading.classList.add('hidden');
-      }
-
       // Check if map is already loaded (style might load synchronously or very fast)
       // Use try-catch because isStyleLoaded may access properties that don't exist yet
       let styleAlreadyLoaded = false;
@@ -168,17 +126,9 @@ export class MapElement extends BaseElement {
       }
 
       if (styleAlreadyLoaded) {
+        // Style already loaded, wait for idle event to ensure control system is ready
         this.isInitialized = true;
-        this.dispatchEvent(
-          new CustomEvent('mapi-ready', {
-            detail: { map: this.map, element: this },
-            bubbles: true,
-          })
-        );
-      } else {
-        // Wait for map to be fully loaded
-        this.map.on('load', () => {
-          this.isInitialized = true;
+        this.map.once('idle', () => {
           this.dispatchEvent(
             new CustomEvent('mapi-ready', {
               detail: { map: this.map, element: this },
@@ -186,13 +136,23 @@ export class MapElement extends BaseElement {
             })
           );
         });
+      } else {
+        // Wait for map to be fully loaded, then wait for idle
+        this.map.on('load', () => {
+          this.isInitialized = true;
+          // Wait for idle to ensure internal control system is initialized
+          this.map!.once('idle', () => {
+            this.dispatchEvent(
+              new CustomEvent('mapi-ready', {
+                detail: { map: this.map, element: this },
+                bubbles: true,
+              })
+            );
+          });
+        });
       }
     } catch (error) {
       console.error('Failed to initialize map:', error);
-      const loading = this.shadowRoot?.querySelector('#loading');
-      if (loading) {
-        loading.textContent = 'Failed to load map';
-      }
     }
   }
 
@@ -434,7 +394,7 @@ export class MapElement extends BaseElement {
       }
 
       const [lng, lat] = feature.geometry.coordinates;
-      const point = document.createElement('mapi-point');
+      const point = document.createElement('gk-point');
 
       // Set coordinates
       point.setAttribute('lat', String(lat));
@@ -474,17 +434,6 @@ export class MapElement extends BaseElement {
       }
 
       this.appendChild(point);
-
-      // Check if connectedCallback was called by checking if IDs were generated
-      // Use setTimeout without await since this is a synchronous function
-      setTimeout(() => {
-        if (!('sourceId' in point) || !(point as { sourceId?: string }).sourceId) {
-          console.error(
-            `[Map] ❌ Point ${addedCount + 1} has no sourceId after appendChild - connectedCallback may not have fired!`
-          );
-        }
-      }, 10);
-
       addedCount++;
     });
 
@@ -600,10 +549,10 @@ export class MapElement extends BaseElement {
       return;
     }
 
-    // Convert to array format for mapi-polygon (it normalizes internally)
+    // Convert to array format for gk-polygon (it normalizes internally)
     const pointArray = points.map(([lat, lng]) => [lat, lng]);
 
-    const polygon = document.createElement('mapi-polygon');
+    const polygon = document.createElement('gk-polygon');
     polygon.setAttribute('points', JSON.stringify(pointArray));
     polygon.setAttribute('fill-color', options.fillColor);
     polygon.setAttribute('fill-opacity', String(options.fillOpacity));
@@ -617,6 +566,6 @@ export class MapElement extends BaseElement {
 }
 
 // Register custom element
-if (!customElements.get('mapi-map')) {
-  customElements.define('mapi-map', MapElement);
+if (!customElements.get('gk-map')) {
+  customElements.define('gk-map', MapElement);
 }
