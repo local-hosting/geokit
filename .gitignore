@@ -1,8 +1,9 @@
 node_modules
 dist
+dist-demo
 coverage
 .DS_Store
 *.log
 .env
 .env.local
-tests/ui/__screenshots__
+tests/ui/**/__screenshots__
