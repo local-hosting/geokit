@@ -21,7 +21,7 @@ class MockUIProvider implements BaseUIProvider {
     this.initialized = true;
   }
 
-  async createMap(container: HTMLElement, options: any): Promise<any> {
+  async createMap(_container: HTMLElement, _options: any): Promise<any> {
     if (!this.initialized) throw new Error('Provider not initialized');
     return {
       on: vi.fn(),
@@ -35,16 +35,16 @@ class MockUIProvider implements BaseUIProvider {
       addControl: vi.fn(),
       removeControl: vi.fn(),
       getCanvas: vi.fn(() => ({
-        style: { cursor: '' }
+        style: { cursor: '' },
       })),
     };
   }
 
-  createControl(type: string, options: any): any {
+  createControl(_type: string, _options: any): any {
     return { onAdd: vi.fn(), onRemove: vi.fn() };
   }
 
-  createMarker(options: any): any {
+  createMarker(_options: any): any {
     return {
       setLngLat: vi.fn().mockReturnThis(),
       addTo: vi.fn().mockReturnThis(),
@@ -53,7 +53,7 @@ class MockUIProvider implements BaseUIProvider {
     };
   }
 
-  createPopup(options: any): any {
+  createPopup(_options: any): any {
     return {
       setLngLat: vi.fn().mockReturnThis(),
       setHTML: vi.fn().mockReturnThis(),
@@ -83,7 +83,7 @@ describe('UI Providers', () => {
     it('should allow registering multiple providers', () => {
       const provider1 = new MockUIProvider();
       const provider2 = new MockUIProvider();
-      
+
       expect(() => registerUIProvider('provider1', provider1)).not.toThrow();
       expect(() => registerUIProvider('provider2', provider2)).not.toThrow();
     });
@@ -114,7 +114,7 @@ describe('UI Providers', () => {
     it('should replace current provider when setting new one', async () => {
       const provider1 = new MockUIProvider();
       const provider2 = new MockUIProvider();
-      
+
       registerUIProvider('provider1', provider1);
       registerUIProvider('provider2', provider2);
 
@@ -141,7 +141,7 @@ describe('UI Providers', () => {
     it('should throw if no provider is set', () => {
       // After reset, no provider should be set
       expect(() => {
-        const provider = getUIProvider();
+        const _provider = getUIProvider();
       }).toThrow();
     });
   });
@@ -154,7 +154,7 @@ describe('UI Providers', () => {
 
       const container = document.createElement('div');
       const map = await provider.createMap(container, { zoom: 10 });
-      
+
       expect(map).toBeDefined();
       expect(map.on).toBeDefined();
     });
