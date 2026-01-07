@@ -56,72 +56,7 @@ if (typeof window !== 'undefined' && typeof Worker === 'undefined') {
   };
 }
 
-// Polyfill WebGL context if not available
-if (typeof window !== 'undefined' && typeof HTMLCanvasElement !== 'undefined') {
-  const originalGetContext = HTMLCanvasElement.prototype.getContext;
-
-  HTMLCanvasElement.prototype.getContext = function (
-    contextId: string,
-    options?: any
-  ): RenderingContext | null {
-    if (contextId === 'webgl' || contextId === 'webgl2' || contextId === 'experimental-webgl') {
-      // Return a mock WebGL context for testing
-      return {
-        canvas: this,
-        drawingBufferWidth: 300,
-        drawingBufferHeight: 150,
-        getParameter: () => null,
-        getExtension: () => null,
-        getSupportedExtensions: () => [],
-        // Add minimal methods to prevent crashes
-        viewport: () => {},
-        clearColor: () => {},
-        clear: () => {},
-        createShader: () => ({}),
-        shaderSource: () => {},
-        compileShader: () => {},
-        getShaderParameter: () => true,
-        createProgram: () => ({}),
-        attachShader: () => {},
-        linkProgram: () => {},
-        getProgramParameter: () => true,
-        useProgram: () => {},
-        createBuffer: () => ({}),
-        bindBuffer: () => {},
-        bufferData: () => {},
-        createTexture: () => ({}),
-        bindTexture: () => {},
-        texImage2D: () => {},
-        texParameteri: () => {},
-        createFramebuffer: () => ({}),
-        bindFramebuffer: () => {},
-        framebufferTexture2D: () => {},
-        checkFramebufferStatus: () => 36053, // FRAMEBUFFER_COMPLETE
-        deleteShader: () => {},
-        deleteProgram: () => {},
-        deleteBuffer: () => {},
-        deleteTexture: () => {},
-        deleteFramebuffer: () => {},
-        getUniformLocation: () => ({}),
-        uniform1f: () => {},
-        uniform2f: () => {},
-        uniform3f: () => {},
-        uniform4f: () => {},
-        uniformMatrix4fv: () => {},
-        enableVertexAttribArray: () => {},
-        vertexAttribPointer: () => {},
-        drawArrays: () => {},
-        enable: () => {},
-        disable: () => {},
-        blendFunc: () => {},
-        depthFunc: () => {},
-      } as any;
-    }
-
-    // Fall back to original for other context types
-    return originalGetContext.call(this, contextId, options);
-  };
-}
+// WebGL context polyfill is in happy-dom-polyfills.ts (uses cleaner Proxy approach)
 
 // Polyfill ResizeObserver if not available
 if (typeof window !== 'undefined' && typeof ResizeObserver === 'undefined') {
@@ -203,3 +138,38 @@ console.error = (...args: any[]) => {
   }
   originalConsoleError(...args);
 };
+
+/**
+ * Suppress JSDOM's NotSupportedError for custom element attributes.
+ * 
+ * JSDOM has incomplete Custom Elements v1 support. When setAttribute() is called
+ * on a custom element, JSDOM throws "NotSupportedError: Unexpected attributes"
+ * asynchronously (via internal mutation observers), bypassing try/catch blocks.
+ * 
+ * This is a JSDOM limitation - real browsers don't have this issue.
+ * For tests that heavily use custom elements, use Happy-DOM instead:
+ *   @vitest-environment happy-dom
+ */
+function isJsdomAttributeError(error: any): boolean {
+  return (
+    error?.name === 'NotSupportedError' ||
+    error?.code === 9 ||
+    (error?.message && error.message.includes('Unexpected attributes'))
+  );
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    if (isJsdomAttributeError(event.error)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return true;
+    }
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    if (isJsdomAttributeError(event.reason)) {
+      event.preventDefault();
+    }
+  });
+}
