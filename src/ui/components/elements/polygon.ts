@@ -9,6 +9,19 @@
 
 import { BaseElement } from '../base-element';
 import { normalizeCoordinatesArray } from '../../../utils/coordinates';
+import { simplifyPolygonRingToMaxPoints } from '../../../utils/simplify';
+import type { LatLon } from '../../../types';
+
+export interface PolygonOptions {
+  points: number[][]; // Array of [lat, lng] coordinates
+  fillColor?: string;
+  fillOpacity?: number;
+  strokeColor?: string;
+  strokeWidth?: number;
+  strokeOpacity?: number;
+  visible?: boolean;
+  interactive?: boolean;
+}
 
 export class PolygonElement extends BaseElement {
   static observedAttributes = [
@@ -26,8 +39,43 @@ export class PolygonElement extends BaseElement {
   private layerId: string = '';
   private strokeLayerId: string = '';
 
+  // Store options as properties (works in JSDOM without setAttribute issues)
+  private _propPoints?: number[][];
+  private _propFillColor?: string;
+  private _propFillOpacity?: number;
+  private _propStrokeColor?: string;
+  private _propStrokeWidth?: number;
+  private _propStrokeOpacity?: number;
+  private _propVisible?: boolean;
+  private _propInteractive?: boolean;
+
+  /**
+   * Apply stored create options as properties (not attributes)
+   * This avoids JSDOM's buggy setAttribute for custom elements
+   */
+  protected applyCreateOptions(options: PolygonOptions): void {
+    // Store as properties - methods will read from these
+    this._propPoints = options.points;
+    if (options.fillColor) this._propFillColor = options.fillColor;
+    if (options.fillOpacity !== undefined) this._propFillOpacity = options.fillOpacity;
+    if (options.strokeColor) this._propStrokeColor = options.strokeColor;
+    if (options.strokeWidth !== undefined) this._propStrokeWidth = options.strokeWidth;
+    if (options.strokeOpacity !== undefined) this._propStrokeOpacity = options.strokeOpacity;
+    if (options.visible !== undefined) this._propVisible = options.visible;
+    if (options.interactive !== undefined) this._propInteractive = options.interactive;
+  }
+
   async connectedCallback(): Promise<void> {
     if (this.isInitialized) return;
+
+    // Apply options from create() factory method as attributes
+    // This ensures attributes are set after element is connected (works in JSDOM/Happy-DOM)
+    const createOptions = (this as any)._createOptions;
+    if (createOptions) {
+      this.applyCreateOptions(createOptions);
+      // Clear stored options
+      (this as any)._createOptions = undefined;
+    }
 
     // Generate unique IDs
     this.sourceId = `polygon-source-${crypto.randomUUID()}`;
@@ -89,12 +137,15 @@ export class PolygonElement extends BaseElement {
       return;
     }
 
-    if (this.getAttribute('visible') === 'false') {
+    // Check visible - read from property first
+    const visible = this._propVisible ?? this.safeGetAttribute('visible');
+    if (visible === false || visible === 'false') {
       return;
     }
 
-    // Parse points
-    const pointsAttr = this.getAttribute('points');
+    // Parse points - read from property first
+    const pointsFromProp = this._propPoints;
+    const pointsAttr = pointsFromProp ? JSON.stringify(pointsFromProp) : this.safeGetAttribute('points');
     if (!pointsAttr) {
       console.warn(`[Polygon] points attribute is required for ${this.sourceId}`);
       return;
@@ -146,9 +197,9 @@ export class PolygonElement extends BaseElement {
       // This ensures polygons render below points
       const beforeId = this.findFirstPointLayer();
 
-      // Add fill layer
-      const fillColor = this.getAttribute('fill-color') || '#3FB1CE';
-      const fillOpacity = parseFloat(this.getAttribute('fill-opacity') || '0.5');
+      // Add fill layer - read from properties first
+      const fillColor = this._propFillColor ?? this.safeGetAttribute('fill-color') ?? '#3FB1CE';
+      const fillOpacity = this._propFillOpacity ?? parseFloat(this.safeGetAttribute('fill-opacity') || '0.5');
       this.map.addLayer(
         {
           id: this.layerId,
@@ -162,10 +213,10 @@ export class PolygonElement extends BaseElement {
         beforeId
       );
 
-      // Add stroke layer (after fill layer)
-      const strokeColor = this.getAttribute('stroke-color') || '#000000';
-      const strokeWidth = parseFloat(this.getAttribute('stroke-width') || '2');
-      const strokeOpacity = parseFloat(this.getAttribute('stroke-opacity') || '1');
+      // Add stroke layer (after fill layer) - read from properties first
+      const strokeColor = this._propStrokeColor ?? this.safeGetAttribute('stroke-color') ?? '#000000';
+      const strokeWidth = this._propStrokeWidth ?? parseFloat(this.safeGetAttribute('stroke-width') || '2');
+      const strokeOpacity = this._propStrokeOpacity ?? parseFloat(this.safeGetAttribute('stroke-opacity') || '1');
       this.map.addLayer(
         {
           id: this.strokeLayerId,
@@ -183,8 +234,9 @@ export class PolygonElement extends BaseElement {
       console.error(`[Polygon] Error creating polygon ${this.sourceId}:`, error);
     }
 
-    // Set up interactivity
-    if (this.getAttribute('interactive') === 'true') {
+    // Set up interactivity - read from property first
+    const interactive = this._propInteractive ?? this.safeGetAttribute('interactive');
+    if (interactive === true || interactive === 'true') {
       this.setupLayerInteractivity(this.layerId, 'polygon');
     }
 
@@ -232,16 +284,16 @@ export class PolygonElement extends BaseElement {
 
   private updateFillStyle(): void {
     this.updatePaintProperties(this.layerId, {
-      'fill-color': this.getAttribute('fill-color') || '#3FB1CE',
-      'fill-opacity': parseFloat(this.getAttribute('fill-opacity') || '0.5'),
+      'fill-color': this._propFillColor ?? this.safeGetAttribute('fill-color') ?? '#3FB1CE',
+      'fill-opacity': this._propFillOpacity ?? parseFloat(this.safeGetAttribute('fill-opacity') || '0.5'),
     });
   }
 
   private updateStrokeStyle(): void {
     this.updatePaintProperties(this.strokeLayerId, {
-      'line-color': this.getAttribute('stroke-color') || '#000000',
-      'line-width': parseFloat(this.getAttribute('stroke-width') || '2'),
-      'line-opacity': parseFloat(this.getAttribute('stroke-opacity') || '1'),
+      'line-color': this._propStrokeColor ?? this.safeGetAttribute('stroke-color') ?? '#000000',
+      'line-width': this._propStrokeWidth ?? parseFloat(this.safeGetAttribute('stroke-width') || '2'),
+      'line-opacity': this._propStrokeOpacity ?? parseFloat(this.safeGetAttribute('stroke-opacity') || '1'),
     });
   }
 
@@ -260,7 +312,9 @@ export class PolygonElement extends BaseElement {
 
   // Public API
   public getBounds(): { minLng: number; minLat: number; maxLng: number; maxLat: number } | null {
-    const pointsAttr = this.getAttribute('points');
+    // Read from property first
+    const pointsFromProp = this._propPoints;
+    const pointsAttr = pointsFromProp ? JSON.stringify(pointsFromProp) : this.safeGetAttribute('points');
     if (!pointsAttr) return null;
 
     try {
@@ -289,6 +343,111 @@ export class PolygonElement extends BaseElement {
         );
       }
     }
+  }
+
+  /**
+   * Factory method to create and configure a polygon element
+   * @param options - Polygon configuration options
+   * @returns Configured polygon element
+   */
+  static create(options: PolygonOptions): PolygonElement {
+    const polygon = document.createElement('gk-polygon') as PolygonElement;
+    
+    // Store options to set as attributes when element is connected to DOM
+    // This avoids JSDOM/Happy-DOM limitations where attributes can't be set before connection
+    (polygon as any)._createOptions = options;
+    
+    return polygon;
+  }
+
+  /**
+   * Create polygon elements from GeoJSON Feature or Geometry
+   * @param geojson - GeoJSON Feature or Geometry with Polygon/MultiPolygon
+   * @param options - Optional styling options
+   * @returns Array of configured polygon elements
+   */
+  static createFromGeoJSON(
+    geojson: GeoJSON.Feature | GeoJSON.Geometry,
+    options: {
+      fillColor?: string;
+      fillOpacity?: number;
+      strokeColor?: string;
+      strokeWidth?: number;
+      strokeOpacity?: number;
+      visible?: boolean;
+      simplify?: boolean;
+      maxPoints?: number;
+    } = {}
+  ): PolygonElement[] {
+    const {
+      fillColor = '#3b82f6',
+      fillOpacity = 0.1,
+      strokeColor = '#3b82f6',
+      strokeWidth = 2,
+      strokeOpacity = 1,
+      visible = true,
+      simplify = true,
+      maxPoints = 100,
+    } = options;
+
+    const polygons: PolygonElement[] = [];
+
+    // Extract geometry from Feature or use directly
+    const geometry = 'geometry' in geojson ? geojson.geometry : geojson;
+
+    const addPolygonRings = (
+      coordinates: number[][][],
+      opts: typeof options
+    ): void => {
+      // Only process the first ring (outer boundary)
+      // Subsequent rings are holes, which gk-polygon doesn't support yet
+      const outerRing = coordinates[0];
+      if (!outerRing) {
+        console.warn('Polygon has no outer ring');
+        return;
+      }
+
+      // Convert [lng, lat] to [lat, lng] format
+      let points: LatLon[] = outerRing.map(([lng, lat]) => [lat, lng]);
+
+      // Simplify if requested
+      if (opts.simplify && points.length > (opts.maxPoints || 100)) {
+        points = simplifyPolygonRingToMaxPoints(opts.maxPoints || 100)(points);
+      }
+
+      // Skip if too few points
+      if (points.length < 3) {
+        console.warn('Skipping polygon ring with fewer than 3 points');
+        return;
+      }
+
+      // Convert to array format for gk-polygon
+      const pointArray = points.map(([lat, lng]) => [lat, lng]);
+
+      const polygon = PolygonElement.create({
+        points: pointArray,
+        fillColor: opts.fillColor || fillColor,
+        fillOpacity: opts.fillOpacity ?? fillOpacity,
+        strokeColor: opts.strokeColor || strokeColor,
+        strokeWidth: opts.strokeWidth ?? strokeWidth,
+        strokeOpacity: opts.strokeOpacity ?? strokeOpacity,
+        visible: opts.visible ?? visible,
+      });
+
+      polygons.push(polygon);
+    };
+
+    if (geometry.type === 'Polygon') {
+      addPolygonRings(geometry.coordinates, options);
+    } else if (geometry.type === 'MultiPolygon') {
+      geometry.coordinates.forEach((polygonCoords) => {
+        addPolygonRings(polygonCoords, options);
+      });
+    } else {
+      console.warn('Unsupported geometry type for polygon:', geometry.type);
+    }
+
+    return polygons;
   }
 }
 

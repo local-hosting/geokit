@@ -6,7 +6,7 @@
  */
 
 import { getBounds, boundsToObject } from '../../utils/bounds';
-import { getUIProvider } from '../providers/registry';
+import { getUIProvider, getUIProviderByName } from '../providers/registry';
 import { getProviderForCapability } from '../../api/providers/registry';
 import type { BaseUIProvider, MapInstance, MapEvent } from '../providers/types';
 import type { APICapability } from '../../api/providers/types';
@@ -67,8 +67,21 @@ export class BaseElement extends HTMLElement {
 
   /**
    * Get the current UI provider
+   * First checks parent map element's provider attribute, then falls back to global default
    */
   protected getUIProvider(): BaseUIProvider {
+    // Check parent map element for provider attribute
+    if (this.mapElement) {
+      const providerName = this.mapElement.getAttribute('provider');
+      if (providerName) {
+        const provider = getUIProviderByName(providerName);
+        if (provider) {
+          return provider;
+        }
+      }
+    }
+    
+    // Fall back to global default provider
     return getUIProvider();
   }
 
@@ -291,26 +304,15 @@ export class BaseElement extends HTMLElement {
    * Controls call addControlToMap(), other components can override
    */
   protected async onMapReady(): Promise<void> {
-    console.log(
-      `${this.constructor.name}: onMapReady called, shouldWaitForMap=${this.shouldWaitForMap()}, hasControl=${!!this.control}`
-    );
     // Create control now that map is ready and provider is initialized
     if (this.shouldWaitForMap() && !this.control) {
       try {
         this.control = await this.createControl();
-        console.log(`${this.constructor.name}: Control created:`, !!this.control);
         if (this.control) {
           this.setupEventForwarding();
-          // For controls, always wait for map load event even if mapi-ready fired
-          // MapTiler SDK controls need the map to be fully loaded with all internal APIs ready
-          console.log(`${this.constructor.name}: Waiting for map load...`);
-          try {
-            await this.waitForMapLoad();
-            console.log(`${this.constructor.name}: Map loaded, this.map exists=${!!this.map}`);
-            this.addControlToMap();
-          } catch (waitError) {
-            console.error(`${this.constructor.name}: Error waiting for map load:`, waitError);
-          }
+          // For controls, wait for map to be fully loaded before adding
+          await this.waitForMapLoad();
+          this.addControlToMap();
         }
       } catch (error) {
         console.error(
@@ -321,16 +323,8 @@ export class BaseElement extends HTMLElement {
       }
     } else if (this.control) {
       // Control already created, wait for map load then add to map
-      console.log(`${this.constructor.name}: Control exists, waiting for map load...`);
-      try {
-        await this.waitForMapLoad();
-        console.log(
-          `${this.constructor.name}: Map loaded (else branch), this.map exists=${!!this.map}`
-        );
-        this.addControlToMap();
-      } catch (waitError) {
-        console.error(`${this.constructor.name}: Error waiting for map load:`, waitError);
-      }
+      await this.waitForMapLoad();
+      this.addControlToMap();
     }
   }
 
@@ -347,89 +341,19 @@ export class BaseElement extends HTMLElement {
       }
 
       const mapLoaded = (this.map as { loaded?: () => boolean }).loaded;
-      const mapOnce = (this.map as { once?: (event: string, handler: () => void) => void }).once;
-      const mapOn = (this.map as { on?: (event: string, handler: () => void) => void }).on;
       const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
 
-      // Check if already loaded and style is loaded
+      // If map and style are already loaded, resolve immediately
+      // Don't wait for 'idle' - it may have already fired and won't fire again
       if (mapLoaded && mapLoaded.call(this.map) && isStyleLoaded && isStyleLoaded.call(this.map)) {
-        // Wait for 'idle' event which indicates map is fully ready
-        // This ensures all internal APIs including _getUIString are available
-        if (mapOnce) {
-          mapOnce.call(this.map, 'idle', resolve);
-        } else if (mapOn) {
-          const idleHandler = () => {
-            const mapOff = (this.map as { off?: (event: string, handler: () => void) => void }).off;
-            if (mapOff) {
-              mapOff.call(this.map, 'idle', idleHandler);
-            }
-            resolve();
-          };
-          mapOn.call(this.map, 'idle', idleHandler);
-        } else {
-          // No event system available, resolve immediately if already loaded
-          resolve();
-        }
+        resolve();
         return;
       }
 
-      // Wait for load event, then style.load event, then idle event
-      const waitForStyleLoad = () => {
-        // Wait for style.load event if available (MapTiler SDK)
-        if (mapOnce) {
-          mapOnce.call(this.map, 'style.load', () => {
-            // After style loads, wait for idle
-            if (mapOnce) {
-              mapOnce.call(this.map, 'idle', resolve);
-            } else if (mapOn) {
-              const idleHandler = () => {
-                const mapOff = (this.map as { off?: (event: string, handler: () => void) => void })
-                  .off;
-                if (mapOff) {
-                  mapOff.call(this.map, 'idle', idleHandler);
-                }
-                resolve();
-              };
-              mapOn.call(this.map, 'idle', idleHandler);
-            } else {
-              resolve();
-            }
-          });
-        } else {
-          // No style.load event, just wait for idle after load
-          waitForIdle();
-        }
-      };
-
-      const waitForIdle = () => {
-        if (mapOnce) {
-          mapOnce.call(this.map, 'idle', resolve);
-        } else if (mapOn) {
-          const idleHandler = () => {
-            const mapOff = (this.map as { off?: (event: string, handler: () => void) => void }).off;
-            if (mapOff) {
-              mapOff.call(this.map, 'idle', idleHandler);
-            }
-            resolve();
-          };
-          mapOn.call(this.map, 'idle', idleHandler);
-        } else {
-          // No event system available, resolve immediately
-          resolve();
-        }
-      };
-
+      // Wait for load event
+      const mapOnce = (this.map as { once?: (event: string, handler: () => void) => void }).once;
       if (mapOnce) {
-        mapOnce.call(this.map, 'load', waitForStyleLoad);
-      } else if (mapOn) {
-        const loadHandler = () => {
-          const mapOff = (this.map as { off?: (event: string, handler: () => void) => void }).off;
-          if (mapOff) {
-            mapOff.call(this.map, 'load', loadHandler);
-          }
-          waitForStyleLoad();
-        };
-        mapOn.call(this.map, 'load', loadHandler);
+        mapOnce.call(this.map, 'load', resolve);
       } else {
         // No event system available, resolve immediately
         resolve();
@@ -442,49 +366,17 @@ export class BaseElement extends HTMLElement {
    * Ensures map is loaded before adding controls to prevent initialization errors
    */
   protected addControlToMap(): void {
-    console.log(
-      `${this.constructor.name}: addControlToMap called, hasMap=${!!this.map}, hasControl=${!!this.control}`
-    );
-
-    if (!this.map || !this.control) {
-      console.log(`${this.constructor.name}: Returning early - no map or control`);
-      return;
-    }
+    if (!this.map || !this.control) return;
 
     const position = this.getAttribute('position') || this.getDefaultPosition();
     const addControlMethod = (
       this.map as { addControl?: (control: unknown, position: string) => void }
     ).addControl;
 
-    console.log(
-      `${this.constructor.name}: addControlMethod exists=${!!addControlMethod}, position=${position}`
-    );
-
-    if (!addControlMethod) {
-      console.log(`${this.constructor.name}: Returning early - no addControlMethod`);
-      return;
-    }
+    if (!addControlMethod) return;
 
     try {
       addControlMethod.call(this.map, this.control, position);
-      console.log(`${this.constructor.name}: Successfully added control`);
-
-      // Debug: Check if control is actually rendered in DOM
-      setTimeout(() => {
-        const mapContainer = (this.map as { getContainer?: () => HTMLElement }).getContainer?.();
-        const controls = mapContainer?.querySelectorAll('.maplibregl-ctrl, .mapboxgl-ctrl');
-        console.log(
-          `${this.constructor.name}: Found ${controls?.length || 0} SDK control containers in DOM`
-        );
-        if (controls && controls.length > 0) {
-          controls.forEach((ctrl, i) => {
-            const computed = window.getComputedStyle(ctrl as Element);
-            console.log(
-              `${this.constructor.name}: Control ${i} - display: ${computed.display}, opacity: ${computed.opacity}, visibility: ${computed.visibility}`
-            );
-          });
-        }
-      }, 100);
     } catch (error) {
       console.error(`${this.constructor.name}: Failed to add control:`, error);
     }
@@ -713,5 +605,57 @@ export class BaseElement extends HTMLElement {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Safely set an attribute, handling JSDOM/Happy-DOM limitations
+   * In test environments, setting attributes can throw NotSupportedError
+   * Falls back to storing as a property if attribute setting fails
+   * @param name - Attribute name
+   * @param value - Attribute value
+   */
+  protected safeSetAttribute(name: string, value: string): void {
+    try {
+      this.setAttribute(name, value);
+    } catch (error: any) {
+      // In JSDOM/Happy-DOM, setting attributes can still throw NotSupportedError
+      // This is a test environment limitation - attributes still work in real browsers
+      // Store as properties as fallback and suppress the error
+      if (error?.name === 'NotSupportedError' || error?.code === 9) {
+        (this as any)[`_attr_${name}`] = value;
+        // Error is handled, don't re-throw
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Safely get an attribute, checking both the attribute and fallback properties
+   * (for JSDOM/Happy-DOM compatibility when setAttribute fails)
+   * @param name - Attribute name
+   * @returns Attribute value or null
+   */
+  protected safeGetAttribute(name: string): string | null {
+    try {
+      const attr = this.getAttribute(name);
+      if (attr !== null) return attr;
+    } catch {
+      // Ignore errors reading attributes
+    }
+    // Check fallback property if attribute read failed or returned null
+    const fallback = (this as any)[`_attr_${name}`];
+    return fallback !== undefined ? String(fallback) : null;
+  }
+
+  /**
+   * Apply stored create options as attributes
+   * Called from connectedCallback to set attributes from factory methods
+   * Subclasses should override to apply their specific options
+   * @param options - Options object from factory method
+   */
+  protected applyCreateOptions(options: Record<string, any>): void {
+    // Base implementation does nothing - subclasses should override
+    // This allows each element type to handle its own attribute mapping
   }
 }
