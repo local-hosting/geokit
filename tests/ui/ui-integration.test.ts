@@ -1,7 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { registerUIProvider, setUIProvider, _resetRegistries as _resetUIRegistries } from '../../src/ui/providers/registry';
-import { registerAPIProvider, initAPIProvider, getProviderForCapability, _resetRegistries as _resetAPIRegistries } from '../../src/api/providers/registry';
+import {
+  registerUIProvider,
+  setUIProvider,
+  _resetRegistries as _resetUIRegistries,
+} from '../../src/ui/providers/registry';
+import {
+  registerAPIProvider,
+  initAPIProvider,
+  getProviderForCapability,
+  _resetRegistries as _resetAPIRegistries,
+} from '../../src/api/providers/registry';
 import type { BaseUIProvider, MapProviderConfig } from '../../src/ui/providers/types';
 import type { BaseAPIProvider, APICapability } from '../../src/api/providers/types';
 
@@ -11,9 +20,9 @@ class MockUIProvider implements BaseUIProvider {
     return 'mock-ui';
   }
 
-  async initialize(config: MapProviderConfig): Promise<void> {}
+  async initialize(_config: MapProviderConfig): Promise<void> {}
 
-  async createMap(container: HTMLElement, options: any): Promise<any> {
+  async createMap(_container: HTMLElement, _options: any): Promise<any> {
     return {
       on: vi.fn(),
       off: vi.fn(),
@@ -28,11 +37,11 @@ class MockUIProvider implements BaseUIProvider {
     };
   }
 
-  createControl(type: string, options: any): any {
+  createControl(_type: string, _options: any): any {
     return { onAdd: vi.fn(), onRemove: vi.fn() };
   }
 
-  createMarker(options: any): any {
+  createMarker(_options: any): any {
     return {
       setLngLat: vi.fn().mockReturnThis(),
       addTo: vi.fn().mockReturnThis(),
@@ -40,7 +49,7 @@ class MockUIProvider implements BaseUIProvider {
     };
   }
 
-  createPopup(options: any): any {
+  createPopup(_options: any): any {
     return {
       setLngLat: vi.fn().mockReturnThis(),
       setHTML: vi.fn().mockReturnThis(),
@@ -64,7 +73,7 @@ class MockAPIProvider implements BaseAPIProvider {
     return 'mock-api';
   }
 
-  async initialize(config: MapProviderConfig): Promise<void> {
+  async initialize(_config: MapProviderConfig): Promise<void> {
     this.initialized = true;
   }
 
@@ -75,7 +84,7 @@ class MockAPIProvider implements BaseAPIProvider {
   async fetchIsochrone(options: any): Promise<GeoJSON.FeatureCollection> {
     // Create cache key
     const cacheKey = `${options.lat},${options.lng},${options.time},${options.mode}`;
-    
+
     // Check cache first
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey); // Return from cache without incrementing
@@ -181,7 +190,7 @@ describe('UI Integration Tests', () => {
   describe('Isochrone Caching', () => {
     it('should demonstrate caching capability within provider instance', async () => {
       const apiProvider = new MockAPIProvider();
-      
+
       const options = {
         lat: 40.7128,
         lng: -74.006,
@@ -204,7 +213,12 @@ describe('UI Integration Tests', () => {
       // Fetch with different parameters
       await apiProvider.fetchIsochrone?.({ lat: 40.7128, lng: -74.006, time: 15, mode: 'driving' });
       await apiProvider.fetchIsochrone?.({ lat: 40.7128, lng: -74.006, time: 30, mode: 'driving' });
-      await apiProvider.fetchIsochrone?.({ lat: 41.8781, lng: -87.6298, time: 15, mode: 'driving' });
+      await apiProvider.fetchIsochrone?.({
+        lat: 41.8781,
+        lng: -87.6298,
+        time: 15,
+        mode: 'driving',
+      });
 
       // Should have made 3 fetches (different cache keys)
       expect(apiProvider.getFetchCount()).toBe(3);
@@ -264,18 +278,26 @@ describe('UI Integration Tests', () => {
   describe('Multi-Provider Scenarios', () => {
     it('should support multiple API providers with different capabilities', async () => {
       class IsochroneProvider implements BaseAPIProvider {
-        getName() { return 'iso'; }
+        getName() {
+          return 'iso';
+        }
         async initialize() {}
-        getCapabilities(): APICapability[] { return ['isochrone']; }
+        getCapabilities(): APICapability[] {
+          return ['isochrone'];
+        }
         async fetchIsochrone() {
           return { type: 'FeatureCollection' as const, features: [] };
         }
       }
 
       class GeocodeProvider implements BaseAPIProvider {
-        getName() { return 'geocode'; }
+        getName() {
+          return 'geocode';
+        }
         async initialize() {}
-        getCapabilities(): APICapability[] { return ['geocoding']; }
+        getCapabilities(): APICapability[] {
+          return ['geocoding'];
+        }
       }
 
       registerAPIProvider('iso-provider', new IsochroneProvider());
@@ -293,15 +315,23 @@ describe('UI Integration Tests', () => {
 
     it('should prioritize first registered provider for overlapping capabilities', async () => {
       class Provider1 implements BaseAPIProvider {
-        getName() { return 'provider1'; }
+        getName() {
+          return 'provider1';
+        }
         async initialize() {}
-        getCapabilities(): APICapability[] { return ['isochrone', 'geocoding']; }
+        getCapabilities(): APICapability[] {
+          return ['isochrone', 'geocoding'];
+        }
       }
 
       class Provider2 implements BaseAPIProvider {
-        getName() { return 'provider2'; }
+        getName() {
+          return 'provider2';
+        }
         async initialize() {}
-        getCapabilities(): APICapability[] { return ['isochrone', 'directions']; }
+        getCapabilities(): APICapability[] {
+          return ['isochrone', 'directions'];
+        }
       }
 
       registerAPIProvider('p1', new Provider1());
@@ -320,15 +350,27 @@ describe('UI Integration Tests', () => {
   describe('Error Handling', () => {
     it('should handle provider initialization failures gracefully', async () => {
       class FailingProvider implements BaseUIProvider {
-        getName() { return 'failing'; }
+        getName() {
+          return 'failing';
+        }
         async initialize() {
           throw new Error('Initialization failed');
         }
-        async createMap() { return null; }
-        createControl() { return null; }
-        createMarker() { return null; }
-        createPopup() { return null; }
-        getSDK() { return null; }
+        async createMap() {
+          return null;
+        }
+        createControl() {
+          return null;
+        }
+        createMarker() {
+          return null;
+        }
+        createPopup() {
+          return null;
+        }
+        getSDK() {
+          return null;
+        }
       }
 
       registerUIProvider('failing', new FailingProvider());
@@ -342,4 +384,3 @@ describe('UI Integration Tests', () => {
     });
   });
 });
-
