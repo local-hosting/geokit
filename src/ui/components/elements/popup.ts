@@ -64,12 +64,9 @@ export class PopupElement extends BaseElement {
       }
 
       this.popupInstance = provider.createPopup(options);
-      
+
       if (this.popupInstance) {
-        this.popupInstance
-          .setLngLat([lng, lat])
-          .setHTML(content)
-          .addTo(this.map);
+        this.popupInstance.setLngLat([lng, lat]).setHTML(content).addTo(this.map);
 
         // Dispatch event
         this.dispatchEvent(
@@ -91,7 +88,11 @@ export class PopupElement extends BaseElement {
     }
   }
 
-  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+  override attributeChangedCallback(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null
+  ): void {
     if (this.isInitialized && oldValue !== newValue) {
       this.showPopup();
     }
@@ -123,6 +124,5 @@ export class PopupElement extends BaseElement {
 
 // Register the custom element
 if (!customElements.get('gk-popup')) {
-  customElements.define('mapi-popup', PopupElement);
+  customElements.define('gk-popup', PopupElement);
 }
-

@@ -1,8 +1,8 @@
 /**
  * Navigation Control Component
- * 
+ *
  * Provides zoom and compass controls for map navigation
- * 
+ *
  * Usage:
  * <mapi-control-navigation position="top-right" show-compass="true" show-zoom="true"></mapi-control-navigation>
  */
@@ -26,13 +26,16 @@ export class NavigationControlElement extends BaseControl {
     return provider.createControl('navigation', options);
   }
 
-  protected handleAttributeChange(name: string, oldValue: string | null, newValue: string | null): void {
+  protected handleAttributeChange(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null
+  ): void {
     this.handleRecreateableAttributeChange(name, oldValue, newValue, ['show-compass', 'show-zoom']);
   }
 }
 
 // Register custom element
-if (!customElements.get('mapi-control-navigation')) {
-  customElements.define('mapi-control-navigation', NavigationControlElement);
+if (!customElements.get('gk-control-navigation')) {
+  customElements.define('gk-control-navigation', NavigationControlElement);
 }
-

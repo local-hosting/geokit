@@ -100,7 +100,9 @@ export class PointElement extends BaseElement {
   }
 
   protected override async onMapReady(): Promise<void> {
-    await super.onMapReady();
+    // Points don't need to wait for idle - just need style loaded
+    // But we still need to wait for the map to exist and be ready
+    if (!this.map) return;
 
     this.waitForStyleLoaded(() => {
       this.addPoint();
@@ -623,8 +625,8 @@ export class PointElement extends BaseElement {
       } else {
         this.map?.setPaintProperty?.(this.layerId, 'circle-stroke-width', 0);
       }
-    } catch (error) {
-      console.warn('Failed to update point style, recreating:', error);
+    } catch {
+      // Silently recreate point if style update fails
       this.addPoint();
     }
   }
@@ -725,5 +727,5 @@ export class PointElement extends BaseElement {
 
 // Register the custom element
 if (!customElements.get('gk-point')) {
-  customElements.define('mapi-point', PointElement);
+  customElements.define('gk-point', PointElement);
 }
