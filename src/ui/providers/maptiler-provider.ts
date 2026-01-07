@@ -127,6 +127,12 @@ export class MapTilerUIProvider extends BaseUIProvider {
       maptilerLogo: false,
       // Interactive by default
       interactive: options.interactive !== false,
+      // Disable all default controls - users must add them explicitly via child components
+      navigationControl: false,
+      geolocateControl: false,
+      scaleControl: false,
+      fullscreenControl: false,
+      attributionControl: false,
       // Spread any extra options
       ...(options.extra || {}),
     };
