@@ -76,26 +76,38 @@ describe('UI Components', () => {
   });
 
   describe('Event System', () => {
-    it('should support event listeners', (done) => {
+    it('should support event listeners', async () => {
       const element = document.createElement('div');
 
+      let eventFired = false;
       element.addEventListener('test-event', () => {
-        done();
+        eventFired = true;
       });
 
       element.dispatchEvent(new Event('test-event'));
+
+      // Wait a tick for event to process
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(eventFired).toBe(true);
     });
 
-    it('should support event bubbling', (done) => {
+    it('should support event bubbling', async () => {
       const parent = document.createElement('div');
       const child = document.createElement('div');
       parent.appendChild(child);
 
+      let eventFired = false;
       parent.addEventListener('test', () => {
-        done();
+        eventFired = true;
       });
 
       child.dispatchEvent(new Event('test', { bubbles: true }));
+
+      // Wait a tick for event to process
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(eventFired).toBe(true);
     });
 
     it('should support custom event details', () => {
