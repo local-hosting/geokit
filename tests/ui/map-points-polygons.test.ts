@@ -6,8 +6,6 @@
  * only one point was rendering when multiple were added.
  *
  * Uses real API keys from environment variables if available.
- *
- * @vitest-environment jsdom
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -124,31 +122,30 @@ describe('Multiple Points Rendering', () => {
     await import('../../src/ui/components/elements/point');
     await import('../../src/ui/components/elements/polygon');
 
+    // Wait for custom elements to be defined
+    await Promise.all([
+      customElements.whenDefined('gk-map'),
+      customElements.whenDefined('gk-point'),
+      customElements.whenDefined('gk-polygon'),
+    ]);
+
     mockMap = new MockMap();
     mapElement = document.createElement('gk-map');
 
-    // Set API key if available (allows map to initialize properly)
-    if (MAPTILER_KEY) {
-      mapElement.setAttribute('api-key', MAPTILER_KEY);
-    } else {
-      // Use a dummy key for testing (map won't fully initialize but methods will work)
-      mapElement.setAttribute('api-key', 'test-key');
-    }
+    // Set required attributes
+    mapElement.setAttribute('api-key', MAPTILER_KEY || 'test-key');
+    mapElement.setAttribute('provider', 'maptiler');
 
-    // Mock the getMap method to return our mock map
-    Object.defineProperty(mapElement, 'getMap', {
-      value: () => mockMap,
-      writable: true,
-      configurable: true,
-    });
-
-    // Mock map initialization - set map property directly
-    (mapElement as any).map = mockMap;
-
+    // Append to DOM (triggers connectedCallback)
     document.body.appendChild(mapElement);
 
-    // Wait for map to initialize
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // Wait for async initialization
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // Inject mock map
+    mapElement.getMap = () => mockMap;
+    mapElement.map = mockMap;
+    mapElement.isInitialized = true;
   });
 
   afterEach(() => {
@@ -322,7 +319,7 @@ describe('Multiple Points Rendering', () => {
               [-74.006, 40.758],
               [-74.006, 40.7128],
             ],
-            // Hole (should be ignored)
+            // Hole (should be ignored - gk-polygon only uses outer ring)
             [
               [-73.98, 40.73],
               [-73.97, 40.73],
@@ -335,13 +332,7 @@ describe('Multiple Points Rendering', () => {
         properties: {},
       };
 
-      const { MapElement } = await import('../../src/ui/components/elements/map');
-      const map = new MapElement();
-      Object.setPrototypeOf(mapElement, MapElement.prototype);
-      Object.assign(mapElement, map);
-      (mapElement as any).getMap = () => mockMap;
-
-      const addedCount = (mapElement as any).addPolygonFromGeoJSON(polygonWithHole);
+      const addedCount = mapElement.addPolygonFromGeoJSON(polygonWithHole);
 
       expect(addedCount).toBe(1);
 
@@ -382,13 +373,7 @@ describe('Multiple Points Rendering', () => {
         properties: {},
       };
 
-      const { MapElement } = await import('../../src/ui/components/elements/map');
-      const map = new MapElement();
-      Object.setPrototypeOf(mapElement, MapElement.prototype);
-      Object.assign(mapElement, map);
-      (mapElement as any).getMap = () => mockMap;
-
-      const addedCount = (mapElement as any).addPolygonFromGeoJSON(multiPolygon);
+      const addedCount = mapElement.addPolygonFromGeoJSON(multiPolygon);
 
       expect(addedCount).toBe(2); // One polygon per polygon in MultiPolygon
 
