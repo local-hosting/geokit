@@ -11,12 +11,22 @@ describe('Control Rendering', () => {
 
   beforeEach(async () => {
     // Dynamically import to avoid loading MapLibre GL at module load time
-    const { registerUIProvider, setUIProvider } = await import('../../../src/ui/providers/registry');
+    const { registerUIProvider, setUIProvider } = await import(
+      '../../../src/ui/providers/registry'
+    );
     const { MapTilerUIProvider } = await import('../../../src/ui/providers/maptiler-provider');
+
+    // Import and register custom elements - must be done before creating elements
     await import('../../../src/ui/components/elements/map');
     await import('../../../src/ui/components/controls/navigation-control');
     await import('../../../src/ui/components/controls/scale-control');
     await import('../../../src/ui/components/controls/fullscreen-control');
+
+    // Wait for custom elements to be defined
+    await customElements.whenDefined('gk-map');
+    await customElements.whenDefined('gk-control-navigation');
+    await customElements.whenDefined('gk-control-scale');
+    await customElements.whenDefined('gk-control-fullscreen');
 
     // Setup MapTiler provider
     const provider = new MapTilerUIProvider();
@@ -32,15 +42,18 @@ describe('Control Rendering', () => {
     container.style.height = '400px';
     document.body.appendChild(container);
 
-    // Create map element
+    // Create map element - now safe since custom element is defined
+    // In Playwright, we need to append before setting attributes for custom elements
     mapElement = document.createElement('gk-map') as HTMLElement & { getMap?: () => any };
+    mapElement.style.width = '100%';
+    mapElement.style.height = '100%';
+    container.appendChild(mapElement);
+
+    // Set attributes after appending to DOM (Playwright requirement)
     mapElement.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
     mapElement.setAttribute('lat', '40.7128');
     mapElement.setAttribute('lng', '-74.006');
     mapElement.setAttribute('zoom', '10');
-    mapElement.style.width = '100%';
-    mapElement.style.height = '100%';
-    container.appendChild(mapElement);
 
     // Add controls
     const navControl = document.createElement('gk-control-navigation');
@@ -60,18 +73,22 @@ describe('Control Rendering', () => {
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         mapElement.removeEventListener('gk-ready', handler);
-        reject(new Error('Map initialization timeout'));
-      }, 5000); // 5 second timeout
-      
+        reject(new Error('Map initialization timeout after 30 seconds'));
+      }, 30000); // 30 second timeout for browser environment
+
       const handler = () => {
         clearTimeout(timeout);
         mapElement.removeEventListener('gk-ready', handler);
         resolve();
       };
       mapElement.addEventListener('gk-ready', handler);
-    }).catch(() => {
-      // If map doesn't initialize, skip the test
-      throw new Error('Map failed to initialize - skipping test');
+
+      // Also check if map is already ready
+      if (mapElement.getMap?.()) {
+        clearTimeout(timeout);
+        mapElement.removeEventListener('gk-ready', handler);
+        resolve();
+      }
     });
 
     // Wait for controls to be added
@@ -155,4 +172,3 @@ describe('Control Rendering', () => {
     expect(fullscreenButtons?.length).toBeGreaterThan(0);
   });
 });
-

@@ -11,11 +11,20 @@ describe('Control Visibility Toggle', () => {
 
   beforeEach(async () => {
     // Dynamically import to avoid loading MapLibre GL at module load time
-    const { registerUIProvider, setUIProvider } = await import('../../../src/ui/providers/registry');
+    const { registerUIProvider, setUIProvider } = await import(
+      '../../../src/ui/providers/registry'
+    );
     const { MapTilerUIProvider } = await import('../../../src/ui/providers/maptiler-provider');
+
+    // Import and register custom elements - must be done before creating elements
     await import('../../../src/ui/components/elements/map');
     await import('../../../src/ui/components/controls/navigation-control');
     await import('../../../src/ui/components/controls/scale-control');
+
+    // Wait for custom elements to be defined
+    await customElements.whenDefined('gk-map');
+    await customElements.whenDefined('gk-control-navigation');
+    await customElements.whenDefined('gk-control-scale');
 
     // Setup MapTiler provider
     const provider = new MapTilerUIProvider();
@@ -31,14 +40,18 @@ describe('Control Visibility Toggle', () => {
     container.style.height = '400px';
     document.body.appendChild(container);
 
-    // Create map element
+    // Create map element - now safe since custom element is defined
+    // In Playwright, we need to append before setting attributes for custom elements
     mapElement = document.createElement('gk-map') as HTMLElement & { getMap?: () => unknown };
+    mapElement.style.width = '100%';
+    mapElement.style.height = '100%';
+    container.appendChild(mapElement);
+
+    // Set attributes after appending to DOM (Playwright requirement)
     mapElement.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
     mapElement.setAttribute('lat', '40.7128');
     mapElement.setAttribute('lng', '-74.006');
     mapElement.setAttribute('zoom', '10');
-    mapElement.style.width = '100%';
-    mapElement.style.height = '100%';
 
     // Add controls
     const navControl = document.createElement('gk-control-navigation');
@@ -50,24 +63,26 @@ describe('Control Visibility Toggle', () => {
     scaleControl.setAttribute('unit', 'imperial');
     mapElement.appendChild(scaleControl);
 
-    container.appendChild(mapElement);
-
     // Wait for map to be ready with timeout
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         mapElement.removeEventListener('gk-ready', handler);
-        reject(new Error('Map initialization timeout'));
-      }, 5000); // 5 second timeout
-      
+        reject(new Error('Map initialization timeout after 30 seconds'));
+      }, 30000); // 30 second timeout for browser environment
+
       const handler = () => {
         clearTimeout(timeout);
         mapElement.removeEventListener('gk-ready', handler);
         resolve();
       };
       mapElement.addEventListener('gk-ready', handler);
-    }).catch(() => {
-      // If map doesn't initialize, skip the test
-      throw new Error('Map failed to initialize - skipping test');
+
+      // Also check if map is already ready
+      if (mapElement.getMap?.()) {
+        clearTimeout(timeout);
+        mapElement.removeEventListener('gk-ready', handler);
+        resolve();
+      }
     });
 
     // Wait a bit more for controls to be added
@@ -135,28 +150,35 @@ describe('Control Visibility Toggle', () => {
     const mapElement2 = document.createElement('gk-map') as HTMLElement & {
       getMap?: () => unknown;
     };
-    mapElement2.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
-    mapElement2.setAttribute('lat', '40.7128');
-    mapElement2.setAttribute('lng', '-74.006');
-    mapElement2.setAttribute('zoom', '10');
     mapElement2.style.width = '100%';
     mapElement2.style.height = '100%';
     container2.appendChild(mapElement2);
 
+    // Set attributes after appending to DOM (Playwright requirement)
+    mapElement2.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
+    mapElement2.setAttribute('lat', '40.7128');
+    mapElement2.setAttribute('lng', '-74.006');
+    mapElement2.setAttribute('zoom', '10');
+
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         mapElement2.removeEventListener('gk-ready', handler);
-        reject(new Error('Map initialization timeout'));
-      }, 5000);
-      
+        reject(new Error('Map initialization timeout after 30 seconds'));
+      }, 30000);
+
       const handler = () => {
         clearTimeout(timeout);
         mapElement2.removeEventListener('gk-ready', handler);
         resolve();
       };
       mapElement2.addEventListener('gk-ready', handler);
-    }).catch(() => {
-      throw new Error('Map failed to initialize - skipping test');
+
+      // Also check if map is already ready
+      if (mapElement2.getMap?.()) {
+        clearTimeout(timeout);
+        mapElement2.removeEventListener('gk-ready', handler);
+        resolve();
+      }
     });
 
     // Click first map
@@ -184,29 +206,36 @@ describe('Control Visibility Toggle', () => {
     document.body.appendChild(heroContainer);
 
     const heroMap = document.createElement('gk-map') as HTMLElement & { getMap?: () => unknown };
-    heroMap.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
-    heroMap.setAttribute('lat', '40.7128');
-    heroMap.setAttribute('lng', '-74.006');
-    heroMap.setAttribute('zoom', '10');
     heroMap.classList.add('hero-map-element');
     heroMap.style.width = '100%';
     heroMap.style.height = '100%';
     heroContainer.appendChild(heroMap);
 
+    // Set attributes after appending to DOM (Playwright requirement)
+    heroMap.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
+    heroMap.setAttribute('lat', '40.7128');
+    heroMap.setAttribute('lng', '-74.006');
+    heroMap.setAttribute('zoom', '10');
+
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         heroMap.removeEventListener('gk-ready', handler);
-        reject(new Error('Map initialization timeout'));
-      }, 5000);
-      
+        reject(new Error('Map initialization timeout after 30 seconds'));
+      }, 30000);
+
       const handler = () => {
         clearTimeout(timeout);
         heroMap.removeEventListener('gk-ready', handler);
         resolve();
       };
       heroMap.addEventListener('gk-ready', handler);
-    }).catch(() => {
-      throw new Error('Map failed to initialize - skipping test');
+
+      // Also check if map is already ready
+      if (heroMap.getMap?.()) {
+        clearTimeout(timeout);
+        heroMap.removeEventListener('gk-ready', handler);
+        resolve();
+      }
     });
 
     // Click hero map
@@ -231,29 +260,36 @@ describe('Control Visibility Toggle', () => {
     const disabledMap = document.createElement('gk-map') as HTMLElement & {
       getMap?: () => unknown;
     };
+    disabledMap.style.width = '100%';
+    disabledMap.style.height = '100%';
+    disabledContainer.appendChild(disabledMap);
+
+    // Set attributes after appending to DOM (Playwright requirement)
     disabledMap.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
     disabledMap.setAttribute('lat', '40.7128');
     disabledMap.setAttribute('lng', '-74.006');
     disabledMap.setAttribute('zoom', '10');
     disabledMap.setAttribute('disable-control-visibility', 'true');
-    disabledMap.style.width = '100%';
-    disabledMap.style.height = '100%';
-    disabledContainer.appendChild(disabledMap);
 
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         disabledMap.removeEventListener('gk-ready', handler);
-        reject(new Error('Map initialization timeout'));
-      }, 5000);
-      
+        reject(new Error('Map initialization timeout after 30 seconds'));
+      }, 30000);
+
       const handler = () => {
         clearTimeout(timeout);
         disabledMap.removeEventListener('gk-ready', handler);
         resolve();
       };
       disabledMap.addEventListener('gk-ready', handler);
-    }).catch(() => {
-      throw new Error('Map failed to initialize - skipping test');
+
+      // Also check if map is already ready
+      if (disabledMap.getMap?.()) {
+        clearTimeout(timeout);
+        disabledMap.removeEventListener('gk-ready', handler);
+        resolve();
+      }
     });
 
     // Click disabled map
@@ -267,4 +303,3 @@ describe('Control Visibility Toggle', () => {
     disabledContainer.remove();
   });
 });
-
