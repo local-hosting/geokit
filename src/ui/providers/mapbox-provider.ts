@@ -118,11 +118,29 @@ export class MapboxUIProvider extends BaseUIProvider {
       bearing: options.bearing || 0,
       // Interactive by default
       interactive: options.interactive !== false,
+      // Disable all default controls - users must add them explicitly via child components
+      attributionControl: false,
       // Spread any extra options
       ...(options.extra || {}),
     };
 
-    return new this.sdk.Map(mapOptions);
+    // Suppress "container should be empty" warning - our child elements are declarative
+    // custom elements that don't render content, they add controls via addControl() API
+    const originalWarn = console.warn;
+    console.warn = (...args: any[]) => {
+      const message = args.join(' ');
+      if (message.includes('map container element should be empty')) {
+        return; // Suppress this specific warning
+      }
+      originalWarn.apply(console, args);
+    };
+
+    const map = new this.sdk.Map(mapOptions);
+
+    // Restore console.warn
+    console.warn = originalWarn;
+
+    return map;
   }
 
   createControl(type: string, options: ControlOptions): any {
