@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { JSDOM } from 'jsdom';
 
 // We'll test component interfaces without importing them to avoid HTMLElement issues
@@ -106,9 +106,11 @@ describe('UI Components', () => {
         receivedDetail = e.detail;
       }) as EventListener);
 
-      element.dispatchEvent(new CustomEvent('custom', { 
-        detail: { lat: 40.7128, lng: -74.006 } 
-      }));
+      element.dispatchEvent(
+        new CustomEvent('custom', {
+          detail: { lat: 40.7128, lng: -74.006 },
+        })
+      );
 
       expect(receivedDetail).toEqual({ lat: 40.7128, lng: -74.006 });
     });

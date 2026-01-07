@@ -51,7 +51,7 @@ export class IsochroneElement extends BaseElement {
 
   override async connectedCallback() {
     await super.connectedCallback();
-    
+
     if (this.isInitialized) return;
 
     // Generate unique IDs
@@ -166,7 +166,11 @@ export class IsochroneElement extends BaseElement {
     );
   }
 
-  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+  override attributeChangedCallback(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null
+  ): void {
     if (this.isInitialized && oldValue !== newValue) {
       if (name === 'visible') {
         this.toggleVisibility();
@@ -180,13 +184,13 @@ export class IsochroneElement extends BaseElement {
     if (!this.map) return;
 
     const visibility = this.visible ? 'visible' : 'none';
-    
-    if (this.fillLayerId && this.map.getLayer(this.fillLayerId)) {
-      this.map.setLayoutProperty(this.fillLayerId, 'visibility', visibility);
+
+    if (this.fillLayerId && this.map?.getLayer?.(this.fillLayerId)) {
+      this.map?.setLayoutProperty?.(this.fillLayerId, 'visibility', visibility);
     }
-    
-    if (this.lineLayerId && this.map.getLayer(this.lineLayerId)) {
-      this.map.setLayoutProperty(this.lineLayerId, 'visibility', visibility);
+
+    if (this.lineLayerId && this.map?.getLayer?.(this.lineLayerId)) {
+      this.map?.setLayoutProperty?.(this.lineLayerId, 'visibility', visibility);
     }
   }
 
@@ -245,4 +249,3 @@ export class IsochroneElement extends BaseElement {
 if (!customElements.get('gk-isochrone')) {
   customElements.define('mapi-isochrone', IsochroneElement);
 }
-

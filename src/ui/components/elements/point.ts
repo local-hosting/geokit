@@ -9,7 +9,7 @@
 
 import { BaseElement } from '../base-element';
 import { normalizeCoordinatesArray, isValidCoordinate } from '../../../utils/coordinates';
-import type { Coordinate } from '../../../types';
+import type { MapEvent } from '../../providers/types';
 
 export interface PointOptions {
   lat: number;
@@ -51,10 +51,14 @@ export class PointElement extends BaseElement {
   private sourceId: string | null = null;
   private layerId: string | null = null;
   private shadowLayerId: string | null = null;
-  private popupInstance: any = null;
-  private selectionLayers: { selectionLayerId: string; shadowLayerId: string; selectionSourceId: string } | null = null;
-  private clickHandler: ((e: any) => void) | null = null;
-  private mapClickHandler: ((e: any) => void) | null = null;
+  private popupInstance: { remove: () => void } | null = null;
+  private selectionLayers: {
+    selectionLayerId: string;
+    shadowLayerId: string;
+    selectionSourceId: string;
+  } | null = null;
+  private clickHandler: ((e: MapEvent) => void) | null = null;
+  private mapClickHandler: ((e: MapEvent) => void) | null = null;
   private clearHandler: ((event: Event) => void) | null = null;
   private clearPopupHandler: ((event: Event) => void) | null = null;
   private highlightCreatedTime: number | null = null;
@@ -65,66 +69,82 @@ export class PointElement extends BaseElement {
     this.attachShadow({ mode: 'open' });
   }
 
+  private hasGeneratedIds = false;
+
   override async connectedCallback() {
-    await super.connectedCallback();
-    
-    if (this.isInitialized) return;
+    try {
+      // Generate unique IDs BEFORE calling super (which sets isInitialized)
+      if (!this.hasGeneratedIds) {
+        const uuid = crypto.randomUUID();
+        this.sourceId = `point-source-${uuid}`;
+        this.layerId = `point-layer-${uuid}`;
+        this.shadowLayerId = `point-shadow-${uuid}`;
+        this.hasGeneratedIds = true;
+      }
 
-    // Generate unique IDs
-    const uuid = crypto.randomUUID();
-    this.sourceId = `point-source-${uuid}`;
-    this.layerId = `point-layer-${uuid}`;
-    this.shadowLayerId = `point-shadow-${uuid}`;
+      // Always find parent map, even if already initialized (for map reuse)
+      // This is critical when points are moved between maps via map pool
+      this.addToParentMap();
 
-    // Setup event listeners
-    this.setupEventListeners();
-    
-    this.isInitialized = true;
+      // Only call super if not already initialized (to avoid duplicate setup)
+      if (!this.isInitialized) {
+        await super.connectedCallback();
+      }
+
+      // Setup event listeners (idempotent)
+      this.setupEventListeners();
+    } catch (error) {
+      console.error(`[Point] Error in connectedCallback:`, error);
+      throw error;
+    }
   }
 
   protected override async onMapReady(): Promise<void> {
     await super.onMapReady();
-    this.waitForStyleLoaded(() => this.addPoint());
+
+    this.waitForStyleLoaded(() => {
+      this.addPoint();
+    });
   }
 
   private setupEventListeners(): void {
     // Clear popup handler
-    this.clearPopupHandler = ((event: Event) => {
+    this.clearPopupHandler = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { pointElement, pointId: excludePointId } = customEvent.detail || {};
-      
+
       if (pointElement === this) return;
-      
+
       const thisPointId = this.getAttribute('point-id');
       if (excludePointId && thisPointId && String(thisPointId) === String(excludePointId)) {
         return;
       }
-      
+
       if (this.popupInstance) {
         this.popupInstance.remove();
         this.popupInstance = null;
       }
-    });
+    };
 
     // Clear all selections handler
-    this.clearHandler = ((event: Event) => {
+    this.clearHandler = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { pointElement, pointId: excludePointId } = customEvent.detail || {};
-      
+
       if (pointElement === this) return;
-      
+
       const thisPointId = this.getAttribute('point-id');
       if (excludePointId && thisPointId && String(thisPointId) === String(excludePointId)) {
         return;
       }
-      
+
       const now = Date.now();
-      if (this.highlightCreatedTime && (now - this.highlightCreatedTime) < 200) {
+      if (this.highlightCreatedTime && now - this.highlightCreatedTime < 200) {
         return;
       }
-      
+
       if (this.popupInstance) {
-        if (!this.popupCreatedTime || (now - this.popupCreatedTime) > 100) {
+        if (!this.popupCreatedTime || now - this.popupCreatedTime > 100) {
           this.clearHighlight();
           this.popupInstance.remove();
           this.popupInstance = null;
@@ -132,7 +152,7 @@ export class PointElement extends BaseElement {
       } else {
         this.clearHighlight();
       }
-    });
+    };
 
     document.addEventListener('gk-clear-all-selections', this.clearHandler);
     document.addEventListener('gk-clear-all-popups', this.clearPopupHandler);
@@ -202,30 +222,48 @@ export class PointElement extends BaseElement {
   }
 
   private createPointLayers(pointData: GeoJSON.FeatureCollection): void {
-    if (!this.map || !this.sourceId || !this.layerId) return;
+    // createPointLayers called
 
-    this.map.addSource(this.sourceId, {
-      type: 'geojson',
-      data: pointData,
-    });
+    if (!this.map || !this.sourceId || !this.layerId) {
+      console.warn('[Point] Cannot create layers: map or IDs missing', {
+        hasMap: !!this.map,
+        sourceId: this.sourceId,
+        layerId: this.layerId,
+      });
+      return;
+    }
+
+    try {
+      this.map.addSource(this.sourceId, {
+        type: 'geojson',
+        data: pointData,
+      });
+    } catch (error) {
+      console.error('[Point] Failed to add source:', error);
+      return;
+    }
 
     // Add shadow layer if enabled
     if (this.shadow && this.shadowLayerId) {
-      this.map.addLayer({
-        id: this.shadowLayerId,
-        type: 'circle',
-        source: this.sourceId,
-        paint: {
-          'circle-radius': this.getShadowRadiusExpression(),
-          'circle-color': this.shadowColor,
-          'circle-opacity': this.shadowOpacity,
-          'circle-blur': this.shadowBlur,
-        },
-      });
+      try {
+        this.map.addLayer({
+          id: this.shadowLayerId,
+          type: 'circle',
+          source: this.sourceId,
+          paint: {
+            'circle-radius': this.getShadowRadiusExpression(),
+            'circle-color': this.shadowColor,
+            'circle-opacity': this.shadowOpacity,
+            'circle-blur': this.shadowBlur,
+          },
+        });
+      } catch (error) {
+        console.error('[Point] Failed to add shadow layer:', error);
+      }
     }
 
     // Add main point layer
-    const paint: any = {
+    const paint: Record<string, unknown> = {
       'circle-radius': this.getZoomRadiusExpression(),
       'circle-color': this.color,
       'circle-opacity': this.opacity,
@@ -240,12 +278,16 @@ export class PointElement extends BaseElement {
       paint['circle-stroke-width'] = 0;
     }
 
-    this.map.addLayer({
-      id: this.layerId,
-      type: 'circle',
-      source: this.sourceId,
-      paint,
-    });
+    try {
+      this.map.addLayer({
+        id: this.layerId,
+        type: 'circle',
+        source: this.sourceId,
+        paint,
+      });
+    } catch (error) {
+      console.error('[Point] Failed to add main layer:', error);
+    }
   }
 
   private setupInteractions(): void {
@@ -253,28 +295,53 @@ export class PointElement extends BaseElement {
 
     // Cursor handling
     this.map.on('mouseenter', this.layerId, () => {
-      if (this.map) (this.map as any).getCanvas().style.cursor = 'pointer';
+      const canvas = this.map?.getCanvas?.();
+      if (canvas) {
+        canvas.style.cursor = 'pointer';
+      }
     });
-    
+
     this.map.on('mouseleave', this.layerId, () => {
-      if (this.map) (this.map as any).getCanvas().style.cursor = '';
+      const canvas = this.map?.getCanvas?.();
+      if (canvas) {
+        canvas.style.cursor = '';
+      }
     });
 
     // Click handling
-    this.clickHandler = (e: any) => {
+    this.clickHandler = (e: MapEvent) => {
       if (e.originalEvent) {
         e.originalEvent.stopPropagation();
         e.originalEvent.stopImmediatePropagation();
       }
 
       const feature = e.features?.[0];
-      if (!feature) return;
+      if (!feature || !e.lngLat) return;
 
-      const pointId = feature.properties?.['point-id'] || feature.properties?.id || this.getAttribute('point-id');
-      const pointName = feature.properties?.['point-name'] || this.getAttribute('point-name');
+      // Type guard: ensure feature has required properties
+      if (!('properties' in feature) || !('geometry' in feature)) return;
+
+      const pointId =
+        (feature.properties as Record<string, unknown>)?.['point-id'] ||
+        (feature.properties as Record<string, unknown>)?.['id'] ||
+        this.getAttribute('point-id');
+      const pointName =
+        (feature.properties as Record<string, unknown>)?.['point-name'] ||
+        this.getAttribute('point-name');
 
       if (pointId || pointName) {
-        this.handlePointSelection(feature, pointId, pointName, e.lngLat);
+        // Create a proper GeoJSON Feature for type safety
+        const geoJsonFeature: GeoJSON.Feature = {
+          type: 'Feature',
+          geometry: feature.geometry as GeoJSON.Geometry,
+          properties: (feature.properties as Record<string, unknown>) || {},
+        };
+        this.handlePointSelection(
+          geoJsonFeature,
+          typeof pointId === 'string' ? pointId : null,
+          typeof pointName === 'string' ? pointName : null,
+          e.lngLat
+        );
       }
     };
 
@@ -282,9 +349,10 @@ export class PointElement extends BaseElement {
     this.map.on('touchend', this.layerId, this.clickHandler);
 
     // Map click for deselection
-    this.mapClickHandler = (e: any) => {
+    this.mapClickHandler = (e: MapEvent) => {
       if (!this.map || !this.layerId) return;
-      if (!this.map.getLayer(this.layerId)) return;
+      if (!this.map.getLayer?.(this.layerId)) return;
+      if (!e.point || !this.map.queryRenderedFeatures) return;
 
       const features = this.map.queryRenderedFeatures(e.point, { layers: [this.layerId] });
       if (features.length === 0) {
@@ -308,7 +376,12 @@ export class PointElement extends BaseElement {
     this.map.on('touchend', this.mapClickHandler);
   }
 
-  private handlePointSelection(feature: any, pointId: string | null, pointName: string | null, lngLat: any): void {
+  private handlePointSelection(
+    feature: GeoJSON.Feature,
+    pointId: string | null,
+    pointName: string | null,
+    lngLat: { lng: number; lat: number }
+  ): void {
     // Clear local selection
     if (this.popupInstance) {
       this.popupInstance.remove();
@@ -316,8 +389,12 @@ export class PointElement extends BaseElement {
     }
     this.clearHighlight();
 
-    // Highlight point
-    if (feature.geometry?.coordinates) {
+    // Highlight point - use type guard to safely access coordinates
+    if (
+      feature.geometry &&
+      feature.geometry.type === 'Point' &&
+      'coordinates' in feature.geometry
+    ) {
       this.highlightPoint(feature);
     }
 
@@ -361,7 +438,7 @@ export class PointElement extends BaseElement {
     };
 
     try {
-      if (this.map.getSource(selectionSourceId)) {
+      if (this.map.getSource?.(selectionSourceId)) {
         this.map.removeSource(selectionSourceId);
       }
 
@@ -370,15 +447,15 @@ export class PointElement extends BaseElement {
         data: selectionData,
       });
 
-      if (this.map.getLayer(shadowLayerId)) {
+      if (this.map?.getLayer?.(shadowLayerId)) {
         this.map.removeLayer(shadowLayerId);
       }
-      if (this.map.getLayer(selectionLayerId)) {
+      if (this.map?.getLayer?.(selectionLayerId)) {
         this.map.removeLayer(selectionLayerId);
       }
 
       // Add shadow
-      (this.map as any).addLayer(
+      this.map.addLayer(
         {
           id: shadowLayerId,
           type: 'circle',
@@ -395,7 +472,7 @@ export class PointElement extends BaseElement {
       );
 
       // Add white stroke
-      (this.map as any).addLayer(
+      this.map.addLayer(
         {
           id: selectionLayerId,
           type: 'circle',
@@ -425,9 +502,9 @@ export class PointElement extends BaseElement {
 
     const { selectionLayerId, shadowLayerId, selectionSourceId } = this.selectionLayers;
 
-    if (this.map.getLayer(selectionLayerId)) this.map.removeLayer(selectionLayerId);
-    if (this.map.getLayer(shadowLayerId)) this.map.removeLayer(shadowLayerId);
-    if (this.map.getSource(selectionSourceId)) this.map.removeSource(selectionSourceId);
+    if (this.map?.getLayer?.(selectionLayerId)) this.map.removeLayer(selectionLayerId);
+    if (this.map?.getLayer?.(shadowLayerId)) this.map.removeLayer(shadowLayerId);
+    if (this.map?.getSource?.(selectionSourceId)) this.map.removeSource(selectionSourceId);
 
     this.selectionLayers = null;
   }
@@ -445,7 +522,7 @@ export class PointElement extends BaseElement {
       try {
         this.map.off('click', this.layerId, this.clickHandler);
         this.map.off('touchend', this.layerId, this.clickHandler);
-      } catch (e) {
+      } catch {
         // Ignore
       }
       this.clickHandler = null;
@@ -455,7 +532,7 @@ export class PointElement extends BaseElement {
       try {
         this.map.off('click', this.mapClickHandler);
         this.map.off('touchend', this.mapClickHandler);
-      } catch (e) {
+      } catch {
         // Ignore
       }
       this.mapClickHandler = null;
@@ -465,48 +542,69 @@ export class PointElement extends BaseElement {
       try {
         this.map.off('mouseenter', this.layerId);
         this.map.off('mouseleave', this.layerId);
-      } catch (e) {
+      } catch {
         // Ignore
       }
     }
 
     // Cleanup layers
-    this.cleanupMapLayers([this.layerId, this.shadowLayerId].filter(Boolean) as string[], [this.sourceId].filter(Boolean) as string[]);
+    this.cleanupMapLayers(
+      [this.layerId, this.shadowLayerId].filter(Boolean) as string[],
+      [this.sourceId].filter(Boolean) as string[]
+    );
   }
 
-  private getZoomRadiusExpression(): any[] {
+  private getZoomRadiusExpression(): unknown[] {
     const scale = this.size / 6;
     return [
       'interpolate',
       ['exponential', 1.8],
       ['zoom'],
-      3, Math.max(1, 2 * scale),
-      5, Math.max(1, 3 * scale),
-      7, Math.max(1, 5 * scale),
-      9, Math.max(2, 8 * scale),
-      11, Math.max(3, 12 * scale),
-      13, Math.max(4, 18 * scale),
-      15, Math.max(6, 26 * scale),
-      17, Math.max(8, 36 * scale),
-      19, Math.max(10, 48 * scale),
+      3,
+      Math.max(1, 2 * scale),
+      5,
+      Math.max(1, 3 * scale),
+      7,
+      Math.max(1, 5 * scale),
+      9,
+      Math.max(2, 8 * scale),
+      11,
+      Math.max(3, 12 * scale),
+      13,
+      Math.max(4, 18 * scale),
+      15,
+      Math.max(6, 26 * scale),
+      17,
+      Math.max(8, 36 * scale),
+      19,
+      Math.max(10, 48 * scale),
     ];
   }
 
-  private getShadowRadiusExpression(): any[] {
+  private getShadowRadiusExpression(): unknown[] {
     const scale = this.size / 6;
     return [
       'interpolate',
       ['exponential', 1.8],
       ['zoom'],
-      3, Math.max(1, 3 * scale),
-      5, Math.max(1, 4 * scale),
-      7, Math.max(2, 7 * scale),
-      9, Math.max(3, 11 * scale),
-      11, Math.max(4, 16 * scale),
-      13, Math.max(6, 24 * scale),
-      15, Math.max(8, 34 * scale),
-      17, Math.max(10, 46 * scale),
-      19, Math.max(12, 60 * scale),
+      3,
+      Math.max(1, 3 * scale),
+      5,
+      Math.max(1, 4 * scale),
+      7,
+      Math.max(2, 7 * scale),
+      9,
+      Math.max(3, 11 * scale),
+      11,
+      Math.max(4, 16 * scale),
+      13,
+      Math.max(6, 24 * scale),
+      15,
+      Math.max(8, 34 * scale),
+      17,
+      Math.max(10, 46 * scale),
+      19,
+      Math.max(12, 60 * scale),
     ];
   }
 
@@ -514,16 +612,16 @@ export class PointElement extends BaseElement {
     if (!this.map || !this.layerId) return;
 
     try {
-      this.map.setPaintProperty(this.layerId, 'circle-radius', this.getZoomRadiusExpression());
-      this.map.setPaintProperty(this.layerId, 'circle-color', this.color);
-      this.map.setPaintProperty(this.layerId, 'circle-opacity', this.opacity);
+      this.map?.setPaintProperty?.(this.layerId, 'circle-radius', this.getZoomRadiusExpression());
+      this.map?.setPaintProperty?.(this.layerId, 'circle-color', this.color);
+      this.map?.setPaintProperty?.(this.layerId, 'circle-opacity', this.opacity);
 
       if (this.strokeWidth > 0) {
-        this.map.setPaintProperty(this.layerId, 'circle-stroke-width', this.strokeWidth);
-        this.map.setPaintProperty(this.layerId, 'circle-stroke-color', this.strokeColor);
-        this.map.setPaintProperty(this.layerId, 'circle-stroke-opacity', this.strokeOpacity);
+        this.map?.setPaintProperty?.(this.layerId, 'circle-stroke-width', this.strokeWidth);
+        this.map?.setPaintProperty?.(this.layerId, 'circle-stroke-color', this.strokeColor);
+        this.map?.setPaintProperty?.(this.layerId, 'circle-stroke-opacity', this.strokeOpacity);
       } else {
-        this.map.setPaintProperty(this.layerId, 'circle-stroke-width', 0);
+        this.map?.setPaintProperty?.(this.layerId, 'circle-stroke-width', 0);
       }
     } catch (error) {
       console.warn('Failed to update point style, recreating:', error);
@@ -531,9 +629,17 @@ export class PointElement extends BaseElement {
     }
   }
 
-  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+  override attributeChangedCallback(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null
+  ): void {
     if (this.isInitialized && oldValue !== newValue) {
-      if (['size', 'color', 'opacity', 'stroke-color', 'stroke-width', 'stroke-opacity'].includes(name)) {
+      if (
+        ['size', 'color', 'opacity', 'stroke-color', 'stroke-width', 'stroke-opacity'].includes(
+          name
+        )
+      ) {
         this.updatePointStyle();
       } else if (name === 'lat' || name === 'lng') {
         this.addPoint(); // Recreate for position changes
@@ -621,4 +727,3 @@ export class PointElement extends BaseElement {
 if (!customElements.get('gk-point')) {
   customElements.define('mapi-point', PointElement);
 }
-

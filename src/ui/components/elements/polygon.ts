@@ -1,8 +1,8 @@
 /**
  * Polygon Component
- * 
+ *
  * Displays polygon shapes on the map
- * 
+ *
  * Usage:
  * <mapi-polygon points="[[40.7,-74],[40.8,-74],[40.8,-73.9]]" fill-color="#ff0000"></mapi-polygon>
  */
@@ -34,31 +34,75 @@ export class PolygonElement extends BaseElement {
     this.layerId = `polygon-fill-${crypto.randomUUID()}`;
     this.strokeLayerId = `polygon-stroke-${crypto.randomUUID()}`;
 
+    // connectedCallback called
+
     // Find parent map
     this.addToParentMap();
-    this.isInitialized = true;
+
+    // Call super to ensure base initialization
+    if (!this.isInitialized) {
+      await super.connectedCallback();
+    }
   }
 
   protected async onMapReady(): Promise<void> {
     await super.onMapReady();
-    this.waitForStyleLoaded(() => this.createPolygon());
+    this.waitForStyleLoaded(() => {
+      this.createPolygon();
+    });
+  }
+
+  /**
+   * Find the first point layer to insert polygon layers before it
+   * This ensures polygons render below points
+   */
+  private findFirstPointLayer(): string | undefined {
+    if (!this.map) return undefined;
+
+    try {
+      const getStyle = (
+        this.map as { getStyle?: () => { layers?: Array<{ id?: string; type?: string }> } }
+      ).getStyle;
+      if (!getStyle) return undefined;
+
+      const style = getStyle();
+      if (!style || !style.layers) return undefined;
+
+      // Look for the first point/circle layer
+      for (const layer of style.layers) {
+        if (layer.type === 'circle' && layer.id?.startsWith('point-')) {
+          return layer.id;
+        }
+      }
+    } catch {
+      // Silently fail - layers will be added at top
+    }
+
+    return undefined;
   }
 
   private createPolygon(): void {
-    if (!this.map || this.getAttribute('visible') === 'false') return;
+    if (!this.map) {
+      console.warn('[Polygon] Cannot create: no map');
+      return;
+    }
+
+    if (this.getAttribute('visible') === 'false') {
+      return;
+    }
 
     // Parse points
     const pointsAttr = this.getAttribute('points');
     if (!pointsAttr) {
-      console.warn('Polygon: points attribute is required');
+      console.warn(`[Polygon] points attribute is required for ${this.sourceId}`);
       return;
     }
 
     let coordinates: number[][];
     try {
       coordinates = JSON.parse(pointsAttr);
-      // Normalize using geokit
-      coordinates = normalizeCoordinatesArray(coordinates);
+      // Normalize to [lat, lng] format first
+      coordinates = normalizeCoordinatesArray(coordinates, 'latlon', 'auto');
     } catch (error) {
       console.error('Polygon: Invalid points format', error);
       return;
@@ -73,12 +117,15 @@ export class PolygonElement extends BaseElement {
       }
     }
 
+    // Convert [lat, lng] to [lng, lat] for GeoJSON format
+    const geoJsonCoordinates = coordinates.map(([lat, lng]) => [lng, lat]);
+
     // Create GeoJSON
     const geojson = {
       type: 'Feature' as const,
       geometry: {
         type: 'Polygon' as const,
-        coordinates: [coordinates],
+        coordinates: [geoJsonCoordinates],
       },
       properties: {},
     };
@@ -86,34 +133,53 @@ export class PolygonElement extends BaseElement {
     // Remove existing layers
     this.cleanupMapLayers([this.layerId, this.strokeLayerId], [this.sourceId]);
 
-    // Add source
-    this.map.addSource(this.sourceId, {
-      type: 'geojson',
-      data: geojson,
-    });
+    try {
+      // Add source
+      this.map.addSource(this.sourceId, {
+        type: 'geojson',
+        data: geojson,
+      });
 
-    // Add fill layer
-    this.map.addLayer({
-      id: this.layerId,
-      type: 'fill',
-      source: this.sourceId,
-      paint: {
-        'fill-color': this.getAttribute('fill-color') || '#3FB1CE',
-        'fill-opacity': parseFloat(this.getAttribute('fill-opacity') || '0.5'),
-      },
-    });
+      // Find the first point layer to insert polygon layers before it
+      // This ensures polygons render below points
+      const beforeId = this.findFirstPointLayer();
 
-    // Add stroke layer
-    this.map.addLayer({
-      id: this.strokeLayerId,
-      type: 'line',
-      source: this.sourceId,
-      paint: {
-        'line-color': this.getAttribute('stroke-color') || '#000000',
-        'line-width': parseFloat(this.getAttribute('stroke-width') || '2'),
-        'line-opacity': parseFloat(this.getAttribute('stroke-opacity') || '1'),
-      },
-    });
+      // Add fill layer
+      const fillColor = this.getAttribute('fill-color') || '#3FB1CE';
+      const fillOpacity = parseFloat(this.getAttribute('fill-opacity') || '0.5');
+      this.map.addLayer(
+        {
+          id: this.layerId,
+          type: 'fill',
+          source: this.sourceId,
+          paint: {
+            'fill-color': fillColor,
+            'fill-opacity': fillOpacity,
+          },
+        },
+        beforeId
+      );
+
+      // Add stroke layer (after fill layer)
+      const strokeColor = this.getAttribute('stroke-color') || '#000000';
+      const strokeWidth = parseFloat(this.getAttribute('stroke-width') || '2');
+      const strokeOpacity = parseFloat(this.getAttribute('stroke-opacity') || '1');
+      this.map.addLayer(
+        {
+          id: this.strokeLayerId,
+          type: 'line',
+          source: this.sourceId,
+          paint: {
+            'line-color': strokeColor,
+            'line-width': strokeWidth,
+            'line-opacity': strokeOpacity,
+          },
+        },
+        beforeId
+      );
+    } catch (error) {
+      console.error(`[Polygon] Error creating polygon ${this.sourceId}:`, error);
+    }
 
     // Set up interactivity
     if (this.getAttribute('interactive') === 'true') {
@@ -129,7 +195,11 @@ export class PolygonElement extends BaseElement {
     );
   }
 
-  protected handleAttributeChange(name: string, oldValue: string | null, newValue: string | null): void {
+  protected handleAttributeChange(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null
+  ): void {
     if (!this.map) return;
 
     switch (name) {
@@ -187,7 +257,7 @@ export class PolygonElement extends BaseElement {
   }
 
   // Public API
-  public getBounds(): any {
+  public getBounds(): { minLng: number; minLat: number; maxLng: number; maxLat: number } | null {
     const pointsAttr = this.getAttribute('points');
     if (!pointsAttr) return null;
 
@@ -199,13 +269,23 @@ export class PolygonElement extends BaseElement {
     }
   }
 
-  public fitBounds(options?: any): void {
+  public fitBounds(options?: unknown): void {
     const bounds = this.getBounds();
     if (bounds && this.map) {
-      this.map.fitBounds([
-        [bounds.minLng, bounds.minLat],
-        [bounds.maxLng, bounds.maxLat],
-      ], options);
+      const fitBounds = (
+        this.map as {
+          fitBounds?: (bounds: [[number, number], [number, number]], options?: unknown) => void;
+        }
+      ).fitBounds;
+      if (fitBounds) {
+        fitBounds(
+          [
+            [bounds.minLng, bounds.minLat],
+            [bounds.maxLng, bounds.maxLat],
+          ],
+          options
+        );
+      }
     }
   }
 }
@@ -214,4 +294,3 @@ export class PolygonElement extends BaseElement {
 if (!customElements.get('mapi-polygon')) {
   customElements.define('mapi-polygon', PolygonElement);
 }
-
