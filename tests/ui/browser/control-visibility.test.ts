@@ -1,19 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
-// Skip these tests in jsdom environment as MapLibre GL requires real browser WebGL
-const isJSDom = typeof navigator !== 'undefined' && navigator.userAgent.includes('jsdom');
-
-describe.skipIf(isJSDom)('Control Visibility Toggle', () => {
+/**
+ * Browser-only tests for control visibility toggle
+ * These tests require real WebGL support and must be run with Playwright
+ * Run with: yarn test:browser:controls
+ */
+describe('Control Visibility Toggle', () => {
   let container: HTMLDivElement;
   let mapElement: HTMLElement & { getMap?: () => unknown };
 
   beforeEach(async () => {
     // Dynamically import to avoid loading MapLibre GL at module load time
-    const { registerUIProvider, setUIProvider } = await import('../../src/ui/providers/registry');
-    const { MapTilerUIProvider } = await import('../../src/ui/providers/maptiler-provider');
-    await import('../../src/ui/components/elements/map');
-    await import('../../src/ui/components/controls/navigation-control');
-    await import('../../src/ui/components/controls/scale-control');
+    const { registerUIProvider, setUIProvider } = await import('../../../src/ui/providers/registry');
+    const { MapTilerUIProvider } = await import('../../../src/ui/providers/maptiler-provider');
+    await import('../../../src/ui/components/elements/map');
+    await import('../../../src/ui/components/controls/navigation-control');
+    await import('../../../src/ui/components/controls/scale-control');
 
     // Setup MapTiler provider
     const provider = new MapTilerUIProvider();
@@ -50,13 +52,22 @@ describe.skipIf(isJSDom)('Control Visibility Toggle', () => {
 
     container.appendChild(mapElement);
 
-    // Wait for map to be ready
-    await new Promise<void>((resolve) => {
+    // Wait for map to be ready with timeout
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        mapElement.removeEventListener('gk-ready', handler);
+        reject(new Error('Map initialization timeout'));
+      }, 5000); // 5 second timeout
+      
       const handler = () => {
+        clearTimeout(timeout);
         mapElement.removeEventListener('gk-ready', handler);
         resolve();
       };
       mapElement.addEventListener('gk-ready', handler);
+    }).catch(() => {
+      // If map doesn't initialize, skip the test
+      throw new Error('Map failed to initialize - skipping test');
     });
 
     // Wait a bit more for controls to be added
@@ -132,12 +143,20 @@ describe.skipIf(isJSDom)('Control Visibility Toggle', () => {
     mapElement2.style.height = '100%';
     container2.appendChild(mapElement2);
 
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        mapElement2.removeEventListener('gk-ready', handler);
+        reject(new Error('Map initialization timeout'));
+      }, 5000);
+      
       const handler = () => {
+        clearTimeout(timeout);
         mapElement2.removeEventListener('gk-ready', handler);
         resolve();
       };
       mapElement2.addEventListener('gk-ready', handler);
+    }).catch(() => {
+      throw new Error('Map failed to initialize - skipping test');
     });
 
     // Click first map
@@ -174,12 +193,20 @@ describe.skipIf(isJSDom)('Control Visibility Toggle', () => {
     heroMap.style.height = '100%';
     heroContainer.appendChild(heroMap);
 
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        heroMap.removeEventListener('gk-ready', handler);
+        reject(new Error('Map initialization timeout'));
+      }, 5000);
+      
       const handler = () => {
+        clearTimeout(timeout);
         heroMap.removeEventListener('gk-ready', handler);
         resolve();
       };
       heroMap.addEventListener('gk-ready', handler);
+    }).catch(() => {
+      throw new Error('Map failed to initialize - skipping test');
     });
 
     // Click hero map
@@ -213,12 +240,20 @@ describe.skipIf(isJSDom)('Control Visibility Toggle', () => {
     disabledMap.style.height = '100%';
     disabledContainer.appendChild(disabledMap);
 
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        disabledMap.removeEventListener('gk-ready', handler);
+        reject(new Error('Map initialization timeout'));
+      }, 5000);
+      
       const handler = () => {
+        clearTimeout(timeout);
         disabledMap.removeEventListener('gk-ready', handler);
         resolve();
       };
       disabledMap.addEventListener('gk-ready', handler);
+    }).catch(() => {
+      throw new Error('Map failed to initialize - skipping test');
     });
 
     // Click disabled map
@@ -232,3 +267,4 @@ describe.skipIf(isJSDom)('Control Visibility Toggle', () => {
     disabledContainer.remove();
   });
 });
+
