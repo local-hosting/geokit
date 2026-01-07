@@ -70,7 +70,7 @@
   ],
   "scripts": {
     "build": "tsc -p config/tsconfig.json && tsc -p config/tsconfig.cjs.json && node scripts/fix-esm-imports.js && node scripts/rename-cjs.js",
-    "test": "vitest run --config config/vitest.config.ts --environment node",
+    "test": "vitest run --config config/vitest.config.ts",
     "test:watch": "vitest --config config/vitest.config.ts",
     "test:node": "vitest run --config config/vitest.config.ts --environment node",
     "test:browser": "vitest run --config config/vitest.browser.config.ts",
