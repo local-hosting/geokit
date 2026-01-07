@@ -1,20 +1,22 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
-// Skip these tests in jsdom environment as MapLibre GL requires real browser WebGL
-const isJSDom = typeof navigator !== 'undefined' && navigator.userAgent.includes('jsdom');
-
-describe.skipIf(isJSDom)('Control Rendering', () => {
+/**
+ * Browser-only tests for control rendering
+ * These tests require real WebGL support and must be run with Playwright
+ * Run with: yarn test:browser:controls
+ */
+describe('Control Rendering', () => {
   let container: HTMLDivElement;
   let mapElement: HTMLElement & { getMap?: () => any };
 
   beforeEach(async () => {
     // Dynamically import to avoid loading MapLibre GL at module load time
-    const { registerUIProvider, setUIProvider } = await import('../../src/ui/providers/registry');
-    const { MapTilerUIProvider } = await import('../../src/ui/providers/maptiler-provider');
-    await import('../../src/ui/components/elements/map');
-    await import('../../src/ui/components/controls/navigation-control');
-    await import('../../src/ui/components/controls/scale-control');
-    await import('../../src/ui/components/controls/fullscreen-control');
+    const { registerUIProvider, setUIProvider } = await import('../../../src/ui/providers/registry');
+    const { MapTilerUIProvider } = await import('../../../src/ui/providers/maptiler-provider');
+    await import('../../../src/ui/components/elements/map');
+    await import('../../../src/ui/components/controls/navigation-control');
+    await import('../../../src/ui/components/controls/scale-control');
+    await import('../../../src/ui/components/controls/fullscreen-control');
 
     // Setup MapTiler provider
     const provider = new MapTilerUIProvider();
@@ -54,13 +56,22 @@ describe.skipIf(isJSDom)('Control Rendering', () => {
     fullscreenControl.setAttribute('position', 'top-left');
     mapElement.appendChild(fullscreenControl);
 
-    // Wait for map to be ready
-    await new Promise<void>((resolve) => {
+    // Wait for map to be ready with timeout
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        mapElement.removeEventListener('gk-ready', handler);
+        reject(new Error('Map initialization timeout'));
+      }, 5000); // 5 second timeout
+      
       const handler = () => {
+        clearTimeout(timeout);
         mapElement.removeEventListener('gk-ready', handler);
         resolve();
       };
       mapElement.addEventListener('gk-ready', handler);
+    }).catch(() => {
+      // If map doesn't initialize, skip the test
+      throw new Error('Map failed to initialize - skipping test');
     });
 
     // Wait for controls to be added
@@ -144,3 +155,4 @@ describe.skipIf(isJSDom)('Control Rendering', () => {
     expect(fullscreenButtons?.length).toBeGreaterThan(0);
   });
 });
+
