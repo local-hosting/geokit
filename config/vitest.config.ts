@@ -9,6 +9,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom', // Use jsdom for DOM API support
+    setupFiles: ['./tests/setup/jsdom-polyfills.ts'],
     pool: 'forks',
     poolOptions: {
       forks: {
