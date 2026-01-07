@@ -1,6 +1,6 @@
 /**
  * Base Element Component
- * 
+ *
  * Shared base class for all UI components
  * Handles provider integration, lifecycle management, and common utilities
  */
@@ -8,7 +8,7 @@
 import { getBounds, boundsToObject } from '../../utils/bounds';
 import { getUIProvider } from '../providers/registry';
 import { getProviderForCapability } from '../../api/providers/registry';
-import type { BaseUIProvider } from '../providers/types';
+import type { BaseUIProvider, MapInstance, MapEvent } from '../providers/types';
 import type { APICapability } from '../../api/providers/types';
 
 /**
@@ -17,10 +17,10 @@ import type { APICapability } from '../../api/providers/types';
  */
 export class BaseElement extends HTMLElement {
   protected control: any = null;
-  protected map: any = null;
+  protected map: MapInstance | null = null;
   protected mapElement: HTMLElement | null = null;
   protected isInitialized: boolean = false;
-  
+
   // Event handler references for cleanup
   private _mapReadyHandler: (() => void) | null = null;
   private _mapUnloadHandler: (() => void) | null = null;
@@ -46,7 +46,11 @@ export class BaseElement extends HTMLElement {
   /**
    * Override this method to handle control-specific attribute changes
    */
-  protected handleAttributeChange(name: string, oldValue: string | null, newValue: string | null): void {
+  protected handleAttributeChange(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null
+  ): void {
     // Base implementation handles position changes
     if (name === 'position' && this.control && this.map) {
       this.updateControlPosition(newValue || this.getDefaultPosition());
@@ -78,13 +82,45 @@ export class BaseElement extends HTMLElement {
   /**
    * Wait for map style to be loaded before executing callback
    * Prevents "Style is not done loading" errors
+   * Handles race conditions when multiple elements wait simultaneously
    */
   protected waitForStyleLoaded(callback: () => void): void {
-    if (!this.map) return;
-    
-    if (this.map.isStyleLoaded()) {
-      callback();
+    if (!this.map) {
+      console.warn(`[${this.constructor.name}] waitForStyleLoaded: no map`);
+      return;
+    }
+
+    // Check if style is already loaded
+    const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
+    if (isStyleLoaded && isStyleLoaded.call(this.map)) {
+      // Style already loaded - execute immediately using microtask to ensure all callbacks run
+      Promise.resolve().then(() => {
+        callback();
+      });
+      return;
+    }
+
+    // Style not loaded yet - wait for it
+    // Use 'on' instead of 'once' and manually remove listener to ensure all callbacks fire
+    // This is important when multiple elements register listeners simultaneously
+    const loadHandler = () => {
+      // Double-check style is loaded (defensive)
+      const isStyleLoaded =
+        this.map && (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
+      if (this.map && isStyleLoaded && isStyleLoaded.call(this.map)) {
+        // Remove listener to prevent multiple calls
+        if (this.map.off) {
+          this.map.off('load', loadHandler);
+        }
+        callback();
+      }
+    };
+
+    // Register listener - 'on' ensures all registered listeners fire
+    if (this.map.on) {
+      this.map.on('load', loadHandler);
     } else {
+      // Fallback if 'on' method doesn't exist
       this.map.once('load', callback);
     }
   }
@@ -95,7 +131,7 @@ export class BaseElement extends HTMLElement {
     try {
       // Find parent map first - controls will be created when map is ready
       this.addToParentMap();
-      
+
       // For non-control elements (markers, etc), create immediately if needed
       if (!this.shouldWaitForMap()) {
         this.control = await this.createControl();
@@ -109,7 +145,7 @@ export class BaseElement extends HTMLElement {
       console.error(`${this.constructor.name}: Failed to initialize:`, error);
     }
   }
-  
+
   /**
    * Override in subclasses to indicate if component should wait for map
    * Controls should wait, geometry elements might not need to
@@ -123,7 +159,11 @@ export class BaseElement extends HTMLElement {
     // Remove control from map
     if (this.map && this.control) {
       try {
-        this.map.removeControl(this.control);
+        const removeControl = (this.map as { removeControl?: (control: unknown) => void })
+          .removeControl;
+        if (removeControl) {
+          removeControl(this.control);
+        }
       } catch {
         // Silently handle removal errors
       }
@@ -132,7 +172,10 @@ export class BaseElement extends HTMLElement {
     // Clean up stored event listeners to prevent memory leaks
     this._cleanupMapListeners();
 
+    // Reset state so element can be reused with a different map
     this.isInitialized = false;
+    this.map = null;
+    this.mapElement = null;
   }
 
   attributeChangedCallback(name: string, _oldValue: string | null, _newValue: string | null): void {
@@ -154,19 +197,25 @@ export class BaseElement extends HTMLElement {
     while (parent) {
       if (parent.tagName.toLowerCase() === 'mapi-map') {
         this.mapElement = parent;
-        const map = (parent as any).getMap?.();
+        // Type guard: check if parent has getMap method
+        const mapElement = parent as HTMLElement & { getMap?: () => MapInstance | null };
+        const map = mapElement.getMap?.();
 
         if (map) {
           // Map is ready, initialize immediately
+          // Use void to fire-and-forget async call (each point needs its own execution)
+          // Map ready, calling onMapReady immediately
           this.map = map;
-          this.onMapReady();
+          void this.onMapReady();
         } else {
+          // Map not ready yet, waiting for mapi-ready event
           // Map not ready yet, wait for it
           const handleMapReady = () => {
-            const currentMap = (parent as any).getMap?.();
+            const currentMap = mapElement.getMap?.();
             if (currentMap) {
               this.map = currentMap;
-              this.onMapReady();
+              // Use void to fire-and-forget async call (each point needs its own execution)
+              void this.onMapReady();
             }
           };
 
@@ -262,6 +311,7 @@ export class BaseElement extends HTMLElement {
 
   /**
    * Add control to map with position
+   * Ensures map is loaded before adding controls to prevent initialization errors
    */
   protected addControlToMap(): void {
     if (!this.map || !this.control) return;
@@ -281,10 +331,55 @@ export class BaseElement extends HTMLElement {
 
     const position = this.getAttribute('position') || this.getDefaultPosition();
 
-    try {
-      this.map.addControl(this.control, position);
-    } catch (error) {
-      console.error(`${this.constructor.name}: Failed to add control:`, error);
+    // Ensure map is loaded before adding controls
+    // MapTiler SDK controls require the map to be in a loaded state
+    const addControl = (): void => {
+      // Validate control has required methods/properties
+      if (
+        !this.control ||
+        typeof (this.control as { onAdd?: (map: unknown) => HTMLElement }).onAdd !== 'function'
+      ) {
+        console.warn(
+          `${this.constructor.name}: Control is missing required onAdd method, skipping addition`
+        );
+        return;
+      }
+
+      try {
+        const addControlMethod = (
+          this.map as { addControl?: (control: unknown, position: string) => void }
+        ).addControl;
+        if (addControlMethod) {
+          addControlMethod(this.control, position);
+        }
+      } catch (error) {
+        console.error(`${this.constructor.name}: Failed to add control:`, error);
+      }
+    };
+
+    // Check if map is already loaded
+    const mapLoaded = (this.map as { loaded?: () => boolean }).loaded;
+    if (mapLoaded && mapLoaded.call(this.map)) {
+      addControl();
+    } else {
+      // Wait for map to load before adding control
+      const mapOnce = (this.map as { once?: (event: string, handler: () => void) => void }).once;
+      if (mapOnce) {
+        mapOnce.call(this.map, 'load', addControl);
+      } else {
+        // Fallback: try to add immediately if map doesn't have once method
+        // This handles cases where the map API might be different
+        try {
+          addControl();
+        } catch (error) {
+          console.warn(`${this.constructor.name}: Map not loaded, will retry on load event`, error);
+          // Try again when map loads
+          const mapOn = (this.map as { on?: (event: string, handler: () => void) => void }).on;
+          if (mapOn) {
+            mapOn.call(this.map, 'load', addControl);
+          }
+        }
+      }
     }
   }
 
@@ -295,8 +390,16 @@ export class BaseElement extends HTMLElement {
     if (!this.map || !this.control) return;
 
     try {
-      this.map.removeControl(this.control);
-      this.map.addControl(this.control, newPosition || this.getDefaultPosition());
+      const removeControl = (this.map as { removeControl?: (control: unknown) => void })
+        .removeControl;
+      const addControl = (this.map as { addControl?: (control: unknown, position: string) => void })
+        .addControl;
+      if (removeControl) {
+        removeControl(this.control);
+      }
+      if (addControl) {
+        addControl(this.control, newPosition || this.getDefaultPosition());
+      }
     } catch (error) {
       console.error(`${this.constructor.name}: Failed to update position:`, error);
     }
@@ -323,7 +426,11 @@ export class BaseElement extends HTMLElement {
     if (!this.map || !this.control) return;
 
     try {
-      this.map.removeControl(this.control);
+      const removeControl = (this.map as { removeControl?: (control: unknown) => void })
+        .removeControl;
+      if (removeControl) {
+        removeControl(this.control);
+      }
       this.control = await this.createControl();
 
       if (this.control) {
@@ -344,15 +451,15 @@ export class BaseElement extends HTMLElement {
     try {
       // Remove layers first
       layerIds.forEach((layerId) => {
-        if (layerId && this.map.getLayer?.(layerId)) {
-          this.map.removeLayer(layerId);
+        if (layerId && this.map?.getLayer?.(layerId)) {
+          this.map?.removeLayer?.(layerId);
         }
       });
 
       // Then remove sources
       sourceIds.forEach((sourceId) => {
-        if (sourceId && this.map.getSource?.(sourceId)) {
-          this.map.removeSource(sourceId);
+        if (sourceId && this.map?.getSource?.(sourceId)) {
+          this.map?.removeSource?.(sourceId);
         }
       });
     } catch {
@@ -367,7 +474,7 @@ export class BaseElement extends HTMLElement {
     if (!this.map || !layerId) return;
 
     // Click event
-    this.map.on('click', layerId, (e: any) => {
+    this.map.on('click', layerId, (e: MapEvent) => {
       this.dispatchEvent(
         new CustomEvent(`${eventPrefix}-click`, {
           detail: {
@@ -382,8 +489,11 @@ export class BaseElement extends HTMLElement {
     });
 
     // Mouse enter
-    this.map.on('mouseenter', layerId, (e: any) => {
-      this.map.getCanvas().style.cursor = 'pointer';
+    this.map.on('mouseenter', layerId, (e: MapEvent) => {
+      const canvas = this.map?.getCanvas?.();
+      if (canvas) {
+        canvas.style.cursor = 'pointer';
+      }
       this.dispatchEvent(
         new CustomEvent(`${eventPrefix}-mouseenter`, {
           detail: {
@@ -398,8 +508,11 @@ export class BaseElement extends HTMLElement {
     });
 
     // Mouse leave
-    this.map.on('mouseleave', layerId, (e: any) => {
-      this.map.getCanvas().style.cursor = '';
+    this.map.on('mouseleave', layerId, (e: MapEvent) => {
+      const canvas = this.map?.getCanvas?.();
+      if (canvas) {
+        canvas.style.cursor = '';
+      }
       this.dispatchEvent(
         new CustomEvent(`${eventPrefix}-mouseleave`, {
           detail: {
@@ -443,21 +556,21 @@ export class BaseElement extends HTMLElement {
     const isVisible = visible !== 'false';
 
     if (isVisible) {
-      const hasLayer = layers.some((layerId) => this.map.getLayer(layerId));
+      const hasLayer = layers.some((layerId) => this.map?.getLayer?.(layerId));
 
       if (!hasLayer && createMethod) {
         createMethod.call(this);
       } else {
         layers.forEach((layerId) => {
-          if (this.map.getLayer(layerId)) {
-            this.map.setLayoutProperty(layerId, 'visibility', 'visible');
+          if (this.map?.getLayer?.(layerId)) {
+            this.map.setLayoutProperty?.(layerId, 'visibility', 'visible');
           }
         });
       }
     } else {
       layers.forEach((layerId) => {
-        if (this.map.getLayer(layerId)) {
-          this.map.setLayoutProperty(layerId, 'visibility', 'none');
+        if (this.map?.getLayer?.(layerId)) {
+          this.map.setLayoutProperty?.(layerId, 'visibility', 'none');
         }
       });
     }
@@ -467,11 +580,11 @@ export class BaseElement extends HTMLElement {
    * Utility: Update paint properties
    */
   protected updatePaintProperties(layerId: string, properties: Record<string, any>): void {
-    if (!this.map || !this.map.getLayer(layerId)) return;
+    if (!this.map || !this.map.getLayer?.(layerId)) return;
 
     try {
       Object.entries(properties).forEach(([property, value]) => {
-        this.map.setPaintProperty(layerId, property, value);
+        this.map?.setPaintProperty?.(layerId, property, value);
       });
     } catch (error) {
       console.warn(`Failed to update paint properties for ${layerId}:`, error);
@@ -495,4 +608,3 @@ export class BaseElement extends HTMLElement {
     }
   }
 }
-
