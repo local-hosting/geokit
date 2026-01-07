@@ -10,7 +10,6 @@
 
 import { BaseElement } from '../base-element';
 import { coordinatesToH3, h3ToBoundary } from '../../../utils/h3';
-import type { Polygon } from '../../../types';
 
 export interface H3Options {
   lat?: number;
@@ -53,7 +52,7 @@ export class H3Element extends BaseElement {
 
   override async connectedCallback() {
     await super.connectedCallback();
-    
+
     if (this.isInitialized) return;
 
     // Generate unique IDs
@@ -188,7 +187,11 @@ export class H3Element extends BaseElement {
     );
   }
 
-  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+  override attributeChangedCallback(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null
+  ): void {
     if (this.isInitialized && oldValue !== newValue) {
       if (name === 'visible') {
         this.toggleVisibility();
@@ -202,13 +205,13 @@ export class H3Element extends BaseElement {
     if (!this.map) return;
 
     const visibility = this.visible ? 'visible' : 'none';
-    
-    if (this.fillLayerId && this.map.getLayer(this.fillLayerId)) {
-      this.map.setLayoutProperty(this.fillLayerId, 'visibility', visibility);
+
+    if (this.fillLayerId && this.map?.getLayer?.(this.fillLayerId)) {
+      this.map?.setLayoutProperty?.(this.fillLayerId, 'visibility', visibility);
     }
-    
-    if (this.lineLayerId && this.map.getLayer(this.lineLayerId)) {
-      this.map.setLayoutProperty(this.lineLayerId, 'visibility', visibility);
+
+    if (this.lineLayerId && this.map?.getLayer?.(this.lineLayerId)) {
+      this.map?.setLayoutProperty?.(this.lineLayerId, 'visibility', visibility);
     }
   }
 
@@ -272,4 +275,3 @@ export class H3Element extends BaseElement {
 if (!customElements.get('gk-h3')) {
   customElements.define('mapi-h3', H3Element);
 }
-

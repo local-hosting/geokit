@@ -24,15 +24,30 @@ import { MapboxAPIProvider } from '../../src/api/providers/mapbox-provider';
 import type { IsochroneOptions } from '../../src/api/providers/types';
 
 // Load API keys from environment
-const MAPTILER_KEY = process.env.MAPTILER_API_KEY;
-const MAPBOX_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
+// In browser tests, use import.meta.env; in node/jsdom, use process.env
+const MAPTILER_KEY =
+  typeof process !== 'undefined' ? process.env.MAPTILER_API_KEY : import.meta.env?.MAPTILER_API_KEY;
+const MAPBOX_TOKEN =
+  typeof process !== 'undefined'
+    ? process.env.MAPBOX_ACCESS_TOKEN
+    : import.meta.env?.MAPBOX_ACCESS_TOKEN;
+
+// Check if we're in a real browser environment (not jsdom)
+// Real browsers have WebGL support, jsdom does not
+const isBrowser =
+  typeof window !== 'undefined' &&
+  typeof document !== 'undefined' &&
+  typeof navigator !== 'undefined' &&
+  navigator.userAgent &&
+  !navigator.userAgent.includes('jsdom') &&
+  typeof WebGLRenderingContext !== 'undefined';
 
 describe('Real Provider Integration Tests', () => {
-  describe.skip('MapTiler UI Provider', () => {
+  describe('MapTiler UI Provider', () => {
     // UI provider tests require a real browser with WebGL support
     // jsdom doesn't support URL.createObjectURL or WebGL
-    // Run these tests manually in a browser environment
-    it.skipIf(!MAPTILER_KEY)('should initialize with real API key', async () => {
+    // Run these tests with: yarn test:browser:integration
+    it.skipIf(!MAPTILER_KEY || !isBrowser)('should initialize with real API key', async () => {
       const provider = new MapTilerUIProvider();
 
       await provider.initialize({ apiKey: MAPTILER_KEY! });
@@ -43,7 +58,7 @@ describe('Real Provider Integration Tests', () => {
       expect(sdk.config).toBeDefined();
     });
 
-    it.skipIf(!MAPTILER_KEY)('should create a real map instance', async () => {
+    it.skipIf(!MAPTILER_KEY || !isBrowser)('should create a real map instance', async () => {
       const provider = new MapTilerUIProvider();
       await provider.initialize({ apiKey: MAPTILER_KEY! });
 
@@ -67,7 +82,7 @@ describe('Real Provider Integration Tests', () => {
       document.body.removeChild(container);
     });
 
-    it.skipIf(!MAPTILER_KEY)('should create controls', async () => {
+    it.skipIf(!MAPTILER_KEY || !isBrowser)('should create controls', async () => {
       const provider = new MapTilerUIProvider();
       await provider.initialize({ apiKey: MAPTILER_KEY! });
 
@@ -78,40 +93,42 @@ describe('Real Provider Integration Tests', () => {
       expect(scaleControl).toBeDefined();
     });
 
-    it.skipIf(!MAPTILER_KEY)('should create marker', async () => {
+    it.skipIf(!MAPTILER_KEY || !isBrowser)('should create marker', async () => {
       const provider = new MapTilerUIProvider();
       await provider.initialize({ apiKey: MAPTILER_KEY! });
 
       const marker = provider.createMarker({
-        lng: -74.006,
-        lat: 40.7128,
         color: '#FF0000',
       });
+
+      // MapTiler markers need setLngLat() called after creation
+      marker.setLngLat([-74.006, 40.7128]);
 
       expect(marker).toBeDefined();
       expect(marker.getLngLat()).toBeDefined();
     });
 
-    it.skipIf(!MAPTILER_KEY)('should create popup', async () => {
+    it.skipIf(!MAPTILER_KEY || !isBrowser)('should create popup', async () => {
       const provider = new MapTilerUIProvider();
       await provider.initialize({ apiKey: MAPTILER_KEY! });
 
       const popup = provider.createPopup({
-        lng: -74.006,
-        lat: 40.7128,
         html: '<div>Test Popup</div>',
       });
+
+      // MapTiler popups need setLngLat() called after creation
+      popup.setLngLat([-74.006, 40.7128]);
 
       expect(popup).toBeDefined();
       expect(popup.getLngLat()).toBeDefined();
     });
   });
 
-  describe.skip('Mapbox UI Provider', () => {
+  describe('Mapbox UI Provider', () => {
     // UI provider tests require a real browser with WebGL support
     // jsdom doesn't support accessToken property redefinition
-    // Run these tests manually in a browser environment
-    it.skipIf(!MAPBOX_TOKEN)('should initialize with real access token', async () => {
+    // Run these tests with: yarn test:browser:integration
+    it.skipIf(!MAPBOX_TOKEN || !isBrowser)('should initialize with real access token', async () => {
       const provider = new MapboxUIProvider();
 
       await provider.initialize({ accessToken: MAPBOX_TOKEN! });
@@ -122,7 +139,7 @@ describe('Real Provider Integration Tests', () => {
       expect(sdk.accessToken).toBe(MAPBOX_TOKEN);
     });
 
-    it.skipIf(!MAPBOX_TOKEN)('should create a real map instance', async () => {
+    it.skipIf(!MAPBOX_TOKEN || !isBrowser)('should create a real map instance', async () => {
       const provider = new MapboxUIProvider();
       await provider.initialize({ accessToken: MAPBOX_TOKEN! });
 
@@ -306,10 +323,10 @@ describe('Real Provider Integration Tests', () => {
     );
   });
 
-  describe.skip('Provider Interoperability', () => {
+  describe('Provider Interoperability', () => {
     // UI provider tests require a real browser
-    // Run these tests manually in a browser environment
-    it.skipIf(!MAPTILER_KEY || !MAPBOX_TOKEN)(
+    // Run these tests with: yarn test:browser:integration
+    it.skipIf(!MAPTILER_KEY || !MAPBOX_TOKEN || !isBrowser)(
       'should use MapTiler for UI and Mapbox for API',
       async () => {
         // Initialize UI provider (MapTiler)

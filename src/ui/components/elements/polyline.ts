@@ -12,6 +12,7 @@ import { normalizeCoordinatesArray } from '../../../utils/coordinates';
 import { lineLengthMeters } from '../../../utils/length';
 import { getBounds } from '../../../utils/bounds';
 import type { Bounds } from '../../../types';
+import type { MapEvent } from '../../providers/types';
 
 export interface PolylineOptions {
   points: number[][];
@@ -49,7 +50,7 @@ export class PolylineElement extends BaseElement {
 
   override async connectedCallback() {
     await super.connectedCallback();
-    
+
     if (this.isInitialized) return;
 
     // Generate unique IDs
@@ -129,7 +130,7 @@ export class PolylineElement extends BaseElement {
     });
 
     // Prepare paint properties
-    const paintProperties: any = {
+    const paintProperties: Record<string, unknown> = {
       'line-color': this.color,
       'line-opacity': this.opacity,
       'line-width': this.width,
@@ -158,7 +159,7 @@ export class PolylineElement extends BaseElement {
 
     try {
       // Parse coordinate input
-      let coordinates: any;
+      let coordinates: number[][] | GeoJSON.Position[];
       if (typeof this.points === 'string') {
         coordinates = JSON.parse(this.points);
       } else if (Array.isArray(this.points)) {
@@ -186,7 +187,7 @@ export class PolylineElement extends BaseElement {
         if (this.dashArray.includes('[')) {
           return JSON.parse(this.dashArray);
         } else {
-          return this.dashArray.split(',').map(v => parseFloat(v.trim()));
+          return this.dashArray.split(',').map((v) => parseFloat(v.trim()));
         }
       } else if (Array.isArray(this.dashArray)) {
         return this.dashArray;
@@ -203,15 +204,21 @@ export class PolylineElement extends BaseElement {
 
     // Cursor handling
     this.map.on('mouseenter', this.layerId, () => {
-      if (this.map) this.map.getCanvas().style.cursor = 'pointer';
+      const canvas = this.map?.getCanvas?.();
+      if (canvas) {
+        canvas.style.cursor = 'pointer';
+      }
     });
 
     this.map.on('mouseleave', this.layerId, () => {
-      if (this.map) this.map.getCanvas().style.cursor = '';
+      const canvas = this.map?.getCanvas?.();
+      if (canvas) {
+        canvas.style.cursor = '';
+      }
     });
 
     // Click handling
-    this.map.on('click', this.layerId, (e: any) => {
+    this.map.on('click', this.layerId, (e: MapEvent) => {
       this.dispatchEvent(
         new CustomEvent('polyline-click', {
           detail: { lngLat: e.lngLat, element: this },
@@ -228,7 +235,7 @@ export class PolylineElement extends BaseElement {
       this.map.off('mouseenter', this.layerId);
       this.map.off('mouseleave', this.layerId);
       this.map.off('click', this.layerId);
-    } catch (e) {
+    } catch {
       // Ignore
     }
   }
@@ -242,20 +249,23 @@ export class PolylineElement extends BaseElement {
     }
 
     // Cleanup layers
-    this.cleanupMapLayers([this.layerId].filter(Boolean) as string[], [this.sourceId].filter(Boolean) as string[]);
+    this.cleanupMapLayers(
+      [this.layerId].filter(Boolean) as string[],
+      [this.sourceId].filter(Boolean) as string[]
+    );
   }
 
   private updateStyle(): void {
     if (!this.map || !this.layerId) return;
-    if (!this.map.getLayer(this.layerId)) return;
+    if (!this.map?.getLayer?.(this.layerId)) return;
 
     try {
-      this.map.setPaintProperty(this.layerId, 'line-color', this.color);
-      this.map.setPaintProperty(this.layerId, 'line-opacity', this.opacity);
-      this.map.setPaintProperty(this.layerId, 'line-width', this.width);
+      this.map?.setPaintProperty?.(this.layerId, 'line-color', this.color);
+      this.map?.setPaintProperty?.(this.layerId, 'line-opacity', this.opacity);
+      this.map?.setPaintProperty?.(this.layerId, 'line-width', this.width);
 
       const dashArray = this.parseDashArray();
-      this.map.setPaintProperty(this.layerId, 'line-dasharray', dashArray);
+      this.map?.setPaintProperty?.(this.layerId, 'line-dasharray', dashArray);
     } catch (error) {
       console.warn('Failed to update polyline style:', error);
     }
@@ -265,7 +275,7 @@ export class PolylineElement extends BaseElement {
     if (!this.map || !this.layerId) return;
 
     try {
-      this.map.setLayoutProperty(this.layerId, 'visibility', this.visible ? 'visible' : 'none');
+      this.map?.setLayoutProperty?.(this.layerId, 'visibility', this.visible ? 'visible' : 'none');
     } catch (error) {
       console.warn('Failed to toggle polyline visibility:', error);
     }
@@ -279,7 +289,11 @@ export class PolylineElement extends BaseElement {
     }
   }
 
-  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+  override attributeChangedCallback(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null
+  ): void {
     if (!this.map || oldValue === newValue) return;
 
     switch (name) {
@@ -386,7 +400,7 @@ export class PolylineElement extends BaseElement {
 
     try {
       return getBounds(coordinates);
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -399,7 +413,7 @@ export class PolylineElement extends BaseElement {
 
     try {
       return lineLengthMeters(coordinates);
-    } catch (error) {
+    } catch {
       return 0;
     }
   }
@@ -417,4 +431,3 @@ export class PolylineElement extends BaseElement {
 if (!customElements.get('gk-polyline')) {
   customElements.define('mapi-polyline', PolylineElement);
 }
-

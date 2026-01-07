@@ -1,6 +1,6 @@
 /**
  * Mapbox UI Provider
- * 
+ *
  * Implements BaseUIProvider for Mapbox GL JS
  * Handles map rendering, controls, markers, and popups
  */
@@ -46,6 +46,8 @@ export class MapboxUIProvider extends BaseUIProvider {
       this.sdk = (window as any).mapboxgl;
       if (config?.accessToken) {
         this.sdk.accessToken = config.accessToken;
+        // Ensure it's set on the module itself
+        (this.sdk as any).accessToken = config.accessToken;
       }
       return Promise.resolve(this.sdk);
     }
@@ -56,17 +58,23 @@ export class MapboxUIProvider extends BaseUIProvider {
         // Dynamic import of Mapbox GL JS
         const mapboxModule = await import('mapbox-gl');
 
+        // Mapbox GL JS can be imported as default or named export
+        // Handle both cases
+        const mapboxgl = (mapboxModule as any).default || mapboxModule;
+
         // Set access token if provided
         if (config?.accessToken) {
+          mapboxgl.accessToken = config.accessToken;
+          // Also set on the module itself for compatibility
           (mapboxModule as any).accessToken = config.accessToken;
         }
 
         // Expose to window for backward compatibility
         if (typeof window !== 'undefined') {
-          (window as any).mapboxgl = mapboxModule;
+          (window as any).mapboxgl = mapboxgl;
         }
 
-        this.sdk = mapboxModule;
+        this.sdk = mapboxgl;
         return this.sdk;
       } catch (error) {
         console.error('Failed to load Mapbox GL JS:', error);
@@ -82,9 +90,16 @@ export class MapboxUIProvider extends BaseUIProvider {
       await this.initialize(this.config || {});
     }
 
-    // Ensure access token is set
+    // Ensure access token is set on the SDK module before creating map
+    // Mapbox GL JS requires this to be set before Map instantiation
     if (this.config?.accessToken) {
       (this.sdk as any).accessToken = this.config.accessToken;
+      // Also set on the default export if it exists
+      if ((this.sdk as any).default) {
+        (this.sdk as any).default.accessToken = this.config.accessToken;
+      }
+    } else {
+      throw new Error('Mapbox access token is required. Call initialize() with accessToken first.');
     }
 
     // Build style
@@ -171,4 +186,3 @@ export class MapboxUIProvider extends BaseUIProvider {
     return null;
   }
 }
-
