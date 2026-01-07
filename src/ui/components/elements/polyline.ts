@@ -266,8 +266,8 @@ export class PolylineElement extends BaseElement {
 
       const dashArray = this.parseDashArray();
       this.map?.setPaintProperty?.(this.layerId, 'line-dasharray', dashArray);
-    } catch (error) {
-      console.warn('Failed to update polyline style:', error);
+    } catch {
+      // Silently fail if style update fails
     }
   }
 
@@ -429,5 +429,5 @@ export class PolylineElement extends BaseElement {
 
 // Register the custom element
 if (!customElements.get('gk-polyline')) {
-  customElements.define('mapi-polyline', PolylineElement);
+  customElements.define('gk-polyline', PolylineElement);
 }

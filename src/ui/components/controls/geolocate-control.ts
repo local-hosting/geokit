@@ -1,8 +1,8 @@
 /**
  * Geolocate Control Component
- * 
+ *
  * Provides user location tracking and display
- * 
+ *
  * Usage:
  * <mapi-control-geolocate position="top-left" track-user-location="false"></mapi-control-geolocate>
  */
@@ -23,7 +23,7 @@ export class GeolocateControlElement extends BaseControl {
 
   protected async createControl(): Promise<any> {
     const provider = this.getUIProvider();
-    
+
     const options = {
       trackUserLocation: this.getBooleanAttribute('track-user-location', false, false),
       showAccuracyCircle: this.getBooleanAttribute('show-accuracy-circle', false, true),
@@ -74,7 +74,11 @@ export class GeolocateControlElement extends BaseControl {
     });
   }
 
-  protected handleAttributeChange(name: string, oldValue: string | null, newValue: string | null): void {
+  protected handleAttributeChange(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null
+  ): void {
     this.handleRecreateableAttributeChange(name, oldValue, newValue, [
       'track-user-location',
       'show-accuracy-circle',
@@ -84,7 +88,6 @@ export class GeolocateControlElement extends BaseControl {
 }
 
 // Register custom element
-if (!customElements.get('mapi-control-geolocate')) {
-  customElements.define('mapi-control-geolocate', GeolocateControlElement);
+if (!customElements.get('gk-control-geolocate')) {
+  customElements.define('gk-control-geolocate', GeolocateControlElement);
 }
-

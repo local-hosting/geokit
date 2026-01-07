@@ -1,8 +1,8 @@
 /**
  * Marker Component
- * 
+ *
  * Displays markers on the map with optional popups
- * 
+ *
  * Usage:
  * <mapi-marker lat="40.7128" lng="-74.006" popup="true" title="New York"></mapi-marker>
  */
@@ -10,22 +10,14 @@
 import { BaseElement } from '../base-element';
 
 export class MarkerElement extends BaseElement {
-  static observedAttributes = [
-    'lat',
-    'lng',
-    'title',
-    'popup',
-    'color',
-    'draggable',
-    'visible',
-  ];
+  static observedAttributes = ['lat', 'lng', 'title', 'popup', 'color', 'draggable', 'visible'];
 
   private marker: any = null;
   private popupInstance: any = null;
 
   async connectedCallback(): Promise<void> {
     if (this.isInitialized) return;
-    
+
     // Find parent map
     this.addToParentMap();
     this.isInitialized = true;
@@ -64,7 +56,7 @@ export class MarkerElement extends BaseElement {
     // Add popup if requested
     const hasPopup = this.hasAttribute('popup');
     const title = this.getAttribute('title');
-    
+
     if (hasPopup && title) {
       this.addPopup(title);
     }
@@ -90,7 +82,7 @@ export class MarkerElement extends BaseElement {
       closeButton: true,
       closeOnClick: true,
     });
-    
+
     this.popupInstance.setHTML(content);
     this.marker.setPopup(this.popupInstance);
   }
@@ -143,7 +135,11 @@ export class MarkerElement extends BaseElement {
     this.isInitialized = false;
   }
 
-  protected handleAttributeChange(name: string, _oldValue: string | null, _newValue: string | null): void {
+  protected handleAttributeChange(
+    name: string,
+    _oldValue: string | null,
+    _newValue: string | null
+  ): void {
     if (!this.map) return;
 
     switch (name) {
@@ -223,7 +219,6 @@ export class MarkerElement extends BaseElement {
 }
 
 // Register custom element
-if (!customElements.get('mapi-marker')) {
-  customElements.define('mapi-marker', MarkerElement);
+if (!customElements.get('gk-marker')) {
+  customElements.define('gk-marker', MarkerElement);
 }
-

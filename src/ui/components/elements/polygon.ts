@@ -46,7 +46,9 @@ export class PolygonElement extends BaseElement {
   }
 
   protected async onMapReady(): Promise<void> {
-    await super.onMapReady();
+    // Polygons don't need to wait for idle - just need map and style loaded
+    if (!this.map) return;
+
     this.waitForStyleLoaded(() => {
       this.createPolygon();
     });
@@ -291,6 +293,6 @@ export class PolygonElement extends BaseElement {
 }
 
 // Register custom element
-if (!customElements.get('mapi-polygon')) {
-  customElements.define('mapi-polygon', PolygonElement);
+if (!customElements.get('gk-polygon')) {
+  customElements.define('gk-polygon', PolygonElement);
 }

@@ -247,5 +247,5 @@ export class IsochroneElement extends BaseElement {
 
 // Register the custom element
 if (!customElements.get('gk-isochrone')) {
-  customElements.define('mapi-isochrone', IsochroneElement);
+  customElements.define('gk-isochrone', IsochroneElement);
 }
