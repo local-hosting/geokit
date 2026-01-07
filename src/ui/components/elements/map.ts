@@ -10,8 +10,8 @@
 import { BaseElement } from '../base-element';
 import { registerUIProvider, setUIProvider } from '../../providers/registry';
 import { MapTilerUIProvider } from '../../providers/maptiler-provider';
-import { simplifyPolygonRingToMaxPoints } from '../../../utils/simplify';
-import type { LatLon } from '../../../types';
+import { PointElement } from './point';
+import { PolygonElement } from './polygon';
 import type { MapInstance } from '../../providers/types';
 
 export class MapElement extends BaseElement {
@@ -26,25 +26,36 @@ export class MapElement extends BaseElement {
     'bearing',
     'interactive',
     'hide-controls',
+    'auto-hide-controls',
+    'hide-attribution',
+    'provider',
   ];
+
+  private _controlsVisible: boolean = true;
+  private _mouseEnterHandler: (() => void) | null = null;
+  private _mouseLeaveHandler: (() => void) | null = null;
 
   constructor() {
     super();
     this.map = null;
     this.isInitialized = false;
+    
+    // Set display properties for custom element
+    if (!this.style.display || this.style.display === 'inline') {
+      this.style.display = 'block';
+    }
+    if (!this.style.width) {
+      this.style.width = '100%';
+    }
+    if (!this.style.height) {
+      this.style.height = '100%';
+    }
+    if (!this.style.position || this.style.position === 'static') {
+      this.style.position = 'relative';
+    }
   }
 
   async connectedCallback(): Promise<void> {
-    // Setup DOM structure if not already present
-    if (!this.querySelector('.gk-map-container')) {
-      const container = document.createElement('div');
-      container.className = 'gk-map-container';
-      container.style.width = '100%';
-      container.style.height = '100%';
-      container.style.position = 'relative';
-      this.appendChild(container);
-    }
-
     // Prevent re-initialization if map already exists (important for map pool reuse)
     // When maps are moved between cards, connectedCallback can be called again,
     // but we should reuse the existing map instance to avoid creating new WebGL contexts
@@ -66,6 +77,9 @@ export class MapElement extends BaseElement {
    * The map will only be cleaned up if explicitly removed via remove() or similar.
    */
   disconnectedCallback(): void {
+    // Clean up auto-hide listeners
+    this.cleanupAutoHideControls();
+    
     // Don't call super.disconnectedCallback() because it resets this.map = null
     // We want to preserve the map instance for reuse in the map pool
     // Only clean up if we have a flag indicating permanent removal
@@ -76,25 +90,72 @@ export class MapElement extends BaseElement {
 
   async initializeMap(): Promise<void> {
     try {
-      // Auto-initialize MapTiler provider if api-key is present and no provider is set
+      // Get provider name from attribute or try auto-detection
+      const providerName = this.getAttribute('provider');
       const apiKey = this.getAttribute('api-key');
-      try {
-        this.getUIProvider(); // Check if provider exists
-      } catch {
-        // No provider set, auto-initialize MapTiler if we have an API key
-        if (apiKey) {
-          console.warn('[geokit] Auto-initializing MapTiler provider from api-key attribute');
-          registerUIProvider('maptiler', new MapTilerUIProvider());
-          await setUIProvider('maptiler', { apiKey });
+      const accessToken = this.getAttribute('access-token');
+      
+      let provider;
+      
+      // If provider is explicitly specified, use it
+      if (providerName) {
+        const { getProviderByName, registerUIProvider } = await import('../../providers/registry');
+        let existingProvider = await getProviderByName(providerName).catch(() => null);
+        
+        if (!existingProvider) {
+          // Provider not registered, register and initialize it
+          if (providerName === 'maptiler') {
+            // Load MapTiler CSS dynamically
+            // @ts-expect-error - CSS imports are handled by Vite at build time
+            await import('@maptiler/sdk/dist/maptiler-sdk.css');
+            
+            registerUIProvider('maptiler', new MapTilerUIProvider());
+            // Only pass config if explicitly provided via attributes
+            provider = await getProviderByName('maptiler', apiKey ? { apiKey } : undefined);
+          } else if (providerName === 'mapbox') {
+            // Load Mapbox CSS dynamically
+            // @ts-expect-error - CSS imports are handled by Vite at build time
+            await import('mapbox-gl/dist/mapbox-gl.css');
+            
+            const { MapboxUIProvider } = await import('../../providers/mapbox-provider');
+            registerUIProvider('mapbox', new MapboxUIProvider());
+            // Only pass config if explicitly provided via attributes
+            const token = accessToken || (import.meta as any).env?.MAPBOX_ACCESS_TOKEN;
+            provider = await getProviderByName('mapbox', token ? { accessToken: token } : undefined);
+          } else {
+            throw new Error(`Unknown provider: ${providerName}. Supported: maptiler, mapbox`);
+          }
         } else {
-          throw new Error(
-            'No UI provider set and no api-key attribute found. Either set a UI provider or add api-key attribute to <mapi-map>'
-          );
+          // Initialize existing provider with config (if provided)
+          let config: { accessToken?: string } | { apiKey?: string } | undefined = undefined;
+          if (providerName === 'mapbox') {
+            const token = accessToken || (import.meta as any).env?.MAPBOX_ACCESS_TOKEN;
+            if (token) config = { accessToken: token };
+          } else if (apiKey) {
+            config = { apiKey };
+          }
+          provider = await getProviderByName(providerName, config);
+        }
+      } else {
+        // Auto-initialize MapTiler provider if api-key is present
+        try {
+          provider = this.getUIProvider(); // Check if default provider exists
+        } catch {
+          // No provider set, auto-initialize MapTiler if we have an API key
+          if (apiKey) {
+            console.warn('[geokit] Auto-initializing MapTiler provider from api-key attribute');
+            registerUIProvider('maptiler', new MapTilerUIProvider());
+            const { getProviderByName } = await import('../../providers/registry');
+            provider = await getProviderByName('maptiler', { apiKey });
+          } else {
+            throw new Error(
+              'No UI provider set. Add provider="maptiler" or provider="mapbox" attribute, or provide api-key for auto MapTiler initialization'
+            );
+          }
         }
       }
 
-      const provider = this.getUIProvider();
-      const container = this.querySelector('.gk-map-container') as HTMLElement;
+      const container = this as HTMLElement;
 
       if (!container) {
         throw new Error('Map container not found');
@@ -125,23 +186,15 @@ export class MapElement extends BaseElement {
         styleAlreadyLoaded = false;
       }
 
+      // Set up features based on attributes
+      this.setupHideAttribution();
+
       if (styleAlreadyLoaded) {
         // Style already loaded, wait for idle event to ensure control system is ready
         this.isInitialized = true;
-        this.map.once('idle', () => {
-          this.dispatchEvent(
-            new CustomEvent('mapi-ready', {
-              detail: { map: this.map, element: this },
-              bubbles: true,
-            })
-          );
-        });
-      } else {
-        // Wait for map to be fully loaded, then wait for idle
-        this.map.on('load', () => {
-          this.isInitialized = true;
-          // Wait for idle to ensure internal control system is initialized
-          this.map!.once('idle', () => {
+        if (this.map) {
+          this.map.once('idle', () => {
+            this.setupAutoHideControls();
             this.dispatchEvent(
               new CustomEvent('mapi-ready', {
                 detail: { map: this.map, element: this },
@@ -149,11 +202,173 @@ export class MapElement extends BaseElement {
               })
             );
           });
-        });
+        }
+      } else {
+        // Wait for map to be fully loaded, then wait for idle
+        if (this.map) {
+          this.map.on('load', () => {
+            this.isInitialized = true;
+            // Wait for idle to ensure internal control system is initialized
+            if (this.map) {
+              this.map.once('idle', () => {
+                this.setupAutoHideControls();
+                this.dispatchEvent(
+                  new CustomEvent('mapi-ready', {
+                    detail: { map: this.map, element: this },
+                    bubbles: true,
+                  })
+                );
+              });
+            }
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to initialize map:', error);
     }
+  }
+
+  /**
+   * Set up hide attribution behavior
+   * When enabled, hides all attribution elements including logos
+   */
+  private setupHideAttribution(): void {
+    if (!this.hasAttribute('hide-attribution')) return;
+
+    this.injectHideAttributionStyles();
+    this.classList.add('gk-hide-attribution');
+  }
+
+  /**
+   * Inject CSS styles to hide attribution (once per document)
+   */
+  private injectHideAttributionStyles(): void {
+    const styleId = 'gk-hide-attribution-style';
+    if (document.getElementById(styleId)) return;
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      .gk-hide-attribution .maplibregl-ctrl-attrib,
+      .gk-hide-attribution .mapboxgl-ctrl-attrib,
+      .gk-hide-attribution .maplibregl-ctrl-logo,
+      .gk-hide-attribution .mapboxgl-ctrl-logo,
+      .gk-hide-attribution .maptiler-ctrl-logo,
+      .gk-hide-attribution .maplibregl-compact-show,
+      .gk-hide-attribution .mapboxgl-compact-show,
+      .gk-hide-attribution a[href*="maptiler"],
+      .gk-hide-attribution a[href*="mapbox"],
+      .gk-hide-attribution a[href*="maplibre"],
+      .gk-hide-attribution a[href*="openstreetmap"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  /**
+   * Set up auto-hide controls behavior
+   * When enabled, controls are hidden until the user hovers/focuses the map
+   */
+  private setupAutoHideControls(): void {
+    if (!this.hasAttribute('auto-hide-controls')) return;
+
+    // Inject CSS for auto-hide behavior (only once)
+    this.injectAutoHideStyles();
+
+    // Initially hide controls via class
+    this.classList.add('gk-controls-hidden');
+    this._controlsVisible = false;
+
+    // Show controls on mouse enter
+    this._mouseEnterHandler = () => this.setControlsVisible(true);
+    this._mouseLeaveHandler = () => this.setControlsVisible(false);
+
+    this.addEventListener('mouseenter', this._mouseEnterHandler);
+    this.addEventListener('mouseleave', this._mouseLeaveHandler);
+  }
+
+  /**
+   * Inject CSS styles for auto-hide controls (once per document)
+   */
+  private injectAutoHideStyles(): void {
+    const styleId = 'gk-auto-hide-controls-style';
+    if (document.getElementById(styleId)) return;
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      .gk-controls-hidden .maplibregl-ctrl-group,
+      .gk-controls-hidden .mapboxgl-ctrl-group,
+      .gk-controls-hidden .maplibregl-ctrl,
+      .gk-controls-hidden .mapboxgl-ctrl {
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: opacity 0.2s ease-in-out !important;
+      }
+      gk-map:not(.gk-controls-hidden) .maplibregl-ctrl-group,
+      gk-map:not(.gk-controls-hidden) .mapboxgl-ctrl-group,
+      gk-map:not(.gk-controls-hidden) .maplibregl-ctrl,
+      gk-map:not(.gk-controls-hidden) .mapboxgl-ctrl {
+        opacity: 1;
+        pointer-events: auto;
+        transition: opacity 0.2s ease-in-out;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  /**
+   * Clean up auto-hide event listeners
+   */
+  private cleanupAutoHideControls(): void {
+    if (this._mouseEnterHandler) {
+      this.removeEventListener('mouseenter', this._mouseEnterHandler);
+      this._mouseEnterHandler = null;
+    }
+    if (this._mouseLeaveHandler) {
+      this.removeEventListener('mouseleave', this._mouseLeaveHandler);
+      this._mouseLeaveHandler = null;
+    }
+  }
+
+  /**
+   * Show or hide map controls
+   * Works with SDK controls added via addControl()
+   * @param visible - Whether controls should be visible
+   */
+  public setControlsVisible(visible: boolean): void {
+    this._controlsVisible = visible;
+
+    if (visible) {
+      this.classList.remove('gk-controls-hidden');
+    } else {
+      this.classList.add('gk-controls-hidden');
+    }
+
+    this.dispatchEvent(
+      new CustomEvent('controls-visibility-change', {
+        detail: { visible },
+        bubbles: true,
+      })
+    );
+  }
+
+  /**
+   * Check if controls are currently visible
+   */
+  public areControlsVisible(): boolean {
+    return this._controlsVisible;
+  }
+
+  /**
+   * Toggle controls visibility
+   */
+  public toggleControls(): void {
+    this.setControlsVisible(!this._controlsVisible);
   }
 
   protected handleAttributeChange(
@@ -161,7 +376,18 @@ export class MapElement extends BaseElement {
     _oldValue: string | null,
     newValue: string | null
   ): void {
-    if (!this.map || !newValue) return;
+    // Handle auto-hide-controls toggle (doesn't require map)
+    if (name === 'auto-hide-controls') {
+      if (newValue !== null) {
+        this.setupAutoHideControls();
+      } else {
+        this.cleanupAutoHideControls();
+        this.setControlsVisible(true);
+      }
+      return;
+    }
+
+    if (!this.map) return;
 
     switch (name) {
       case 'lat':
@@ -169,21 +395,27 @@ export class MapElement extends BaseElement {
         this.updateCenter();
         break;
       case 'zoom':
-        const setZoom = (this.map as { setZoom?: (zoom: number) => void }).setZoom;
-        if (setZoom) {
-          setZoom(parseFloat(newValue));
+        if (newValue) {
+          const setZoom = (this.map as { setZoom?: (zoom: number) => void }).setZoom;
+          if (setZoom) {
+            setZoom(parseFloat(newValue));
+          }
         }
         break;
       case 'pitch':
-        const setPitch = (this.map as { setPitch?: (pitch: number) => void }).setPitch;
-        if (setPitch) {
-          setPitch(parseFloat(newValue));
+        if (newValue) {
+          const setPitch = (this.map as { setPitch?: (pitch: number) => void }).setPitch;
+          if (setPitch) {
+            setPitch(parseFloat(newValue));
+          }
         }
         break;
       case 'bearing':
-        const setBearing = (this.map as { setBearing?: (bearing: number) => void }).setBearing;
-        if (setBearing) {
-          setBearing(parseFloat(newValue));
+        if (newValue) {
+          const setBearing = (this.map as { setBearing?: (bearing: number) => void }).setBearing;
+          if (setBearing) {
+            setBearing(parseFloat(newValue));
+          }
         }
         break;
     }
@@ -347,7 +579,7 @@ export class MapElement extends BaseElement {
 
   /**
    * Add GeoJSON points to the map
-   * Accepts a GeoJSON FeatureCollection and converts to mapi-point elements
+   * Delegates to PointElement.createFromGeoJSON() and appends results
    *
    * @param geojson - GeoJSON FeatureCollection with Point features
    * @param options - Optional styling and behavior options
@@ -366,83 +598,18 @@ export class MapElement extends BaseElement {
       shadowOpacity?: number;
       strokeWidth?: number;
       strokeColor?: string;
-      idProperty?: string; // Property to use for point-id attribute
-      nameProperty?: string; // Property to use for point-name attribute
+      idProperty?: string;
+      nameProperty?: string;
     } = {}
   ): number {
-    const {
-      color = '#3b82f6',
-      size = 8,
-      opacity = 1,
-      blur = 0,
-      shadow = true,
-      shadowColor = '#000000',
-      shadowBlur = 1,
-      shadowOpacity = 0.15,
-      strokeWidth = 0,
-      strokeColor = '#ffffff',
-      idProperty = 'id',
-      nameProperty = 'name',
-    } = options;
-
-    let addedCount = 0;
-
-    geojson.features.forEach((feature) => {
-      if (feature.geometry.type !== 'Point') {
-        console.warn('Skipping non-Point feature:', feature);
-        return;
-      }
-
-      const [lng, lat] = feature.geometry.coordinates;
-      const point = document.createElement('gk-point');
-
-      // Set coordinates
-      point.setAttribute('lat', String(lat));
-      point.setAttribute('lng', String(lng));
-
-      // Set styling
-      point.setAttribute('color', color);
-      point.setAttribute('size', String(size));
-      point.setAttribute('opacity', String(opacity));
-      point.setAttribute('blur', String(blur));
-
-      // Set shadow
-      if (shadow) {
-        point.setAttribute('shadow', '');
-        point.setAttribute('shadow-color', shadowColor);
-        point.setAttribute('shadow-blur', String(shadowBlur));
-        point.setAttribute('shadow-opacity', String(shadowOpacity));
-      }
-
-      // Set stroke
-      point.setAttribute('stroke-width', String(strokeWidth));
-      if (strokeWidth > 0) {
-        point.setAttribute('stroke-color', strokeColor);
-      }
-
-      // Set properties from feature
-      if (feature.properties) {
-        if (idProperty && feature.properties[idProperty]) {
-          point.setAttribute('point-id', String(feature.properties[idProperty]));
-        }
-        if (nameProperty && feature.properties[nameProperty]) {
-          point.setAttribute('point-name', String(feature.properties[nameProperty]));
-        }
-
-        // Store all properties as data attributes for app use
-        point.setAttribute('data-properties', JSON.stringify(feature.properties));
-      }
-
-      this.appendChild(point);
-      addedCount++;
-    });
-
-    return addedCount;
+    const points = PointElement.createFromGeoJSON(geojson, options);
+    points.forEach((point) => this.appendChild(point));
+    return points.length;
   }
 
   /**
    * Add GeoJSON polygon to the map
-   * Accepts a GeoJSON Feature or Geometry with Polygon/MultiPolygon
+   * Delegates to PolygonElement.createFromGeoJSON() and appends results
    *
    * @param geojson - GeoJSON Feature or Geometry
    * @param options - Optional styling options
@@ -461,107 +628,9 @@ export class MapElement extends BaseElement {
       maxPoints?: number;
     } = {}
   ): number {
-    const {
-      fillColor = '#3b82f6',
-      fillOpacity = 0.1,
-      strokeColor = '#3b82f6',
-      strokeWidth = 2,
-      strokeOpacity = 1,
-      visible = true,
-      simplify = true,
-      maxPoints = 100,
-    } = options;
-
-    let addedCount = 0;
-
-    // Extract geometry from Feature or use directly
-    const geometry = 'geometry' in geojson ? geojson.geometry : geojson;
-
-    if (geometry.type === 'Polygon') {
-      this._addPolygonRings(geometry.coordinates, {
-        fillColor,
-        fillOpacity,
-        strokeColor,
-        strokeWidth,
-        strokeOpacity,
-        visible,
-        simplify,
-        maxPoints,
-      });
-      addedCount = 1;
-    } else if (geometry.type === 'MultiPolygon') {
-      geometry.coordinates.forEach((polygonCoords) => {
-        this._addPolygonRings(polygonCoords, {
-          fillColor,
-          fillOpacity,
-          strokeColor,
-          strokeWidth,
-          strokeOpacity,
-          visible,
-          simplify,
-          maxPoints,
-        });
-        addedCount++;
-      });
-    } else {
-      console.warn('Unsupported geometry type for polygon:', geometry.type);
-    }
-
-    return addedCount;
-  }
-
-  /**
-   * Helper to add polygon rings (outer + holes)
-   * Note: Currently only supports outer ring (holes not supported by mapi-polygon yet)
-   */
-  private _addPolygonRings(
-    coordinates: number[][][],
-    options: {
-      fillColor: string;
-      fillOpacity: number;
-      strokeColor: string;
-      strokeWidth: number;
-      strokeOpacity: number;
-      visible: boolean;
-      simplify: boolean;
-      maxPoints: number;
-    }
-  ): void {
-    // Only process the first ring (outer boundary)
-    // Subsequent rings are holes, which mapi-polygon doesn't support yet
-    const outerRing = coordinates[0];
-    if (!outerRing) {
-      console.warn('Polygon has no outer ring');
-      return;
-    }
-
-    // Convert [lng, lat] to [lat, lng] format for geokit utils
-    let points: LatLon[] = outerRing.map(([lng, lat]) => [lat, lng]);
-
-    // Simplify if requested using geokit's Douglas-Peucker algorithm
-    if (options.simplify && points.length > options.maxPoints) {
-      points = simplifyPolygonRingToMaxPoints(options.maxPoints)(points);
-    }
-
-    // Skip if too few points
-    if (points.length < 3) {
-      console.warn('Skipping polygon ring with fewer than 3 points');
-      return;
-    }
-
-    // Convert to array format for gk-polygon (it normalizes internally)
-    const pointArray = points.map(([lat, lng]) => [lat, lng]);
-
-    const polygon = document.createElement('gk-polygon');
-    polygon.setAttribute('points', JSON.stringify(pointArray));
-    polygon.setAttribute('fill-color', options.fillColor);
-    polygon.setAttribute('fill-opacity', String(options.fillOpacity));
-    polygon.setAttribute('stroke-color', options.strokeColor);
-    polygon.setAttribute('stroke-width', String(options.strokeWidth));
-    polygon.setAttribute('stroke-opacity', String(options.strokeOpacity));
-    polygon.setAttribute('visible', String(options.visible));
-
-    this.appendChild(polygon);
+    const polygons = PolygonElement.createFromGeoJSON(geojson, options);
+    polygons.forEach((polygon) => this.appendChild(polygon));
+    return polygons.length;
   }
 }
 

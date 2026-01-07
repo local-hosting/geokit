@@ -71,8 +71,59 @@ export class PointElement extends BaseElement {
 
   private hasGeneratedIds = false;
 
+  // Store options as properties (works in JSDOM without setAttribute issues)
+  private _propLat?: number;
+  private _propLng?: number;
+  private _propColor?: string;
+  private _propSize?: number;
+  private _propOpacity?: number;
+  private _propBlur?: number;
+  private _propStrokeWidth?: number;
+  private _propStrokeColor?: string;
+  private _propStrokeOpacity?: number;
+  private _propShadow?: boolean;
+  private _propShadowColor?: string;
+  private _propShadowBlur?: number;
+  private _propShadowOpacity?: number;
+  private _propPointId?: string;
+  private _propPointName?: string;
+
+  /**
+   * Apply stored create options as properties (not attributes)
+   * This avoids JSDOM's buggy setAttribute for custom elements
+   */
+  protected applyCreateOptions(options: PointOptions): void {
+    // Store as properties - getters will read from these
+    this._propLat = options.lat;
+    this._propLng = options.lng;
+    if (options.color) this._propColor = options.color;
+    if (options.size !== undefined) this._propSize = options.size;
+    if (options.opacity !== undefined) this._propOpacity = options.opacity;
+    if (options.blur !== undefined) this._propBlur = options.blur;
+    if (options.strokeWidth !== undefined) this._propStrokeWidth = options.strokeWidth;
+    if (options.strokeColor) this._propStrokeColor = options.strokeColor;
+    if (options.strokeOpacity !== undefined) this._propStrokeOpacity = options.strokeOpacity;
+    if (options.shadow) {
+      this._propShadow = true;
+      if (options.shadowColor) this._propShadowColor = options.shadowColor;
+      if (options.shadowBlur !== undefined) this._propShadowBlur = options.shadowBlur;
+      if (options.shadowOpacity !== undefined) this._propShadowOpacity = options.shadowOpacity;
+    }
+    if (options.pointId) this._propPointId = options.pointId;
+    if (options.pointName) this._propPointName = options.pointName;
+  }
+
   override async connectedCallback() {
     try {
+      // Apply options from create() factory method as attributes
+      // This ensures attributes are set after element is connected (works in JSDOM/Happy-DOM)
+      const createOptions = (this as any)._createOptions;
+      if (createOptions) {
+        this.applyCreateOptions(createOptions);
+        // Clear stored options
+        (this as any)._createOptions = undefined;
+      }
+      
       // Generate unique IDs BEFORE calling super (which sets isInitialized)
       if (!this.hasGeneratedIds) {
         const uuid = crypto.randomUUID();
@@ -117,7 +168,7 @@ export class PointElement extends BaseElement {
 
       if (pointElement === this) return;
 
-      const thisPointId = this.getAttribute('point-id');
+      const thisPointId = this._propPointId ?? this.safeGetAttribute('point-id');
       if (excludePointId && thisPointId && String(thisPointId) === String(excludePointId)) {
         return;
       }
@@ -135,7 +186,7 @@ export class PointElement extends BaseElement {
 
       if (pointElement === this) return;
 
-      const thisPointId = this.getAttribute('point-id');
+      const thisPointId = this._propPointId ?? this.safeGetAttribute('point-id');
       if (excludePointId && thisPointId && String(thisPointId) === String(excludePointId)) {
         return;
       }
@@ -163,8 +214,9 @@ export class PointElement extends BaseElement {
   private addPoint(): void {
     if (!this.map) return;
 
-    const lat = parseFloat(this.getAttribute('lat') || '');
-    const lng = parseFloat(this.getAttribute('lng') || '');
+    // Read from properties first (set by create()), then fall back to attributes
+    const lat = this._propLat ?? parseFloat(this.safeGetAttribute('lat') || '');
+    const lng = this._propLng ?? parseFloat(this.safeGetAttribute('lng') || '');
 
     // Skip if attributes haven't been set yet
     if (isNaN(lat) || isNaN(lng)) {
@@ -183,9 +235,9 @@ export class PointElement extends BaseElement {
     // Remove existing point
     this.removePoint();
 
-    // Get point metadata
-    const pointId = this.getAttribute('point-id');
-    const pointName = this.getAttribute('point-name');
+    // Get point metadata - read from properties first (set by create())
+    const pointId = this._propPointId ?? this.safeGetAttribute('point-id');
+    const pointName = this._propPointName ?? this.safeGetAttribute('point-name');
 
     // Create GeoJSON point data
     const pointData: GeoJSON.FeatureCollection = {
@@ -326,10 +378,12 @@ export class PointElement extends BaseElement {
       const pointId =
         (feature.properties as Record<string, unknown>)?.['point-id'] ||
         (feature.properties as Record<string, unknown>)?.['id'] ||
-        this.getAttribute('point-id');
+        this._propPointId ||
+        this.safeGetAttribute('point-id');
       const pointName =
         (feature.properties as Record<string, unknown>)?.['point-name'] ||
-        this.getAttribute('point-name');
+        this._propPointName ||
+        this.safeGetAttribute('point-name');
 
       if (pointId || pointName) {
         // Create a proper GeoJSON Feature for type safety
@@ -664,64 +718,179 @@ export class PointElement extends BaseElement {
     super.disconnectedCallback();
   }
 
-  // Getters
+  // Getters - read from properties first (set by create()), then fall back to attributes
   get color(): string {
-    return this.getAttribute('color') || '#ff0000';
+    return this._propColor ?? this.safeGetAttribute('color') ?? '#ff0000';
   }
 
   get size(): number {
-    return parseInt(this.getAttribute('size') || '6') || 6;
+    if (this._propSize !== undefined) return this._propSize;
+    return parseInt(this.safeGetAttribute('size') || '6') || 6;
   }
 
   get opacity(): number {
-    return parseFloat(this.getAttribute('opacity') || '1.0') || 1.0;
+    if (this._propOpacity !== undefined) return this._propOpacity;
+    return parseFloat(this.safeGetAttribute('opacity') || '1.0') || 1.0;
   }
 
   get pointBlur(): number {
-    return parseFloat(this.getAttribute('blur') || '0') || 0;
+    if (this._propBlur !== undefined) return this._propBlur;
+    return parseFloat(this.safeGetAttribute('blur') || '0') || 0;
   }
 
   get strokeColor(): string {
-    return this.getAttribute('stroke-color') || '#ffffff';
+    return this._propStrokeColor ?? this.safeGetAttribute('stroke-color') ?? '#ffffff';
   }
 
   get strokeWidth(): number {
-    const strokeWidth = this.getAttribute('stroke-width');
-    if (strokeWidth === null || strokeWidth === undefined) return 1;
+    if (this._propStrokeWidth !== undefined) return this._propStrokeWidth;
+    const strokeWidth = this.safeGetAttribute('stroke-width');
+    if (strokeWidth === null || strokeWidth === undefined) return 0;
     const parsed = parseFloat(strokeWidth);
-    return isNaN(parsed) ? 1 : parsed;
+    return isNaN(parsed) ? 0 : parsed;
   }
 
   get strokeOpacity(): number {
-    return parseFloat(this.getAttribute('stroke-opacity') || '0.8') || 0.8;
+    if (this._propStrokeOpacity !== undefined) return this._propStrokeOpacity;
+    return parseFloat(this.safeGetAttribute('stroke-opacity') || '0.8') || 0.8;
   }
 
   get shadow(): boolean {
-    return this.hasAttribute('shadow') && this.getAttribute('shadow') !== 'false';
+    if (this._propShadow !== undefined) return this._propShadow;
+    const shadowAttr = this.safeGetAttribute('shadow');
+    return shadowAttr !== null && shadowAttr !== 'false';
   }
 
   get shadowColor(): string {
-    return this.getAttribute('shadow-color') || '#000000';
+    return this._propShadowColor ?? this.safeGetAttribute('shadow-color') ?? '#000000';
   }
 
   get shadowBlur(): number {
-    return parseFloat(this.getAttribute('shadow-blur') || '0.8') || 0.8;
+    if (this._propShadowBlur !== undefined) return this._propShadowBlur;
+    return parseFloat(this.safeGetAttribute('shadow-blur') || '0.8') || 0.8;
   }
 
   get shadowOpacity(): number {
-    return parseFloat(this.getAttribute('shadow-opacity') || '0.4') || 0.4;
+    if (this._propShadowOpacity !== undefined) return this._propShadowOpacity;
+    return parseFloat(this.safeGetAttribute('shadow-opacity') || '0.4') || 0.4;
   }
 
   // Public API
   updatePosition(lat: number, lng: number): void {
-    this.setAttribute('lat', lat.toString());
-    this.setAttribute('lng', lng.toString());
+    this._propLat = lat;
+    this._propLng = lng;
+    this.safeSetAttribute('lat', lat.toString());
+    this.safeSetAttribute('lng', lng.toString());
   }
 
   updateStyle(color?: string, size?: number, opacity?: number): void {
-    if (color !== undefined) this.setAttribute('color', color);
-    if (size !== undefined) this.setAttribute('size', size.toString());
-    if (opacity !== undefined) this.setAttribute('opacity', opacity.toString());
+    if (color !== undefined) {
+      this._propColor = color;
+      this.safeSetAttribute('color', color);
+    }
+    if (size !== undefined) {
+      this._propSize = size;
+      this.safeSetAttribute('size', size.toString());
+    }
+    if (opacity !== undefined) {
+      this._propOpacity = opacity;
+      this.safeSetAttribute('opacity', opacity.toString());
+    }
+  }
+
+  /**
+   * Factory method to create and configure a point element
+   * @param options - Point configuration options
+   * @returns Configured point element
+   */
+  static create(options: PointOptions): PointElement {
+    const point = document.createElement('gk-point') as PointElement;
+    
+    // Store options to set as attributes when element is connected to DOM
+    // This avoids JSDOM/Happy-DOM limitations where attributes can't be set before connection
+    (point as any)._createOptions = options;
+    
+    return point;
+  }
+
+  /**
+   * Create multiple point elements from GeoJSON FeatureCollection
+   * @param geojson - GeoJSON FeatureCollection with Point features
+   * @param options - Optional styling and behavior options
+   * @returns Array of configured point elements
+   */
+  static createFromGeoJSON(
+    geojson: GeoJSON.FeatureCollection,
+    options: {
+      color?: string;
+      size?: number;
+      opacity?: number;
+      blur?: number;
+      shadow?: boolean;
+      shadowColor?: string;
+      shadowBlur?: number;
+      shadowOpacity?: number;
+      strokeWidth?: number;
+      strokeColor?: string;
+      idProperty?: string;
+      nameProperty?: string;
+    } = {}
+  ): PointElement[] {
+    const {
+      color = '#3b82f6',
+      size = 8,
+      opacity = 1,
+      blur = 0,
+      shadow = true,
+      shadowColor = '#000000',
+      shadowBlur = 1,
+      shadowOpacity = 0.15,
+      strokeWidth = 0,
+      strokeColor = '#ffffff',
+      idProperty = 'id',
+      nameProperty = 'name',
+    } = options;
+
+    const points: PointElement[] = [];
+
+    geojson.features.forEach((feature) => {
+      if (feature.geometry.type !== 'Point') {
+        console.warn('Skipping non-Point feature:', feature);
+        return;
+      }
+
+      const [lng, lat] = feature.geometry.coordinates;
+      
+      const point = PointElement.create({
+        lat,
+        lng,
+        color,
+        size,
+        opacity,
+        blur,
+        shadow,
+        shadowColor,
+        shadowBlur,
+        shadowOpacity,
+        strokeWidth,
+        strokeColor,
+        pointId: feature.properties?.[idProperty] 
+          ? String(feature.properties[idProperty]) 
+          : undefined,
+        pointName: feature.properties?.[nameProperty]
+          ? String(feature.properties[nameProperty]) 
+          : undefined,
+      });
+
+      // Store all properties for app use (as property to avoid JSDOM issues)
+      if (feature.properties) {
+        (point as any)._dataProperties = feature.properties;
+      }
+
+      points.push(point);
+    });
+
+    return points;
   }
 }
 
