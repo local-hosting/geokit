@@ -16,6 +16,9 @@ interface SlotInfo {
   isVisible: boolean; // Track visibility separately
 }
 
+// Debounce delay - wait for scrolling to stop before activating
+const SCROLL_DEBOUNCE_MS = 150;
+
 export class MapCollectionElement extends BaseElement {
   static observedAttributes = ['pool-size', 'api-key', 'map-style', 'viewport-padding'];
 
@@ -28,6 +31,7 @@ export class MapCollectionElement extends BaseElement {
   private viewportPadding: number = 300;
   private _apiKey: string | null = null;
   private _mapStyle: string | null = null;
+  private scrollDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     super();
@@ -87,11 +91,14 @@ export class MapCollectionElement extends BaseElement {
   private async initialize(): Promise<void> {
     if (this.initialized) return;
 
+    // Always setup observers first
+    this.setupIntersectionObserver();
+    this.setupMutationObserver();
+
     const mapElements = Array.from(this.querySelectorAll('gk-map')) as MapElement[];
 
     if (mapElements.length === 0) {
-      console.warn('[MapCollection] No gk-map elements found');
-      this.setupMutationObserver();
+      console.log('[MapCollection] No gk-map elements found - watching for dynamic additions');
       this.initialized = true;
       return;
     }
@@ -109,19 +116,17 @@ export class MapCollectionElement extends BaseElement {
     });
 
     this.initialized = true;
-    this.setupIntersectionObserver();
-    this.setupMutationObserver();
     this.dispatchEvent(new CustomEvent('map-collection-ready', { bubbles: true }));
   }
 
   /**
    * IntersectionObserver ONLY updates visibility state
-   * It does NOT directly activate/deactivate
+   * Activation is DEBOUNCED - waits for scrolling to stop
    */
   private setupIntersectionObserver(): void {
     this.intersectionObserver = new IntersectionObserver(
       (entries) => {
-        // First pass: update visibility state
+        // Update visibility state immediately
         for (const entry of entries) {
           const slotInfo = this.slots.find((s) => s.slotElement === entry.target);
           if (slotInfo) {
@@ -129,8 +134,13 @@ export class MapCollectionElement extends BaseElement {
           }
         }
 
-        // Second pass: activate newly visible slots (if room)
-        this.processVisibilityChanges();
+        // Debounce activation - wait for scrolling to stop
+        if (this.scrollDebounceTimer) {
+          clearTimeout(this.scrollDebounceTimer);
+        }
+        this.scrollDebounceTimer = setTimeout(() => {
+          this.processVisibilityChanges();
+        }, SCROLL_DEBOUNCE_MS);
       },
       {
         root: null,
@@ -160,19 +170,24 @@ export class MapCollectionElement extends BaseElement {
    * Activate a slot - will make room if needed
    */
   private async activateSlot(slotInfo: SlotInfo): Promise<void> {
+    // Already active or being activated - skip
     if (slotInfo.isActive) return;
+
+    // Skip if no longer visible (user scrolled away)
+    if (!slotInfo.isVisible) return;
 
     // Make room if needed
     while (this.activeCount >= this.poolSize) {
       const deactivated = this.deactivateOneInvisible();
       if (!deactivated) {
-        console.warn(
-          '[MapCollection] Pool full, cannot activate:',
-          this.getSlotId(slotInfo.slotElement)
-        );
+        // Pool full with all visible maps - don't log warning, this is normal
         return;
       }
     }
+
+    // Mark active SYNCHRONOUSLY to prevent race conditions
+    slotInfo.isActive = true;
+    this.activeCount++;
 
     // Activate
     slotInfo.mapElement.ensureAttributes({
@@ -181,11 +196,19 @@ export class MapCollectionElement extends BaseElement {
       mapStyle: this.mapStyle,
     });
 
-    const success = await slotInfo.mapElement.activate(this.activeCount);
-    if (success) {
-      slotInfo.isActive = true;
-      this.activeCount++;
-      console.warn(
+    const success = await slotInfo.mapElement.activate(this.activeCount - 1);
+    if (!success) {
+      // Rollback on failure
+      slotInfo.isActive = false;
+      this.activeCount--;
+      // Only log if still visible - don't spam logs for scrolled-away maps
+      if (slotInfo.isVisible) {
+        console.warn(
+          `[MapCollection] ✗ Failed to activate: ${this.getSlotId(slotInfo.slotElement)}`
+        );
+      }
+    } else {
+      console.log(
         `[MapCollection] ✓ Activated: ${this.getSlotId(slotInfo.slotElement)} (${this.activeCount}/${this.poolSize})`
       );
     }
@@ -283,6 +306,10 @@ export class MapCollectionElement extends BaseElement {
   }
 
   private cleanup(): void {
+    if (this.scrollDebounceTimer) {
+      clearTimeout(this.scrollDebounceTimer);
+      this.scrollDebounceTimer = null;
+    }
     this.intersectionObserver?.disconnect();
     this.intersectionObserver = null;
     this.mutationObserver?.disconnect();

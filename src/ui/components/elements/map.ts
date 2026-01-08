@@ -927,9 +927,6 @@ export class MapElement extends BaseElement {
    * Cleans up WebGL resources
    */
   public deactivate(): void {
-    // DEBUG: Log who called deactivate
-    console.error('[gk-map] DEACTIVATE called! Stack:', new Error().stack);
-
     // Show placeholder immediately
     this.showPlaceholder();
 
