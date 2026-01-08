@@ -2,7 +2,7 @@
  * Map Collection Component
  *
  * Manages a pool of map instances. Only keeps poolSize maps active at a time.
- * LAZY deactivation - only deactivates when we need room for a new visible map.
+ * LAZY freezing - only freezes maps when we need room for a new visible map.
  */
 
 import { BaseElement } from '../base-element';
@@ -14,6 +14,7 @@ interface SlotInfo {
   mapElement: MapElement;
   isActive: boolean;
   isVisible: boolean; // Track visibility separately
+  isActivating: boolean; // Prevent concurrent activation attempts
 }
 
 // Debounce delay - wait for scrolling to stop before activating
@@ -32,6 +33,8 @@ export class MapCollectionElement extends BaseElement {
   private _apiKey: string | null = null;
   private _mapStyle: string | null = null;
   private scrollDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private isProcessing: boolean = false; // Lock to prevent concurrent processing
+  private pendingReprocess: boolean = false; // Track if reprocess needed after current run
 
   constructor() {
     super();
@@ -110,6 +113,7 @@ export class MapCollectionElement extends BaseElement {
         mapElement,
         isActive: false,
         isVisible: false,
+        isActivating: false,
       };
     });
 
@@ -153,70 +157,125 @@ export class MapCollectionElement extends BaseElement {
   }
 
   /**
-   * Process visibility changes - activate visible slots, lazy deactivate
+   * Process visibility changes - unfreeze visible slots, lazy freeze
+   * Uses a lock to prevent concurrent processing during fast scrolling
    */
-  private processVisibilityChanges(): void {
-    // Find visible slots that need activation
-    const visibleInactive = this.slots.filter((s) => s.isVisible && !s.isActive);
+  private async processVisibilityChanges(): Promise<void> {
+    // If already processing, mark that we need to reprocess when done
+    if (this.isProcessing) {
+      this.pendingReprocess = true;
+      return;
+    }
+    this.isProcessing = true;
+    this.pendingReprocess = false;
 
-    for (const slotInfo of visibleInactive) {
-      this.activateSlot(slotInfo);
+    try {
+      // Keep processing until no more visible inactive slots
+      let iterations = 0;
+      const maxIterations = this.poolSize * 2; // Safety limit
+
+      while (iterations < maxIterations) {
+        iterations++;
+
+        // Find visible slots that need activation (not already active or being activated)
+        const visibleInactive = this.slots.filter(
+          (s) => s.isVisible && !s.isActive && !s.isActivating
+        );
+
+        if (visibleInactive.length === 0) break;
+
+        // Process sequentially to properly manage WebGL contexts
+        for (const slotInfo of visibleInactive) {
+          // Re-check visibility - user might have scrolled away during previous activation
+          if (!slotInfo.isVisible) continue;
+          if (slotInfo.isActive || slotInfo.isActivating) continue;
+          await this.activateSlot(slotInfo);
+        }
+      }
+    } finally {
+      this.isProcessing = false;
+
+      // If visibility changed while processing, schedule another run
+      if (this.pendingReprocess) {
+        this.pendingReprocess = false;
+        // Use setTimeout to avoid stack overflow and allow browser to update
+        setTimeout(() => this.processVisibilityChanges(), 0);
+      }
     }
   }
 
   /**
-   * Activate a slot - will make room if needed
+   * Unfreeze a slot - will make room if needed
+   * Protected against concurrent activation and fast scrolling
    */
   private async activateSlot(slotInfo: SlotInfo): Promise<void> {
     // Already active or being activated - skip
-    if (slotInfo.isActive) return;
+    if (slotInfo.isActive || slotInfo.isActivating) return;
 
     // Skip if no longer visible (user scrolled away)
     if (!slotInfo.isVisible) return;
 
-    // Make room if needed
-    while (this.activeCount >= this.poolSize) {
-      const deactivated = this.deactivateOneInvisible();
-      if (!deactivated) {
-        // Pool full with all visible maps - don't log warning, this is normal
-        return;
+    // Mark as activating to prevent concurrent attempts
+    slotInfo.isActivating = true;
+
+    try {
+      // Make room if needed - await freeze to ensure WebGL context is released
+      while (this.activeCount >= this.poolSize) {
+        // Re-check visibility before expensive freeze operation
+        if (!slotInfo.isVisible) {
+          return; // User scrolled away, abort
+        }
+
+        const frozen = await this.deactivateOneInvisible();
+        if (!frozen) {
+          // Pool full with all visible maps - don't log warning, this is normal
+          return;
+        }
       }
-    }
 
-    // Mark active SYNCHRONOUSLY to prevent race conditions
-    slotInfo.isActive = true;
-    this.activeCount++;
+      // Final visibility check after freeze
+      if (!slotInfo.isVisible) {
+        return; // User scrolled away during freeze, abort
+      }
 
-    // Activate
-    slotInfo.mapElement.ensureAttributes({
-      apiKey: this.apiKey,
-      provider: 'maptiler',
-      mapStyle: this.mapStyle,
-    });
+      // Mark active
+      slotInfo.isActive = true;
+      this.activeCount++;
 
-    const success = await slotInfo.mapElement.activate(this.activeCount - 1);
-    if (!success) {
-      // Rollback on failure
-      slotInfo.isActive = false;
-      this.activeCount--;
-      // Only log if still visible - don't spam logs for scrolled-away maps
-      if (slotInfo.isVisible) {
-        console.warn(
-          `[MapCollection] ✗ Failed to activate: ${this.getSlotId(slotInfo.slotElement)}`
+      // Unfreeze
+      slotInfo.mapElement.ensureAttributes({
+        apiKey: this.apiKey,
+        provider: 'maptiler',
+        mapStyle: this.mapStyle,
+      });
+
+      const success = await slotInfo.mapElement.unfreeze(this.activeCount - 1);
+      if (!success) {
+        // Rollback on failure
+        slotInfo.isActive = false;
+        this.activeCount--;
+        // Only log if still visible - don't spam logs for scrolled-away maps
+        if (slotInfo.isVisible) {
+          console.warn(
+            `[MapCollection] ✗ Failed to unfreeze: ${this.getSlotId(slotInfo.slotElement)}`
+          );
+        }
+      } else {
+        console.log(
+          `[MapCollection] ✓ Unfrozen: ${this.getSlotId(slotInfo.slotElement)} (${this.activeCount}/${this.poolSize})`
         );
       }
-    } else {
-      console.log(
-        `[MapCollection] ✓ Activated: ${this.getSlotId(slotInfo.slotElement)} (${this.activeCount}/${this.poolSize})`
-      );
+    } finally {
+      slotInfo.isActivating = false;
     }
   }
 
   /**
-   * Deactivate ONE invisible slot - returns true if successful
+   * Freeze ONE invisible slot - returns true if successful
    * Picks the furthest from viewport center
+   * Now async to properly wait for WebGL context release
    */
-  private deactivateOneInvisible(): boolean {
+  private async deactivateOneInvisible(): Promise<boolean> {
     const viewportCenter = window.innerHeight / 2;
 
     // Find active but NOT visible slots
@@ -230,12 +289,13 @@ export class MapCollectionElement extends BaseElement {
       .sort((a, b) => b.distance - a.distance);
 
     if (candidates.length > 0) {
-      const toDeactivate = candidates[0].slotInfo;
-      toDeactivate.mapElement.deactivate();
-      toDeactivate.isActive = false;
+      const toFreeze = candidates[0].slotInfo;
+      // Await freeze to ensure WebGL context is released before creating new maps
+      await toFreeze.mapElement.freeze();
+      toFreeze.isActive = false;
       this.activeCount--;
-      console.warn(
-        `[MapCollection] ✗ Deactivated: ${this.getSlotId(toDeactivate.slotElement)} (${this.activeCount}/${this.poolSize})`
+      console.log(
+        `[MapCollection] ✗ Frozen: ${this.getSlotId(toFreeze.slotElement)} (${this.activeCount}/${this.poolSize})`
       );
       return true;
     }
@@ -296,6 +356,7 @@ export class MapCollectionElement extends BaseElement {
           mapElement,
           isActive: false,
           isVisible: false,
+          isActivating: false,
         };
         this.slots.push(slotInfo);
         this.intersectionObserver?.observe(mapElement);

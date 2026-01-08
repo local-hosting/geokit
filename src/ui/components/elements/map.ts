@@ -34,6 +34,10 @@ export class MapElement extends BaseElement {
   private _controlsVisible: boolean = true;
   private _mouseEnterHandler: (() => void) | null = null;
   private _mouseLeaveHandler: (() => void) | null = null;
+  private _isFrozen: boolean = false;
+  private _isUnfreezing: boolean = false; // Prevent race conditions
+  private _frozenContainerStyle: { display?: string; visibility?: string } | null = null;
+  private _mapCanvas: HTMLCanvasElement | null = null;
 
   constructor() {
     super();
@@ -203,6 +207,14 @@ export class MapElement extends BaseElement {
       };
 
       this.map = await provider.createMap(container, options);
+
+      // Store reference to canvas for freeze/unfreeze
+      if (this.map) {
+        const mapContainer = (this.map as any).getContainer?.();
+        if (mapContainer) {
+          this._mapCanvas = mapContainer.querySelector('canvas');
+        }
+      }
 
       // Ensure map has a valid, non-deprecated style after creation
       // This handles cases where the SDK might default to deprecated styles
@@ -381,12 +393,17 @@ export class MapElement extends BaseElement {
   /**
    * Show placeholder (public method for map collection)
    */
-  public showPlaceholder(): void {
+  public showPlaceholder(message: string = 'Loading map...'): void {
     // Check if placeholder already exists
     const existingPlaceholder = this.querySelector(
       '.map-placeholder, [data-map-placeholder="true"]'
-    );
+    ) as HTMLElement | null;
+
     if (existingPlaceholder) {
+      // Update message if different
+      if (existingPlaceholder.textContent !== message) {
+        existingPlaceholder.textContent = message;
+      }
       return;
     }
 
@@ -396,7 +413,7 @@ export class MapElement extends BaseElement {
     placeholder.setAttribute('data-map-placeholder', 'true');
     placeholder.style.cssText =
       'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #161b22; display: flex; align-items: center; justify-content: center; color: #8b949e; font-size: 0.9rem; z-index: 1;';
-    placeholder.textContent = 'Loading map...';
+    placeholder.textContent = message;
     this.appendChild(placeholder);
   }
 
@@ -488,6 +505,12 @@ export class MapElement extends BaseElement {
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
+      gk-map.gk-controls-hidden .maplibregl-ctrl-group,
+      gk-map.gk-controls-hidden .mapboxgl-ctrl-group,
+      gk-map.gk-controls-hidden .maplibregl-ctrl,
+      gk-map.gk-controls-hidden .mapboxgl-ctrl,
+      gk-map.gk-controls-hidden [class*="maplibregl-ctrl"],
+      gk-map.gk-controls-hidden [class*="mapboxgl-ctrl"],
       .gk-controls-hidden .maplibregl-ctrl-group,
       .gk-controls-hidden .mapboxgl-ctrl-group,
       .gk-controls-hidden .maplibregl-ctrl,
@@ -499,9 +522,11 @@ export class MapElement extends BaseElement {
       gk-map:not(.gk-controls-hidden) .maplibregl-ctrl-group,
       gk-map:not(.gk-controls-hidden) .mapboxgl-ctrl-group,
       gk-map:not(.gk-controls-hidden) .maplibregl-ctrl,
-      gk-map:not(.gk-controls-hidden) .mapboxgl-ctrl {
-        opacity: 1;
-        pointer-events: auto;
+      gk-map:not(.gk-controls-hidden) .mapboxgl-ctrl,
+      gk-map:not(.gk-controls-hidden) [class*="maplibregl-ctrl"],
+      gk-map:not(.gk-controls-hidden) [class*="mapboxgl-ctrl"] {
+        opacity: 1 !important;
+        pointer-events: auto !important;
         transition: opacity 0.2s ease-in-out;
       }
     `;
@@ -884,20 +909,41 @@ export class MapElement extends BaseElement {
   }
 
   /**
-   * Activate the map - initialize and show when ready
+   * Unfreeze the map - initialize and show when ready
+   * If map is frozen, unfreezes it. Otherwise creates new map.
    * Placeholder is hidden automatically when map loads
    *
    * @param poolIndex - Optional pool index for tracking
    * @returns Promise that resolves when map is ready
    */
-  public async activate(poolIndex?: number): Promise<boolean> {
+  public async unfreeze(poolIndex?: number): Promise<boolean> {
+    // Prevent concurrent unfreeze operations
+    if (this._isUnfreezing) {
+      console.warn('[gk-map] Already unfreezing, skipping duplicate call');
+      return false;
+    }
+
+    this._isUnfreezing = true;
+
     // Show placeholder while loading
-    this.showPlaceholder();
+    this.showPlaceholder('Loading map...');
 
     // Set pool state
     this.setPoolState(true, poolIndex);
 
     try {
+      // If map is frozen, unfreeze it (reinitialize since we destroyed it)
+      if (this._isFrozen) {
+        this.showPlaceholder('Restoring map...');
+        await this._unfreeze();
+        // Wait for map to be fully ready after reinitialization
+        if (this.map) {
+          await this.waitForReady();
+        }
+        this.hidePlaceholder();
+        return true;
+      }
+
       // If map already exists and is initialized, just hide placeholder
       if (this.map && this.isInitialized) {
         this.hidePlaceholder();
@@ -914,40 +960,141 @@ export class MapElement extends BaseElement {
         return true;
       }
 
+      // Map failed to initialize - show error
+      this.showPlaceholder('Map failed to load');
       return false;
     } catch (error) {
-      console.warn('[gk-map] Failed to activate:', error);
-      // Keep placeholder visible on error
+      console.warn('[gk-map] Failed to unfreeze:', error);
+      this.showPlaceholder('Map load error');
       return false;
+    } finally {
+      this._isUnfreezing = false;
     }
   }
 
   /**
-   * Deactivate the map - destroy instance and show placeholder
-   * Cleans up WebGL resources
+   * Freeze the map - hide canvas and pause rendering
+   * Destroys the WebGL context to free resources
+   * Returns a Promise that resolves when the context is released
    */
-  public deactivate(): void {
-    // Show placeholder immediately
-    this.showPlaceholder();
-
-    // Clean up map instance
-    if (this.map) {
-      try {
-        // Remove the map instance
-        if (typeof (this.map as any).remove === 'function') {
-          (this.map as any).remove();
-        }
-      } catch (error) {
-        // Map may already be removed, that's ok
-        console.warn('[gk-map] Error during deactivate:', error);
+  public async freeze(): Promise<void> {
+    // Wait if currently unfreezing to avoid race condition
+    if (this._isUnfreezing) {
+      console.warn('[gk-map] Waiting for unfreeze to complete before freezing');
+      // Wait up to 10 seconds for unfreeze to complete
+      const maxWait = 10000;
+      const startTime = Date.now();
+      while (this._isUnfreezing && Date.now() - startTime < maxWait) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
+    }
 
-      this.map = null;
-      this.isInitialized = false;
+    // Show placeholder with "Reloading map..." message
+    this.showPlaceholder('Reloading map...');
+
+    // Destroy the map to free WebGL context
+    // Browsers can only handle a few WebGL contexts, so we must destroy when frozen
+    if (this.map) {
+      await this._freeze();
     }
 
     // Update pool state - no longer in pool
     this.setPoolState(false);
+  }
+
+  /**
+   * Internal freeze implementation - destroy map and free WebGL context
+   * Browsers can only handle a few WebGL contexts, so we must destroy when frozen
+   * Returns a Promise that resolves after the context is released
+   */
+  private async _freeze(): Promise<void> {
+    if (!this.map || this._isFrozen) {
+      return;
+    }
+
+    // Dispatch unload event before destroying
+    this.dispatchEvent(
+      new CustomEvent('gk-map-unload', {
+        detail: { map: this.map, element: this },
+        bubbles: true,
+      })
+    );
+
+    // Remove the map instance to free WebGL context
+    // Suppress MapTiler SDK warnings during removal (deprecated style warnings, setStyle errors)
+    const map = this.map as any;
+    if (typeof map.remove === 'function') {
+      // Temporarily suppress console.warn during map removal
+      // The SDK logs "deprecated style" and "invalid style" warnings that are harmless
+      const originalWarn = console.warn;
+      const originalLog = console.log;
+
+      // Suppress specific MapTiler SDK warnings
+      const suppressedPatterns = ['deprecated', 'Invalid style', 'setStyle', 'webglcontextlost'];
+
+      const shouldSuppress = (args: unknown[]): boolean => {
+        const message = args
+          .map((a) => String(a))
+          .join(' ')
+          .toLowerCase();
+        return suppressedPatterns.some((pattern) =>
+          message.toLowerCase().includes(pattern.toLowerCase())
+        );
+      };
+
+      console.warn = (...args: unknown[]) => {
+        if (!shouldSuppress(args)) {
+          originalWarn.apply(console, args);
+        }
+      };
+
+      console.log = (...args: unknown[]) => {
+        if (!shouldSuppress(args)) {
+          originalLog.apply(console, args);
+        }
+      };
+
+      try {
+        map.remove();
+      } finally {
+        // Restore console methods
+        console.warn = originalWarn;
+        console.log = originalLog;
+      }
+    }
+
+    // Clear map reference
+    this.map = null;
+    this._mapCanvas = null;
+    this.isInitialized = false;
+    this._isFrozen = true;
+
+    // Wait a frame to ensure WebGL context is fully released
+    // This prevents "Too many active WebGL contexts" warnings
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
+
+  /**
+   * Internal unfreeze implementation - reinitialize the map
+   * Since we destroy the map when frozen, we need to recreate it
+   */
+  private async _unfreeze(): Promise<void> {
+    if (!this._isFrozen) {
+      return;
+    }
+
+    // Map was destroyed, so we need to reinitialize it
+    this._isFrozen = false;
+
+    // Set flag to indicate map was just unfrozen - this helps isochrones restore
+    this.dataset.wasJustUnfrozen = 'true';
+
+    await this.initializeMap();
+
+    // Clear flag after a short delay to allow isochrones to restore
+    setTimeout(() => {
+      delete this.dataset.wasJustUnfrozen;
+    }, 2000);
   }
 
   /**

@@ -29,7 +29,7 @@ export class MapChildElement extends BaseElement {
 
   /**
    * Find parent gk-map element and initialize component
-   * Handles map reinitialization by re-listening for mapi-ready events
+   * Handles map reinitialization by re-listening for gk-map-ready events
    */
   protected addToParentMap(): void {
     // Clean up any existing event listeners
@@ -61,7 +61,7 @@ export class MapChildElement extends BaseElement {
 
           this._mapReadyHandler = handleMapReady;
           this._mapReadyParent = parent;
-          parent.addEventListener('mapi-ready', handleMapReady);
+          parent.addEventListener('gk-map-ready', handleMapReady);
         }
 
         // Listen for map unload to clean up resources
@@ -70,7 +70,7 @@ export class MapChildElement extends BaseElement {
         };
 
         this._mapUnloadHandler = handleMapUnload;
-        parent.addEventListener('mapi-unload', handleMapUnload);
+        parent.addEventListener('gk-map-unload', handleMapUnload);
 
         // Listen for WebGL context loss
         const handleContextLost = () => {
@@ -78,7 +78,7 @@ export class MapChildElement extends BaseElement {
         };
 
         this._contextLostHandler = handleContextLost;
-        parent.addEventListener('mapi-context-lost', handleContextLost);
+        parent.addEventListener('gk-map-context-lost', handleContextLost);
 
         return;
       }
@@ -94,17 +94,17 @@ export class MapChildElement extends BaseElement {
    */
   private _cleanupMapListeners(): void {
     if (this._mapReadyHandler && this._mapReadyParent) {
-      this._mapReadyParent.removeEventListener('mapi-ready', this._mapReadyHandler);
+      this._mapReadyParent.removeEventListener('gk-map-ready', this._mapReadyHandler);
       this._mapReadyHandler = null;
     }
 
     if (this._mapUnloadHandler && this._mapReadyParent) {
-      this._mapReadyParent.removeEventListener('mapi-unload', this._mapUnloadHandler);
+      this._mapReadyParent.removeEventListener('gk-map-unload', this._mapUnloadHandler);
       this._mapUnloadHandler = null;
     }
 
     if (this._contextLostHandler && this._mapReadyParent) {
-      this._mapReadyParent.removeEventListener('mapi-context-lost', this._contextLostHandler);
+      this._mapReadyParent.removeEventListener('gk-map-context-lost', this._contextLostHandler);
       this._contextLostHandler = null;
     }
 
