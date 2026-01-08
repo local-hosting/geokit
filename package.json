@@ -11,57 +11,47 @@
     ".": {
       "types": "./dist/esm/index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.cjs",
-      "browser": "./dist/esm/index.js",
-      "default": "./dist/esm/index.js"
+      "require": "./dist/cjs/index.cjs"
     },
     "./distance": {
       "types": "./dist/esm/utils/distance/index.d.ts",
       "import": "./dist/esm/utils/distance/index.js",
-      "require": "./dist/cjs/utils/distance/index.cjs",
-      "default": "./dist/esm/utils/distance/index.js"
+      "require": "./dist/cjs/utils/distance/index.cjs"
     },
     "./coordinates": {
       "types": "./dist/esm/utils/coordinates/index.d.ts",
       "import": "./dist/esm/utils/coordinates/index.js",
-      "require": "./dist/cjs/utils/coordinates/index.cjs",
-      "default": "./dist/esm/utils/coordinates/index.js"
+      "require": "./dist/cjs/utils/coordinates/index.cjs"
     },
     "./geojson": {
       "types": "./dist/esm/utils/geojson/index.d.ts",
       "import": "./dist/esm/utils/geojson/index.js",
-      "require": "./dist/cjs/utils/geojson/index.cjs",
-      "default": "./dist/esm/utils/geojson/index.js"
+      "require": "./dist/cjs/utils/geojson/index.cjs"
     },
     "./normalize": {
       "types": "./dist/esm/utils/normalize/index.d.ts",
       "import": "./dist/esm/utils/normalize/index.js",
-      "require": "./dist/cjs/utils/normalize/index.cjs",
-      "default": "./dist/esm/utils/normalize/index.js"
+      "require": "./dist/cjs/utils/normalize/index.cjs"
     },
     "./bounds": {
       "types": "./dist/esm/utils/bounds/index.d.ts",
       "import": "./dist/esm/utils/bounds/index.js",
-      "require": "./dist/cjs/utils/bounds/index.cjs",
-      "default": "./dist/esm/utils/bounds/index.js"
+      "require": "./dist/cjs/utils/bounds/index.cjs"
     },
     "./types": {
       "types": "./dist/esm/utils/types/index.d.ts",
       "import": "./dist/esm/utils/types/index.js",
-      "require": "./dist/cjs/utils/types/index.cjs",
-      "default": "./dist/esm/utils/types/index.js"
+      "require": "./dist/cjs/utils/types/index.cjs"
     },
     "./ui": {
       "types": "./dist/esm/ui/index.d.ts",
       "import": "./dist/esm/ui/index.js",
-      "require": "./dist/cjs/ui/index.cjs",
-      "default": "./dist/esm/ui/index.js"
+      "require": "./dist/cjs/ui/index.cjs"
     },
     "./api": {
       "types": "./dist/esm/api/index.d.ts",
       "import": "./dist/esm/api/index.js",
-      "require": "./dist/cjs/api/index.cjs",
-      "default": "./dist/esm/api/index.js"
+      "require": "./dist/cjs/api/index.cjs"
     }
   },
   "files": [
@@ -138,7 +128,7 @@
   "peerDependencies": {},
   "peerDependenciesMeta": {},
   "dependencies": {
-    "@maptiler/sdk": "^3.9.0",
+    "@maptiler/sdk": "3.10.0-rc.1",
     "@turf/along": "^7.3.0",
     "@turf/area": "^7.3.0",
     "@turf/bbox": "^7.3.0",

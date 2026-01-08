@@ -40,6 +40,41 @@ async function fixEsmImports(dir, baseDir = null) {
         }
       );
 
+      // Fix dynamic imports: import('...') -> import('...js')
+      // First, remove .ts extensions if they exist
+      content = content.replace(
+        /import\s*\(\s*['"](\.\.?\/[^'"]+)\.ts['"]\s*\)/g,
+        (match, importPath) => {
+          // Remove .ts extension and fix the path
+          const resolvedPath = join(fileDir, importPath);
+          if (existsSync(resolvedPath) && statSync(resolvedPath).isDirectory()) {
+            return `import('${importPath}/index.js')`;
+          }
+          return `import('${importPath}.js')`;
+        }
+      );
+
+      // Then, fix dynamic imports without extensions
+      content = content.replace(
+        /import\s*\(\s*['"](\.\.?\/[^'"]+)(?<!\.js)(?<!\.json)(?<!\/index)['"]\s*\)/g,
+        (match, importPath) => {
+          // Skip if it already has an extension
+          if (importPath.endsWith('.js') || importPath.endsWith('.json')) {
+            return match;
+          }
+          
+          // Check if it's a directory or file
+          const resolvedPath = join(fileDir, importPath);
+          if (existsSync(resolvedPath) && statSync(resolvedPath).isDirectory()) {
+            // It's a directory, use /index.js
+            return `import('${importPath}/index.js')`;
+          }
+          
+          // Assume it's a file and add .js
+          return `import('${importPath}.js')`;
+        }
+      );
+
       await writeFile(fullPath, content, 'utf-8');
     }
   }
