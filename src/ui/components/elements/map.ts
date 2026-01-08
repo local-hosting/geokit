@@ -8,7 +8,7 @@
  */
 
 import { BaseElement } from '../base-element';
-import { registerUIProvider, setUIProvider } from '../../providers/registry';
+import { registerUIProvider } from '../../providers/registry';
 import { MapTilerUIProvider } from '../../providers/maptiler-provider';
 import { PointElement } from './point';
 import { PolygonElement } from './polygon';
@@ -39,7 +39,7 @@ export class MapElement extends BaseElement {
     super();
     this.map = null;
     this.isInitialized = false;
-    
+
     // Set display properties for custom element
     if (!this.style.display || this.style.display === 'inline') {
       this.style.display = 'block';
@@ -58,13 +58,13 @@ export class MapElement extends BaseElement {
   async connectedCallback(): Promise<void> {
     // Show placeholder if map is not initialized
     this.showPlaceholderIfNeeded();
-    
+
     // If map is pool-managed (has data-pool-managed attribute), don't auto-initialize
     // It will be initialized explicitly via activateMap()
     if (this.hasAttribute('data-pool-managed')) {
       return;
     }
-    
+
     // If inside a gk-map-collection, defer initialization to the collection
     // The collection will manage pool and set proper attributes before initializing
     const parentCollection = this.closest('gk-map-collection');
@@ -73,7 +73,7 @@ export class MapElement extends BaseElement {
       this.setAttribute('data-pool-managed', 'true');
       return;
     }
-    
+
     // Prevent re-initialization if map already exists (important for map pool reuse)
     // When maps are moved between cards, connectedCallback can be called again,
     // but we should reuse the existing map instance to avoid creating new WebGL contexts
@@ -98,7 +98,7 @@ export class MapElement extends BaseElement {
   disconnectedCallback(): void {
     // Clean up auto-hide listeners
     this.cleanupAutoHideControls();
-    
+
     // Don't call super.disconnectedCallback() because it resets this.map = null
     // We want to preserve the map instance for reuse in the map pool
     // Only clean up if we have a flag indicating permanent removal
@@ -113,27 +113,27 @@ export class MapElement extends BaseElement {
       const providerName = this.getAttribute('provider');
       const apiKey = this.getAttribute('api-key');
       const accessToken = this.getAttribute('access-token');
-      
+
       let provider;
-      
+
       // If provider is explicitly specified, use it
       if (providerName) {
         const { getProviderByName, registerUIProvider } = await import('../../providers/registry');
-        let existingProvider = await getProviderByName(providerName).catch(() => null);
-        
+        const existingProvider = await getProviderByName(providerName).catch(() => null);
+
         if (!existingProvider) {
           // Provider not registered, register and initialize it
           if (providerName === 'maptiler') {
             // Load MapTiler CSS dynamically
             await import('@maptiler/sdk/dist/maptiler-sdk.css');
-            
+
             registerUIProvider('maptiler', new MapTilerUIProvider());
             // Only pass config if explicitly provided via attributes
             provider = await getProviderByName('maptiler', apiKey ? { apiKey } : undefined);
           } else if (providerName === 'mapbox') {
             // Load Mapbox CSS dynamically
             await import('mapbox-gl/dist/mapbox-gl.css');
-            
+
             const { MapboxUIProvider } = await import('../../providers/mapbox-provider');
             registerUIProvider('mapbox', new MapboxUIProvider());
             // Only pass config if explicitly provided via attributes
@@ -141,7 +141,10 @@ export class MapElement extends BaseElement {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore - import.meta is available in ESNext modules
             const token = accessToken || import.meta.env?.MAPBOX_ACCESS_TOKEN;
-            provider = await getProviderByName('mapbox', token ? { accessToken: token } : undefined);
+            provider = await getProviderByName(
+              'mapbox',
+              token ? { accessToken: token } : undefined
+            );
           } else {
             throw new Error(`Unknown provider: ${providerName}. Supported: maptiler, mapbox`);
           }
@@ -188,7 +191,7 @@ export class MapElement extends BaseElement {
       // DO NOT use 'style' attribute - that's for CSS, not map tiles!
       // Default to dataviz-dark to avoid deprecated "Streets Default v2"
       const styleAttr = this.getAttribute('map-style') || 'dataviz-dark';
-      
+
       const options = {
         lat: parseFloat(this.getAttribute('lat') || '0'),
         lng: parseFloat(this.getAttribute('lng') || '0'),
@@ -230,7 +233,7 @@ export class MapElement extends BaseElement {
           this.map.once('idle', () => {
             this.setupAutoHideControls();
             this.dispatchEvent(
-              new CustomEvent('mapi-ready', {
+              new CustomEvent('gk-map-ready', {
                 detail: { map: this.map, element: this },
                 bubbles: true,
               })
@@ -248,7 +251,7 @@ export class MapElement extends BaseElement {
               this.map.once('idle', () => {
                 this.setupAutoHideControls();
                 this.dispatchEvent(
-                  new CustomEvent('mapi-ready', {
+                  new CustomEvent('gk-map-ready', {
                     detail: { map: this.map, element: this },
                     bubbles: true,
                   })
@@ -269,7 +272,7 @@ export class MapElement extends BaseElement {
    */
   private ensureValidMapStyleAfterLoad(): void {
     if (!this.map) return;
-    
+
     const map = this.map as any;
     if (!map.setStyle || typeof map.setStyle !== 'function') {
       return;
@@ -300,7 +303,7 @@ export class MapElement extends BaseElement {
    */
   private checkAndUpdateStyle(): void {
     if (!this.map) return;
-    
+
     try {
       const map = this.map as any;
       if (!map.setStyle || typeof map.setStyle !== 'function') {
@@ -310,13 +313,13 @@ export class MapElement extends BaseElement {
       // Get API key for building style URL
       const apiKey = this.getAttribute('api-key') || '';
       if (!apiKey) return; // Can't set style without API key
-      
+
       const validStyle = `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${apiKey}`;
-      
+
       // Check current style - could be an object with name property or a URL string
       const currentStyle = map.getStyle?.();
       let needsReplacement = false;
-      
+
       if (currentStyle) {
         if (typeof currentStyle === 'object' && currentStyle.name === 'Streets Default v2') {
           needsReplacement = true;
@@ -330,7 +333,7 @@ export class MapElement extends BaseElement {
         // No style set - set a valid one
         needsReplacement = true;
       }
-      
+
       if (needsReplacement) {
         // Check if style is loaded before setting
         const isStyleLoaded = map.isStyleLoaded?.();
@@ -343,7 +346,7 @@ export class MapElement extends BaseElement {
                 if (map.isStyleLoaded?.()?.call(map)) {
                   map.setStyle(validStyle);
                 }
-              } catch (error) {
+              } catch {
                 // Ignore style setting errors - map will rebuild from scratch
               }
             });
@@ -353,11 +356,11 @@ export class MapElement extends BaseElement {
         // Style is loaded, safe to set (but wrap in try-catch for safety)
         try {
           map.setStyle(validStyle);
-        } catch (error) {
+        } catch {
           // If style isn't ready, it will rebuild from scratch - this is fine
         }
       }
-    } catch (styleError) {
+    } catch {
       // Style check/set failed - continue anyway
       // This is non-critical, map will still work
     }
@@ -380,7 +383,9 @@ export class MapElement extends BaseElement {
    */
   public showPlaceholder(): void {
     // Check if placeholder already exists
-    const existingPlaceholder = this.querySelector('.map-placeholder, [data-map-placeholder="true"]');
+    const existingPlaceholder = this.querySelector(
+      '.map-placeholder, [data-map-placeholder="true"]'
+    );
     if (existingPlaceholder) {
       return;
     }
@@ -389,7 +394,8 @@ export class MapElement extends BaseElement {
     const placeholder = document.createElement('div');
     placeholder.className = 'map-placeholder';
     placeholder.setAttribute('data-map-placeholder', 'true');
-    placeholder.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #161b22; display: flex; align-items: center; justify-content: center; color: #8b949e; font-size: 0.9rem; z-index: 1;';
+    placeholder.style.cssText =
+      'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #161b22; display: flex; align-items: center; justify-content: center; color: #8b949e; font-size: 0.9rem; z-index: 1;';
     placeholder.textContent = 'Loading map...';
     this.appendChild(placeholder);
   }
@@ -399,7 +405,7 @@ export class MapElement extends BaseElement {
    */
   public hidePlaceholder(): void {
     const placeholders = this.querySelectorAll('.map-placeholder, [data-map-placeholder="true"]');
-    placeholders.forEach(placeholder => placeholder.remove());
+    placeholders.forEach((placeholder) => placeholder.remove());
   }
 
   /**
@@ -761,7 +767,7 @@ export class MapElement extends BaseElement {
   /**
    * Pool management methods (for map-collection)
    */
-  
+
   /**
    * Check if map is pool-managed
    */
@@ -815,7 +821,11 @@ export class MapElement extends BaseElement {
   /**
    * Ensure map has required attributes from parent collection
    */
-  public ensureAttributes(options: { apiKey?: string | null; provider?: string; mapStyle?: string | null }): void {
+  public ensureAttributes(options: {
+    apiKey?: string | null;
+    provider?: string;
+    mapStyle?: string | null;
+  }): void {
     if (options.apiKey && !this.getAttribute('api-key')) {
       this.setAttribute('api-key', options.apiKey);
     }
@@ -832,7 +842,7 @@ export class MapElement extends BaseElement {
    */
   public isRendering(): boolean {
     if (!this.map) return false;
-    
+
     try {
       const getContainer = (this.map as any).getContainer;
       if (getContainer && typeof getContainer === 'function') {
@@ -853,10 +863,13 @@ export class MapElement extends BaseElement {
    */
   public isLoading(): boolean {
     if (!this.map) return false;
-    
+
     try {
       // Check if style is loaded - if not, map is still loading
-      if (typeof (this.map as any).isStyleLoaded === 'function' && !(this.map as any).isStyleLoaded()) {
+      if (
+        typeof (this.map as any).isStyleLoaded === 'function' &&
+        !(this.map as any).isStyleLoaded()
+      ) {
         return true;
       }
       // Also check general loaded state
@@ -868,6 +881,114 @@ export class MapElement extends BaseElement {
       // If we can't check, assume it's not loading
       return false;
     }
+  }
+
+  /**
+   * Activate the map - initialize and show when ready
+   * Placeholder is hidden automatically when map loads
+   *
+   * @param poolIndex - Optional pool index for tracking
+   * @returns Promise that resolves when map is ready
+   */
+  public async activate(poolIndex?: number): Promise<boolean> {
+    // Show placeholder while loading
+    this.showPlaceholder();
+
+    // Set pool state
+    this.setPoolState(true, poolIndex);
+
+    try {
+      // If map already exists and is initialized, just hide placeholder
+      if (this.map && this.isInitialized) {
+        this.hidePlaceholder();
+        return true;
+      }
+
+      // Initialize the map
+      await this.initializeMap();
+
+      // Wait for map to be fully ready
+      if (this.map) {
+        await this.waitForReady();
+        this.hidePlaceholder();
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.warn('[gk-map] Failed to activate:', error);
+      // Keep placeholder visible on error
+      return false;
+    }
+  }
+
+  /**
+   * Deactivate the map - destroy instance and show placeholder
+   * Cleans up WebGL resources
+   */
+  public deactivate(): void {
+    // Show placeholder immediately
+    this.showPlaceholder();
+
+    // Clean up map instance
+    if (this.map) {
+      try {
+        // Remove the map instance
+        if (typeof (this.map as any).remove === 'function') {
+          (this.map as any).remove();
+        }
+      } catch (error) {
+        // Map may already be removed, that's ok
+        console.warn('[gk-map] Error during deactivate:', error);
+      }
+
+      this.map = null;
+      this.isInitialized = false;
+    }
+
+    // Update pool state - no longer in pool
+    this.setPoolState(false);
+  }
+
+  /**
+   * Wait for map to be fully ready (idle state)
+   */
+  private waitForReady(timeout: number = 5000): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.map) {
+        reject(new Error('No map instance'));
+        return;
+      }
+
+      const map = this.map as any;
+
+      // Check if already ready
+      if (typeof map.loaded === 'function' && map.loaded()) {
+        resolve();
+        return;
+      }
+
+      // Set timeout
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Map ready timeout'));
+      }, timeout);
+
+      // Wait for idle event
+      const handleIdle = () => {
+        clearTimeout(timeoutId);
+        resolve();
+      };
+
+      if (typeof map.once === 'function') {
+        map.once('idle', handleIdle);
+      } else {
+        // Fallback: resolve after short delay
+        setTimeout(() => {
+          clearTimeout(timeoutId);
+          resolve();
+        }, 500);
+      }
+    });
   }
 
   /**
