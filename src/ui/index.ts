@@ -31,5 +31,6 @@ import './components/elements/polyline';
 import './components/elements/popup';
 import './components/elements/h3';
 import './components/elements/isochrone';
+import './components/elements/map-collection';
 
 

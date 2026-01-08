@@ -12,4 +12,5 @@ export { PolylineElement } from './polyline';
 export { PopupElement } from './popup';
 export { H3Element } from './h3';
 export { IsochroneElement } from './isochrone';
+export { MapCollectionElement } from './map-collection';
 
