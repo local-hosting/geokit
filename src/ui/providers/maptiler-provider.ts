@@ -107,13 +107,27 @@ export class MapTilerUIProvider extends BaseUIProvider {
       this.sdk.config.apiKey = this.config.apiKey;
     }
 
-    // Build style URL
-    let style = options.style;
-    if (!style || (typeof style === 'string' && !style.startsWith('http'))) {
-      // Default to dataviz-dark style
-      style = `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${
-        this.config?.apiKey || ''
-      }`;
+    // Build style - use SDK's MapStyle enum when possible
+    // Using the enum instead of raw URLs may help avoid deprecated style warnings
+    let style: any = options.style;
+    if (!style) {
+      // Default to DATAVIZ_DARK style using SDK enum if available
+      style = this.sdk?.MapStyle?.DATAVIZ?.DARK || 
+              `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${this.config?.apiKey || ''}`;
+    } else if (typeof style === 'string' && !style.startsWith('http')) {
+      // Convert style name to SDK enum or URL
+      const styleMap: Record<string, any> = {
+        'dataviz-dark': this.sdk?.MapStyle?.DATAVIZ?.DARK,
+        'dataviz': this.sdk?.MapStyle?.DATAVIZ?.DEFAULT,
+        'streets': this.sdk?.MapStyle?.STREETS?.DEFAULT,
+        'streets-dark': this.sdk?.MapStyle?.STREETS?.DARK,
+        'satellite': this.sdk?.MapStyle?.SATELLITE?.DEFAULT,
+        'hybrid': this.sdk?.MapStyle?.HYBRID?.DEFAULT,
+        'outdoor': this.sdk?.MapStyle?.OUTDOOR?.DEFAULT,
+        'basic': this.sdk?.MapStyle?.BASIC?.DEFAULT,
+      };
+      style = styleMap[style.toLowerCase()] || 
+              `https://api.maptiler.com/maps/${style}/style.json?key=${this.config?.apiKey || ''}`;
     }
 
     const mapOptions = {
