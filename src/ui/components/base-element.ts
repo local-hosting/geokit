@@ -80,7 +80,7 @@ export class BaseElement extends HTMLElement {
         }
       }
     }
-    
+
     // Fall back to global default provider
     return getUIProvider();
   }
@@ -654,7 +654,7 @@ export class BaseElement extends HTMLElement {
    * Subclasses should override to apply their specific options
    * @param options - Options object from factory method
    */
-  protected applyCreateOptions(options: Record<string, any>): void {
+  protected applyCreateOptions(_options: Record<string, any>): void {
     // Base implementation does nothing - subclasses should override
     // This allows each element type to handle its own attribute mapping
   }
