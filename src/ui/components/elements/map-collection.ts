@@ -19,7 +19,7 @@
  */
 
 import { BaseElement } from '../base-element';
-import { MapElement } from './map';
+import { type MapElement } from './map';
 import { getProviderConfig } from '../../providers/registry';
 
 interface PoolItem {
@@ -44,6 +44,7 @@ export class MapCollectionElement extends BaseElement {
   private initialized: boolean = false;
   private isInitializing: boolean = false;
   private intersectionObserver: IntersectionObserver | null = null;
+  private mutationObserver: MutationObserver | null = null;
   private viewportPadding: number = 300;
   private isScrollingFast: boolean = false;
   private scrollTimeout: number | null = null;
@@ -52,6 +53,12 @@ export class MapCollectionElement extends BaseElement {
   private _mapStyle: string | null = null;
   private readonly SCROLL_THROTTLE_MS = 150;
   private readonly SCROLL_STOP_DELAY = 300;
+  private isFixingStuckMaps: boolean = false; // Prevent recursive calls
+  private lastFixStuckMapsTime: number = 0;
+  private readonly FIX_STUCK_MAPS_THROTTLE = 2000; // Only fix stuck maps every 2 seconds
+  private mutationDebounceTimeout: number | null = null;
+  // Track which slots are visible according to IntersectionObserver (source of truth)
+  private visibleSlots: Set<HTMLElement> = new Set();
 
   constructor() {
     super();
@@ -65,7 +72,7 @@ export class MapCollectionElement extends BaseElement {
     await super.connectedCallback();
     this.poolSize = parseInt(this.getAttribute('pool-size') || '6', 10);
     this.viewportPadding = parseInt(this.getAttribute('viewport-padding') || '300', 10);
-    
+
     // Initialize api-key and map-style from attribute
     // Always check attribute in connectedCallback in case it was set before connection
     const attrApiKey = this.getAttribute('api-key');
@@ -76,7 +83,7 @@ export class MapCollectionElement extends BaseElement {
     if (attrMapStyle) {
       this._mapStyle = attrMapStyle;
     }
-    
+
     // Wait for DOM to be ready and all children to be parsed
     // Use multiple requestAnimationFrame calls to ensure DOM is fully ready
     requestAnimationFrame(() => {
@@ -137,18 +144,18 @@ export class MapCollectionElement extends BaseElement {
     if (this._apiKey) {
       return this._apiKey;
     }
-    
+
     const attrKey = this.getAttribute('api-key');
     if (attrKey) {
       return attrKey;
     }
-    
+
     // Check global config
     const maptilerConfig = getProviderConfig('maptiler');
     if (maptilerConfig?.apiKey) {
       return maptilerConfig.apiKey;
     }
-    
+
     // Check environment variable (Vite will replace this at build time)
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - import.meta is available in ESNext modules
@@ -157,7 +164,7 @@ export class MapCollectionElement extends BaseElement {
       // @ts-ignore
       return import.meta.env.MAPTILER_API_KEY;
     }
-    
+
     return null;
   }
 
@@ -186,48 +193,47 @@ export class MapCollectionElement extends BaseElement {
    */
   private async initialize(): Promise<void> {
     if (this.initialized || this.isInitializing) return;
-    
+
     this.isInitializing = true;
 
     const slotElements = this.getMapSlots();
-    
+
     if (slotElements.length === 0) {
-      console.warn('[MapCollection] No map slots found');
-      // Retry after a delay - DOM might not be ready yet
-      setTimeout(() => {
-        this.isInitializing = false;
-        this.initialize();
-      }, 1000);
+      console.warn('[MapCollection] No map slots found - watching for dynamic additions');
+      // Set up MutationObserver to watch for children being added
+      this.setupMutationObserver();
+      this.initialized = true;
+      this.isInitializing = false;
       return;
     }
 
     // Build slot info - find or ensure each slot has a gk-map element
-    this.slots = slotElements.map(slotElement => {
+    this.slots = slotElements.map((slotElement) => {
       let mapElement = this.findMapInSlot(slotElement);
-      
+
       if (mapElement) {
         this.markAsPoolManaged(mapElement);
       } else {
         // If no gk-map exists, create one (but don't initialize it yet)
         mapElement = this.createMapElementInSlot(slotElement);
       }
-      
+
       return {
         slotElement,
         mapElement,
-        isActive: false
+        isActive: false,
       };
     });
 
     // FIRST: Show placeholders for ALL slots (so DOM has proper heights)
-    this.slots.forEach(slotInfo => {
+    this.slots.forEach((slotInfo) => {
       if (slotInfo.mapElement) {
-        this.showPlaceholder(slotInfo.mapElement);
+        slotInfo.mapElement.showPlaceholder();
       }
     });
 
     // Wait for DOM to settle and placeholders to render with their actual heights
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           resolve(undefined);
@@ -240,31 +246,32 @@ export class MapCollectionElement extends BaseElement {
     const viewportCenter = window.innerHeight / 2;
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
-    
+
     const visibleSlots = this.slots
-      .map(slotInfo => {
+      .map((slotInfo) => {
         if (!slotInfo.mapElement) return null;
-        
+
         // Use the actual rendered element (with placeholder) to get accurate dimensions
         const rect = slotInfo.slotElement.getBoundingClientRect();
-        
+
         // Simple, strict check: element must be at least partially in viewport
         // Top must be above bottom of viewport, bottom must be below top of viewport
         // Left must be to left of right edge, right must be to right of left edge
-        const isInViewport = rect.bottom > 0 && rect.top < viewportHeight &&
-                            rect.right > 0 && rect.left < viewportWidth;
-        
+        const isInViewport =
+          rect.bottom > 0 &&
+          rect.top < viewportHeight &&
+          rect.right > 0 &&
+          rect.left < viewportWidth;
+
         // Only activate if actually in viewport
         if (isInViewport) {
           const slotCenter = rect.top + rect.height / 2;
           const distanceFromCenter = Math.abs(slotCenter - viewportCenter);
-          // Calculate visibility ratio for sorting
-          const visibilityRatio = this.getElementVisibilityRatio(slotInfo.slotElement, 0);
-          return { slotInfo, distanceFromCenter, visibilityRatio };
+          return { slotInfo, distanceFromCenter };
         }
         return null;
       })
-      .filter(item => item !== null)
+      .filter((item) => item !== null)
       .sort((a, b) => {
         // Sort by distance from center (closer = better)
         return a!.distanceFromCenter - b!.distanceFromCenter;
@@ -275,25 +282,137 @@ export class MapCollectionElement extends BaseElement {
     // Only activate up to poolSize maps
     for (let i = 0; i < visibleSlots.length && this.pool.length < this.poolSize; i++) {
       const item = visibleSlots[i];
-      if (item && item.slotInfo.mapElement) {
-        const poolIndex = this.pool.length;
-        await this.activateMap(item.slotInfo.mapElement, item.slotInfo.slotElement, poolIndex);
-        item.slotInfo.isActive = true;
+      if (item) {
+        await this.activateMapForSlot(item.slotInfo);
       }
     }
 
     this.initialized = true;
     this.isInitializing = false;
-    
+
     // Set up IntersectionObserver after a short delay
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         this.setupIntersectionObserver();
       });
     });
-    
+
+    // Set up MutationObserver to watch for dynamic children
+    this.setupMutationObserver();
+
     // Dispatch ready event
     this.dispatchEvent(new CustomEvent('map-collection-ready', { bubbles: true }));
+  }
+
+  /**
+   * Set up MutationObserver to watch for children being added/removed
+   */
+  private setupMutationObserver(): void {
+    if (this.mutationObserver) {
+      this.mutationObserver.disconnect();
+    }
+
+    this.mutationObserver = new MutationObserver((mutations) => {
+      let hasRelevantChanges = false;
+
+      for (const mutation of mutations) {
+        if (mutation.type === 'childList') {
+          // Check if any gk-map elements were added or removed
+          const addedMaps = Array.from(mutation.addedNodes).filter(
+            (node) =>
+              node instanceof Element &&
+              (node.tagName.toLowerCase() === 'gk-map' ||
+                (node as Element).querySelector?.('gk-map'))
+          );
+          const removedMaps = Array.from(mutation.removedNodes).filter(
+            (node) =>
+              node instanceof Element &&
+              (node.tagName.toLowerCase() === 'gk-map' ||
+                (node as Element).querySelector?.('gk-map'))
+          );
+
+          if (addedMaps.length > 0 || removedMaps.length > 0) {
+            hasRelevantChanges = true;
+            break;
+          }
+        }
+      }
+
+      if (hasRelevantChanges) {
+        // Debounce to avoid multiple rapid rescans
+        if (this.mutationDebounceTimeout) {
+          clearTimeout(this.mutationDebounceTimeout);
+        }
+        this.mutationDebounceTimeout = setTimeout(() => {
+          this.handleChildrenChanged();
+        }, 100) as unknown as number;
+      }
+    });
+
+    // Observe this element and all descendants for child changes
+    this.mutationObserver.observe(this, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  /**
+   * Handle when children are added or removed
+   */
+  private handleChildrenChanged(): void {
+    // Get current slots
+    const currentSlotElements = this.getMapSlots();
+    const currentSlotSet = new Set(currentSlotElements);
+    const existingSlotSet = new Set(this.slots.map((s) => s.slotElement));
+
+    // Find new slots (added)
+    const newSlots = currentSlotElements.filter((el) => !existingSlotSet.has(el));
+
+    // Find removed slots
+    const removedSlots = this.slots.filter((s) => !currentSlotSet.has(s.slotElement));
+
+    // Handle removed slots - deactivate their maps
+    for (const slotInfo of removedSlots) {
+      if (slotInfo.isActive && slotInfo.mapElement) {
+        this.deactivateMapForSlot(slotInfo);
+      }
+      // Remove from slots array
+      const idx = this.slots.indexOf(slotInfo);
+      if (idx >= 0) {
+        this.slots.splice(idx, 1);
+      }
+    }
+
+    // Handle new slots
+    for (const slotElement of newSlots) {
+      const mapElement = this.findMapInSlot(slotElement);
+      if (!mapElement) continue;
+
+      // Add to slots array
+      const slotInfo: SlotInfo = {
+        slotElement,
+        mapElement,
+        isActive: false,
+      };
+      this.slots.push(slotInfo);
+
+      // Observe with IntersectionObserver if set up
+      if (this.intersectionObserver) {
+        this.intersectionObserver.observe(slotElement);
+      }
+
+      // Check if visible synchronously (IntersectionObserver is async)
+      const rect = slotElement.getBoundingClientRect();
+      const isInViewport =
+        rect.bottom > -this.viewportPadding &&
+        rect.top < window.innerHeight + this.viewportPadding &&
+        rect.right > 0 &&
+        rect.left < window.innerWidth;
+
+      if (isInViewport) {
+        this.activateMapForSlot(slotInfo);
+      }
+    }
   }
 
   /**
@@ -301,6 +420,16 @@ export class MapCollectionElement extends BaseElement {
    */
   private reinitialize(): void {
     this.cleanup();
+    this.initialize();
+  }
+
+  /**
+   * Public method to rescan for new map slots
+   * Call this after dynamically adding cards/maps to the collection
+   */
+  public rescan(): void {
+    this.initialized = false;
+    this.isInitializing = false;
     this.initialize();
   }
 
@@ -313,13 +442,23 @@ export class MapCollectionElement extends BaseElement {
       this.intersectionObserver = null;
     }
 
+    if (this.mutationObserver) {
+      this.mutationObserver.disconnect();
+      this.mutationObserver = null;
+    }
+
+    if (this.mutationDebounceTimeout) {
+      clearTimeout(this.mutationDebounceTimeout);
+      this.mutationDebounceTimeout = null;
+    }
+
     if (this.scrollTimeout) {
       clearTimeout(this.scrollTimeout);
       this.scrollTimeout = null;
     }
 
     // Clear all maps
-    this.pool.forEach(item => {
+    this.pool.forEach((item) => {
       if (item.mapElement && item.mapElement.parentNode) {
         item.mapElement.remove();
       }
@@ -334,7 +473,7 @@ export class MapCollectionElement extends BaseElement {
    */
   private getMapSlots(): HTMLElement[] {
     const slots: HTMLElement[] = [];
-    
+
     // First, try to find gk-map elements directly (unified approach)
     const mapElements = this.querySelectorAll('gk-map:not([data-pool-map="true"])');
     mapElements.forEach((element) => {
@@ -356,7 +495,7 @@ export class MapCollectionElement extends BaseElement {
     // Also check direct children (in case display: contents affects querySelector)
     Array.from(this.children).forEach((child) => {
       if (!(child instanceof HTMLElement)) return;
-      
+
       if (this.isMapElement(child) && !slots.includes(child)) {
         slots.push(child);
       } else {
@@ -371,96 +510,13 @@ export class MapCollectionElement extends BaseElement {
   }
 
   /**
-   * Get slots that are currently visible in viewport
-   */
-  private getVisibleSlots(slots: HTMLElement[]): HTMLElement[] {
-    return slots.filter(slot => this.isElementVisible(slot, this.viewportPadding));
-  }
-
-  /**
-   * Check if element is visible in viewport
-   * Returns true if element has meaningful visibility (at least minVisibleRatio of the element is visible)
-   */
-  private isElementVisible(element: HTMLElement, padding: number = 0, minVisibleRatio: number = 0.1): boolean {
-    const rect = element.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    
-    // Calculate the intersection area
-    const visibleTop = Math.max(rect.top, -padding);
-    const visibleBottom = Math.min(rect.bottom, viewportHeight + padding);
-    const visibleLeft = Math.max(rect.left, -padding);
-    const visibleRight = Math.min(rect.right, viewportWidth + padding);
-    
-    // Check if there's any intersection
-    if (visibleBottom <= visibleTop || visibleRight <= visibleLeft) {
-      return false;
-    }
-    
-    // Calculate visible area
-    const visibleArea = (visibleBottom - visibleTop) * (visibleRight - visibleLeft);
-    const totalArea = rect.width * rect.height;
-    
-    // If element has no area, check if it's at least partially in viewport
-    if (totalArea === 0) {
-      return (
-        rect.bottom >= -padding &&
-        rect.top <= viewportHeight + padding &&
-        rect.right >= -padding &&
-        rect.left <= viewportWidth + padding
-      );
-    }
-    
-    // Return true if at least minVisibleRatio of the element is visible
-    const visibleRatio = visibleArea / totalArea;
-    return visibleRatio >= minVisibleRatio;
-  }
-
-  /**
-   * Get the intersection ratio of an element with the viewport
-   * Returns a value between 0 (not visible) and 1 (fully visible)
-   */
-  private getElementVisibilityRatio(element: HTMLElement, padding: number = 0): number {
-    const rect = element.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    
-    // Calculate the intersection area
-    const visibleTop = Math.max(rect.top, -padding);
-    const visibleBottom = Math.min(rect.bottom, viewportHeight + padding);
-    const visibleLeft = Math.max(rect.left, -padding);
-    const visibleRight = Math.min(rect.right, viewportWidth + padding);
-    
-    // Check if there's any intersection
-    if (visibleBottom <= visibleTop || visibleRight <= visibleLeft) {
-      return 0;
-    }
-    
-    // Calculate visible area
-    const visibleArea = (visibleBottom - visibleTop) * (visibleRight - visibleLeft);
-    const totalArea = rect.width * rect.height;
-    
-    if (totalArea === 0) {
-      // Element has no area, return 1 if it's in viewport, 0 otherwise
-      return (
-        rect.bottom >= -padding &&
-        rect.top <= viewportHeight + padding &&
-        rect.right >= -padding &&
-        rect.left <= viewportWidth + padding
-      ) ? 1 : 0;
-    }
-    
-    return Math.min(1, visibleArea / totalArea);
-  }
-
-  /**
    * Ensure map element has required attributes (delegates to MapElement)
    */
   private ensureMapAttributes(mapElement: MapElement): void {
     mapElement.ensureAttributes({
       apiKey: this.apiKey,
       provider: 'maptiler',
-      mapStyle: this.mapStyle
+      mapStyle: this.mapStyle,
     });
   }
 
@@ -497,34 +553,33 @@ export class MapCollectionElement extends BaseElement {
 
     const mapStyle = this.mapStyle;
     const coords = this.getSlotCoordinates(slotElement);
-    
+
     const attrs: string[] = [
       `api-key="${apiKey}"`,
       'provider="maptiler"',
       'data-pool-managed="true"',
-      'style="width: 100%; height: 100%; display: block;"'
+      'style="width: 100%; height: 100%; display: block;"',
     ];
     if (mapStyle) attrs.push(`map-style="${mapStyle}"`);
     if (coords.lat) attrs.push(`lat="${coords.lat}"`);
     if (coords.lng) attrs.push(`lng="${coords.lng}"`);
     if (coords.zoom) attrs.push(`zoom="${coords.zoom}"`);
-    
+
     slotElement.innerHTML = `<gk-map ${attrs.join(' ')}></gk-map>`;
     const mapElement = this.findMapInSlot(slotElement);
-    
+
     if (mapElement) {
       this.ensureMapAttributes(mapElement);
       this.markAsPoolManaged(mapElement);
     }
-    
+
     return mapElement;
   }
-
 
   /**
    * Safely remove map instance
    */
-  private safelyRemoveMap(map: any, mapElement: MapElement, slotId: string): void {
+  private safelyRemoveMap(map: any, mapElement: MapElement, _slotId: string): void {
     if (!mapElement.isConnected) {
       return;
     }
@@ -549,13 +604,13 @@ export class MapCollectionElement extends BaseElement {
       'Style "Streets Default v2" is deprecated',
       '[Map.setStyle]: Invalid style',
       'Keeping the curent style instead',
-      'WebGL context lost after map removal'
+      'WebGL context lost after map removal',
     ];
-    
+
     console.warn = (...args: unknown[]) => {
       const message = typeof args[0] === 'string' ? args[0] : String(args[0]);
       // Only suppress specific MapTiler SDK cleanup warnings
-      if (!suppressedMessages.some(msg => message.includes(msg))) {
+      if (!suppressedMessages.some((msg) => message.includes(msg))) {
         originalWarn.apply(console, args);
       }
     };
@@ -569,104 +624,6 @@ export class MapCollectionElement extends BaseElement {
   }
 
   /**
-   * Activate a map (initialize it and add to pool)
-   */
-  private async activateMap(mapElement: MapElement, slotElement: HTMLElement, poolIndex: number): Promise<void> {
-    if (!this.apiKey) {
-      console.error('[MapCollection] Cannot activate map: api-key is required');
-      return;
-    }
-
-    const slotId = this.getSlotId(slotElement);
-    const isNewMap = !mapElement.getMap?.();
-
-    this.ensureMapAttributes(mapElement);
-    this.hidePlaceholder(mapElement);
-
-    // Mark as pool map
-    mapElement.setPoolState(true, poolIndex);
-
-    // Check if map exists and is rendering
-    const existingMapInstance = mapElement.getMap?.();
-    const isMapValid = existingMapInstance && this.isMapRendering(mapElement);
-    
-    if (!isMapValid) {
-      // No valid map - need to initialize or reinitialize
-      // If map exists but isn't rendering, remove it first
-      if (existingMapInstance && typeof existingMapInstance.remove === 'function') {
-        try {
-          this.safelyRemoveMap(existingMapInstance, mapElement, slotId);
-          // Wait a bit for cleanup
-          await new Promise(resolve => setTimeout(resolve, 50));
-        } catch (error) {
-          // Ignore cleanup errors
-        }
-      }
-      
-      try {
-        await mapElement.initializeMap();
-        // Verify map was actually initialized and rendering
-        const verifyMap = mapElement.getMap?.();
-        if (!verifyMap) {
-          throw new Error('Map initialization returned no map instance');
-        }
-        
-        // Wait a bit for canvas to render
-        await new Promise(resolve => setTimeout(resolve, 150));
-        
-        if (!this.isMapRendering(mapElement)) {
-          throw new Error('Map initialized but canvas not rendering');
-        }
-      } catch (error) {
-        // Initialization failed - show placeholder and mark as pool-managed
-        this.showPlaceholder(mapElement);
-        mapElement.setPoolState(false);
-        console.warn(`[MapCollection] Failed to initialize map for slot ${slotId}:`, error);
-        return;
-      }
-    }
-
-    // Check if this map is already in the pool
-    const existingPoolItem = this.pool.find(item => item.mapElement === mapElement);
-    if (existingPoolItem) {
-      // Map is already in pool - just update its state
-      existingPoolItem.inUse = true;
-      existingPoolItem.currentSlot = slotElement;
-      existingPoolItem.poolIndex = poolIndex;
-      mapElement.setPoolState(true, poolIndex);
-      return;
-    }
-    
-    // Add to pool - but only if we haven't exceeded pool size
-    if (this.pool.length >= this.poolSize) {
-      console.warn(`[MapCollection] Pool size limit (${this.poolSize}) reached, cannot activate map for slot: ${slotId}`);
-      this.showPlaceholder(mapElement);
-      mapElement.setPoolState(false);
-      return;
-    }
-    
-    // Add to pool
-    this.pool.push({
-      mapElement,
-      inUse: true,
-      currentSlot: slotElement,
-      poolIndex
-    });
-
-    // Only log when a new map is loaded
-    if (isNewMap) {
-      console.log(`[MapCollection] Map loaded: ${slotId}`);
-    }
-  }
-
-  /**
-   * Check if a map is still loading (delegates to MapElement)
-   */
-  private isMapLoading(mapElement: MapElement): boolean {
-    return mapElement.isLoading();
-  }
-
-  /**
    * Check if a map instance is actually rendering (delegates to MapElement)
    */
   private isMapRendering(mapElement: MapElement): boolean {
@@ -674,143 +631,28 @@ export class MapCollectionElement extends BaseElement {
   }
 
   /**
-   * Restore a map's WebGL view by reinitializing it
-   */
-  private async restoreMapView(mapElement: MapElement, slotElement: HTMLElement, slotId: string): Promise<void> {
-    const mapInstance = mapElement.getMap?.();
-    
-    // If map instance exists but not rendering, remove it first
-    if (mapInstance && typeof mapInstance.remove === 'function') {
-      try {
-        this.safelyRemoveMap(mapInstance, mapElement, slotId);
-      } catch (error) {
-        // Ignore errors during cleanup
-      }
-    }
-    
-    // Ensure attributes are set
-    this.ensureMapAttributes(mapElement);
-    this.hidePlaceholder(mapElement);
-    
-    // Reinitialize the map
-    await mapElement.initializeMap();
-    
-    // Verify map was initialized and is rendering
-    const newMap = mapElement.getMap?.();
-    if (!newMap) {
-      throw new Error('Map initialization returned no map instance');
-    }
-    
-    // Wait a bit for canvas to render
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    if (!this.isMapRendering(mapElement)) {
-      throw new Error('Map initialized but canvas not rendering');
-    }
-    
-    // Update map viewport to match slot coordinates
-    this.updateMapViewport(newMap, slotElement, mapElement);
-    
-    // Ensure it's still marked as pool map
-    const poolIndex = mapElement.getPoolIndex();
-    const existingPoolItem = this.pool.find(item => item.mapElement === mapElement);
-    const finalPoolIndex = poolIndex ?? existingPoolItem?.poolIndex ?? this.pool.length;
-    mapElement.setPoolState(true, finalPoolIndex);
-    
-    // Mark slot as active
-    const slotInfo = this.slots.find(s => s.mapElement === mapElement);
-    if (slotInfo) {
-      slotInfo.isActive = true;
-    }
-    
-    console.log(`[MapCollection] WebGL view restored for slot: ${slotId}`);
-  }
-
-  /**
-   * Deactivate a map (destroy instance and release WebGL context)
-   * Returns false if map is still loading and shouldn't be deactivated yet, or if already deactivated
-   */
-  private deactivateMap(mapElement: MapElement): boolean {
-    const slotId = this.getSlotIdFromMapElement(mapElement);
-    
-    // Check if already deactivated (no pool map attribute, has placeholder, not in pool)
-    const hasPoolMapAttr = mapElement.isInPool();
-    const hasPlaceholder = mapElement.hasPlaceholder();
-    const inPool = this.pool.some(item => item.mapElement === mapElement);
-    
-    // If already deactivated, skip
-    if (!hasPoolMapAttr && hasPlaceholder && !inPool) {
-      return false;
-    }
-    
-    // Don't remove maps that are still loading - causes abort errors
-    if (this.isMapLoading(mapElement)) {
-      return false;
-    }
-    
-    const map = mapElement.getMap?.();
-    
-    if (map && typeof map.remove === 'function') {
-      try {
-        this.safelyRemoveMap(map, mapElement, slotId);
-      } catch (error) {
-        console.warn(`[MapCollection] Error removing map for slot ${slotId} (may already be removed):`, error);
-      }
-    }
-
-    this.showPlaceholder(mapElement);
-    this.removeFromPool(mapElement);
-    this.markAsPoolManaged(mapElement);
-    
-    // Log when a map is hidden
-    console.log(`[MapCollection] Map hidden: ${slotId}`);
-    
-    return true;
-  }
-
-  /**
-   * Remove map from pool and clean up attributes (delegates to MapElement)
-   */
-  private removeFromPool(mapElement: MapElement): void {
-    const poolIndex = this.pool.findIndex(item => item.mapElement === mapElement);
-    if (poolIndex >= 0) {
-      this.pool.splice(poolIndex, 1);
-    }
-    mapElement.setPoolState(false);
-  }
-
-  /**
-   * Show placeholder on a map element (delegates to MapElement)
-   */
-  private showPlaceholder(mapElement: MapElement): void {
-    mapElement.showPlaceholder();
-  }
-
-  /**
-   * Hide placeholder on a map element (delegates to MapElement)
-   */
-  private hidePlaceholder(mapElement: MapElement): void {
-    mapElement.hidePlaceholder();
-  }
-
-  /**
    * Create a map element in a slot (legacy method - keeping for compatibility)
    */
-  private async createMapInSlot(slotElement: HTMLElement, index: number): Promise<MapElement | null> {
+  private async createMapInSlot(
+    slotElement: HTMLElement,
+    index: number
+  ): Promise<MapElement | null> {
     // Get api-key from collection (required) - check both property and attribute
     const apiKey = this.apiKey;
     if (!apiKey) {
-      console.error('[MapCollection] api-key is required. Set it via attribute (api-key="...") or property (collection.apiKey = "...")');
+      console.error(
+        '[MapCollection] api-key is required. Set it via attribute (api-key="...") or property (collection.apiKey = "...")'
+      );
       return null;
     }
-    
+
     const mapStyle = this.mapStyle;
 
     // Check if slot is already a gk-map element
     if (this.isMapElement(slotElement)) {
       const mapElement = slotElement as MapElement;
       this.ensureMapAttributes(mapElement);
-      this.hidePlaceholder(mapElement);
+      mapElement.hidePlaceholder();
       mapElement.setAttribute('data-pool-map', 'true');
       mapElement.setAttribute('data-pool-index', index.toString());
       return mapElement;
@@ -820,7 +662,7 @@ export class MapCollectionElement extends BaseElement {
     const existingMap = this.findMapInSlot(slotElement);
     if (existingMap) {
       this.ensureMapAttributes(existingMap);
-      this.hidePlaceholder(existingMap);
+      existingMap.hidePlaceholder();
       existingMap.setAttribute('data-pool-map', 'true');
       existingMap.setAttribute('data-pool-index', index.toString());
       return existingMap;
@@ -829,7 +671,7 @@ export class MapCollectionElement extends BaseElement {
     // Create new map element using innerHTML to avoid attribute issues
     const poolId = `pool-map-${index}`;
     const coords = this.getSlotCoordinates(slotElement);
-    
+
     // Build attribute string - api-key is required and already validated above
     const attrs: string[] = [
       `id="${poolId}"`,
@@ -838,27 +680,29 @@ export class MapCollectionElement extends BaseElement {
       `data-pool-index="${index}"`,
       `api-key="${apiKey}"`,
       'provider="maptiler"',
-      'style="width: 100%; height: 100%; display: block;"'
+      'style="width: 100%; height: 100%; display: block;"',
     ];
     if (mapStyle) attrs.push(`map-style="${mapStyle}"`);
     if (coords.lat) attrs.push(`lat="${coords.lat}"`);
     if (coords.lng) attrs.push(`lng="${coords.lng}"`);
     if (coords.zoom) attrs.push(`zoom="${coords.zoom}"`);
-    
+
     // Remove placeholders first
-    const placeholders = slotElement.querySelectorAll('.map-placeholder, [data-map-placeholder="true"]');
-    placeholders.forEach(placeholder => placeholder.remove());
-    
+    const placeholders = slotElement.querySelectorAll(
+      '.map-placeholder, [data-map-placeholder="true"]'
+    );
+    placeholders.forEach((placeholder) => placeholder.remove());
+
     // Create element using innerHTML to avoid the attribute error
     // This creates the element with all attributes at once, which avoids browser restrictions
     slotElement.innerHTML = `<gk-map ${attrs.join(' ')}></gk-map>`;
     const mapElement = slotElement.querySelector('gk-map') as MapElement;
-    
+
     if (!mapElement) {
       console.error('[MapCollection] Failed to create map element');
       return null;
     }
-    
+
     // CRITICAL: Set attributes immediately after creation, before connectedCallback runs
     // Use setAttribute to ensure they're properly set (innerHTML might not always work)
     // Set these synchronously before any async operations
@@ -869,7 +713,7 @@ export class MapCollectionElement extends BaseElement {
     if (mapStyle) {
       mapElement.setAttribute('map-style', mapStyle);
     }
-    
+
     // Verify api-key is set
     const verifyApiKey = mapElement.getAttribute('api-key');
     if (!verifyApiKey) {
@@ -879,13 +723,13 @@ export class MapCollectionElement extends BaseElement {
         fromConfig: getProviderConfig('maptiler')?.apiKey,
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        fromEnv: typeof import.meta !== 'undefined' ? import.meta.env?.MAPTILER_API_KEY : undefined
+        fromEnv: typeof import.meta !== 'undefined' ? import.meta.env?.MAPTILER_API_KEY : undefined,
       });
       return null;
     }
-    
+
     // Wait for element to be connected before proceeding
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       if (mapElement.isConnected) {
         resolve(undefined);
       } else {
@@ -919,16 +763,18 @@ export class MapCollectionElement extends BaseElement {
 
       const removePlaceholder = () => {
         // Remove placeholder from inside the map element
-        const placeholders = mapElement.querySelectorAll('.map-placeholder, [data-map-placeholder="true"]');
-        placeholders.forEach(placeholder => placeholder.remove());
+        const placeholders = mapElement.querySelectorAll(
+          '.map-placeholder, [data-map-placeholder="true"]'
+        );
+        placeholders.forEach((placeholder) => placeholder.remove());
       };
 
       const checkReady = () => {
         const map = mapElement.getMap?.();
-        const isLoaded = map && (
-          (typeof map.loaded === 'function' && map.loaded()) ||
-          (typeof map.isStyleLoaded === 'function' && map.isStyleLoaded())
-        );
+        const isLoaded =
+          map &&
+          ((typeof map.loaded === 'function' && map.loaded()) ||
+            (typeof map.isStyleLoaded === 'function' && map.isStyleLoaded()));
         if (isLoaded) {
           removePlaceholder();
           resolve();
@@ -936,7 +782,9 @@ export class MapCollectionElement extends BaseElement {
         }
 
         if (Date.now() - startTime > timeout) {
-          console.warn(`[MapCollection] Map ${mapElement.id} did not initialize within ${timeout}ms`);
+          console.warn(
+            `[MapCollection] Map ${mapElement.id} did not initialize within ${timeout}ms`
+          );
           removePlaceholder(); // Remove placeholder even on timeout
           resolve();
           return;
@@ -969,24 +817,28 @@ export class MapCollectionElement extends BaseElement {
 
     this.intersectionObserver = new IntersectionObserver(
       (entries) => {
-        // Don't process during initialization or fast scrolling
-        // During fast scrolling, we'll process after scroll stops
-        if (this.isInitializing || this.isScrollingFast) {
+        // Don't process during initialization
+        if (this.isInitializing) {
           return;
         }
 
-        // Process immediately if not scrolling (scroll has stopped)
-        this.processVisibilityChanges(entries);
+        // Always update visibility set (source of truth from browser)
+        this.updateVisibleSlotsSet(entries);
+
+        // Defer activation/deactivation during fast scrolling
+        if (!this.isScrollingFast) {
+          this.processVisibilityChanges(entries);
+        }
       },
       {
         root: null,
         rootMargin: `${this.viewportPadding}px`,
-        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1.0] // Multiple thresholds for better visibility tracking
+        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1.0], // Multiple thresholds for better visibility tracking
       }
     );
 
     // Observe all slots
-    this.slots.forEach(slotInfo => {
+    this.slots.forEach((slotInfo) => {
       this.intersectionObserver?.observe(slotInfo.slotElement);
     });
 
@@ -1000,71 +852,34 @@ export class MapCollectionElement extends BaseElement {
   }
 
   /**
-   * Fix maps that are in a stuck state (marked as pool maps but no map instance or not rendering)
-   * Also activates visible maps that have placeholders but aren't active
+   * Fix maps that are in a stuck state (visible but showing placeholder)
+   * Simply re-activates visible maps that should be active but aren't
    */
   private fixStuckMaps(): void {
-    this.slots.forEach(slotInfo => {
-      if (!slotInfo.mapElement) return;
+    // Prevent recursive calls and throttle
+    if (this.isFixingStuckMaps) return;
+    const now = Date.now();
+    if (now - this.lastFixStuckMapsTime < this.FIX_STUCK_MAPS_THROTTLE) return;
 
-      const hasPoolMapAttr = slotInfo.mapElement.isInPool();
-      const mapInstance = slotInfo.mapElement.getMap?.();
-      const hasMapInstance = !!mapInstance;
-      const hasPlaceholder = slotInfo.mapElement.hasPlaceholder();
-      const isVisible = this.isElementVisible(slotInfo.slotElement, 100);
-      
-      // Check if map has a visible canvas/container
-      const hasVisibleMap = mapInstance ? slotInfo.mapElement.isRendering() : false;
+    this.isFixingStuckMaps = true;
+    this.lastFixStuckMapsTime = now;
 
-      // Case 1: Map has placeholder, is visible, but not active - should be activated
-      // Use strict visibility check - must be actually in viewport (no padding)
-      const rect = slotInfo.slotElement.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const viewportWidth = window.innerWidth;
-      const isActuallyInViewport = rect.bottom > 0 && rect.top < viewportHeight &&
-                                   rect.right > 0 && rect.left < viewportWidth;
-      const visibilityRatio = this.getElementVisibilityRatio(slotInfo.slotElement, 0);
-      const isMeaningfullyVisible = isActuallyInViewport && visibilityRatio >= 0.3;
-      
-      if (hasPlaceholder && isMeaningfullyVisible && !slotInfo.isActive) {
-        // Try to activate this map
-        this.activateMapForSlot(slotInfo);
-        return;
-      }
+    try {
+      this.slots.forEach((slotInfo) => {
+        if (!slotInfo.mapElement) return;
 
-      // Case 2: If marked as pool map but:
-      // 1. No map instance, OR
-      // 2. Map instance exists but not rendering (no visible canvas), OR
-      // 3. No placeholder showing
-      // Then it's stuck - restore the WebGL view
-      if (hasPoolMapAttr && (!hasMapInstance || !hasVisibleMap) && !hasPlaceholder) {
-        const slotId = this.getSlotId(slotInfo.slotElement);
-        console.warn(`[MapCollection] Found stuck map for slot: ${slotId}, restoring WebGL view...`);
-        
-        // Restore the map by reinitializing it
-        if (slotInfo.mapElement) {
-          this.restoreMapView(slotInfo.mapElement, slotInfo.slotElement, slotId).catch(error => {
-            // If restoration fails, show placeholder as fallback
-            console.warn(`[MapCollection] Failed to restore map for slot ${slotId}:`, error);
-            if (slotInfo.mapElement) {
-              this.showPlaceholder(slotInfo.mapElement);
-              slotInfo.mapElement.removeAttribute('data-pool-map');
-              slotInfo.mapElement.removeAttribute('data-pool-index');
-              slotInfo.mapElement.setAttribute('data-pool-managed', 'true');
-            }
-            slotInfo.isActive = false;
-            
-            // Remove from pool if it's there
-            if (slotInfo.mapElement) {
-              const poolIndex = this.pool.findIndex(item => item.mapElement === slotInfo.mapElement);
-              if (poolIndex >= 0) {
-                this.pool.splice(poolIndex, 1);
-              }
-            }
-          });
+        const hasPlaceholder = slotInfo.mapElement.hasPlaceholder();
+        // Use visibleSlots set from IntersectionObserver as source of truth
+        const isVisible = this.visibleSlots.has(slotInfo.slotElement);
+
+        // If visible with placeholder but not active - try to activate
+        if (hasPlaceholder && isVisible && !slotInfo.isActive) {
+          this.activateMapForSlot(slotInfo);
         }
-      }
-    });
+      });
+    } finally {
+      this.isFixingStuckMaps = false;
+    }
   }
 
   /**
@@ -1101,7 +916,7 @@ export class MapCollectionElement extends BaseElement {
 
     const furthest = this.findFurthestOffScreenMap();
     if (furthest) {
-      const furthestSlotInfo = this.slots.find(s => s.mapElement === furthest.mapElement);
+      const furthestSlotInfo = this.slots.find((s) => s.mapElement === furthest.mapElement);
       if (furthestSlotInfo) {
         this.deactivateMapForSlot(furthestSlotInfo);
         return true;
@@ -1112,78 +927,72 @@ export class MapCollectionElement extends BaseElement {
 
   /**
    * Activate a map for a slot (if pool has space)
+   * Delegates activation to the map element itself
    */
   private async activateMapForSlot(slotInfo: SlotInfo): Promise<void> {
     if (!slotInfo.mapElement) return;
 
-    // Check if map has a placeholder - if so, we should try harder to activate it
-    const hasPlaceholder = slotInfo.mapElement.hasPlaceholder();
-    const isVisible = this.isElementVisible(slotInfo.slotElement, 100);
-    
+    // Use visibleSlots set from IntersectionObserver as source of truth
+    const isVisible = this.visibleSlots.has(slotInfo.slotElement);
+
+    // Make space in pool if needed
     if (!this.makePoolSpace()) {
-      // Pool is full - if this map is visible and has a placeholder, force make space
-      if (hasPlaceholder && isVisible) {
-        // Force return the furthest map, even if it's slightly visible
+      // Pool is full - if visible, force make space
+      if (isVisible) {
         const furthest = this.findFurthestOffScreenMap();
         if (furthest) {
-          const furthestSlotInfo = this.slots.find(s => s.mapElement === furthest.mapElement);
+          const furthestSlotInfo = this.slots.find((s) => s.mapElement === furthest.mapElement);
           if (furthestSlotInfo) {
             this.deactivateMapForSlot(furthestSlotInfo);
           }
-        } else {
-          // No off-screen maps - force return the furthest visible map
-          const allInUse = this.pool.filter(item => item.inUse && item.currentSlot && item.currentSlot !== slotInfo.slotElement);
-          if (allInUse.length > 0) {
-            const sorted = allInUse
-              .map(item => ({
-                item,
-                distance: this.getDistanceFromViewportCenter(item.currentSlot!)
-              }))
-              .sort((a, b) => b.distance - a.distance);
-            
-            if (sorted.length > 0) {
-              const furthest = sorted[0].item;
-              if (furthest.currentSlot) {
-                const furthestSlotInfo = this.slots.find(s => s.slotElement === furthest.currentSlot);
-                if (furthestSlotInfo) {
-                  this.deactivateMapForSlot(furthestSlotInfo);
-                }
-              }
-            }
-          }
         }
-        
-        // Wait a bit for deactivation to complete
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Try again after forcing space
-        if (this.pool.length < this.poolSize) {
-          const poolIndex = this.pool.length;
-          await this.activateMap(slotInfo.mapElement, slotInfo.slotElement, poolIndex);
-          slotInfo.isActive = true;
-          
-          // Update map viewport to match slot location
-          const map = slotInfo.mapElement.getMap?.();
-          if (map) {
-            this.updateMapViewport(map, slotInfo.slotElement, slotInfo.mapElement);
-          }
+
+        // Wait for deactivation
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        if (this.pool.length >= this.poolSize) {
+          // Still no space - map element handles its own placeholder via deactivate
           return;
         }
+      } else {
+        return; // Not visible and no space, skip
       }
-      
-      // Still can't make space - show placeholder
-      this.showPlaceholder(slotInfo.mapElement);
-      return;
     }
 
     const poolIndex = this.pool.length;
-    await this.activateMap(slotInfo.mapElement, slotInfo.slotElement, poolIndex);
-    slotInfo.isActive = true;
 
-    // Update map viewport to match slot location
-    const map = slotInfo.mapElement.getMap?.();
-    if (map) {
-      this.updateMapViewport(map, slotInfo.slotElement, slotInfo.mapElement);
+    // Ensure map has required attributes
+    this.ensureMapAttributes(slotInfo.mapElement);
+
+    // Delegate activation to the map element (handles placeholder internally)
+    const success = await slotInfo.mapElement.activate(poolIndex);
+
+    if (success) {
+      // Add to pool tracking
+      const existingPoolItem = this.pool.find((item) => item.mapElement === slotInfo.mapElement);
+      if (existingPoolItem) {
+        existingPoolItem.inUse = true;
+        existingPoolItem.currentSlot = slotInfo.slotElement;
+        existingPoolItem.poolIndex = poolIndex;
+      } else if (this.pool.length < this.poolSize) {
+        this.pool.push({
+          mapElement: slotInfo.mapElement,
+          inUse: true,
+          currentSlot: slotInfo.slotElement,
+          poolIndex,
+        });
+      }
+
+      slotInfo.isActive = true;
+
+      // Update map viewport to match slot location
+      const map = slotInfo.mapElement.getMap?.();
+      if (map) {
+        this.updateMapViewport(map, slotInfo.slotElement, slotInfo.mapElement);
+      }
+
+      const slotId = this.getSlotId(slotInfo.slotElement);
+      console.warn(`[MapCollection] Map loaded: ${slotId}`);
     }
   }
 
@@ -1211,7 +1020,7 @@ export class MapCollectionElement extends BaseElement {
     return {
       lat: slotElement.getAttribute('data-lat') || slotElement.getAttribute('lat') || '',
       lng: slotElement.getAttribute('data-lng') || slotElement.getAttribute('lng') || '',
-      zoom: slotElement.getAttribute('data-zoom') || slotElement.getAttribute('zoom') || ''
+      zoom: slotElement.getAttribute('data-zoom') || slotElement.getAttribute('zoom') || '',
     };
   }
 
@@ -1223,20 +1032,20 @@ export class MapCollectionElement extends BaseElement {
     // First check the slot element itself
     let id: string | null = slotElement.getAttribute('data-map-id') || slotElement.id;
     if (id) return id;
-    
+
     // Check parent .map-card for data-map-id
     const parentCard = slotElement.closest('.map-card');
     if (parentCard) {
       id = parentCard.getAttribute('data-map-id');
       if (id) return id;
     }
-    
+
     // Check for gk-map child's id
     const mapElement = this.findMapInSlot(slotElement);
     if (mapElement?.id) {
       return mapElement.id;
     }
-    
+
     return 'unknown';
   }
 
@@ -1247,20 +1056,20 @@ export class MapCollectionElement extends BaseElement {
     // Check if map element has an ID
     let id: string | null = mapElement.id;
     if (id) return id;
-    
+
     // Check parent .map-card for data-map-id
     const parentCard = mapElement.closest('.map-card');
     if (parentCard) {
       id = parentCard.getAttribute('data-map-id');
       if (id) return id;
     }
-    
+
     // Check pool for the slot element
-    const poolItem = this.pool.find(item => item.mapElement === mapElement);
+    const poolItem = this.pool.find((item) => item.mapElement === mapElement);
     if (poolItem?.currentSlot) {
       return this.getSlotId(poolItem.currentSlot);
     }
-    
+
     return 'unknown';
   }
 
@@ -1274,33 +1083,79 @@ export class MapCollectionElement extends BaseElement {
     const centerY = rect.top + rect.height / 2;
     const centerX = rect.left + rect.width / 2;
     return Math.sqrt(
-      Math.pow(centerX - viewportCenterX, 2) + 
-      Math.pow(centerY - viewportCenterY, 2)
+      Math.pow(centerX - viewportCenterX, 2) + Math.pow(centerY - viewportCenterY, 2)
     );
   }
 
   /**
    * Deactivate a map for a slot (release WebGL context)
-   * Returns false if map couldn't be deactivated (e.g., still loading)
+   * Delegates deactivation to the map element itself
+   * Returns false if map couldn't be deactivated (e.g., being interacted with)
    */
   private deactivateMapForSlot(slotInfo: SlotInfo): boolean {
     if (!slotInfo.mapElement || !slotInfo.isActive) return false;
-    
-    // Double-check: if map element doesn't have pool map attribute, it's already deactivated
+
+    // Already deactivated
     if (!slotInfo.mapElement.isInPool()) {
       slotInfo.isActive = false;
       return false;
     }
 
-    const deactivated = this.deactivateMap(slotInfo.mapElement);
-    if (deactivated) {
-      slotInfo.isActive = false;
+    // Don't deactivate if the map is being interacted with
+    if (this.isMapBeingInteracted(slotInfo.mapElement)) {
+      return false;
     }
-    return deactivated;
+
+    // Don't deactivate if still loading
+    if (slotInfo.mapElement.isLoading()) {
+      return false;
+    }
+
+    const slotId = this.getSlotIdFromMapElement(slotInfo.mapElement);
+
+    // Delegate deactivation to the map element (handles placeholder internally)
+    slotInfo.mapElement.deactivate();
+
+    // Update pool tracking
+    const poolIndex = this.pool.findIndex((item) => item.mapElement === slotInfo.mapElement);
+    if (poolIndex >= 0) {
+      this.pool.splice(poolIndex, 1);
+    }
+
+    slotInfo.isActive = false;
+    console.warn(`[MapCollection] Map hidden: ${slotId}`);
+
+    return true;
   }
 
   /**
-   * Proactively deactivate maps from slots that are far off-screen
+   * Check if a map is currently being interacted with
+   * Returns true if the map element or any of its children have focus, or if user is dragging
+   */
+  private isMapBeingInteracted(mapElement: HTMLElement): boolean {
+    // Check if map element or its children have focus
+    if (mapElement.contains(document.activeElement)) {
+      return true;
+    }
+
+    // Check for mouse/touch interaction by looking at :active or :hover state
+    // This is a heuristic - browsers set these during interaction
+    if (mapElement.matches(':active')) {
+      return true;
+    }
+
+    // Check if a canvas inside the map has focus (map canvas)
+    const canvas = mapElement.querySelector('canvas');
+    if (canvas && (canvas === document.activeElement || canvas.matches(':active'))) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Proactively deactivate maps from slots that are not visible
+   * Uses visibleSlots set (from IntersectionObserver) as source of truth
    * Skip during initialization to avoid deactivating maps we just activated
    */
   private deactivateOffScreenMaps(): void {
@@ -1308,24 +1163,22 @@ export class MapCollectionElement extends BaseElement {
     if (this.isInitializing) {
       return;
     }
-    
-    const visibleSlots = this.getVisibleSlots(this.slots.map(s => s.slotElement));
-    
-    this.slots.forEach(slotInfo => {
-      if (slotInfo.isActive && !visibleSlots.includes(slotInfo.slotElement)) {
-        if (!this.isElementVisible(slotInfo.slotElement, this.viewportPadding)) {
-          this.deactivateMapForSlot(slotInfo);
-        }
+
+    // Use visibleSlots set (populated by IntersectionObserver) as source of truth
+    this.slots.forEach((slotInfo) => {
+      if (slotInfo.isActive && !this.visibleSlots.has(slotInfo.slotElement)) {
+        this.deactivateMapForSlot(slotInfo);
       }
     });
   }
 
   /**
    * Find the furthest off-screen map in the pool
+   * Uses visibleSlots set (from IntersectionObserver) as source of truth
    */
   private findFurthestOffScreenMap(): PoolItem | undefined {
     const offScreenMaps = this.pool
-      .filter(item => item.currentSlot && !this.isElementVisible(item.currentSlot, this.viewportPadding))
+      .filter((item) => item.currentSlot && !this.visibleSlots.has(item.currentSlot))
       .sort((a, b) => {
         const aDistance = this.getDistanceFromViewportCenter(a.currentSlot!);
         const bDistance = this.getDistanceFromViewportCenter(b.currentSlot!);
@@ -1342,7 +1195,7 @@ export class MapCollectionElement extends BaseElement {
     // Check if slot is already a gk-map with pool map
     if (this.isMapElement(slotElement) && slotElement.hasAttribute('data-pool-map')) {
       const mapElement = slotElement as MapElement;
-      const poolItem = this.pool.find(item => item.mapElement === mapElement);
+      const poolItem = this.pool.find((item) => item.mapElement === mapElement);
       if (poolItem) {
         poolItem.inUse = true;
         poolItem.currentSlot = slotElement;
@@ -1354,7 +1207,7 @@ export class MapCollectionElement extends BaseElement {
     const existingMap = this.findMapInSlot(slotElement);
     if (existingMap && existingMap.isInPool()) {
       // Update pool tracking
-      const poolItem = this.pool.find(item => item.mapElement === existingMap);
+      const poolItem = this.pool.find((item) => item.mapElement === existingMap);
       if (poolItem) {
         poolItem.inUse = true;
         poolItem.currentSlot = slotElement;
@@ -1363,15 +1216,15 @@ export class MapCollectionElement extends BaseElement {
     }
 
     // Find available map
-    let available = this.pool.find(item => !item.inUse);
+    let available = this.pool.find((item) => !item.inUse);
 
     if (!available) {
       // All maps in use - proactively return maps from off-screen slots before stealing
       this.returnOffScreenMaps();
-      
+
       // Try again after cleanup
-      available = this.pool.find(item => !item.inUse);
-      
+      available = this.pool.find((item) => !item.inUse);
+
       if (!available) {
         // Still no available maps - try to steal from an off-screen slot
         available = this.findStealableMap(slotElement);
@@ -1415,7 +1268,8 @@ export class MapCollectionElement extends BaseElement {
     const placeholder = document.createElement('div');
     placeholder.className = 'map-placeholder';
     placeholder.setAttribute('data-map-placeholder', 'true');
-    placeholder.style.cssText = 'width: 100%; height: 100%; background: #161b22; display: flex; align-items: center; justify-content: center; color: #8b949e; font-size: 0.9rem;';
+    placeholder.style.cssText =
+      'width: 100%; height: 100%; background: #161b22; display: flex; align-items: center; justify-content: center; color: #8b949e; font-size: 0.9rem;';
     placeholder.textContent = 'Loading map...';
     slotElement.appendChild(placeholder);
   }
@@ -1436,10 +1290,10 @@ export class MapCollectionElement extends BaseElement {
         mapElement = found;
       }
     }
-    
+
     if (!mapElement) return;
 
-    const poolItem = this.pool.find(item => item.mapElement === mapElement);
+    const poolItem = this.pool.find((item) => item.mapElement === mapElement);
     if (!poolItem) return;
 
     // Clear map data (but keep the map element in place)
@@ -1457,20 +1311,21 @@ export class MapCollectionElement extends BaseElement {
   }
 
   /**
-   * Proactively return maps from slots that are far off-screen
+   * Proactively return maps from slots that are not visible
+   * Uses visibleSlots set (from IntersectionObserver) as source of truth
    * This prevents pool exhaustion by freeing up maps before we need them
    */
   private returnOffScreenMaps(): void {
     const slots = this.getMapSlots();
-    const visibleSlots = this.getVisibleSlots(slots);
-    
-    // Return maps from slots that are not in the visible set
-    slots.forEach(slot => {
-      if (!visibleSlots.includes(slot)) {
-        const hasPoolMap = (this.isMapElement(slot) && slot.hasAttribute('data-pool-map')) ||
-                          slot.querySelector('gk-map[data-pool-map="true"]');
-        
-        if (hasPoolMap && !this.isElementVisible(slot, this.viewportPadding)) {
+
+    // Return maps from slots that are not visible (according to IntersectionObserver)
+    slots.forEach((slot) => {
+      if (!this.visibleSlots.has(slot)) {
+        const hasPoolMap =
+          (this.isMapElement(slot) && slot.hasAttribute('data-pool-map')) ||
+          slot.querySelector('gk-map[data-pool-map="true"]');
+
+        if (hasPoolMap) {
           this.returnMapFromSlot(slot);
         }
       }
@@ -1485,7 +1340,7 @@ export class MapCollectionElement extends BaseElement {
     const rect = slot.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
-    
+
     return (
       rect.bottom < -this.viewportPadding ||
       rect.top > viewportHeight + this.viewportPadding ||
@@ -1499,7 +1354,7 @@ export class MapCollectionElement extends BaseElement {
    */
   private findStealableMap(requestingSlot: HTMLElement): PoolItem | undefined {
     const offScreenMaps = this.pool
-      .filter(item => {
+      .filter((item) => {
         if (!item.currentSlot || item.currentSlot === requestingSlot || !item.inUse) return false;
         return this.isOffScreen(item.currentSlot);
       })
@@ -1516,18 +1371,20 @@ export class MapCollectionElement extends BaseElement {
    * Force return the furthest off-screen map as a last resort
    */
   private forceReturnFurthestMap(requestingSlot: HTMLElement): PoolItem | undefined {
-    const allInUse = this.pool.filter(item => item.inUse && item.currentSlot && item.currentSlot !== requestingSlot);
-    
+    const allInUse = this.pool.filter(
+      (item) => item.inUse && item.currentSlot && item.currentSlot !== requestingSlot
+    );
+
     if (allInUse.length === 0) return undefined;
-    
+
     // Sort by distance from viewport and return the furthest
     const sorted = allInUse
-      .map(item => ({
+      .map((item) => ({
         item,
-        distance: this.getDistanceFromViewportCenter(item.currentSlot!)
+        distance: this.getDistanceFromViewportCenter(item.currentSlot!),
       }))
       .sort((a, b) => b.distance - a.distance);
-    
+
     if (sorted.length > 0) {
       const furthest = sorted[0].item;
       if (furthest.currentSlot) {
@@ -1535,7 +1392,7 @@ export class MapCollectionElement extends BaseElement {
       }
       return furthest;
     }
-    
+
     return undefined;
   }
 
@@ -1606,9 +1463,9 @@ export class MapCollectionElement extends BaseElement {
       detail: {
         mapElement: poolItem.mapElement,
         slotElement: slotElement,
-        slotId: slotElement.getAttribute('data-map-id')
+        slotId: slotElement.getAttribute('data-map-id'),
       },
-      bubbles: true
+      bubbles: true,
     });
     slotElement.dispatchEvent(event);
   }
@@ -1646,40 +1503,50 @@ export class MapCollectionElement extends BaseElement {
   }
 
   /**
-   * Process visibility changes from IntersectionObserver entries
-   * Uses intersection ratio for smarter visibility detection
+   * Update the visibleSlots set based on IntersectionObserver entries
+   * This should ALWAYS be called when IntersectionObserver fires, even during fast scrolling
+   */
+  private updateVisibleSlotsSet(entries: IntersectionObserverEntry[]): void {
+    entries.forEach((entry) => {
+      const slotElement = entry.target as HTMLElement;
+
+      // Use isIntersecting as the primary check - browser tells us if it's visible
+      // Also check intersection ratio for meaningful visibility (at least 10%)
+      const isVisible = entry.isIntersecting && entry.intersectionRatio >= 0.1;
+
+      if (isVisible) {
+        this.visibleSlots.add(slotElement);
+      } else {
+        this.visibleSlots.delete(slotElement);
+      }
+    });
+  }
+
+  /**
+   * Process visibility changes - activate/deactivate maps based on visibleSlots set
+   * IntersectionObserver is the source of truth for visibility - no manual calculations
    */
   private processVisibilityChanges(entries: IntersectionObserverEntry[]): void {
-    // Fix any stuck maps first
-    this.fixStuckMaps();
-    
-    // First, proactively deactivate maps from slots that are far off-screen
-    this.deactivateOffScreenMaps();
-
-    entries.forEach(entry => {
+    // Activate/deactivate based on the visibility state (already updated by updateVisibleSlotsSet)
+    entries.forEach((entry) => {
       const slotElement = entry.target as HTMLElement;
-      const slotInfo = this.slots.find(s => s.slotElement === slotElement);
-      
+      const slotInfo = this.slots.find((s) => s.slotElement === slotElement);
+
       if (!slotInfo || !slotInfo.mapElement) {
         return;
       }
 
-      // Use intersection ratio for smarter visibility detection
-      // Require at least 10% visibility to consider it "visible"
-      const minVisibleRatio = 0.1;
-      const isMeaningfullyVisible = entry.intersectionRatio >= minVisibleRatio;
+      const isVisible = this.visibleSlots.has(slotElement);
 
-      if (isMeaningfullyVisible) {
-        // Slot scrolled into view with meaningful visibility - activate map if not already active
-        // Also check if map has placeholder (might be stuck in inactive state)
+      if (isVisible) {
+        // Slot is visible - activate map if not already active
         const hasPlaceholder = slotInfo.mapElement?.hasPlaceholder();
         if (!slotInfo.isActive || hasPlaceholder) {
           this.activateMapForSlot(slotInfo);
         }
       } else {
-        // Slot scrolled out of view or has very low visibility - deactivate if truly off-screen
-        // Use stricter check (no padding) to ensure it's really off-screen before deactivating
-        if (slotInfo.isActive && !this.isElementVisible(slotElement, 0, 0.05)) {
+        // Slot is not visible according to IntersectionObserver - deactivate
+        if (slotInfo.isActive) {
           this.deactivateMapForSlot(slotInfo);
         }
       }
@@ -1691,22 +1558,22 @@ export class MapCollectionElement extends BaseElement {
    * Two-phase approach: first return off-screen maps, then assign to visible slots
    */
   private async processAllSlotsAfterScrollStop(): Promise<void> {
-    // Phase 1: Return maps from slots that are truly off-screen (negative buffer)
-    // Use stricter check (-100px) so slots must be COMPLETELY off-screen
-    this.slots.forEach(slotInfo => {
-      if (slotInfo.isActive) {
-        const isStrictlyVisible = this.isElementVisible(slotInfo.slotElement, -100);
-        if (!isStrictlyVisible) {
-          this.deactivateMapForSlot(slotInfo);
-        }
+    // Don't process if we're still scrolling fast
+    if (this.isScrollingFast) return;
+
+    // Phase 1: Return maps from slots that are not visible (according to IntersectionObserver)
+    // Process all non-visible active slots
+    for (const slotInfo of this.slots) {
+      if (slotInfo.isActive && !this.visibleSlots.has(slotInfo.slotElement)) {
+        this.deactivateMapForSlot(slotInfo);
       }
-    });
+    }
 
     // Phase 2: Assign maps to visible slots, prioritized by distance from viewport center
     const viewportCenter = window.innerHeight / 2;
-    const visibleSlots = this.slots
-      .map(slotInfo => {
-        const isVisible = this.isElementVisible(slotInfo.slotElement, 100);
+    const slotsToActivate = this.slots
+      .map((slotInfo) => {
+        const isVisible = this.visibleSlots.has(slotInfo.slotElement);
         const hasPlaceholder = slotInfo.mapElement?.hasPlaceholder();
         // Activate if not active OR if it has a placeholder (stuck in inactive state)
         if (isVisible && (!slotInfo.isActive || hasPlaceholder)) {
@@ -1717,13 +1584,16 @@ export class MapCollectionElement extends BaseElement {
         }
         return null;
       })
-      .filter(item => item !== null)
+      .filter((item) => item !== null)
       .sort((a, b) => a!.distanceFromCenter - b!.distanceFromCenter);
 
-    // Only activate the closest slots (limited by pool size)
-    const slotsToActivate = visibleSlots.slice(0, this.poolSize - this.pool.length);
+    // Activate the closest visible slots - activateMapForSlot will handle pool space
     for (const item of slotsToActivate) {
       if (item && (!item.slotInfo.isActive || item.slotInfo.mapElement?.hasPlaceholder())) {
+        // Stop if we've filled the pool
+        if (this.pool.length >= this.poolSize) {
+          break;
+        }
         await this.activateMapForSlot(item.slotInfo);
       }
     }
@@ -1733,11 +1603,11 @@ export class MapCollectionElement extends BaseElement {
    * Get pool statistics
    */
   getStats(): { totalMaps: number; inUse: number; available: number } {
-    const inUse = this.pool.filter(item => item.inUse).length;
+    const inUse = this.pool.filter((item) => item.inUse).length;
     return {
       totalMaps: this.pool.length,
       inUse: inUse,
-      available: Math.max(0, this.poolSize - this.pool.length)
+      available: Math.max(0, this.poolSize - this.pool.length),
     };
   }
 
@@ -1748,14 +1618,14 @@ export class MapCollectionElement extends BaseElement {
     // Get unique map IDs from active pool items
     const activeIds = new Set<string>();
     this.pool
-      .filter(item => item.inUse && item.currentSlot)
-      .forEach(item => {
+      .filter((item) => item.inUse && item.currentSlot)
+      .forEach((item) => {
         const slotId = this.getSlotId(item.currentSlot!);
         if (slotId !== 'unknown') {
           activeIds.add(slotId);
         }
       });
-    
+
     // Return as array, limited to poolSize
     return Array.from(activeIds).slice(0, this.poolSize);
   }
@@ -1765,4 +1635,3 @@ export class MapCollectionElement extends BaseElement {
 if (!customElements.get('gk-map-collection')) {
   customElements.define('gk-map-collection', MapCollectionElement);
 }
-
