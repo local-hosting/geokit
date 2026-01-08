@@ -1,17 +1,17 @@
 /**
  * Base Control Component
- * 
+ *
  * Base class for all control components
  * Provides common utilities for attribute handling
  */
 
-import { BaseElement } from './base-element';
+import { MapChildElement } from './map-child-element';
 
 /**
  * Base class for all map control components
- * Extends BaseElement with control-specific utilities
+ * Extends MapChildElement to find parent map and handle lifecycle
  */
-export class BaseControl extends BaseElement {
+export class BaseControl extends MapChildElement {
   /**
    * Get a boolean attribute value
    * Handles common patterns: 'true' string, 'false' string, or default value
@@ -62,4 +62,3 @@ export class BaseControl extends BaseElement {
     return !!(this.control && this.map);
   }
 }
-
