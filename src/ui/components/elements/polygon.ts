@@ -145,7 +145,9 @@ export class PolygonElement extends BaseElement {
 
     // Parse points - read from property first
     const pointsFromProp = this._propPoints;
-    const pointsAttr = pointsFromProp ? JSON.stringify(pointsFromProp) : this.safeGetAttribute('points');
+    const pointsAttr = pointsFromProp
+      ? JSON.stringify(pointsFromProp)
+      : this.safeGetAttribute('points');
     if (!pointsAttr) {
       console.warn(`[Polygon] points attribute is required for ${this.sourceId}`);
       return;
@@ -199,7 +201,8 @@ export class PolygonElement extends BaseElement {
 
       // Add fill layer - read from properties first
       const fillColor = this._propFillColor ?? this.safeGetAttribute('fill-color') ?? '#3FB1CE';
-      const fillOpacity = this._propFillOpacity ?? parseFloat(this.safeGetAttribute('fill-opacity') || '0.5');
+      const fillOpacity =
+        this._propFillOpacity ?? parseFloat(this.safeGetAttribute('fill-opacity') || '0.5');
       this.map.addLayer(
         {
           id: this.layerId,
@@ -214,9 +217,12 @@ export class PolygonElement extends BaseElement {
       );
 
       // Add stroke layer (after fill layer) - read from properties first
-      const strokeColor = this._propStrokeColor ?? this.safeGetAttribute('stroke-color') ?? '#000000';
-      const strokeWidth = this._propStrokeWidth ?? parseFloat(this.safeGetAttribute('stroke-width') || '2');
-      const strokeOpacity = this._propStrokeOpacity ?? parseFloat(this.safeGetAttribute('stroke-opacity') || '1');
+      const strokeColor =
+        this._propStrokeColor ?? this.safeGetAttribute('stroke-color') ?? '#000000';
+      const strokeWidth =
+        this._propStrokeWidth ?? parseFloat(this.safeGetAttribute('stroke-width') || '2');
+      const strokeOpacity =
+        this._propStrokeOpacity ?? parseFloat(this.safeGetAttribute('stroke-opacity') || '1');
       this.map.addLayer(
         {
           id: this.strokeLayerId,
@@ -285,15 +291,18 @@ export class PolygonElement extends BaseElement {
   private updateFillStyle(): void {
     this.updatePaintProperties(this.layerId, {
       'fill-color': this._propFillColor ?? this.safeGetAttribute('fill-color') ?? '#3FB1CE',
-      'fill-opacity': this._propFillOpacity ?? parseFloat(this.safeGetAttribute('fill-opacity') || '0.5'),
+      'fill-opacity':
+        this._propFillOpacity ?? parseFloat(this.safeGetAttribute('fill-opacity') || '0.5'),
     });
   }
 
   private updateStrokeStyle(): void {
     this.updatePaintProperties(this.strokeLayerId, {
       'line-color': this._propStrokeColor ?? this.safeGetAttribute('stroke-color') ?? '#000000',
-      'line-width': this._propStrokeWidth ?? parseFloat(this.safeGetAttribute('stroke-width') || '2'),
-      'line-opacity': this._propStrokeOpacity ?? parseFloat(this.safeGetAttribute('stroke-opacity') || '1'),
+      'line-width':
+        this._propStrokeWidth ?? parseFloat(this.safeGetAttribute('stroke-width') || '2'),
+      'line-opacity':
+        this._propStrokeOpacity ?? parseFloat(this.safeGetAttribute('stroke-opacity') || '1'),
     });
   }
 
@@ -314,7 +323,9 @@ export class PolygonElement extends BaseElement {
   public getBounds(): { minLng: number; minLat: number; maxLng: number; maxLat: number } | null {
     // Read from property first
     const pointsFromProp = this._propPoints;
-    const pointsAttr = pointsFromProp ? JSON.stringify(pointsFromProp) : this.safeGetAttribute('points');
+    const pointsAttr = pointsFromProp
+      ? JSON.stringify(pointsFromProp)
+      : this.safeGetAttribute('points');
     if (!pointsAttr) return null;
 
     try {
@@ -352,11 +363,11 @@ export class PolygonElement extends BaseElement {
    */
   static create(options: PolygonOptions): PolygonElement {
     const polygon = document.createElement('gk-polygon') as PolygonElement;
-    
+
     // Store options to set as attributes when element is connected to DOM
     // This avoids JSDOM/Happy-DOM limitations where attributes can't be set before connection
     (polygon as any)._createOptions = options;
-    
+
     return polygon;
   }
 
@@ -386,8 +397,9 @@ export class PolygonElement extends BaseElement {
       strokeWidth = 2,
       strokeOpacity = 1,
       visible = true,
-      simplify = true,
-      maxPoints = 100,
+      // TODO: implement simplification
+      simplify: _simplify = true,
+      maxPoints: _maxPoints = 100,
     } = options;
 
     const polygons: PolygonElement[] = [];
@@ -395,10 +407,7 @@ export class PolygonElement extends BaseElement {
     // Extract geometry from Feature or use directly
     const geometry = 'geometry' in geojson ? geojson.geometry : geojson;
 
-    const addPolygonRings = (
-      coordinates: number[][][],
-      opts: typeof options
-    ): void => {
+    const addPolygonRings = (coordinates: number[][][], opts: typeof options): void => {
       // Only process the first ring (outer boundary)
       // Subsequent rings are holes, which gk-polygon doesn't support yet
       const outerRing = coordinates[0];

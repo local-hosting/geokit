@@ -927,6 +927,9 @@ export class MapElement extends BaseElement {
    * Cleans up WebGL resources
    */
   public deactivate(): void {
+    // DEBUG: Log who called deactivate
+    console.error('[gk-map] DEACTIVATE called! Stack:', new Error().stack);
+
     // Show placeholder immediately
     this.showPlaceholder();
 
@@ -989,6 +992,159 @@ export class MapElement extends BaseElement {
         }, 500);
       }
     });
+  }
+
+  /**
+   * Wait for map style to be loaded
+   * Returns immediately if already loaded
+   */
+  public async whenStyleReady(timeout: number = 5000): Promise<void> {
+    if (!this.map) {
+      throw new Error('[gk-map] No map instance');
+    }
+
+    const map = this.map as any;
+
+    // Check if already loaded
+    if (typeof map.isStyleLoaded === 'function' && map.isStyleLoaded()) {
+      return;
+    }
+
+    return new Promise((resolve, _reject) => {
+      const timeoutId = setTimeout(() => {
+        map.off?.('style.load', handleStyleLoad);
+        map.off?.('load', handleLoad);
+        // Resolve anyway after timeout - map might be usable
+        console.warn('[gk-map] Style load timeout, proceeding anyway');
+        resolve();
+      }, timeout);
+
+      const handleStyleLoad = () => {
+        clearTimeout(timeoutId);
+        map.off?.('load', handleLoad);
+        resolve();
+      };
+
+      const handleLoad = () => {
+        if (map.isStyleLoaded?.()) {
+          clearTimeout(timeoutId);
+          map.off?.('style.load', handleStyleLoad);
+          resolve();
+        }
+      };
+
+      map.on?.('style.load', handleStyleLoad);
+      map.on?.('load', handleLoad);
+
+      // Also poll in case events don't fire
+      const checkReady = () => {
+        if (map.isStyleLoaded?.()) {
+          clearTimeout(timeoutId);
+          map.off?.('style.load', handleStyleLoad);
+          map.off?.('load', handleLoad);
+          resolve();
+        } else {
+          requestAnimationFrame(checkReady);
+        }
+      };
+      requestAnimationFrame(checkReady);
+    });
+  }
+
+  /**
+   * Set map bounds with proper timing handling
+   * Handles resize, fitBounds, and ensures visual update
+   *
+   * @param bbox - Bounding box [minLng, minLat, maxLng, maxLat]
+   * @param options - Optional fitBounds options
+   */
+  public async setBounds(
+    bbox: [number, number, number, number],
+    options: {
+      padding?: number | { top: number; bottom: number; left: number; right: number };
+      pitch?: number;
+      bearing?: number;
+      maxZoom?: number;
+    } = {}
+  ): Promise<void> {
+    if (!this.map) {
+      throw new Error('[gk-map] No map instance');
+    }
+
+    const map = this.map as any;
+    const [minLng, minLat, maxLng, maxLat] = bbox;
+
+    // Default padding
+    const padding = options.padding ?? { top: 40, bottom: 40, left: 40, right: 40 };
+    const pitch = options.pitch ?? 0;
+    const bearing = options.bearing ?? 0;
+
+    // Wait for style to be ready
+    await this.whenStyleReady();
+
+    // Ensure map has proper dimensions
+    const rect = this.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      // Wait for layout
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          const r = this.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            resolve();
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        check();
+      });
+    }
+
+    // Resize map to ensure canvas dimensions are correct
+    if (typeof map.resize === 'function') {
+      map.resize();
+    }
+
+    // Wait a frame for resize to take effect
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    // Apply fitBounds
+    try {
+      map.fitBounds(
+        [
+          [minLng, minLat],
+          [maxLng, maxLat],
+        ],
+        {
+          padding,
+          pitch,
+          bearing,
+          duration: 0, // Instant, no animation
+          maxZoom: options.maxZoom,
+        }
+      );
+
+      // Force repaint
+      if (typeof map.triggerRepaint === 'function') {
+        map.triggerRepaint();
+      }
+
+      // Wait for viewport to settle
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(resolve);
+        });
+      });
+    } catch (error) {
+      console.warn('[gk-map] Error in setBounds:', error);
+      // Fallback to center
+      const centerLng = (minLng + maxLng) / 2;
+      const centerLat = (minLat + maxLat) / 2;
+      try {
+        map.jumpTo?.({ center: [centerLng, centerLat], pitch, bearing });
+      } catch {
+        // Ignore fallback errors
+      }
+    }
   }
 
   /**
