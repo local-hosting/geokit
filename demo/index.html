@@ -14,6 +14,19 @@
       lng="-74.006" 
       zoom="12"
       style="streets">
+      <!-- Demo isochrone: 15-minute driving time from NYC center (H3 hexagon version) -->
+      <gk-isochrone 
+        lat="40.7128" 
+        lng="-74.006" 
+        time="15" 
+        mode="driving"
+        render="h3"
+        h3-resolution="10"
+        color="#FF6B6B"
+        opacity="0.5"
+        stroke-color="#C92A2A"
+        stroke-width="4">
+      </gk-isochrone>
     </gk-map>
   </div>
 
