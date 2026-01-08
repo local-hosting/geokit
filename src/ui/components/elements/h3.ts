@@ -8,7 +8,7 @@
  * <gk-h3 h3-index="8828308281fffff"></gk-h3>
  */
 
-import { BaseElement } from '../base-element';
+import { MapChildElement } from '../map-child-element';
 import { coordinatesToH3, h3ToBoundary } from '../../../utils/h3';
 
 export interface H3Options {
@@ -22,7 +22,7 @@ export interface H3Options {
   strokeWidth?: number;
 }
 
-export class H3Element extends BaseElement {
+export class H3Element extends MapChildElement {
   static observedAttributes = [
     'lat',
     'lng',

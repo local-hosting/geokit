@@ -7,7 +7,7 @@
  * <gk-popup lat="40.7128" lng="-74.0060" content="Hello World"></gk-popup>
  */
 
-import { BaseElement } from '../base-element';
+import { MapChildElement } from '../map-child-element';
 import { getUIProvider } from '../../providers/registry';
 
 export interface PopupOptions {
@@ -18,7 +18,7 @@ export interface PopupOptions {
   offset?: number;
 }
 
-export class PopupElement extends BaseElement {
+export class PopupElement extends MapChildElement {
   static observedAttributes = ['lat', 'lng', 'content', 'anchor', 'offset'];
 
   private popupInstance: any = null;

@@ -7,7 +7,7 @@
  * <mapi-polygon points="[[40.7,-74],[40.8,-74],[40.8,-73.9]]" fill-color="#ff0000"></mapi-polygon>
  */
 
-import { BaseElement } from '../base-element';
+import { MapChildElement } from '../map-child-element';
 import { normalizeCoordinatesArray } from '../../../utils/coordinates';
 import { simplifyPolygonRingToMaxPoints } from '../../../utils/simplify';
 import type { LatLon } from '../../../types';
@@ -23,7 +23,7 @@ export interface PolygonOptions {
   interactive?: boolean;
 }
 
-export class PolygonElement extends BaseElement {
+export class PolygonElement extends MapChildElement {
   static observedAttributes = [
     'points',
     'fill-color',
@@ -81,8 +81,6 @@ export class PolygonElement extends BaseElement {
     this.sourceId = `polygon-source-${crypto.randomUUID()}`;
     this.layerId = `polygon-fill-${crypto.randomUUID()}`;
     this.strokeLayerId = `polygon-stroke-${crypto.randomUUID()}`;
-
-    // connectedCallback called
 
     // Find parent map
     this.addToParentMap();
