@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>geokit Map Collection - Scrolling Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      line-height: 1.6;
+    }
+
+    .header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .header p {
+      color: #8b949e;
+      font-size: 0.9rem;
+    }
+
+    .stats {
+      display: flex;
+      gap: 2rem;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+    }
+
+    .active-maps-list {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    .active-maps-list-label {
+      color: #8b949e;
+      font-size: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .active-maps-names {
+      color: #58a6ff;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .active-map-name {
+      background: #21262d;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid #30363d;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      color: #8b949e;
+      font-size: 0.75rem;
+    }
+
+    .stat-value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #58a6ff;
+    }
+
+    .map-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      padding: 2rem;
+      padding-left: 250px;
+      padding-right: 250px;
+      max-width: 1600px;
+      margin: 0 auto;
+      --map-height: 400px;
+    }
+
+    .map-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .map-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .map-card-header {
+      padding: 1rem;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .map-card-header h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .map-card-header p {
+      color: #8b949e;
+      font-size: 0.85rem;
+    }
+
+    .map-slot {
+      width: 100%;
+      height: 400px;
+      position: relative;
+      background: #161b22;
+    }
+
+    .map-slot gk-map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .map-card gk-map {
+      width: 100%;
+      height: var(--map-height, 400px);
+      display: block;
+      min-height: var(--map-height, 400px);
+      max-height: var(--map-height, 400px);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .map-grid gk-map {
+      width: 100%;
+      height: var(--map-height, 400px);
+      display: block;
+      min-height: var(--map-height, 400px);
+    }
+
+    .map-placeholder {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #161b22;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #8b949e;
+      font-size: 0.9rem;
+      z-index: 1;
+    }
+
+    gk-map {
+      position: relative;
+      box-sizing: border-box;
+    }
+
+    gk-map canvas {
+      max-width: 100%;
+      max-height: 100%;
+      box-sizing: border-box;
+    }
+
+    gk-map[data-pool-map="true"] .map-placeholder {
+      display: none;
+    }
+
+    .info-banner {
+      background: #1f6feb;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 1200px) {
+      .map-grid {
+        padding-left: 150px;
+        padding-right: 150px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .map-grid {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+        gap: 1rem;
+      }
+
+      .header {
+        padding: 1rem;
+      }
+
+      .stats {
+        flex-direction: column;
+        gap: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Map Collection - Scrolling Demo</h1>
+    <p>Scroll through the grid to see maps being reused from a pool. Only a few maps are active at a time.</p>
+    <div class="stats" id="stats">
+      <div class="stat">
+        <span class="stat-label">Total Maps</span>
+        <span class="stat-value" id="total-maps">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Active Maps</span>
+        <span class="stat-value" id="active-maps">-</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Available</span>
+        <span class="stat-value" id="available-maps">-</span>
+      </div>
+    </div>
+    <div class="active-maps-list">
+      <div class="active-maps-list-label">Active Maps:</div>
+      <div class="active-maps-names" id="active-maps-names">-</div>
+    </div>
+  </div>
+
+  <div class="info-banner">
+    This demo shows how <code>gk-map-collection</code> manages a pool of map instances that are reused as you scroll.
+  </div>
+
+  <div class="map-grid">
+    <gk-map-collection 
+      id="map-collection"
+      pool-size="6" 
+      api-key="RQ3bgkQD4yIU6DBJbX0I"
+      map-style="dataviz-dark"
+      viewport-padding="300"
+      style="display: contents;">
+    
+    <!-- Map cards with different locations -->
+    <div class="map-card" data-map-id="nyc">
+      <div class="map-card-header">
+        <h3>New York City</h3>
+        <p>40.7128°N, 74.0060°W</p>
+      </div>
+      <gk-map lat="40.7128" lng="-74.0060" zoom="12"></gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="la">
+      <div class="map-card-header">
+        <h3>Los Angeles</h3>
+        <p>34.0522°N, 118.2437°W</p>
+      </div>
+      <gk-map lat="34.0522" lng="-118.2437" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="chicago">
+      <div class="map-card-header">
+        <h3>Chicago</h3>
+        <p>41.8781°N, 87.6298°W</p>
+      </div>
+      <gk-map lat="41.8781" lng="-87.6298" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="houston">
+      <div class="map-card-header">
+        <h3>Houston</h3>
+        <p>29.7604°N, 95.3698°W</p>
+      </div>
+      <gk-map lat="29.7604" lng="-95.3698" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="phoenix">
+      <div class="map-card-header">
+        <h3>Phoenix</h3>
+        <p>33.4484°N, 112.0740°W</p>
+      </div>
+      <gk-map lat="33.4484" lng="-112.0740" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="philadelphia">
+      <div class="map-card-header">
+        <h3>Philadelphia</h3>
+        <p>39.9526°N, 75.1652°W</p>
+      </div>
+      <gk-map lat="39.9526" lng="-75.1652" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="san-antonio">
+      <div class="map-card-header">
+        <h3>San Antonio</h3>
+        <p>29.4241°N, 98.4936°W</p>
+      </div>
+      <gk-map lat="29.4241" lng="-98.4936" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="san-diego">
+      <div class="map-card-header">
+        <h3>San Diego</h3>
+        <p>32.7157°N, 117.1611°W</p>
+      </div>
+      <gk-map lat="32.7157" lng="-117.1611" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="dallas">
+      <div class="map-card-header">
+        <h3>Dallas</h3>
+        <p>32.7767°N, 96.7970°W</p>
+      </div>
+      <gk-map lat="32.7767" lng="-96.7970" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="san-jose">
+      <div class="map-card-header">
+        <h3>San Jose</h3>
+        <p>37.3382°N, 121.8863°W</p>
+      </div>
+      <gk-map lat="37.3382" lng="-121.8863" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="austin">
+      <div class="map-card-header">
+        <h3>Austin</h3>
+        <p>30.2672°N, 97.7431°W</p>
+      </div>
+      <gk-map lat="30.2672" lng="-97.7431" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="jacksonville">
+      <div class="map-card-header">
+        <h3>Jacksonville</h3>
+        <p>30.3322°N, 81.6557°W</p>
+      </div>
+      <gk-map lat="30.3322" lng="-81.6557" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="san-francisco">
+      <div class="map-card-header">
+        <h3>San Francisco</h3>
+        <p>37.7749°N, 122.4194°W</p>
+      </div>
+      <gk-map lat="37.7749" lng="-122.4194" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="indianapolis">
+      <div class="map-card-header">
+        <h3>Indianapolis</h3>
+        <p>39.7684°N, 86.1581°W</p>
+      </div>
+      <gk-map lat="39.7684" lng="-86.1581" zoom="12">
+      </gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="columbus">
+      <div class="map-card-header">
+        <h3>Columbus</h3>
+        <p>39.9612°N, 82.9988°W</p>
+      </div>
+      <gk-map lat="39.9612" lng="-82.9988" zoom="12"></gk-map>
+    </div>
+
+    <div class="map-card" data-map-id="fort-worth">
+      <div class="map-card-header">
+        <h3>Fort Worth</h3>
+        <p>32.7555°N, 97.3308°W</p>
+      </div>
+      <div class="map-slot" data-lat="32.7555" data-lng="-97.3308" data-zoom="12">
+        <div class="map-placeholder">Loading map...</div>
+      </div>
+    </div>
+
+    <div class="map-card" data-map-id="charlotte">
+      <div class="map-card-header">
+        <h3>Charlotte</h3>
+        <p>35.2271°N, 80.8431°W</p>
+      </div>
+      <div class="map-slot" data-lat="35.2271" data-lng="-80.8431" data-zoom="12">
+        <div class="map-placeholder">Loading map...</div>
+      </div>
+    </div>
+
+    <div class="map-card" data-map-id="seattle">
+      <div class="map-card-header">
+        <h3>Seattle</h3>
+        <p>47.6062°N, 122.3321°W</p>
+      </div>
+      <div class="map-slot" data-lat="47.6062" data-lng="-122.3321" data-zoom="12">
+        <div class="map-placeholder">Loading map...</div>
+      </div>
+    </div>
+
+    <div class="map-card" data-map-id="denver">
+      <div class="map-card-header">
+        <h3>Denver</h3>
+        <p>39.7392°N, 104.9903°W</p>
+      </div>
+      <div class="map-slot" data-lat="39.7392" data-lng="-104.9903" data-zoom="12">
+        <div class="map-placeholder">Loading map...</div>
+      </div>
+    </div>
+
+    <div class="map-card" data-map-id="washington">
+      <div class="map-card-header">
+        <h3>Washington DC</h3>
+        <p>38.9072°N, 77.0369°W</p>
+      </div>
+      <div class="map-slot" data-lat="38.9072" data-lng="-77.0369" data-zoom="12">
+        <div class="map-placeholder">Loading map...</div>
+      </div>
+    </div>
+
+    <div class="map-card" data-map-id="boston">
+      <div class="map-card-header">
+        <h3>Boston</h3>
+        <p>42.3601°N, 71.0589°W</p>
+      </div>
+      <div class="map-slot" data-lat="42.3601" data-lng="-71.0589" data-zoom="12">
+        <div class="map-placeholder">Loading map...</div>
+      </div>
+    </div>
+
+    </gk-map-collection>
+  </div>
+
+  <script type="module">
+    // Import and configure first (this sets up global API keys)
+    import { configure } from '@twinfile/geokit/ui';
+    
+    // Configure API keys from environment
+    configure({
+      maptiler: { 
+        apiKey: import.meta.env.MAPTILER_API_KEY 
+      },
+      mapbox: { 
+        accessToken: import.meta.env.MAPBOX_ACCESS_TOKEN 
+      }
+    });
+    
+    // Now import the UI components
+    await import('@twinfile/geokit/ui');
+    
+    let collection;
+    
+    try {
+      await customElements.whenDefined('gk-map-collection');
+      collection = document.getElementById('map-collection');
+    } catch (error) {
+      console.error('[Demo] Error loading:', error);
+    }
+    
+    const totalMapsEl = document.getElementById('total-maps');
+    const activeMapsEl = document.getElementById('active-maps');
+    const availableMapsEl = document.getElementById('available-maps');
+    const activeMapsNamesEl = document.getElementById('active-maps-names');
+
+    function updateStats() {
+      if (!collection) {
+        console.warn('[Demo] Collection element not found');
+        return;
+      }
+      
+      if (!collection.getStats) {
+        console.warn('[Demo] getStats method not available on collection');
+        return;
+      }
+      
+      try {
+        const stats = collection.getStats();
+        // Update UI without logging (stats are visible in the UI)
+        totalMapsEl.textContent = String(stats?.totalMaps ?? 0);
+        activeMapsEl.textContent = String(stats?.inUse ?? 0);
+        availableMapsEl.textContent = String(stats?.available ?? 0);
+
+        // Update active map names
+        if (collection.getActiveMapNames && activeMapsNamesEl) {
+          const activeNames = collection.getActiveMapNames();
+          if (activeNames.length === 0) {
+            activeMapsNamesEl.textContent = 'None';
+          } else {
+            activeMapsNamesEl.innerHTML = activeNames
+              .map(name => `<span class="active-map-name">${name}</span>`)
+              .join('');
+          }
+        }
+      } catch (error) {
+        console.error('[Demo] Error getting stats:', error);
+        totalMapsEl.textContent = '?';
+        activeMapsEl.textContent = '?';
+        availableMapsEl.textContent = '?';
+        if (activeMapsNamesEl) {
+          activeMapsNamesEl.textContent = '?';
+        }
+      }
+    }
+
+    // Update stats periodically
+    setInterval(updateStats, 500);
+
+    // Update stats when collection is ready
+    collection?.addEventListener('map-collection-ready', () => {
+      updateStats();
+    });
+
+    // Update stats when maps are moved
+    document.addEventListener('map-moved-to-slot', () => {
+      updateStats();
+    });
+
+    // Initial update
+    setTimeout(updateStats, 1000);
+  </script>
+</body>
+</html>
+
