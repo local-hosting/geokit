@@ -877,25 +877,11 @@ export class MapCollectionElement extends BaseElement {
   }
 
   /**
-   * Update map viewport to match slot coordinates
-   * Uses MapElement's public API instead of reaching into the underlying map
+   * Resize map after it's been moved or activated
+   * Note: Viewport positioning (center/zoom/bounds) is the application's responsibility
+   * The collection only handles resizing to fit the container
    */
-  private updateMapViewport(slotElement: HTMLElement, mapElement: MapElement): void {
-    const coords = this.getSlotCoordinates(slotElement);
-    // Fallback to map element attributes if slot doesn't have them
-    const lat = coords.lat || mapElement.getAttribute('lat') || '';
-    const lng = coords.lng || mapElement.getAttribute('lng') || '';
-    const zoom = coords.zoom || mapElement.getAttribute('zoom') || '';
-
-    // Use MapElement's public API
-    if (lat && lng) {
-      mapElement.setCenter(parseFloat(lat), parseFloat(lng));
-    }
-    if (zoom) {
-      mapElement.setZoom(parseFloat(zoom));
-    }
-
-    // Resize after DOM updates (needs underlying map access)
+  private resizeMap(mapElement: MapElement): void {
     requestAnimationFrame(() => {
       const map = mapElement.getMap?.();
       if (map && typeof map.resize === 'function') {
@@ -988,7 +974,7 @@ export class MapCollectionElement extends BaseElement {
       slotInfo.isActive = true;
 
       // Update map viewport to match slot location
-      this.updateMapViewport(slotInfo.slotElement, slotInfo.mapElement);
+      this.resizeMap(slotInfo.mapElement);
 
       const slotId = this.getSlotId(slotInfo.slotElement);
       console.warn(`[MapCollection] Map loaded: ${slotId}`);
@@ -1445,7 +1431,7 @@ export class MapCollectionElement extends BaseElement {
 
     // Reset map view
     try {
-      this.updateMapViewport(slotElement, poolItem.mapElement);
+      this.resizeMap(poolItem.mapElement);
     } catch (error) {
       console.warn('[MapCollection] Error resetting map view:', error);
     }
