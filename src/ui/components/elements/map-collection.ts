@@ -56,8 +56,6 @@ export class MapCollectionElement extends BaseElement {
     });
   }
 
-  protected addToParentMap(): void {}
-
   disconnectedCallback(): void {
     this.cleanup();
     super.disconnectedCallback();

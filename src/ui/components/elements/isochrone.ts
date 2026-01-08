@@ -7,7 +7,7 @@
  * <gk-isochrone lat="40.7128" lng="-74.0060" time="15" mode="driving"></gk-isochrone>
  */
 
-import { BaseElement } from '../base-element';
+import { MapChildElement } from '../map-child-element';
 import { getProviderForCapability } from '../../../api/providers/registry';
 
 export interface IsochroneOptions {
@@ -21,7 +21,7 @@ export interface IsochroneOptions {
   strokeWidth?: number;
 }
 
-export class IsochroneElement extends BaseElement {
+export class IsochroneElement extends MapChildElement {
   static observedAttributes = [
     'lat',
     'lng',

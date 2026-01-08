@@ -7,9 +7,9 @@
  * <mapi-marker lat="40.7128" lng="-74.006" popup="true" title="New York"></mapi-marker>
  */
 
-import { BaseElement } from '../base-element';
+import { MapChildElement } from '../map-child-element';
 
-export class MarkerElement extends BaseElement {
+export class MarkerElement extends MapChildElement {
   static observedAttributes = ['lat', 'lng', 'title', 'popup', 'color', 'draggable', 'visible'];
 
   private marker: any = null;
@@ -18,9 +18,8 @@ export class MarkerElement extends BaseElement {
   async connectedCallback(): Promise<void> {
     if (this.isInitialized) return;
 
-    // Find parent map
-    this.addToParentMap();
-    this.isInitialized = true;
+    // Call super which handles addToParentMap() and base initialization
+    await super.connectedCallback();
   }
 
   protected async onMapReady(): Promise<void> {

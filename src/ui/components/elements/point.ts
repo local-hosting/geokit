@@ -7,7 +7,7 @@
  * <gk-point lat="40.7128" lng="-74.0060" color="#ff0000" size="8"></gk-point>
  */
 
-import { BaseElement } from '../base-element';
+import { MapChildElement } from '../map-child-element';
 import { normalizeCoordinatesArray, isValidCoordinate } from '../../../utils/coordinates';
 import type { MapEvent } from '../../providers/types';
 
@@ -29,7 +29,7 @@ export interface PointOptions {
   pointName?: string;
 }
 
-export class PointElement extends BaseElement {
+export class PointElement extends MapChildElement {
   static observedAttributes = [
     'lat',
     'lng',
@@ -123,7 +123,7 @@ export class PointElement extends BaseElement {
         // Clear stored options
         (this as any)._createOptions = undefined;
       }
-      
+
       // Generate unique IDs BEFORE calling super (which sets isInitialized)
       if (!this.hasGeneratedIds) {
         const uuid = crypto.randomUUID();
@@ -137,7 +137,7 @@ export class PointElement extends BaseElement {
       // This is critical when points are moved between maps via map pool
       this.addToParentMap();
 
-      // Only call super if not already initialized (to avoid duplicate setup)
+      // Call super only if not already initialized (to avoid duplicate setup)
       if (!this.isInitialized) {
         await super.connectedCallback();
       }
@@ -805,11 +805,11 @@ export class PointElement extends BaseElement {
    */
   static create(options: PointOptions): PointElement {
     const point = document.createElement('gk-point') as PointElement;
-    
+
     // Store options to set as attributes when element is connected to DOM
     // This avoids JSDOM/Happy-DOM limitations where attributes can't be set before connection
     (point as any)._createOptions = options;
-    
+
     return point;
   }
 
@@ -860,7 +860,7 @@ export class PointElement extends BaseElement {
       }
 
       const [lng, lat] = feature.geometry.coordinates;
-      
+
       const point = PointElement.create({
         lat,
         lng,
@@ -874,11 +874,11 @@ export class PointElement extends BaseElement {
         shadowOpacity,
         strokeWidth,
         strokeColor,
-        pointId: feature.properties?.[idProperty] 
-          ? String(feature.properties[idProperty]) 
+        pointId: feature.properties?.[idProperty]
+          ? String(feature.properties[idProperty])
           : undefined,
         pointName: feature.properties?.[nameProperty]
-          ? String(feature.properties[nameProperty]) 
+          ? String(feature.properties[nameProperty])
           : undefined,
       });
 

@@ -7,7 +7,7 @@
  * <gk-polyline points="[[40.7,-74],[40.8,-74],[40.8,-73.9]]" color="#ff0000" width="3"></gk-polyline>
  */
 
-import { BaseElement } from '../base-element';
+import { MapChildElement } from '../map-child-element';
 import { normalizeCoordinatesArray } from '../../../utils/coordinates';
 import { lineLengthMeters } from '../../../utils/length';
 import { getBounds } from '../../../utils/bounds';
@@ -24,7 +24,7 @@ export interface PolylineOptions {
   dashArray?: number[];
 }
 
-export class PolylineElement extends BaseElement {
+export class PolylineElement extends MapChildElement {
   static observedAttributes = [
     'points',
     'color',
