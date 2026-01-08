@@ -212,7 +212,7 @@ export class MapCollectionElement extends BaseElement {
       let mapElement = this.findMapInSlot(slotElement);
 
       if (mapElement) {
-        this.markAsPoolManaged(mapElement);
+        mapElement.setPoolManaged(true);
       } else {
         // If no gk-map exists, create one (but don't initialize it yet)
         mapElement = this.createMapElementInSlot(slotElement);
@@ -510,38 +510,20 @@ export class MapCollectionElement extends BaseElement {
   }
 
   /**
-   * Ensure map element has required attributes (delegates to MapElement)
-   */
-  private ensureMapAttributes(mapElement: MapElement): void {
-    mapElement.ensureAttributes({
-      apiKey: this.apiKey,
-      provider: 'maptiler',
-      mapStyle: this.mapStyle,
-    });
-  }
-
-  /**
-   * Mark map element as pool-managed (delegates to MapElement)
-   */
-  private markAsPoolManaged(mapElement: MapElement): void {
-    mapElement.setPoolManaged(true);
-  }
-
-  /**
    * Create a gk-map element in a slot (but don't initialize it)
    */
   private createMapElementInSlot(slotElement: HTMLElement): MapElement | null {
     // Check if slot is already a gk-map element
     if (this.isMapElement(slotElement)) {
       const mapElement = slotElement as MapElement;
-      this.markAsPoolManaged(mapElement);
+      mapElement.setPoolManaged(true);
       return mapElement;
     }
 
     // Check if slot contains a map
     const existingMap = this.findMapInSlot(slotElement);
     if (existingMap) {
-      this.markAsPoolManaged(existingMap);
+      existingMap.setPoolManaged(true);
       return existingMap;
     }
 
@@ -569,8 +551,12 @@ export class MapCollectionElement extends BaseElement {
     const mapElement = this.findMapInSlot(slotElement);
 
     if (mapElement) {
-      this.ensureMapAttributes(mapElement);
-      this.markAsPoolManaged(mapElement);
+      mapElement.ensureAttributes({
+        apiKey: this.apiKey,
+        provider: 'maptiler',
+        mapStyle: this.mapStyle,
+      });
+      mapElement.setPoolManaged(true);
     }
 
     return mapElement;
@@ -651,7 +637,11 @@ export class MapCollectionElement extends BaseElement {
     // Check if slot is already a gk-map element
     if (this.isMapElement(slotElement)) {
       const mapElement = slotElement as MapElement;
-      this.ensureMapAttributes(mapElement);
+      mapElement.ensureAttributes({
+        apiKey: this.apiKey,
+        provider: 'maptiler',
+        mapStyle: this.mapStyle,
+      });
       mapElement.hidePlaceholder();
       mapElement.setAttribute('data-pool-map', 'true');
       mapElement.setAttribute('data-pool-index', index.toString());
@@ -661,7 +651,11 @@ export class MapCollectionElement extends BaseElement {
     // Check if slot contains a map
     const existingMap = this.findMapInSlot(slotElement);
     if (existingMap) {
-      this.ensureMapAttributes(existingMap);
+      existingMap.ensureAttributes({
+        apiKey: this.apiKey,
+        provider: 'maptiler',
+        mapStyle: this.mapStyle,
+      });
       existingMap.hidePlaceholder();
       existingMap.setAttribute('data-pool-map', 'true');
       existingMap.setAttribute('data-pool-index', index.toString());
@@ -884,22 +878,26 @@ export class MapCollectionElement extends BaseElement {
 
   /**
    * Update map viewport to match slot coordinates
+   * Uses MapElement's public API instead of reaching into the underlying map
    */
-  private updateMapViewport(map: any, slotElement: HTMLElement, mapElement: MapElement): void {
+  private updateMapViewport(slotElement: HTMLElement, mapElement: MapElement): void {
     const coords = this.getSlotCoordinates(slotElement);
     // Fallback to map element attributes if slot doesn't have them
     const lat = coords.lat || mapElement.getAttribute('lat') || '';
     const lng = coords.lng || mapElement.getAttribute('lng') || '';
     const zoom = coords.zoom || mapElement.getAttribute('zoom') || '';
 
-    if (lat && lng && typeof map.setCenter === 'function') {
-      map.setCenter([parseFloat(lng), parseFloat(lat)]);
+    // Use MapElement's public API
+    if (lat && lng) {
+      mapElement.setCenter(parseFloat(lat), parseFloat(lng));
     }
-    if (zoom && typeof map.setZoom === 'function') {
-      map.setZoom(parseFloat(zoom));
+    if (zoom) {
+      mapElement.setZoom(parseFloat(zoom));
     }
 
+    // Resize after DOM updates (needs underlying map access)
     requestAnimationFrame(() => {
+      const map = mapElement.getMap?.();
       if (map && typeof map.resize === 'function') {
         map.resize();
       }
@@ -962,7 +960,11 @@ export class MapCollectionElement extends BaseElement {
     const poolIndex = this.pool.length;
 
     // Ensure map has required attributes
-    this.ensureMapAttributes(slotInfo.mapElement);
+    slotInfo.mapElement.ensureAttributes({
+      apiKey: this.apiKey,
+      provider: 'maptiler',
+      mapStyle: this.mapStyle,
+    });
 
     // Delegate activation to the map element (handles placeholder internally)
     const success = await slotInfo.mapElement.activate(poolIndex);
@@ -986,10 +988,7 @@ export class MapCollectionElement extends BaseElement {
       slotInfo.isActive = true;
 
       // Update map viewport to match slot location
-      const map = slotInfo.mapElement.getMap?.();
-      if (map) {
-        this.updateMapViewport(map, slotInfo.slotElement, slotInfo.mapElement);
-      }
+      this.updateMapViewport(slotInfo.slotElement, slotInfo.mapElement);
 
       const slotId = this.getSlotId(slotInfo.slotElement);
       console.warn(`[MapCollection] Map loaded: ${slotId}`);
@@ -1445,13 +1444,10 @@ export class MapCollectionElement extends BaseElement {
     slotElement.appendChild(poolItem.mapElement);
 
     // Reset map view
-    const map = poolItem.mapElement.getMap?.();
-    if (map) {
-      try {
-        this.updateMapViewport(map, slotElement, poolItem.mapElement);
-      } catch (error) {
-        console.warn('[MapCollection] Error resetting map view:', error);
-      }
+    try {
+      this.updateMapViewport(slotElement, poolItem.mapElement);
+    } catch (error) {
+      console.warn('[MapCollection] Error resetting map view:', error);
     }
 
     // Update pool tracking
