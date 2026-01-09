@@ -70,9 +70,18 @@ export class PopupElement extends MapChildElement {
       /* Geokit Popup Styles - Minimal dark theme overrides */
       /* Works with both MapTiler (MapLibre) and Mapbox providers */
       
+      /* Ensure popups are contained within map container */
+      .maplibregl-map,
+      .mapboxgl-map {
+        position: relative;
+        overflow: hidden;
+      }
+
       /* Fade-out animation */
       .maplibregl-popup,
       .mapboxgl-popup {
+        position: absolute;
+        z-index: 1;
         transition: opacity 0.3s ease-out;
       }
       
@@ -88,29 +97,76 @@ export class PopupElement extends MapChildElement {
         color: #c9d1d9;
       }
 
-      /* Dark theme tip color */
-      .maplibregl-popup .maplibregl-popup-tip,
-      .mapboxgl-popup .mapboxgl-popup-tip {
+      /* Dark theme tip color - cover all anchor positions */
+      /* Default (bottom anchor) - tip points down, uses border-top */
+      .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+      .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
         border-top-color: rgb(22, 27, 34);
       }
 
-      .maplibregl-popup[data-anchor="top"] .maplibregl-popup-tip,
-      .mapboxgl-popup[data-anchor="top"] .mapboxgl-popup-tip {
+      /* Top anchor - tip points up, uses border-bottom */
+      .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+      .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
         border-bottom-color: rgb(22, 27, 34);
-        border-top-color: transparent;
       }
 
-      /* Close button styling - ensure it's visible on dark background */
+      /* Left anchor - tip points left, uses border-right */
+      .maplibregl-popup-anchor-left .maplibregl-popup-tip,
+      .mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+        border-right-color: rgb(22, 27, 34);
+      }
+
+      /* Right anchor - tip points right, uses border-left */
+      .maplibregl-popup-anchor-right .maplibregl-popup-tip,
+      .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+        border-left-color: rgb(22, 27, 34);
+      }
+
+      /* Bottom-left and bottom-right corners */
+      .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+      .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip,
+      .mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+      .mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip {
+        border-top-color: rgb(22, 27, 34);
+      }
+
+      /* Top-left and top-right corners */
+      .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+      .maplibregl-popup-anchor-top-right .maplibregl-popup-tip,
+      .mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
+      .mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip {
+        border-bottom-color: rgb(22, 27, 34);
+      }
+
+      /* Close button styling - ensure proper positioning and visibility */
       .maplibregl-popup-close-button,
       .mapboxgl-popup-close-button {
-        color: #c9d1d9;
-        opacity: 0.8;
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        padding: 4px 8px;
+        font-size: 18px;
+        line-height: 1;
+        color: #8b949e;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        z-index: 1;
       }
 
       .maplibregl-popup-close-button:hover,
       .mapboxgl-popup-close-button:hover {
-        opacity: 1;
+        color: #c9d1d9;
         background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+      }
+      
+      /* Ensure popup content has padding for close button */
+      .maplibregl-popup-content,
+      .mapboxgl-popup-content {
+        position: relative;
+        padding: 12px 32px 12px 14px;
+        border-radius: 6px;
       }
 
       /* Utility classes for structured content */
@@ -187,6 +243,8 @@ export class PopupElement extends MapChildElement {
       this.popupInstance = provider.createPopup(options);
 
       if (this.popupInstance) {
+        // For gk-popup element, HTML content is allowed since it's a native custom element
+        // (not affected by Vue's template parsing like programmatic popups)
         this.popupInstance.setLngLat([lng, lat]).setHTML(content).addTo(this.map);
 
         // Style the popup element after it's added
@@ -292,14 +350,19 @@ export class PopupElement extends MapChildElement {
 
   /**
    * Build popup content DOM element with title and ID tags
+   * Creates a completely isolated DOM element that's safe from Vue's reactivity system
+   * Uses only native DOM APIs - no innerHTML or HTML strings
    */
   public static buildPopupContent(title?: string, properties?: PointPopupProperties): HTMLElement {
+    // Create container element using only native DOM APIs
     const container = document.createElement('div');
-    container.className = 'geokit-popup-content';
+    // Use setAttribute instead of className to be extra safe
+    container.setAttribute('class', 'geokit-popup-content');
 
     if (title) {
       const titleEl = document.createElement('h4');
-      titleEl.className = 'geokit-popup-title';
+      titleEl.setAttribute('class', 'geokit-popup-title');
+      // Use textContent to ensure no HTML parsing happens
       titleEl.textContent = title;
       container.appendChild(titleEl);
     }
@@ -307,12 +370,12 @@ export class PopupElement extends MapChildElement {
     // Create container for ID tags
     if (properties) {
       const tagsContainer = document.createElement('div');
-      tagsContainer.className = 'geokit-popup-tags';
+      tagsContainer.setAttribute('class', 'geokit-popup-tags');
       let hasTags = false;
 
       if (properties?.['id:google-maps']) {
         const tag = document.createElement('span');
-        tag.className = 'geokit-popup-tag';
+        tag.setAttribute('class', 'geokit-popup-tag');
         tag.textContent = properties['id:google-maps'];
         tagsContainer.appendChild(tag);
         hasTags = true;
@@ -320,7 +383,7 @@ export class PopupElement extends MapChildElement {
 
       if (properties?.['id:store-sid']) {
         const tag = document.createElement('span');
-        tag.className = 'geokit-popup-tag';
+        tag.setAttribute('class', 'geokit-popup-tag');
         tag.textContent = properties['id:store-sid'];
         tagsContainer.appendChild(tag);
         hasTags = true;
@@ -328,7 +391,7 @@ export class PopupElement extends MapChildElement {
 
       if (properties?.['id:store-number']) {
         const tag = document.createElement('span');
-        tag.className = 'geokit-popup-tag';
+        tag.setAttribute('class', 'geokit-popup-tag');
         tag.textContent = properties['id:store-number'];
         tagsContainer.appendChild(tag);
         hasTags = true;
@@ -337,7 +400,7 @@ export class PopupElement extends MapChildElement {
       // Fallback to old 'id' field if no new ID types exist
       if (!hasTags && properties?.id) {
         const tag = document.createElement('span');
-        tag.className = 'geokit-popup-tag';
+        tag.setAttribute('class', 'geokit-popup-tag');
         tag.textContent = properties.id;
         tagsContainer.appendChild(tag);
         hasTags = true;
@@ -348,6 +411,7 @@ export class PopupElement extends MapChildElement {
       }
     }
 
+    // Return the element directly - it's already isolated since we used only native DOM APIs
     return container;
   }
 
@@ -357,7 +421,9 @@ export class PopupElement extends MapChildElement {
   public static determineAnchor(map: any, lngLat: { lng: number; lat: number }): 'top' | 'bottom' {
     if (!map || !lngLat) return 'bottom';
 
-    const point = map.project(lngLat);
+    // Convert lngLat object to array format [lng, lat] for MapLibre/MapTiler
+    const lngLatArray: [number, number] = [lngLat.lng, lngLat.lat];
+    const point = map.project(lngLatArray);
     const estimatedPopupHeight = 80;
     const buffer = 20;
 
@@ -387,12 +453,12 @@ export class PopupElement extends MapChildElement {
     lngLat: { lng: number; lat: number },
     title?: string,
     properties?: PointPopupProperties,
-    provider?: any
+    provider?: any,
+    closeButton: boolean = true
   ): any {
     if (!map || !lngLat) return popup;
 
     const popupContentEl = PopupElement.buildPopupContent(title, properties);
-    // Always show popup if we have a title, even if no ID tags
     if (!popupContentEl) return popup;
 
     // If no title and no content, don't show popup
@@ -404,8 +470,8 @@ export class PopupElement extends MapChildElement {
     const currentAnchor = popup?.options?.anchor || 'bottom';
     let activePopup = popup;
 
-    // Use provided provider or fall back to global
-    const activeProvider = provider || getGlobalUIProvider();
+    // Use provided provider, or automatically find it from the parent map element
+    const activeProvider = provider || MapChildElement.getProviderFromMapInstance(map);
     if (!activeProvider || !activeProvider.createPopup) {
       console.warn('[PopupElement] No provider available for popup');
       return popup;
@@ -415,23 +481,109 @@ export class PopupElement extends MapChildElement {
       if (popup) {
         popup.remove();
       }
-      activePopup = PopupElement.createPopupWithProvider(activeProvider, { anchor, offset });
+      activePopup = PopupElement.createPopupWithProvider(activeProvider, {
+        anchor,
+        offset,
+        closeButton,
+      });
     } else if (popup) {
-      popup.options.offset = offset;
+      // Update existing popup - only recreate if close button setting changed
+      if (popup.options.closeButton !== closeButton) {
+        // Need to recreate popup to change close button
+        popup.remove();
+        activePopup = PopupElement.createPopupWithProvider(activeProvider, {
+          anchor,
+          offset,
+          closeButton,
+        });
+      } else {
+        // Just update offset for existing popup
+        popup.options.offset = offset;
+        activePopup = popup;
+      }
     } else {
-      activePopup = PopupElement.createPopupWithProvider(activeProvider, { anchor, offset });
+      activePopup = PopupElement.createPopupWithProvider(activeProvider, {
+        anchor,
+        offset,
+        closeButton,
+      });
     }
 
-    if (!activePopup) return popup;
+    if (!activePopup) {
+      console.warn('[PopupElement] Failed to create popup instance');
+      return popup;
+    }
 
-    activePopup.setLngLat(lngLat).setDOMContent(popupContentEl).addTo(map);
+    // Convert lngLat object to array format [lng, lat] for MapLibre/MapTiler
+    const lngLatArray: [number, number] = [lngLat.lng, lngLat.lat];
 
-    requestAnimationFrame(() => {
-      const popupElement = activePopup.getElement?.();
-      if (popupElement) {
-        PopupElement.stylePopupElement(popupElement, anchor);
+    // If popup already exists and we're just updating it (not recreating), update content and position
+    const isUpdatingExisting =
+      popup && activePopup === popup && popup.options.closeButton === closeButton;
+
+    if (isUpdatingExisting) {
+      // Update existing popup's content and position
+      try {
+        // Check if position has actually changed to avoid unnecessary map panning
+        const currentLngLat = activePopup.getLngLat?.();
+        const positionChanged =
+          !currentLngLat ||
+          Math.abs(currentLngLat.lng - lngLatArray[0]) > 0.0001 ||
+          Math.abs(currentLngLat.lat - lngLatArray[1]) > 0.0001;
+
+        if (positionChanged) {
+          activePopup.setLngLat(lngLatArray);
+        }
+
+        // Always use setDOMContent with raw DOM element to avoid Vue parsing issues
+        // Rebuild content fresh to ensure it's completely disconnected from Vue
+        const freshContent = PopupElement.buildPopupContent(title, properties);
+
+        // Ensure element is not in the DOM (MapLibre will handle adding it)
+        if (freshContent.parentNode) {
+          freshContent.parentNode.removeChild(freshContent);
+        }
+
+        // Always use setDOMContent - it's supported by MapLibre/MapTiler and avoids HTML string parsing
+        activePopup.setDOMContent(freshContent);
+
+        requestAnimationFrame(() => {
+          const popupElement = activePopup.getElement?.();
+          if (popupElement) {
+            PopupElement.stylePopupElement(popupElement, anchor);
+          }
+        });
+        return activePopup;
+      } catch (error) {
+        console.error('[PopupElement] Failed to update popup:', error);
+        return popup;
       }
-    });
+    }
+
+    // New popup or recreated popup - need to add to map
+    // Note: We don't check map.loaded() because if this is called from a click handler,
+    // the map is definitely ready (otherwise the click wouldn't have been detected)
+    try {
+      const freshContent = PopupElement.buildPopupContent(title, properties);
+
+      // Ensure element is not in the DOM (MapLibre will handle adding it)
+      if (freshContent.parentNode) {
+        freshContent.parentNode.removeChild(freshContent);
+      }
+
+      activePopup.setLngLat(lngLatArray).setDOMContent(freshContent).addTo(map);
+
+      // Style popup element after it's added
+      requestAnimationFrame(() => {
+        const popupElement = activePopup.getElement?.();
+        if (popupElement) {
+          PopupElement.stylePopupElement(popupElement, anchor);
+        }
+      });
+    } catch (error) {
+      console.error('[PopupElement] Failed to add popup to map:', error);
+      return popup;
+    }
 
     return activePopup;
   }

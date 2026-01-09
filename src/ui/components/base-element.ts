@@ -20,6 +20,7 @@ export class BaseElement extends HTMLElement {
   protected map: MapInstance | null = null;
   protected mapElement: HTMLElement | null = null;
   protected isInitialized: boolean = false;
+  private _controlAddedToMap: boolean = false;
 
   /**
    * Override this method in subclasses to create the specific control
@@ -173,6 +174,9 @@ export class BaseElement extends HTMLElement {
       }
     }
 
+    // Reset control added flag when element is disconnected
+    this._controlAddedToMap = false;
+
     // DON'T reset state when element is moved - preserve for reuse in map pool
     // This matches the behavior of map.ts which preserves map instance
     // this.isInitialized = false;
@@ -195,6 +199,7 @@ export class BaseElement extends HTMLElement {
     // SDK controls are bound to specific map instances and can't be reused
     this.control = null;
     this.map = null;
+    this._controlAddedToMap = false;
   }
 
   /**
@@ -297,6 +302,7 @@ export class BaseElement extends HTMLElement {
   /**
    * Add control to map with position
    * Ensures map is loaded before adding controls to prevent initialization errors
+   * Prevents duplicate additions by checking if control is already on the map
    */
   protected addControlToMap(): void {
     if (!this.map || !this.control) return;
@@ -305,11 +311,24 @@ export class BaseElement extends HTMLElement {
     const addControlMethod = (
       this.map as { addControl?: (control: unknown, position: string) => void }
     ).addControl;
+    const removeControlMethod = (this.map as { removeControl?: (control: unknown) => void })
+      .removeControl;
 
     if (!addControlMethod) return;
 
     try {
+      // If control was already added, remove it first to prevent duplicates
+      if (this._controlAddedToMap && removeControlMethod) {
+        try {
+          removeControlMethod.call(this.map, this.control);
+        } catch {
+          // Control might not be on map yet, ignore error
+        }
+      }
+
+      // Add the control
       addControlMethod.call(this.map, this.control, position);
+      this._controlAddedToMap = true;
     } catch (error) {
       console.error(`${this.constructor.name}: Failed to add control:`, error);
     }
@@ -326,11 +345,13 @@ export class BaseElement extends HTMLElement {
         .removeControl;
       const addControl = (this.map as { addControl?: (control: unknown, position: string) => void })
         .addControl;
-      if (removeControl) {
+      if (removeControl && this._controlAddedToMap) {
         removeControl(this.control);
+        this._controlAddedToMap = false;
       }
       if (addControl) {
         addControl(this.control, newPosition || this.getDefaultPosition());
+        this._controlAddedToMap = true;
       }
     } catch (error) {
       console.error(`${this.constructor.name}: Failed to update position:`, error);
