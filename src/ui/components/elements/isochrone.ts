@@ -62,34 +62,15 @@ export class IsochroneElement extends MapChildElement {
   }
 
   protected override async onMapReady(): Promise<void> {
+    // By the time onMapReady is called, the parent gk-map is fully initialized
+    // No need to wait for style - it's already loaded
     if (!this.map) return;
 
     // Setup visibility observer to only fetch when element is visible
     this.setupVisibilityObserver();
 
-    // Always try to fetch immediately - don't wait for visibility check
-    // The visibility check is best-effort and should not block loading
-    // If the element is explicitly hidden, fetchAndRenderIsochrone will handle it
-    requestAnimationFrame(() => {
-      if (this.map) {
-        this.waitForStyleLoaded(() => {
-          this.fetchAndRenderIsochrone();
-        });
-      }
-    });
-
-    // Fallback: if visibility check hasn't resolved after 1 second, try loading anyway
-    // This ensures isochrones load even if IntersectionObserver is delayed
-    setTimeout(() => {
-      if (this.map) {
-        const hasSource = this.sourceId && this.map.getSource?.(this.sourceId);
-        if (!hasSource) {
-          this.waitForStyleLoaded(() => {
-            this.fetchAndRenderIsochrone();
-          });
-        }
-      }
-    }, 1000);
+    // Fetch immediately - map is ready, no need to wait
+    this.fetchAndRenderIsochrone();
 
     // Setup map interaction listeners to upgrade resolution on zoom/interaction
     this.setupMapInteractionListeners();

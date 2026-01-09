@@ -92,19 +92,20 @@ export class MapCollectionElement extends BaseElement {
   private async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    // Always setup observers first
-    this.setupIntersectionObserver();
+    // Setup MutationObserver first to catch any dynamic additions
     this.setupMutationObserver();
 
     const mapElements = Array.from(this.querySelectorAll('gk-map')) as MapElement[];
 
     if (mapElements.length === 0) {
       console.log('[MapCollection] No gk-map elements found - watching for dynamic additions');
+      // Setup IntersectionObserver even with no slots (MutationObserver will add them)
+      this.setupIntersectionObserver();
       this.initialized = true;
       return;
     }
 
-    // Build slots array - all start with placeholders
+    // Build slots array FIRST - all start with placeholders
     this.slots = mapElements.map((mapElement) => {
       mapElement.setPoolManaged(true);
       mapElement.showPlaceholder();
@@ -116,6 +117,9 @@ export class MapCollectionElement extends BaseElement {
         isActivating: false,
       };
     });
+
+    // NOW setup IntersectionObserver - slots array is populated
+    this.setupIntersectionObserver();
 
     this.initialized = true;
     this.dispatchEvent(new CustomEvent('map-collection-ready', { bubbles: true }));
@@ -260,10 +264,6 @@ export class MapCollectionElement extends BaseElement {
             `[MapCollection] ✗ Failed to unfreeze: ${this.getSlotId(slotInfo.slotElement)}`
           );
         }
-      } else {
-        console.log(
-          `[MapCollection] ✓ Unfrozen: ${this.getSlotId(slotInfo.slotElement)} (${this.activeCount}/${this.poolSize})`
-        );
       }
     } finally {
       slotInfo.isActivating = false;
@@ -294,9 +294,6 @@ export class MapCollectionElement extends BaseElement {
       await toFreeze.mapElement.freeze();
       toFreeze.isActive = false;
       this.activeCount--;
-      console.log(
-        `[MapCollection] ✗ Frozen: ${this.getSlotId(toFreeze.slotElement)} (${this.activeCount}/${this.poolSize})`
-      );
       return true;
     }
 
