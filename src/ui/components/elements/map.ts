@@ -36,6 +36,7 @@ export class MapElement extends BaseElement {
   private _mouseLeaveHandler: (() => void) | null = null;
   private _isFrozen: boolean = false;
   private _isUnfreezing: boolean = false; // Prevent race conditions
+  private _isInitializing: boolean = false; // Prevent concurrent initialization
   private _frozenContainerStyle: { display?: string; visibility?: string } | null = null;
   private _mapCanvas: HTMLCanvasElement | null = null;
 
@@ -112,6 +113,14 @@ export class MapElement extends BaseElement {
   }
 
   async initializeMap(): Promise<void> {
+    // Prevent concurrent initialization
+    if (this._isInitializing) {
+      console.warn('[gk-map] Already initializing, skipping duplicate call');
+      return;
+    }
+
+    this._isInitializing = true;
+
     try {
       // Get provider name from attribute or try auto-detection
       const providerName = this.getAttribute('provider');
@@ -277,6 +286,8 @@ export class MapElement extends BaseElement {
     } catch (error) {
       console.error('Failed to initialize map:', error);
       // Keep placeholder visible on error
+    } finally {
+      this._isInitializing = false;
     }
   }
 
@@ -1014,6 +1025,20 @@ export class MapElement extends BaseElement {
       return;
     }
 
+    // Wait if currently initializing to avoid race condition
+    if (this._isInitializing) {
+      console.warn('[gk-map] Waiting for initialization to complete before freezing');
+      const maxWait = 5000;
+      const startTime = Date.now();
+      while (this._isInitializing && Date.now() - startTime < maxWait) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      // Re-check if map still exists after waiting
+      if (!this.map || this._isFrozen) {
+        return;
+      }
+    }
+
     // Dispatch unload event before destroying
     this.dispatchEvent(
       new CustomEvent('gk-map-unload', {
@@ -1058,6 +1083,11 @@ export class MapElement extends BaseElement {
 
       try {
         map.remove();
+      } catch (error) {
+        // Ignore errors during removal - the map may have been partially initialized
+        // Common error: "Cannot read properties of undefined (reading 'off')"
+        // This happens when event handlers weren't fully registered before removal
+        console.debug('[gk-map] Ignoring error during map removal:', error);
       } finally {
         // Restore console methods
         console.warn = originalWarn;

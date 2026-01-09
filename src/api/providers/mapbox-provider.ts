@@ -34,14 +34,16 @@ export class MapboxAPIProvider extends BaseAPIProvider {
   private cacheHits = 0;
   private cacheMisses = 0;
 
-  // Rate limiting: queue requests and process with delay
+  // Rate limiting: queue requests and process with concurrency control
   private requestQueue: Array<{
     resolve: (value: FeatureCollection) => void;
     reject: (error: Error) => void;
     fn: () => Promise<FeatureCollection>;
   }> = [];
   private isProcessingQueue = false;
-  private readonly REQUEST_DELAY_MS = 100; // 100ms between requests = ~10 req/sec
+  private activeRequests = 0;
+  private readonly MAX_CONCURRENT = 6; // Process up to 6 requests at a time
+  private readonly REQUEST_DELAY_MS = 50; // 50ms between batches
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY_MS = 1000; // Start with 1 second retry delay
 
@@ -111,24 +113,33 @@ export class MapboxAPIProvider extends BaseAPIProvider {
   }
 
   /**
-   * Process the request queue with rate limiting
+   * Process the request queue with concurrent execution
    */
   private async processQueue(): Promise<void> {
     if (this.isProcessingQueue) return;
     this.isProcessingQueue = true;
 
     while (this.requestQueue.length > 0) {
-      const request = this.requestQueue.shift();
-      if (!request) continue;
-
-      try {
-        const result = await request.fn();
-        request.resolve(result);
-      } catch (error) {
-        request.reject(error instanceof Error ? error : new Error(String(error)));
+      // Take up to MAX_CONCURRENT requests from the queue
+      const batch: typeof this.requestQueue = [];
+      while (batch.length < this.MAX_CONCURRENT && this.requestQueue.length > 0) {
+        const request = this.requestQueue.shift();
+        if (request) batch.push(request);
       }
 
-      // Delay before next request to avoid rate limiting
+      // Execute batch concurrently
+      await Promise.all(
+        batch.map(async (request) => {
+          try {
+            const result = await request.fn();
+            request.resolve(result);
+          } catch (error) {
+            request.reject(error instanceof Error ? error : new Error(String(error)));
+          }
+        })
+      );
+
+      // Small delay between batches to avoid overwhelming the API
       if (this.requestQueue.length > 0) {
         await this.delay(this.REQUEST_DELAY_MS);
       }
