@@ -978,6 +978,8 @@ export class MapElement extends BaseElement {
       return false;
     } catch (error) {
       console.warn('[gk-map] Failed to unfreeze:', error);
+      // Reset frozen state on failure so it can be retried
+      this._isFrozen = false;
       this.showPlaceholder('Map load error');
       return false;
     } finally {
@@ -1002,8 +1004,8 @@ export class MapElement extends BaseElement {
       }
     }
 
-    // Show placeholder with "Reloading map..." message
-    this.showPlaceholder('Reloading map...');
+    // Show placeholder with "Restoring map..." message
+    this.showPlaceholder('Restoring map...');
 
     // Destroy the map to free WebGL context
     // Browsers can only handle a few WebGL contexts, so we must destroy when frozen
@@ -1132,7 +1134,7 @@ export class MapElement extends BaseElement {
   /**
    * Wait for map to be fully ready (idle state)
    */
-  private waitForReady(timeout: number = 5000): Promise<void> {
+  private waitForReady(timeout: number = 10000): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.map) {
         reject(new Error('No map instance'));
@@ -1174,7 +1176,7 @@ export class MapElement extends BaseElement {
    * Wait for map style to be loaded
    * Returns immediately if already loaded
    */
-  public async whenStyleReady(timeout: number = 5000): Promise<void> {
+  public async whenStyleReady(timeout: number = 10000): Promise<void> {
     if (!this.map) {
       throw new Error('[gk-map] No map instance');
     }

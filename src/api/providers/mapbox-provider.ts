@@ -17,6 +17,7 @@ import {
   type APICapability,
   type IsochroneOptions,
   type DirectionsOptions,
+  type GeocodeOptions,
 } from './types';
 import type { FeatureCollection } from 'geojson';
 
@@ -72,7 +73,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
   }
 
   getCapabilities(): APICapability[] {
-    return ['isochrone', 'directions', 'matrix'];
+    return ['isochrone', 'directions', 'matrix', 'geocoding'];
   }
 
   async fetchIsochrone(options: IsochroneOptions): Promise<FeatureCollection> {
@@ -312,6 +313,63 @@ export class MapboxAPIProvider extends BaseAPIProvider {
         throw new Error(`Failed to fetch directions: ${error.message}`);
       }
       throw new Error('Failed to fetch directions');
+    }
+  }
+
+  /**
+   * Geocode a query string to coordinates
+   */
+  async geocode(options: GeocodeOptions): Promise<FeatureCollection> {
+    if (!this.accessToken) {
+      throw new Error('Mapbox API Provider: No access token configured.');
+    }
+
+    const { query, limit = 5, proximity, bbox } = options;
+
+    if (!query || query.trim().length === 0) {
+      throw new Error('Mapbox API Provider: Query string is required for geocoding');
+    }
+
+    try {
+      // Build API URL
+      const url = new URL(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`
+      );
+      url.searchParams.set('access_token', this.accessToken);
+      url.searchParams.set('limit', limit.toString());
+
+      if (proximity) {
+        url.searchParams.set('proximity', `${proximity[0]},${proximity[1]}`);
+      }
+
+      if (bbox) {
+        url.searchParams.set('bbox', `${bbox[0]},${bbox[1]},${bbox[2]},${bbox[3]}`);
+      }
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          Referer: 'http://localhost:5173/',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(
+          `Mapbox API error: ${response.status} ${response.statusText}${
+            (error as any).message ? ` - ${(error as any).message}` : ''
+          }`
+        );
+      }
+
+      const data = await response.json();
+
+      // Mapbox returns { type: 'FeatureCollection', features: [...] }
+      return data as FeatureCollection;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to geocode: ${error.message}`);
+      }
+      throw new Error('Failed to geocode');
     }
   }
 

@@ -60,8 +60,10 @@ export interface PopupOptions {
   offset?: number | [number, number];
   closeButton?: boolean;
   closeOnClick?: boolean;
+  closeOnMove?: boolean;
   anchor?: 'center' | 'top' | 'bottom' | 'left' | 'right';
   maxWidth?: string;
+  className?: string;
 }
 
 /**

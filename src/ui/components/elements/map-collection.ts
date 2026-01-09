@@ -17,6 +17,8 @@ interface SlotInfo {
   isActivating: boolean; // Prevent concurrent activation attempts
   failCount: number; // Track consecutive failures for retry backoff
   lastFailTime: number; // Timestamp of last failure
+  activationStartTime: number; // Timestamp when activation started
+  lastHealthCheckAttempt: number; // Timestamp of last health check activation attempt
 }
 
 // Debounce delay - wait for scrolling to stop before activating
@@ -42,6 +44,7 @@ export class MapCollectionElement extends BaseElement {
   private scrollDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private isProcessing: boolean = false; // Lock to prevent concurrent processing
   private pendingReprocess: boolean = false; // Track if reprocess needed after current run
+  private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     super();
@@ -124,11 +127,16 @@ export class MapCollectionElement extends BaseElement {
         isActivating: false,
         failCount: 0,
         lastFailTime: 0,
+        activationStartTime: 0,
+        lastHealthCheckAttempt: 0,
       };
     });
 
     // NOW setup IntersectionObserver - slots array is populated
     this.setupIntersectionObserver();
+
+    // Start health check for stuck maps
+    this.startHealthCheck();
 
     this.initialized = true;
     this.dispatchEvent(new CustomEvent('map-collection-ready', { bubbles: true }));
@@ -182,6 +190,22 @@ export class MapCollectionElement extends BaseElement {
     this.isProcessing = true;
     this.pendingReprocess = false;
 
+    // Check if the collection itself is hidden (e.g., parent view is hidden)
+    // If so, skip processing - maps should stay in their current state
+    const collectionRect = this.getBoundingClientRect();
+    const collectionStyle = window.getComputedStyle(this);
+    const isCollectionHidden =
+      collectionStyle.visibility === 'hidden' ||
+      collectionStyle.display === 'none' ||
+      collectionRect.width === 0 ||
+      collectionRect.height === 0;
+
+    if (isCollectionHidden) {
+      // Collection is hidden (likely view switch), don't process visibility changes
+      this.isProcessing = false;
+      return;
+    }
+
     const now = Date.now();
 
     try {
@@ -207,12 +231,26 @@ export class MapCollectionElement extends BaseElement {
         const needed = Math.min(visibleInactive.length - availableSlots, this.activeCount);
         for (let i = 0; i < needed; i++) {
           await this.deactivateOneInvisible();
+          // Small delay to ensure WebGL context is fully released
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
       }
 
-      // Activate maps in PARALLEL for faster loading
-      if (toActivate.length > 0) {
-        await Promise.all(toActivate.map((slot) => this.activateSlot(slot)));
+      // Activate maps SEQUENTIALLY to prevent WebGL context exhaustion
+      // Each activation waits for the previous one to complete
+      for (const slot of toActivate) {
+        // Re-check pool before each activation
+        if (this.activeCount >= this.poolSize) {
+          // Need to freeze more maps
+          const frozen = await this.deactivateOneInvisible();
+          if (!frozen) break; // Can't make room, stop activating
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        await this.activateSlot(slot);
+        // Small delay between activations to ensure WebGL contexts are stable
+        if (toActivate.indexOf(slot) < toActivate.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
       }
 
       // Check if there are more to activate after parallel batch
@@ -246,6 +284,7 @@ export class MapCollectionElement extends BaseElement {
 
     // Mark as activating to prevent concurrent attempts
     slotInfo.isActivating = true;
+    slotInfo.activationStartTime = Date.now();
 
     try {
       // Make room if needed - await freeze to ensure WebGL context is released
@@ -302,12 +341,14 @@ export class MapCollectionElement extends BaseElement {
           setTimeout(() => this.processVisibilityChanges(), RETRY_BACKOFF_MS * slotInfo.failCount);
         }
       } else {
-        // Success - reset fail count
+        // Success - reset fail count and health check attempt timestamp
         slotInfo.failCount = 0;
         slotInfo.lastFailTime = 0;
+        slotInfo.lastHealthCheckAttempt = 0;
       }
     } finally {
       slotInfo.isActivating = false;
+      slotInfo.activationStartTime = 0;
     }
   }
 
@@ -315,8 +356,26 @@ export class MapCollectionElement extends BaseElement {
    * Freeze ONE invisible slot - returns true if successful
    * Picks the furthest from viewport center
    * Now async to properly wait for WebGL context release
+   *
+   * IMPORTANT: Only freezes maps that have scrolled off the page.
+   * Does NOT freeze maps when the collection itself is hidden (e.g., view switch).
    */
   private async deactivateOneInvisible(): Promise<boolean> {
+    // Check if the collection itself is hidden (e.g., parent view is hidden)
+    // If so, don't freeze maps - they should stay active for when view returns
+    const collectionRect = this.getBoundingClientRect();
+    const collectionStyle = window.getComputedStyle(this);
+    const isCollectionHidden =
+      collectionStyle.visibility === 'hidden' ||
+      collectionStyle.display === 'none' ||
+      collectionRect.width === 0 ||
+      collectionRect.height === 0;
+
+    if (isCollectionHidden) {
+      // Collection is hidden (likely view switch), don't freeze maps
+      return false;
+    }
+
     const viewportCenter = window.innerHeight / 2;
 
     // Find active but NOT visible slots
@@ -397,9 +456,105 @@ export class MapCollectionElement extends BaseElement {
           isActivating: false,
           failCount: 0,
           lastFailTime: 0,
+          activationStartTime: 0,
+          lastHealthCheckAttempt: 0,
         };
         this.slots.push(slotInfo);
         this.intersectionObserver?.observe(mapElement);
+      }
+    }
+  }
+
+  /**
+   * Start periodic health check for stuck maps
+   * Detects maps that have been loading for too long and resets them
+   */
+  private startHealthCheck(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+    }
+
+    // Check every 5 seconds for stuck maps
+    this.healthCheckInterval = setInterval(() => {
+      this.checkStuckMaps();
+    }, 5000);
+  }
+
+  /**
+   * Check for maps stuck in loading state and reset them
+   */
+  private checkStuckMaps(): void {
+    const now = Date.now();
+    const STUCK_THRESHOLD_MS = 15000; // 15 seconds - map should load by then
+
+    for (const slot of this.slots) {
+      // Check if map is stuck activating (been activating for too long)
+      if (slot.isActivating && slot.activationStartTime > 0) {
+        // If it's been activating for more than threshold, reset it
+        const activatingTime = now - slot.activationStartTime;
+        if (activatingTime > STUCK_THRESHOLD_MS) {
+          console.warn(
+            `[MapCollection] Detected stuck map: ${this.getSlotId(slot.slotElement)} (stuck for ${activatingTime}ms), resetting...`
+          );
+          slot.isActivating = false;
+          slot.activationStartTime = 0;
+          slot.failCount = Math.min(slot.failCount + 1, MAX_FAIL_COUNT);
+          slot.lastFailTime = now;
+          // Retry activation after backoff
+          if (slot.isVisible && !slot.isActive && slot.failCount < MAX_FAIL_COUNT) {
+            setTimeout(() => this.activateSlot(slot), RETRY_BACKOFF_MS * slot.failCount);
+          }
+        }
+      }
+
+      // Check if map has placeholder but should be active
+      if (slot.isActive && slot.isVisible) {
+        const placeholder = slot.mapElement.querySelector('[data-map-placeholder="true"]');
+        if (placeholder) {
+          // Map is active but still showing placeholder - might be stuck
+          // Check if map instance exists
+          const mapInstance = (slot.mapElement as any).getMap?.();
+          if (!mapInstance) {
+            // Map instance missing but marked active - reset
+            console.warn(
+              `[MapCollection] Map instance missing for active slot: ${this.getSlotId(slot.slotElement)}, resetting...`
+            );
+            slot.isActive = false;
+            this.activeCount--;
+            slot.failCount = 0;
+            slot.lastFailTime = 0;
+            setTimeout(() => this.activateSlot(slot), 1000);
+          }
+        }
+      }
+
+      // Check if map is visible but frozen (showing "Restoring map...")
+      if (!slot.isActive && slot.isVisible && !slot.isActivating) {
+        const placeholder = slot.mapElement.querySelector('[data-map-placeholder="true"]');
+        if (placeholder) {
+          const placeholderText = placeholder.textContent || '';
+          // If showing "Restoring map..." or "Loading map..." for too long, try to activate
+          if (placeholderText.includes('Restoring') || placeholderText.includes('Loading')) {
+            // Check if this slot has been stuck for a while
+            const mapInstance = (slot.mapElement as any).getMap?.();
+            if (!mapInstance) {
+              // Only attempt activation if we haven't tried recently (cooldown: 10 seconds)
+              const timeSinceLastAttempt = now - (slot.lastHealthCheckAttempt || 0);
+              if (timeSinceLastAttempt > 10000) {
+                // Map is frozen but should be active - try to activate it
+                console.warn(
+                  `[MapCollection] Detected frozen map that should be active: ${this.getSlotId(slot.slotElement)}, attempting activation...`
+                );
+                // Mark that we attempted activation from health check
+                slot.lastHealthCheckAttempt = now;
+                // Reset fail count to give it a fresh chance
+                slot.failCount = 0;
+                slot.lastFailTime = 0;
+                setTimeout(() => this.activateSlot(slot), 500);
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -408,6 +563,10 @@ export class MapCollectionElement extends BaseElement {
     if (this.scrollDebounceTimer) {
       clearTimeout(this.scrollDebounceTimer);
       this.scrollDebounceTimer = null;
+    }
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
     }
     this.intersectionObserver?.disconnect();
     this.intersectionObserver = null;

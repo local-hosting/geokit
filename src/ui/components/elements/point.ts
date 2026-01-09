@@ -10,6 +10,7 @@
 import { MapChildElement } from '../map-child-element';
 import { normalizeCoordinatesArray, isValidCoordinate } from '../../../utils/coordinates';
 import type { MapEvent } from '../../providers/types';
+import { PopupElement } from './popup';
 
 export interface PointOptions {
   lat: number;
@@ -460,10 +461,34 @@ export class PointElement extends MapChildElement {
       if (dashIndex > 0) {
         title = pointName.substring(0, dashIndex).trim();
         title = title.replace(/,(\S)/g, ', $1');
+      } else {
+        title = pointName;
       }
     }
     if (!title && pointId) {
       title = pointId;
+    }
+
+    // Show popup if we have a title
+    if (title && this.map) {
+      try {
+        const properties = (feature.properties as Record<string, any>) || {};
+        // Get provider from parent map element
+        const provider = this.getUIProvider();
+
+        this.popupInstance = PopupElement.showPointPopup(
+          this.popupInstance,
+          this.map,
+          lngLat,
+          title,
+          properties,
+          provider
+        );
+
+        this.popupCreatedTime = Date.now();
+      } catch (error) {
+        console.warn('[PointElement] Failed to show popup:', error);
+      }
     }
 
     // Dispatch selection event
