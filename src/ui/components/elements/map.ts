@@ -125,19 +125,20 @@ export class MapElement extends BaseElement {
         const { getProviderByName, registerUIProvider } = await import('../../providers/registry');
         const existingProvider = await getProviderByName(providerName).catch(() => null);
 
+        // Always load CSS for the provider (even if already registered)
+        if (providerName === 'maptiler') {
+          await import('@maptiler/sdk/dist/maptiler-sdk.css');
+        } else if (providerName === 'mapbox') {
+          await import('mapbox-gl/dist/mapbox-gl.css');
+        }
+
         if (!existingProvider) {
           // Provider not registered, register and initialize it
           if (providerName === 'maptiler') {
-            // Load MapTiler CSS dynamically
-            await import('@maptiler/sdk/dist/maptiler-sdk.css');
-
             registerUIProvider('maptiler', new MapTilerUIProvider());
             // Only pass config if explicitly provided via attributes
             provider = await getProviderByName('maptiler', apiKey ? { apiKey } : undefined);
           } else if (providerName === 'mapbox') {
-            // Load Mapbox CSS dynamically
-            await import('mapbox-gl/dist/mapbox-gl.css');
-
             const { MapboxUIProvider } = await import('../../providers/mapbox-provider');
             registerUIProvider('mapbox', new MapboxUIProvider());
             // Only pass config if explicitly provided via attributes

@@ -191,6 +191,9 @@ export class BaseElement extends HTMLElement {
    * Override in subclasses to clean up
    */
   protected onMapUnload(): void {
+    // Clear control reference so onMapReady() recreates it for the new map instance
+    // SDK controls are bound to specific map instances and can't be reused
+    this.control = null;
     this.map = null;
   }
 
