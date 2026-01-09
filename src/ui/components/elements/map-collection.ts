@@ -15,11 +15,17 @@ interface SlotInfo {
   isActive: boolean;
   isVisible: boolean; // Track visibility separately
   isActivating: boolean; // Prevent concurrent activation attempts
+  failCount: number; // Track consecutive failures for retry backoff
+  lastFailTime: number; // Timestamp of last failure
 }
 
 // Debounce delay - wait for scrolling to stop before activating
 // Reduced to 50ms for faster initial loading while still debouncing rapid scrolls
 const SCROLL_DEBOUNCE_MS = 50;
+
+// Retry configuration for failed map loads
+const MAX_FAIL_COUNT = 3; // Max retries before giving up
+const RETRY_BACKOFF_MS = 2000; // Wait 2s between retries
 
 export class MapCollectionElement extends BaseElement {
   static observedAttributes = ['pool-size', 'api-key', 'map-style', 'viewport-padding'];
@@ -116,6 +122,8 @@ export class MapCollectionElement extends BaseElement {
         isActive: false,
         isVisible: false,
         isActivating: false,
+        failCount: 0,
+        lastFailTime: 0,
       };
     });
 
@@ -174,11 +182,19 @@ export class MapCollectionElement extends BaseElement {
     this.isProcessing = true;
     this.pendingReprocess = false;
 
+    const now = Date.now();
+
     try {
       // Find visible slots that need activation (not already active or being activated)
-      const visibleInactive = this.slots.filter(
-        (s) => s.isVisible && !s.isActive && !s.isActivating
-      );
+      // Skip slots that failed recently (backoff) or exceeded max retries
+      const visibleInactive = this.slots.filter((s) => {
+        if (!s.isVisible || s.isActive || s.isActivating) return false;
+        // Skip if exceeded max retries
+        if (s.failCount >= MAX_FAIL_COUNT) return false;
+        // Skip if in retry backoff period
+        if (s.failCount > 0 && now - s.lastFailTime < RETRY_BACKOFF_MS * s.failCount) return false;
+        return true;
+      });
 
       if (visibleInactive.length === 0) return;
 
@@ -267,12 +283,28 @@ export class MapCollectionElement extends BaseElement {
         // Rollback on failure
         slotInfo.isActive = false;
         this.activeCount--;
+        slotInfo.failCount++;
+        slotInfo.lastFailTime = Date.now();
+
         // Only log if still visible - don't spam logs for scrolled-away maps
         if (slotInfo.isVisible) {
+          const retryInfo =
+            slotInfo.failCount < MAX_FAIL_COUNT
+              ? ` (retry ${slotInfo.failCount}/${MAX_FAIL_COUNT} in ${RETRY_BACKOFF_MS * slotInfo.failCount}ms)`
+              : ' (max retries reached)';
           console.warn(
-            `[MapCollection] ✗ Failed to unfreeze: ${this.getSlotId(slotInfo.slotElement)}`
+            `[MapCollection] ✗ Failed to unfreeze: ${this.getSlotId(slotInfo.slotElement)}${retryInfo}`
           );
         }
+
+        // Schedule retry if still visible and under max retries
+        if (slotInfo.isVisible && slotInfo.failCount < MAX_FAIL_COUNT) {
+          setTimeout(() => this.processVisibilityChanges(), RETRY_BACKOFF_MS * slotInfo.failCount);
+        }
+      } else {
+        // Success - reset fail count
+        slotInfo.failCount = 0;
+        slotInfo.lastFailTime = 0;
       }
     } finally {
       slotInfo.isActivating = false;
@@ -363,6 +395,8 @@ export class MapCollectionElement extends BaseElement {
           isActive: false,
           isVisible: false,
           isActivating: false,
+          failCount: 0,
+          lastFailTime: 0,
         };
         this.slots.push(slotInfo);
         this.intersectionObserver?.observe(mapElement);
