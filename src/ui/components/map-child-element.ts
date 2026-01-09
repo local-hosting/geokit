@@ -8,12 +8,74 @@
  */
 
 import { BaseElement } from './base-element';
+import { getUIProvider as getGlobalUIProvider, getUIProviderByName } from '../providers/registry';
 import type { MapInstance } from '../providers/types';
 
 /**
  * Base class for elements that need a parent gk-map
  */
 export class MapChildElement extends BaseElement {
+  /**
+   * Find the gk-map element from a map instance (static utility)
+   * Traverses up from the map's container to find the parent gk-map element
+   * Useful for static methods that need to find the map element from a map instance
+   */
+  public static findMapElementFromInstance(map: any): HTMLElement | null {
+    if (!map) return null;
+
+    // Try to get container from map instance
+    const container = map.getContainer?.();
+    if (!container) return null;
+
+    // Traverse up the DOM tree to find gk-map element
+    let element: HTMLElement | null = container as HTMLElement;
+    while (element) {
+      if (element.tagName?.toLowerCase() === 'gk-map') {
+        return element;
+      }
+      element = element.parentElement;
+    }
+
+    return null;
+  }
+
+  /**
+   * Get UI provider from map element or fall back to global (static utility)
+   * Useful for static methods that need to get the provider from a map instance
+   */
+  public static getProviderFromMapInstance(map: any): any {
+    // Find the gk-map element from the map instance
+    const mapElement = MapChildElement.findMapElementFromInstance(map);
+
+    if (mapElement) {
+      // Get provider name from map element attribute
+      const providerName = mapElement.getAttribute('provider');
+      if (providerName) {
+        const provider = getUIProviderByName(providerName);
+        if (provider) {
+          return provider;
+        }
+      }
+
+      // Try to get provider from the map element itself (if it's a MapElement instance)
+      const mapElementInstance = mapElement as any;
+      if (mapElementInstance.getUIProvider) {
+        try {
+          return mapElementInstance.getUIProvider();
+        } catch {
+          // Silently fall through to global provider
+        }
+      }
+    }
+
+    // Fall back to global provider
+    try {
+      return getGlobalUIProvider();
+    } catch (error) {
+      console.error('[MapChildElement] Failed to get global provider:', error);
+      return null;
+    }
+  }
   // Event handler references for cleanup
   private _mapReadyHandler: (() => void) | null = null;
   private _mapUnloadHandler: (() => void) | null = null;
