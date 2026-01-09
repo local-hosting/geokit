@@ -541,13 +541,23 @@ export class MapCollectionElement extends BaseElement {
               // Only attempt activation if we haven't tried recently (cooldown: 10 seconds)
               const timeSinceLastAttempt = now - (slot.lastHealthCheckAttempt || 0);
               if (timeSinceLastAttempt > 10000) {
-                // Map is frozen but should be active - try to activate it
-                // Mark that we attempted activation from health check
-                slot.lastHealthCheckAttempt = now;
-                // Reset fail count to give it a fresh chance
-                slot.failCount = 0;
-                slot.lastFailTime = 0;
-                setTimeout(() => this.activateSlot(slot), 500);
+                // Check if there's room in the pool OR if there are invisible active maps we can freeze
+                const hasRoomInPool = this.activeCount < this.poolSize;
+                const hasInvisibleActiveToFreeze = this.slots.some(
+                  (s) => s.isActive && !s.isVisible
+                );
+
+                // Only attempt activation if we can actually make progress
+                if (hasRoomInPool || hasInvisibleActiveToFreeze) {
+                  // Map is frozen but should be active - try to activate it
+                  // Mark that we attempted activation from health check
+                  slot.lastHealthCheckAttempt = now;
+                  // Reset fail count to give it a fresh chance
+                  slot.failCount = 0;
+                  slot.lastFailTime = 0;
+                  setTimeout(() => this.activateSlot(slot), 500);
+                }
+                // If pool is full and all active maps are visible, this is expected behavior - don't warn
               }
             }
           }
