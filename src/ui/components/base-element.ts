@@ -246,17 +246,44 @@ export class BaseElement extends HTMLElement {
       const mapLoaded = (this.map as { loaded?: () => boolean }).loaded;
       const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
 
+      const loadedResult = mapLoaded ? mapLoaded.call(this.map) : false;
+      const styleLoadedResult = isStyleLoaded ? isStyleLoaded.call(this.map) : false;
+
       // If map and style are already loaded, resolve immediately
-      // Don't wait for 'idle' - it may have already fired and won't fire again
-      if (mapLoaded && mapLoaded.call(this.map) && isStyleLoaded && isStyleLoaded.call(this.map)) {
+      if (loadedResult && styleLoadedResult) {
         resolve();
         return;
       }
 
-      // Wait for load event
+      // Check for internal _loaded flag (MapLibre GL specific)
+      // This handles the case where the 'load' event already fired
+      const mapAny = this.map as any;
+      if (mapAny._loaded || mapAny._styleDirty === false) {
+        resolve();
+        return;
+      }
+
+      // Wait for load event with timeout fallback
+      // If 'load' already fired, we'll hit the timeout
       const mapOnce = (this.map as { once?: (event: string, handler: () => void) => void }).once;
       if (mapOnce) {
-        mapOnce.call(this.map, 'load', resolve);
+        let resolved = false;
+
+        // Timeout fallback - if event doesn't fire in 100ms, assume map is ready
+        const timeout = setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            resolve();
+          }
+        }, 100);
+
+        mapOnce.call(this.map, 'load', () => {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            resolve();
+          }
+        });
       } else {
         // No event system available, resolve immediately
         resolve();

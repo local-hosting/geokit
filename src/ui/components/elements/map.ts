@@ -27,7 +27,7 @@ export class MapElement extends BaseElement {
     'interactive',
     'hide-controls',
     'auto-hide-controls',
-    'hide-attribution',
+    'show-attribution',
     'provider',
   ];
 
@@ -434,10 +434,11 @@ export class MapElement extends BaseElement {
 
   /**
    * Set up hide attribution behavior
-   * When enabled, hides all attribution elements including logos
+   * Attribution is hidden by default unless `show-attribution` is present
    */
   private setupHideAttribution(): void {
-    if (!this.hasAttribute('hide-attribution')) return;
+    // Attribution hidden by default - use show-attribution to display it
+    if (this.hasAttribute('show-attribution')) return;
 
     this.injectHideAttributionStyles();
     this.classList.add('gk-hide-attribution');

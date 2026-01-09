@@ -151,13 +151,12 @@ export class PointElement extends MapChildElement {
   }
 
   protected override async onMapReady(): Promise<void> {
-    // Points don't need to wait for idle - just need style loaded
-    // But we still need to wait for the map to exist and be ready
+    // By the time onMapReady is called, the parent gk-map is fully initialized
+    // (either via gk-map-ready event or direct getMap() check)
+    // No need to wait for style - it's already loaded
     if (!this.map) return;
 
-    this.waitForStyleLoaded(() => {
-      this.addPoint();
-    });
+    this.addPoint();
   }
 
   private setupEventListeners(): void {
