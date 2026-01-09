@@ -94,7 +94,7 @@ export class BaseElement extends HTMLElement {
    */
   protected waitForStyleLoaded(callback: () => void): void {
     if (!this.map) {
-      console.warn(`[${this.constructor.name}] waitForStyleLoaded: no map`);
+      // Silently return - no map is expected during initialization
       return;
     }
 

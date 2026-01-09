@@ -542,9 +542,6 @@ export class MapCollectionElement extends BaseElement {
               const timeSinceLastAttempt = now - (slot.lastHealthCheckAttempt || 0);
               if (timeSinceLastAttempt > 10000) {
                 // Map is frozen but should be active - try to activate it
-                console.warn(
-                  `[MapCollection] Detected frozen map that should be active: ${this.getSlotId(slot.slotElement)}, attempting activation...`
-                );
                 // Mark that we attempted activation from health check
                 slot.lastHealthCheckAttempt = now;
                 // Reset fail count to give it a fresh chance
