@@ -15,6 +15,7 @@
       zoom="12"
       style="streets">
       <!-- Demo isochrone: 15-minute driving time from NYC center (H3 hexagon version) -->
+      <!-- Isochrone is transparent white and renders below the point -->
       <gk-isochrone 
         lat="40.7128" 
         lng="-74.006" 
@@ -22,11 +23,30 @@
         mode="driving"
         render="h3"
         h3-resolution="10"
-        color="#FF6B6B"
-        opacity="0.5"
-        stroke-color="#C92A2A"
-        stroke-width="4">
+        color="#FFFFFF"
+        opacity="0.3"
+        stroke-width="0">
       </gk-isochrone>
+      
+      <!-- Demo point: Interactive point with popup on click -->
+      <!-- Point renders above the isochrone -->
+      <gk-point 
+        lat="40.7128" 
+        lng="-74.006"
+        point-id="nyc-center"
+        point-name="New York City Center"
+        color="#00D9FF"
+        size="3">
+      </gk-point>
+      
+      <!-- Demo popup: Styled popup showing information -->
+      <gk-popup 
+        lat="40.7580" 
+        lng="-73.9855"
+        content="<h4>Times Square</h4><p>Famous intersection in Manhattan</p>"
+        anchor="bottom"
+        close-button="true">
+      </gk-popup>
     </gk-map>
   </div>
 
