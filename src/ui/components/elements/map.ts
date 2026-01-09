@@ -413,7 +413,7 @@ export class MapElement extends BaseElement {
     placeholder.className = 'map-placeholder';
     placeholder.setAttribute('data-map-placeholder', 'true');
     placeholder.style.cssText =
-      'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #161b22; display: flex; align-items: center; justify-content: center; color: #8b949e; font-size: 0.9rem; z-index: 1;';
+      'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--gk-placeholder-color, #141414); display: flex; align-items: center; justify-content: center; color: #8b949e; font-size: 0.9rem; z-index: 1;';
     placeholder.textContent = message;
     this.appendChild(placeholder);
   }
