@@ -34,11 +34,22 @@ export class MapboxAPIProvider extends BaseAPIProvider {
   private cacheHits = 0;
   private cacheMisses = 0;
 
+  // Rate limiting: queue requests and process with delay
+  private requestQueue: Array<{
+    resolve: (value: FeatureCollection) => void;
+    reject: (error: Error) => void;
+    fn: () => Promise<FeatureCollection>;
+  }> = [];
+  private isProcessingQueue = false;
+  private readonly REQUEST_DELAY_MS = 100; // 100ms between requests = ~10 req/sec
+  private readonly MAX_RETRIES = 3;
+  private readonly RETRY_DELAY_MS = 1000; // Start with 1 second retry delay
+
   constructor() {
     super();
     this.cache = new LRUCache<string, CacheEntry>({
-      max: 100, // Maximum 100 entries
-      ttl: 1000 * 60 * 10, // 10 minutes TTL
+      max: 1000, // Maximum 1000 entries (supports ~600 venues at multiple travel times)
+      ttl: 1000 * 60 * 30, // 30 minutes TTL
       updateAgeOnGet: true, // LRU: reset age on access
       updateAgeOnHas: false, // Don't reset age on has() check
     });
@@ -67,7 +78,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       throw new Error('Mapbox API Provider: No access token configured.');
     }
 
-    const { lat, lng, minutes, mode, colors } = options;
+    const { lat, lng, minutes, mode } = options;
 
     // Validate inputs
     if (!lat || !lng || !minutes || minutes.length === 0) {
@@ -77,13 +88,71 @@ export class MapboxAPIProvider extends BaseAPIProvider {
     // Generate cache key (round to 4 decimals = ~11m precision for better cache hits)
     const cacheKey = this.getCacheKey(lat, lng, minutes, mode);
 
-    // Check cache
+    // Check cache first (synchronous, no rate limiting needed)
     const cached = this.cache.get(cacheKey);
     if (cached) {
       this.cacheHits++;
       return cached.data;
     }
     this.cacheMisses++;
+
+    // Queue the actual API request with rate limiting
+    return this.queueRequest(() => this.fetchIsochroneInternal(options, cacheKey));
+  }
+
+  /**
+   * Queue a request for rate-limited execution
+   */
+  private queueRequest(fn: () => Promise<FeatureCollection>): Promise<FeatureCollection> {
+    return new Promise((resolve, reject) => {
+      this.requestQueue.push({ resolve, reject, fn });
+      this.processQueue();
+    });
+  }
+
+  /**
+   * Process the request queue with rate limiting
+   */
+  private async processQueue(): Promise<void> {
+    if (this.isProcessingQueue) return;
+    this.isProcessingQueue = true;
+
+    while (this.requestQueue.length > 0) {
+      const request = this.requestQueue.shift();
+      if (!request) continue;
+
+      try {
+        const result = await request.fn();
+        request.resolve(result);
+      } catch (error) {
+        request.reject(error instanceof Error ? error : new Error(String(error)));
+      }
+
+      // Delay before next request to avoid rate limiting
+      if (this.requestQueue.length > 0) {
+        await this.delay(this.REQUEST_DELAY_MS);
+      }
+    }
+
+    this.isProcessingQueue = false;
+  }
+
+  /**
+   * Utility delay function
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Internal fetch with retry logic for rate limiting
+   */
+  private async fetchIsochroneInternal(
+    options: IsochroneOptions,
+    cacheKey: string,
+    retryCount = 0
+  ): Promise<FeatureCollection> {
+    const { lat, lng, minutes, mode, colors } = options;
 
     // Map mode to Mapbox profile
     const modeMap: Record<string, string> = {
@@ -100,7 +169,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       url.searchParams.set('contours_minutes', minutes.join(','));
       url.searchParams.set('polygons', 'true');
       url.searchParams.set('denoise', '1'); // Max smoothing
-      url.searchParams.set('access_token', this.accessToken);
+      url.searchParams.set('access_token', this.accessToken!);
 
       // Add midday departure time for traffic-aware modes
       if (profile === 'driving-traffic') {
@@ -123,6 +192,19 @@ export class MapboxAPIProvider extends BaseAPIProvider {
           Referer: 'http://localhost:5173/', // Bypass referrer restrictions
         },
       });
+
+      // Handle rate limiting with exponential backoff
+      if (response.status === 429) {
+        if (retryCount < this.MAX_RETRIES) {
+          const retryDelay = this.RETRY_DELAY_MS * Math.pow(2, retryCount);
+          console.warn(
+            `[Mapbox] Rate limited, retrying in ${retryDelay}ms (attempt ${retryCount + 1}/${this.MAX_RETRIES})`
+          );
+          await this.delay(retryDelay);
+          return this.fetchIsochroneInternal(options, cacheKey, retryCount + 1);
+        }
+        throw new Error('Mapbox API error: 429 - Too Many Requests (max retries exceeded)');
+      }
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));

@@ -18,7 +18,8 @@ interface SlotInfo {
 }
 
 // Debounce delay - wait for scrolling to stop before activating
-const SCROLL_DEBOUNCE_MS = 150;
+// Reduced to 50ms for faster initial loading while still debouncing rapid scrolls
+const SCROLL_DEBOUNCE_MS = 50;
 
 export class MapCollectionElement extends BaseElement {
   static observedAttributes = ['pool-size', 'api-key', 'map-style', 'viewport-padding'];
@@ -174,27 +175,35 @@ export class MapCollectionElement extends BaseElement {
     this.pendingReprocess = false;
 
     try {
-      // Keep processing until no more visible inactive slots
-      let iterations = 0;
-      const maxIterations = this.poolSize * 2; // Safety limit
+      // Find visible slots that need activation (not already active or being activated)
+      const visibleInactive = this.slots.filter(
+        (s) => s.isVisible && !s.isActive && !s.isActivating
+      );
 
-      while (iterations < maxIterations) {
-        iterations++;
+      if (visibleInactive.length === 0) return;
 
-        // Find visible slots that need activation (not already active or being activated)
-        const visibleInactive = this.slots.filter(
-          (s) => s.isVisible && !s.isActive && !s.isActivating
-        );
+      // Calculate how many we can activate (up to pool size)
+      const availableSlots = this.poolSize - this.activeCount;
+      const toActivate = visibleInactive.slice(0, Math.max(availableSlots, 0));
 
-        if (visibleInactive.length === 0) break;
-
-        // Process sequentially to properly manage WebGL contexts
-        for (const slotInfo of visibleInactive) {
-          // Re-check visibility - user might have scrolled away during previous activation
-          if (!slotInfo.isVisible) continue;
-          if (slotInfo.isActive || slotInfo.isActivating) continue;
-          await this.activateSlot(slotInfo);
+      // If we need more room, freeze invisible maps first
+      if (visibleInactive.length > availableSlots) {
+        const needed = Math.min(visibleInactive.length - availableSlots, this.activeCount);
+        for (let i = 0; i < needed; i++) {
+          await this.deactivateOneInvisible();
         }
+      }
+
+      // Activate maps in PARALLEL for faster loading
+      if (toActivate.length > 0) {
+        await Promise.all(toActivate.map((slot) => this.activateSlot(slot)));
+      }
+
+      // Check if there are more to activate after parallel batch
+      const stillInactive = this.slots.filter((s) => s.isVisible && !s.isActive && !s.isActivating);
+      if (stillInactive.length > 0 && this.activeCount < this.poolSize) {
+        // Schedule another run for remaining slots
+        setTimeout(() => this.processVisibilityChanges(), 0);
       }
     } finally {
       this.isProcessing = false;
