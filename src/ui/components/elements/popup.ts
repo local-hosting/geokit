@@ -37,6 +37,7 @@ export interface PointPopupProperties {
   'id:store-sid'?: string;
   'id:store-number'?: string;
   id?: string;
+  address?: string;
 }
 
 export class PopupElement extends MapChildElement {
@@ -52,17 +53,18 @@ export class PopupElement extends MapChildElement {
 
   /**
    * Inject styled popup CSS styles (called automatically on first use)
+   * Returns true if styles were already injected or successfully injected
    */
-  private static injectPopupStyles(): void {
-    if (PopupElement.stylesInjected) return;
+  private static injectPopupStyles(): boolean {
+    if (PopupElement.stylesInjected) return true;
 
     const styleId = 'geokit-popup-styles';
     if (typeof document !== 'undefined' && document.getElementById(styleId)) {
       PopupElement.stylesInjected = true;
-      return;
+      return true;
     }
 
-    if (typeof document === 'undefined') return;
+    if (typeof document === 'undefined') return false;
 
     const style = document.createElement('style');
     style.id = styleId;
@@ -153,14 +155,47 @@ export class PopupElement extends MapChildElement {
         position: relative;
         padding: 12px 32px 12px 14px;
         border-radius: 6px;
+        min-width: 80px;
+        max-width: 300px;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
       }
 
       /* Utility classes for structured content */
+      .geokit-popup-content {
+        display: block;
+        min-width: 60px;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        overflow: hidden;
+      }
+      
       h4.geokit-popup-title {
         margin: 0 0 4px 0;
         font-weight: 700;
         color: #c9d1d9;
         font-size: 14px;
+        line-height: 1.4;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      h5.geokit-popup-address {
+        margin: 0 0 8px 0;
+        font-size: 12px;
+        font-weight: 400;
+        color: #8b949e !important;
+        line-height: 1.4;
+        display: block;
       }
 
       .geokit-popup-tags {
@@ -181,6 +216,7 @@ export class PopupElement extends MapChildElement {
     `;
     document.head.appendChild(style);
     PopupElement.stylesInjected = true;
+    return true;
   }
 
   protected override async onMapReady(): Promise<void> {
@@ -300,8 +336,7 @@ export class PopupElement extends MapChildElement {
     if (!provider || !provider.createPopup) return null;
 
     const anchor = options.anchor || 'bottom';
-    // Offset accounts for the tip height (10px) plus some spacing
-    // Standard MapLibre offset (25px)
+    // Use provided offset or MapLibre's standard default (25px)
     const offset = options.offset || 25;
     const closeButton = options.closeButton ?? false;
 
@@ -350,6 +385,22 @@ export class PopupElement extends MapChildElement {
       // Use textContent to ensure no HTML parsing happens
       titleEl.textContent = title;
       container.appendChild(titleEl);
+    }
+
+    // Add address if available (below title, above tags)
+    // Show city and state only
+    if (properties) {
+      const parts: string[] = [];
+      if (properties.city) parts.push(String(properties.city).trim());
+      if (properties.state) parts.push(String(properties.state).trim());
+      
+      if (parts.length > 0) {
+        const addressText = parts.join(', ');
+        const addressEl = document.createElement('h5');
+        addressEl.setAttribute('class', 'geokit-popup-address');
+        addressEl.textContent = addressText;
+        container.appendChild(addressEl);
+      }
     }
 
     // Create container for ID tags
@@ -401,22 +452,86 @@ export class PopupElement extends MapChildElement {
   }
 
   /**
+   * Close all popups on a map instance
+   */
+  public static closeAllPopups(map: any): void {
+    if (!map) return;
+
+    try {
+      // Find all popup elements in the map container
+      const mapContainer = map.getContainer?.();
+      if (mapContainer) {
+        // Query for both MapLibre and Mapbox popup classes
+        const popups = mapContainer.querySelectorAll?.('.maplibregl-popup, .mapboxgl-popup');
+        if (popups && popups.length > 0) {
+          popups.forEach((popupEl: HTMLElement) => {
+            try {
+              // Try to find and click the close button first (proper way)
+              const closeButton = popupEl.querySelector?.('.maplibregl-popup-close-button, .mapboxgl-popup-close-button') as HTMLElement;
+              if (closeButton) {
+                closeButton.click();
+              } else {
+                // Fallback: remove the popup element directly from DOM
+                popupEl.remove();
+              }
+            } catch (err) {
+              // If clicking fails, try direct removal
+              try {
+                popupEl.remove();
+              } catch {
+                // Ignore removal errors
+              }
+            }
+          });
+        }
+      }
+
+      // Also try to access MapLibre's internal popup tracking if available
+      // MapLibre stores popups in _popups array on the map instance
+      if ((map as any)._popups && Array.isArray((map as any)._popups)) {
+        const internalPopups = [...(map as any)._popups];
+        internalPopups.forEach((popup: any) => {
+          try {
+            if (popup && typeof popup.remove === 'function') {
+              popup.remove();
+            }
+          } catch {
+            // Ignore errors
+          }
+        });
+      }
+    } catch (error) {
+      // Silently handle errors - popups might already be removed
+    }
+  }
+
+  /**
    * Determine the best anchor position based on viewport
    */
   public static determineAnchor(map: any, lngLat: { lng: number; lat: number }): 'top' | 'bottom' {
     if (!map || !lngLat) return 'bottom';
 
-    // Convert lngLat object to array format [lng, lat] for MapLibre/MapTiler
-    const lngLatArray: [number, number] = [lngLat.lng, lngLat.lat];
-    const point = map.project(lngLatArray);
-    const estimatedPopupHeight = 80;
-    const buffer = 20;
+    try {
+      // Convert lngLat object to array format [lng, lat] for MapLibre/MapTiler
+      const lngLatArray: [number, number] = [lngLat.lng, lngLat.lat];
+      const point = map.project(lngLatArray);
+      
+      if (!point || typeof point.x !== 'number' || typeof point.y !== 'number') {
+        return 'bottom';
+      }
 
-    if (point.y < estimatedPopupHeight + buffer) {
-      return 'top';
+      const estimatedPopupHeight = 80;
+      const buffer = 20;
+
+      if (point.y < estimatedPopupHeight + buffer) {
+        return 'top';
+      }
+
+      return 'bottom';
+    } catch (error) {
+      // Fallback to bottom if projection fails
+      return 'bottom';
     }
-
-    return 'bottom';
   }
 
   /**
@@ -459,7 +574,11 @@ export class PopupElement extends MapChildElement {
       return popup;
     }
 
-    // Always remove existing popup first (per MapLibre best practice)
+    // Always close ALL existing popups on the map first
+    // This ensures only one popup is visible at a time
+    PopupElement.closeAllPopups(map);
+
+    // Also remove the specific popup if provided
     if (popup) {
       try {
         popup.remove();
@@ -470,8 +589,9 @@ export class PopupElement extends MapChildElement {
 
     // Determine anchor based on viewport position
     const anchor = PopupElement.determineAnchor(map, lngLat);
-    // Standard MapLibre offset (25px) positions popup above the marker
-    const offset = 25;
+    // Use minimal offset to position popup directly above/below the point
+    // The offset accounts for the popup tip height (~10px) so the tip points to the exact coordinate
+    const offset: [number, number] = anchor === 'bottom' ? [0, -10] : [0, 10];
 
     // Create a fresh popup (per MapLibre documentation pattern)
     const newPopup = PopupElement.createPopupWithProvider(activeProvider, {
@@ -486,20 +606,53 @@ export class PopupElement extends MapChildElement {
     }
 
     // Convert lngLat to array format [lng, lat] as required by MapLibre
-    // Use .slice() as recommended in MapLibre docs to create a copy
-    const coordinates: [number, number] = [lngLat.lng, lngLat.lat];
+    // Ensure coordinates are valid numbers
+    const lng = typeof lngLat.lng === 'number' ? lngLat.lng : parseFloat(String(lngLat.lng));
+    const lat = typeof lngLat.lat === 'number' ? lngLat.lat : parseFloat(String(lngLat.lat));
+
+    if (isNaN(lng) || isNaN(lat)) {
+      console.error('[PopupElement] Invalid coordinates:', lngLat);
+      return null;
+    }
+
+    const coordinates: [number, number] = [lng, lat];
+
+    // Ensure styles are injected before adding popup to map
+    // This is critical for proper positioning on first render
+    // Styles are also injected in createPopupWithProvider, but we ensure they're ready here
+    PopupElement.injectPopupStyles();
 
     // Add popup to map following MapLibre's documented pattern:
     // new Popup().setLngLat(coordinates).setHTML/setDOMContent(content).addTo(map)
     try {
       newPopup.setLngLat(coordinates).setDOMContent(popupContentEl).addTo(map);
 
-      // Style popup element after it's added
+      // Wait for map to finish rendering and styles to be applied
+      // Use requestAnimationFrame to ensure we're after the render cycle
+      // This fixes the issue where popup doesn't position correctly until map rotates
       requestAnimationFrame(() => {
-        const popupElement = newPopup.getElement?.();
-        if (popupElement) {
-          PopupElement.stylePopupElement(popupElement, anchor);
-        }
+        requestAnimationFrame(() => {
+          // Re-set the coordinates to trigger proper positioning after render
+          // This ensures the popup tip points correctly to the marker from the start
+          try {
+            // Force a reposition by setting coordinates again
+            // This is necessary because MapLibre may not position correctly on first render
+            newPopup.setLngLat(coordinates);
+            
+            // Also trigger a repaint to ensure the popup is positioned correctly
+            if (map && typeof (map as any).triggerRepaint === 'function') {
+              (map as any).triggerRepaint();
+            }
+          } catch (err) {
+            // Ignore errors if popup was removed
+          }
+
+          // Style popup element after it's positioned
+          const popupElement = newPopup.getElement?.();
+          if (popupElement) {
+            PopupElement.stylePopupElement(popupElement, anchor);
+          }
+        });
       });
 
       return newPopup;
