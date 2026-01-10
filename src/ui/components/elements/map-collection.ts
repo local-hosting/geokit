@@ -425,23 +425,34 @@ export class MapCollectionElement extends BaseElement {
 
     this.mutationObserver = new MutationObserver((mutations) => {
       let hasNewMaps = false;
+      let hasRemovedMaps = false;
 
       for (const mutation of mutations) {
         if (mutation.type === 'childList') {
+          // Check for added maps
           for (const node of mutation.addedNodes) {
             if (node instanceof Element) {
               if (node.tagName.toLowerCase() === 'gk-map' || node.querySelector('gk-map')) {
                 hasNewMaps = true;
-                break;
+              }
+            }
+          }
+          // Check for removed maps
+          for (const node of mutation.removedNodes) {
+            if (node instanceof Element) {
+              if (node.tagName.toLowerCase() === 'gk-map' || node.querySelector('gk-map')) {
+                hasRemovedMaps = true;
               }
             }
           }
         }
-        if (hasNewMaps) break;
       }
 
       if (hasNewMaps) {
         setTimeout(() => this.handleNewMaps(), 100);
+      }
+      if (hasRemovedMaps) {
+        setTimeout(() => this.handleRemovedMaps(), 100);
       }
     });
 
@@ -472,6 +483,31 @@ export class MapCollectionElement extends BaseElement {
         this.intersectionObserver?.observe(mapElement);
       }
     }
+  }
+
+  /**
+   * Clean up slots for maps that have been removed from the DOM
+   */
+  private handleRemovedMaps(): void {
+    const currentMapElements = new Set(
+      Array.from(this.querySelectorAll('gk-map')) as MapElement[]
+    );
+
+    // Find slots whose map elements are no longer in the DOM
+    const removedSlots = this.slots.filter((s) => !currentMapElements.has(s.mapElement));
+
+    for (const slot of removedSlots) {
+      // Stop observing the removed element
+      this.intersectionObserver?.unobserve(slot.slotElement);
+
+      // Decrement active count if this slot was active
+      if (slot.isActive) {
+        this.activeCount--;
+      }
+    }
+
+    // Remove the slots from the array
+    this.slots = this.slots.filter((s) => currentMapElements.has(s.mapElement));
   }
 
   /**
