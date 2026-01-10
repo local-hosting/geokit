@@ -51,6 +51,11 @@ export class MapCollectionElement extends BaseElement {
   }
 
   async connectedCallback(): Promise<void> {
+    // HMR check: If already initialized, clean up first
+    if (this.initialized) {
+      this.cleanup();
+    }
+    
     this.isInitialized = false;
     await super.connectedCallback();
     this.poolSize = parseInt(this.getAttribute('pool-size') || '6', 10);
@@ -108,7 +113,6 @@ export class MapCollectionElement extends BaseElement {
     const mapElements = Array.from(this.querySelectorAll('gk-map')) as MapElement[];
 
     if (mapElements.length === 0) {
-      console.log('[MapCollection] No gk-map elements found - watching for dynamic additions');
       // Setup IntersectionObserver even with no slots (MutationObserver will add them)
       this.setupIntersectionObserver();
       this.initialized = true;
@@ -276,12 +280,17 @@ export class MapCollectionElement extends BaseElement {
    * Protected against concurrent activation and fast scrolling
    */
   private async activateSlot(slotInfo: SlotInfo): Promise<void> {
+    const slotId = this.getSlotId(slotInfo.slotElement);
+    
     // Already active or being activated - skip
-    if (slotInfo.isActive || slotInfo.isActivating) return;
+    if (slotInfo.isActive || slotInfo.isActivating) {
+      return;
+    }
 
     // Skip if no longer visible (user scrolled away)
-    if (!slotInfo.isVisible) return;
-
+    if (!slotInfo.isVisible) {
+      return;
+    }
     // Mark as activating to prevent concurrent attempts
     slotInfo.isActivating = true;
     slotInfo.activationStartTime = Date.now();
@@ -296,7 +305,7 @@ export class MapCollectionElement extends BaseElement {
 
         const frozen = await this.deactivateOneInvisible();
         if (!frozen) {
-          // Pool full with all visible maps - don't log warning, this is normal
+          // Pool full with all visible maps - this is normal
           return;
         }
       }
@@ -306,9 +315,20 @@ export class MapCollectionElement extends BaseElement {
         return; // User scrolled away during freeze, abort
       }
 
-      // Mark active
+      // Mark active BEFORE unfreezing to prevent race conditions
       slotInfo.isActive = true;
       this.activeCount++;
+      
+      // HMR safety check: enforce pool size limit
+      if (this.activeCount > this.poolSize) {
+        // Emergency cleanup: freeze the oldest active map (not the one we're activating)
+        const oldestActive = this.slots.find(s => s.isActive && s !== slotInfo);
+        if (oldestActive) {
+          oldestActive.mapElement.freeze().catch(() => {});
+          oldestActive.isActive = false;
+          this.activeCount--;
+        }
+      }
 
       // Unfreeze
       slotInfo.mapElement.ensureAttributes({
@@ -316,7 +336,6 @@ export class MapCollectionElement extends BaseElement {
         provider: 'maptiler',
         mapStyle: this.mapStyle,
       });
-
       const success = await slotInfo.mapElement.unfreeze(this.activeCount - 1);
       if (!success) {
         // Rollback on failure
@@ -324,17 +343,6 @@ export class MapCollectionElement extends BaseElement {
         this.activeCount--;
         slotInfo.failCount++;
         slotInfo.lastFailTime = Date.now();
-
-        // Only log if still visible - don't spam logs for scrolled-away maps
-        if (slotInfo.isVisible) {
-          const retryInfo =
-            slotInfo.failCount < MAX_FAIL_COUNT
-              ? ` (retry ${slotInfo.failCount}/${MAX_FAIL_COUNT} in ${RETRY_BACKOFF_MS * slotInfo.failCount}ms)`
-              : ' (max retries reached)';
-          console.warn(
-            `[MapCollection] ✗ Failed to unfreeze: ${this.getSlotId(slotInfo.slotElement)}${retryInfo}`
-          );
-        }
 
         // Schedule retry if still visible and under max retries
         if (slotInfo.isVisible && slotInfo.failCount < MAX_FAIL_COUNT) {
@@ -390,6 +398,7 @@ export class MapCollectionElement extends BaseElement {
 
     if (candidates.length > 0) {
       const toFreeze = candidates[0].slotInfo;
+      
       // Await freeze to ensure WebGL context is released before creating new maps
       await toFreeze.mapElement.freeze();
       toFreeze.isActive = false;
@@ -493,9 +502,6 @@ export class MapCollectionElement extends BaseElement {
         // If it's been activating for more than threshold, reset it
         const activatingTime = now - slot.activationStartTime;
         if (activatingTime > STUCK_THRESHOLD_MS) {
-          console.warn(
-            `[MapCollection] Detected stuck map: ${this.getSlotId(slot.slotElement)} (stuck for ${activatingTime}ms), resetting...`
-          );
           slot.isActivating = false;
           slot.activationStartTime = 0;
           slot.failCount = Math.min(slot.failCount + 1, MAX_FAIL_COUNT);
@@ -516,9 +522,6 @@ export class MapCollectionElement extends BaseElement {
           const mapInstance = (slot.mapElement as any).getMap?.();
           if (!mapInstance) {
             // Map instance missing but marked active - reset
-            console.warn(
-              `[MapCollection] Map instance missing for active slot: ${this.getSlotId(slot.slotElement)}, resetting...`
-            );
             slot.isActive = false;
             this.activeCount--;
             slot.failCount = 0;
@@ -586,7 +589,7 @@ export class MapCollectionElement extends BaseElement {
 
   getStats(): { totalMaps: number; inUse: number; available: number } {
     return {
-      totalMaps: this.activeCount,
+      totalMaps: this.slots.length,
       inUse: this.activeCount,
       available: Math.max(0, this.poolSize - this.activeCount),
     };
