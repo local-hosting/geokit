@@ -203,8 +203,8 @@ export class MapElement extends BaseElement {
 
       // Get map style from 'map-style' attribute only
       // DO NOT use 'style' attribute - that's for CSS, not map tiles!
-      // Default to dataviz-dark to avoid deprecated "Streets Default v2"
-      const styleAttr = this.getAttribute('map-style') || 'dataviz-dark';
+      // Default to streets to avoid deprecated styles and API key requirements
+      const styleAttr = this.getAttribute('map-style') || 'streets';
 
       const options = {
         lat: parseFloat(this.getAttribute('lat') || '0'),
@@ -1087,9 +1087,20 @@ export class MapElement extends BaseElement {
         map.remove();
       } catch (error) {
         // Ignore errors during removal - the map may have been partially initialized
-        // Common error: "Cannot read properties of undefined (reading 'off')"
-        // This happens when event handlers weren't fully registered before removal
-        console.debug('[gk-map] Ignoring error during map removal:', error);
+        // Common error: "Cannot read properties of undefined (reading 'off')" or "can't access property 'off', this._map is undefined"
+        // This happens when event handlers weren't fully registered before removal or map was already destroyed
+        // Suppress in production to avoid console spam - this is a harmless error from MapTiler SDK
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const isHarmlessError = 
+          errorMessage.includes("can't access property") ||
+          errorMessage.includes("Cannot read properties") ||
+          errorMessage.includes("this._map is undefined") ||
+          errorMessage.includes("reading 'off'");
+        
+        // Only log non-harmless errors or in development
+        if (!isHarmlessError || (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development')) {
+          console.debug('[gk-map] Ignoring error during map removal:', error);
+        }
       } finally {
         // Restore console methods
         console.warn = originalWarn;
