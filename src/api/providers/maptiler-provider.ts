@@ -253,3 +253,4 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
     this.cacheMisses = 0;
   }
 }
+
