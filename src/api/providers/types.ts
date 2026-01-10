@@ -9,7 +9,7 @@ import type { Position } from 'geojson';
 /**
  * Capabilities that API providers can support
  */
-export type APICapability = 'isochrone' | 'geocoding' | 'directions' | 'matrix' | 'elevation';
+export type APICapability = 'isochrone' | 'geocoding' | 'directions' | 'matrix' | 'elevation' | 'placeSearch';
 
 /**
  * Base provider configuration
@@ -49,6 +49,44 @@ export interface DirectionsOptions {
   waypoints: Position[];
   mode?: 'driving' | 'walking' | 'cycling';
   alternatives?: boolean;
+}
+
+/**
+ * Place search request options
+ */
+export interface PlaceSearchOptions {
+  query?: string;
+  ll?: Position;
+  radius?: number;
+  categories?: string[];
+  limit?: number;
+  sort?: 'RELEVANCE' | 'RATING' | 'DISTANCE';
+  openNow?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+/**
+ * Place search result - normalized from provider responses
+ */
+export interface PlaceSearchResult {
+  id: string;
+  name: string;
+  address?: string;
+  location: Position;
+  categories?: string[];
+  distance?: number;
+  rating?: number;
+  priceLevel?: number;
+  hours?: {
+    openNow?: boolean;
+    display?: string;
+  };
+  contact?: {
+    phone?: string;
+    website?: string;
+  };
+  raw?: unknown;
 }
 
 /**
@@ -97,5 +135,11 @@ export abstract class BaseAPIProvider {
    * Optional - only implement if provider supports this capability
    */
   elevation?(coordinates: Position[]): Promise<number[]>;
+
+  /**
+   * Search for places/venues
+   * Optional - only implement if provider supports this capability
+   */
+  placeSearch?(options: PlaceSearchOptions): Promise<PlaceSearchResult[]>;
 }
 
