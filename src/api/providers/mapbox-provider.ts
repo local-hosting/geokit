@@ -241,7 +241,9 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       if (error instanceof Error) {
         throw new Error(`Failed to fetch isochrone: ${error.message}`);
       }
-      throw new Error('Failed to fetch isochrone');
+      // Handle non-Error exceptions (e.g., network failures, fetch not available)
+      const errorMessage = error ? String(error) : 'Unknown error';
+      throw new Error(`Failed to fetch isochrone: ${errorMessage}`);
     }
   }
 
