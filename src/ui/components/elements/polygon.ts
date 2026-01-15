@@ -170,6 +170,15 @@ export class PolygonElement extends MapChildElement {
       }
     }
 
+    // Simplify polygon if it has too many vertices to prevent 65535 vertex limit errors
+    // Use a conservative maxPoints of 50 to ensure we stay well below the limit
+    const MAX_POINTS = 50;
+    if (coordinates.length > MAX_POINTS) {
+      // Cast to LatLon[] since normalizeCoordinatesArray ensures [lat, lng] format
+      const simplified = simplifyPolygonRingToMaxPoints(MAX_POINTS)(coordinates as LatLon[]);
+      coordinates = simplified;
+    }
+
     // Convert [lat, lng] to [lng, lat] for GeoJSON format
     const geoJsonCoordinates = coordinates.map(([lat, lng]) => [lng, lat]);
 
@@ -210,6 +219,9 @@ export class PolygonElement extends MapChildElement {
             'fill-color': fillColor,
             'fill-opacity': fillOpacity,
           },
+          // Enable large mesh arrays to handle polygons with more than 65535 vertices
+          // This automatically splits large polygons into multiple segments
+          fillLargeMeshArrays: true,
         },
         beforeId
       );
@@ -395,9 +407,8 @@ export class PolygonElement extends MapChildElement {
       strokeWidth = 2,
       strokeOpacity = 1,
       visible = true,
-      // TODO: implement simplification
-      simplify: _simplify = true,
-      maxPoints: _maxPoints = 100,
+      simplify: _simplify = true, // Always simplify large polygons, kept for API compatibility
+      maxPoints = 50, // Reduced default from 100 to prevent 65535 vertex limit errors
     } = options;
 
     const polygons: PolygonElement[] = [];
@@ -417,9 +428,11 @@ export class PolygonElement extends MapChildElement {
       // Convert [lng, lat] to [lat, lng] format
       let points: LatLon[] = outerRing.map(([lng, lat]) => [lat, lng]);
 
-      // Simplify if requested
-      if (opts.simplify && points.length > (opts.maxPoints || 100)) {
-        points = simplifyPolygonRingToMaxPoints(opts.maxPoints || 100)(points);
+      // Always simplify if polygon has too many points to prevent 65535 vertex limit errors
+      // Use the provided maxPoints or default to 50
+      const targetMaxPoints = opts.maxPoints ?? maxPoints;
+      if (points.length > targetMaxPoints) {
+        points = simplifyPolygonRingToMaxPoints(targetMaxPoints)(points);
       }
 
       // Skip if too few points

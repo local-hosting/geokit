@@ -591,6 +591,9 @@ export class IsochroneElement extends MapChildElement {
               'fill-antialias': this.render === 'h3' ? false : true, // Disable antialiasing for H3 to avoid visible borders
               'fill-outline-color': this.render === 'h3' ? this.color : undefined, // Match fill color for H3 to hide borders
             },
+            // Enable large mesh arrays to handle polygons with more than 65535 vertices
+            // This automatically splits large polygons into multiple segments
+            fillLargeMeshArrays: true,
           },
           beforeLayerId
         );
