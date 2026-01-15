@@ -116,6 +116,7 @@ export {
   createFeatureCollection,
   extractGeometry,
   formatJSONCompact,
+  getFeatureId,
   isValidPosition,
   isValidPoint,
   isValidLineString,
