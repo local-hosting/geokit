@@ -12,6 +12,7 @@
 import { MapChildElement } from '../map-child-element';
 import { getProviderForCapability } from '../../../api/providers/registry';
 import { polygonToH3, h3SetToMultiPolygon } from '../../../utils/h3';
+import { debug } from '../../utils/logger';
 import type { Polygon } from '../../../types';
 
 export interface IsochroneOptions {
@@ -259,7 +260,7 @@ export class IsochroneElement extends MapChildElement {
                   }
                 } catch (error) {
                   // Map might be in invalid state, try to fetch anyway
-                  console.warn('[Isochrone] Error checking source, attempting fetch:', error);
+                  debug.warn('[Isochrone] Error checking source, attempting fetch:', error);
                   this.waitForStyleLoaded(() => {
                     this.fetchAndRenderIsochrone();
                   });
@@ -473,15 +474,9 @@ export class IsochroneElement extends MapChildElement {
   }
 
   private async fetchAndRenderIsochrone(): Promise<void> {
-    if (!this.map) {
-      console.warn('Isochrone: No map available');
-      return;
-    }
+    if (!this.map) return;
 
-    if (!this.visible) {
-      console.warn('Isochrone: Element visible attribute is false, skipping fetch');
-      return;
-    }
+    if (!this.visible) return;
 
     // Ensure IDs are initialized (in case connectedCallback hasn't completed)
     if (!this.sourceId) {
@@ -493,24 +488,10 @@ export class IsochroneElement extends MapChildElement {
     const lat = parseFloat(this.getAttribute('lat') || '');
     const lng = parseFloat(this.getAttribute('lng') || '');
 
-    // Only skip if visibility is EXPLICITLY false (not null/unknown)
-    // If visibility is unknown (null) or true, proceed with fetch
-    // This ensures isochrones load even if IntersectionObserver hasn't initialized yet
-    // Note: We still attempt fetch even if visibility is false, as the IntersectionObserver
-    // might be incorrect (e.g., element is in viewport but observer hasn't fired yet)
-    if (this.isElementVisible === false) {
-      // Log but don't block - visibility check might be incorrect
-      console.debug(
-        `Isochrone: Visibility check is false for ${lat},${lng}, but attempting fetch anyway`
-      );
-    }
     const time = this.time;
     const mode = this.mode;
 
-    if (isNaN(lat) || isNaN(lng)) {
-      console.warn('Isochrone: Invalid lat/lng coordinates');
-      return;
-    }
+    if (isNaN(lat) || isNaN(lng)) return;
 
     // Create cache key
     const cacheKey = `${lat},${lng},${time},${mode}`;
@@ -521,7 +502,7 @@ export class IsochroneElement extends MapChildElement {
     // Get API provider that supports isochrone
     const provider = getProviderForCapability('isochrone');
     if (!provider) {
-      console.warn('Isochrone: No API provider supports isochrone capability');
+      debug.warn('[Isochrone] No API provider supports isochrone capability');
       return;
     }
 
@@ -539,8 +520,7 @@ export class IsochroneElement extends MapChildElement {
       (this as any)._originalIsochroneData = result;
 
       if (!result || !result.features || result.features.length === 0) {
-        const errorMsg = `[Isochrone] ✗ No features returned for ${lat.toFixed(6)},${lng.toFixed(6)} (time: ${time}min, mode: ${mode})`;
-        console.warn(errorMsg);
+        debug.warn(`[Isochrone] No features returned for ${lat.toFixed(6)},${lng.toFixed(6)}`);
         this.dispatchEvent(
           new CustomEvent('isochrone-error', {
             detail: {
@@ -564,14 +544,21 @@ export class IsochroneElement extends MapChildElement {
       // Don't convert to H3 on initial render - use raw polygon for speed
       // Conversion to H3 will happen on map interaction via upgradeResolution()
 
-      // Remove existing layers
-      this.removeIsochrone();
+      // Remove existing layers (but preserve IDs for reuse)
+      this.cleanupExistingLayers();
 
       // Find where to insert layers (below points, above polygons)
       const beforeLayerId = this.findFirstInsertionLayer();
 
+      // Ensure IDs exist (regenerate if needed)
+      if (!this.sourceId) {
+        this.sourceId = `isochrone-${crypto.randomUUID()}`;
+        this.lineLayerId = `isochrone-line-${crypto.randomUUID()}`;
+        this.fillLayerId = `isochrone-fill-${crypto.randomUUID()}`;
+      }
+
       // Add source
-      if (!this.map || !this.sourceId) return;
+      if (!this.map) return;
 
       this.map.addSource(this.sourceId, {
         type: 'geojson',
@@ -658,9 +645,11 @@ export class IsochroneElement extends MapChildElement {
     }
   }
 
-  private removeIsochrone(): void {
-    // Clean up layers even if map is null (defensive cleanup)
-    // This handles cases where map was destroyed but layers still exist
+  /**
+   * Clean up existing layers from map without clearing IDs
+   * Used when re-rendering isochrone with new data
+   */
+  private cleanupExistingLayers(): void {
     if (this.map) {
       this.cleanupMapLayers(
         [this.lineLayerId, this.fillLayerId].filter(Boolean) as string[],
@@ -688,8 +677,18 @@ export class IsochroneElement extends MapChildElement {
         }
       }
     }
+    // Note: Do NOT clear IDs here - they will be reused for new layers
+  }
 
-    // Clear references
+  /**
+   * Full cleanup - remove layers AND clear all references
+   * Used when element is being destroyed or map is unloaded
+   */
+  private removeIsochrone(): void {
+    // Clean up layers
+    this.cleanupExistingLayers();
+
+    // Clear references (full cleanup)
     this.lineLayerId = null;
     this.fillLayerId = null;
     this.sourceId = null;
@@ -741,9 +740,7 @@ export class IsochroneElement extends MapChildElement {
 
       // Validate conversion produced features
       if (!upgradedData || !upgradedData.features || upgradedData.features.length === 0) {
-        console.warn(
-          `[Isochrone] H3 conversion produced no features during upgrade, keeping raw polygon`
-        );
+        debug.warn('[Isochrone] H3 conversion produced no features, keeping raw polygon');
         this.hasUpgradedResolution = false; // Reset so we can try again
         return;
       }
@@ -768,10 +765,7 @@ export class IsochroneElement extends MapChildElement {
         })
       );
     } catch (error) {
-      console.warn(
-        `[Isochrone] Failed to convert to H3 hexagons at resolution ${targetResolution}:`,
-        error
-      );
+      debug.warn(`[Isochrone] Failed to convert to H3 hexagons:`, error);
       // Reset on error so we can try again
       this.hasUpgradedResolution = false;
     }
@@ -896,9 +890,6 @@ export class IsochroneElement extends MapChildElement {
 
         if (hexagons.length === 0) {
           // If no hexagons found, keep original polygon
-          console.warn(
-            `[Isochrone] polygonToH3 returned 0 hexagons at resolution ${resolution}, using original polygon`
-          );
           processedFeatures.push(feature);
           continue;
         }
@@ -916,9 +907,6 @@ export class IsochroneElement extends MapChildElement {
           !mergedGeometry.coordinates ||
           mergedGeometry.coordinates.length === 0
         ) {
-          console.warn(
-            `[Isochrone] h3SetToMultiPolygon produced empty geometry for ${sortedHexagons.length} hexagons, using original polygon`
-          );
           processedFeatures.push(feature);
           continue;
         }
@@ -935,11 +923,7 @@ export class IsochroneElement extends MapChildElement {
             'fill-opacity': this.opacity,
           },
         });
-      } catch (error) {
-        console.warn(
-          `Isochrone: Failed to convert to H3 (resolution ${resolution}), using original polygon:`,
-          error
-        );
+      } catch {
         // Fallback to original polygon on error
         processedFeatures.push(feature);
       }

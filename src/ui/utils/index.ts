@@ -5,5 +5,5 @@
  */
 
 export * from './map-utils';
+export * from './logger';
 export { getFeatureId } from '../../utils/geojson';
-

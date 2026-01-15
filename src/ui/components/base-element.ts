@@ -8,6 +8,7 @@
 import { getBounds, boundsToObject } from '../../utils/bounds';
 import { getUIProvider, getUIProviderByName } from '../providers/registry';
 import { getProviderForCapability } from '../../api/providers/registry';
+import { debug } from '../utils/logger';
 import type { BaseUIProvider, MapInstance, MapEvent } from '../providers/types';
 import type { APICapability } from '../../api/providers/types';
 
@@ -94,7 +95,7 @@ export class BaseElement extends HTMLElement {
    */
   protected waitForStyleLoaded(callback: () => void): void {
     if (!this.map) {
-      console.warn(
+      debug.warn(
         `[BaseElement] waitForStyleLoaded called but no map instance for ${this.constructor.name}`
       );
       return;
@@ -103,23 +104,12 @@ export class BaseElement extends HTMLElement {
     // Check if style is already loaded
     const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
     const styleLoaded = isStyleLoaded && isStyleLoaded.call(this.map);
-    console.log(
-      `[BaseElement] waitForStyleLoaded for ${this.constructor.name}, style loaded: ${styleLoaded}`
-    );
 
     if (styleLoaded) {
       // Style already loaded - execute immediately using microtask to ensure all callbacks run
-      console.log(
-        `[BaseElement] Style already loaded for ${this.constructor.name}, scheduling immediate callback`
-      );
       Promise.resolve().then(() => {
         if (this.map) {
-          console.log(`[BaseElement] Executing immediate callback for ${this.constructor.name}`);
           callback();
-        } else {
-          console.warn(
-            `[BaseElement] Map disappeared before immediate callback for ${this.constructor.name}`
-          );
         }
       });
       return;
@@ -127,23 +117,15 @@ export class BaseElement extends HTMLElement {
 
     // Style not loaded yet - wait for it
     // Listen for both 'load' and 'style.load' events to handle all cases
-    // This is especially important after map unfreeze when timing can be tricky
-    console.log(`[BaseElement] Setting up style load listeners for ${this.constructor.name}`);
     let callbackFired = false;
-    const fireCallback = (eventName: string) => {
+    const fireCallback = () => {
       if (callbackFired || !this.map) {
-        console.log(
-          `[BaseElement] fireCallback(${eventName}) skipped - already fired: ${callbackFired}, map exists: ${!!this.map}`
-        );
         return;
       }
 
       // Double-check style is loaded (defensive)
       const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
       const styleLoaded = isStyleLoaded && isStyleLoaded.call(this.map);
-      console.log(
-        `[BaseElement] fireCallback(${eventName}) for ${this.constructor.name}, style loaded: ${styleLoaded}`
-      );
 
       if (styleLoaded) {
         callbackFired = true;
@@ -152,37 +134,24 @@ export class BaseElement extends HTMLElement {
           this.map.off('load', loadHandler);
           this.map.off('style.load', styleLoadHandler);
         }
-        console.log(
-          `[BaseElement] Executing callback for ${this.constructor.name} from ${eventName} event`
-        );
         callback();
-      } else {
-        console.log(
-          `[BaseElement] Style not loaded yet for ${this.constructor.name} despite ${eventName} event`
-        );
       }
     };
 
     const loadHandler = () => {
-      fireCallback('load');
+      fireCallback();
     };
 
     const styleLoadHandler = () => {
-      fireCallback('style.load');
+      fireCallback();
     };
 
     // Register listeners - 'on' ensures all registered listeners fire
     if (this.map.on) {
-      console.log(
-        `[BaseElement] Registered load and style.load listeners for ${this.constructor.name}`
-      );
       this.map.on('load', loadHandler);
       this.map.on('style.load', styleLoadHandler);
     } else {
       // Fallback if 'on' method doesn't exist
-      console.warn(
-        `[BaseElement] Map.on() not available for ${this.constructor.name}, using once() fallback`
-      );
       this.map.once('load', callback);
     }
   }
