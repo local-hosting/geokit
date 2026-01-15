@@ -537,7 +537,10 @@ export class BaseElement extends HTMLElement {
 
     try {
       Object.entries(properties).forEach(([property, value]) => {
-        this.map?.setPaintProperty?.(layerId, property, value);
+        // Skip null/undefined values to prevent Mapbox validation errors
+        if (value !== null && value !== undefined) {
+          this.map?.setPaintProperty?.(layerId, property, value);
+        }
       });
     } catch (error) {
       console.warn(`Failed to update paint properties for ${layerId}:`, error);
