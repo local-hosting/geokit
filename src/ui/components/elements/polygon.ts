@@ -219,9 +219,6 @@ export class PolygonElement extends MapChildElement {
             'fill-color': fillColor,
             'fill-opacity': fillOpacity,
           },
-          // Enable large mesh arrays to handle polygons with more than 65535 vertices
-          // This automatically splits large polygons into multiple segments
-          fillLargeMeshArrays: true,
         },
         beforeId
       );
