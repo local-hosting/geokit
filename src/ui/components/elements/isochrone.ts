@@ -659,12 +659,41 @@ export class IsochroneElement extends MapChildElement {
   }
 
   private removeIsochrone(): void {
-    if (!this.map) return;
+    // Clean up layers even if map is null (defensive cleanup)
+    // This handles cases where map was destroyed but layers still exist
+    if (this.map) {
+      this.cleanupMapLayers(
+        [this.lineLayerId, this.fillLayerId].filter(Boolean) as string[],
+        [this.sourceId].filter(Boolean) as string[]
+      );
+    } else if (this.lineLayerId || this.fillLayerId || this.sourceId) {
+      // Map is null but we still have layer IDs - try to clean up via parent map element
+      const mapElement = this.mapElement;
+      if (mapElement) {
+        const mapInstance = (mapElement as any).getMap?.();
+        if (mapInstance) {
+          try {
+            if (this.lineLayerId && mapInstance.getLayer?.(this.lineLayerId)) {
+              mapInstance.removeLayer?.(this.lineLayerId);
+            }
+            if (this.fillLayerId && mapInstance.getLayer?.(this.fillLayerId)) {
+              mapInstance.removeLayer?.(this.fillLayerId);
+            }
+            if (this.sourceId && mapInstance.getSource?.(this.sourceId)) {
+              mapInstance.removeSource?.(this.sourceId);
+            }
+          } catch {
+            // Silently ignore - map may be in invalid state
+          }
+        }
+      }
+    }
 
-    this.cleanupMapLayers(
-      [this.lineLayerId, this.fillLayerId].filter(Boolean) as string[],
-      [this.sourceId].filter(Boolean) as string[]
-    );
+    // Clear references
+    this.lineLayerId = null;
+    this.fillLayerId = null;
+    this.sourceId = null;
+    this.currentCacheKey = null;
   }
 
   /**
@@ -774,6 +803,13 @@ export class IsochroneElement extends MapChildElement {
     if (this.lineLayerId && this.map?.getLayer?.(this.lineLayerId)) {
       this.map?.setLayoutProperty?.(this.lineLayerId, 'visibility', visibility);
     }
+  }
+
+  protected override onMapUnload(): void {
+    // Clean up layers when map is frozen/unloaded
+    // This ensures proper cleanup even if element stays in DOM
+    this.removeIsochrone();
+    super.onMapUnload();
   }
 
   override disconnectedCallback(): void {

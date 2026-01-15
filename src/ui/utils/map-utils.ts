@@ -23,10 +23,10 @@ export function getMapInstance(element: HTMLElement | null): any | null {
 /**
  * Find gk-map element in DOM tree starting from given element
  * Traverses up the DOM tree to find the nearest parent gk-map element.
- * 
+ *
  * This is the reverse of MapChildElement.findMapElementFromInstance(),
  * which finds the element from a map instance.
- * 
+ *
  * @param element Starting element to search from
  * @returns The gk-map element or null if not found
  */
@@ -47,13 +47,11 @@ export function findMapElement(element: HTMLElement | null): HTMLElement | null 
 /**
  * Get map instance from element or find parent map element first
  * Convenience function that combines findMapElement() and getMapInstance()
- * 
+ *
  * @param element Element to start from (can be any element, not just gk-map)
  * @returns The map instance or null if not available
  */
-export function getMapInstanceFromElement(
-  element: HTMLElement | null
-): any | null {
+export function getMapInstanceFromElement(element: HTMLElement | null): any | null {
   const mapElement = findMapElement(element);
   return getMapInstance(mapElement);
 }
@@ -94,11 +92,114 @@ export function updateSourceData(
     }
   }
 
-  console.warn(
-    `[geokit] Source ${sourceId} does not support setData() method`
-  );
+  console.warn(`[geokit] Source ${sourceId} does not support setData() method`);
   return false;
 }
+
+// ============================================================================
+// Style Loading Utilities
+// ============================================================================
+
+/**
+ * Wait for map style to be loaded before executing code.
+ * This is important because map.addLayer() silently fails if style isn't loaded.
+ *
+ * @param map - MapInstance (MapLibre map)
+ * @param timeoutMs - Optional timeout in milliseconds (default: 10000)
+ * @returns Promise that resolves when style is loaded
+ * @throws Error if timeout is reached or map is invalid
+ */
+export function waitForMapStyleLoaded(
+  map: MapInstance | null,
+  timeoutMs: number = 10000
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!map) {
+      reject(new Error('[geokit] Map instance is required'));
+      return;
+    }
+
+    // Check if style is already loaded
+    // Some map SDKs return false from isStyleLoaded() even when style is functional
+    // So we also check if getStyle() returns a valid style object
+    const isStyleLoaded = typeof map.isStyleLoaded === 'function' ? map.isStyleLoaded() : false;
+    const hasStyle = typeof map.getStyle === 'function' && map.getStyle() != null;
+    if (isStyleLoaded || hasStyle) {
+      resolve();
+      return;
+    }
+
+    // Style not loaded yet - wait for it
+    let resolved = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const cleanup = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      if (map.off) {
+        map.off('load', loadHandler);
+        map.off('style.load', styleLoadHandler);
+      }
+    };
+
+    const handleResolve = () => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      resolve();
+    };
+
+    const loadHandler = () => {
+      // Double-check style is loaded
+      const loaded = typeof map.isStyleLoaded === 'function' ? map.isStyleLoaded() : true;
+      if (loaded) {
+        handleResolve();
+      }
+    };
+
+    const styleLoadHandler = () => {
+      // Double-check style is loaded
+      const loaded = typeof map.isStyleLoaded === 'function' ? map.isStyleLoaded() : true;
+      if (loaded) {
+        handleResolve();
+      }
+    };
+
+    // Set up timeout
+    timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        cleanup();
+        reject(new Error(`[geokit] Timeout waiting for map style to load (${timeoutMs}ms)`));
+      }
+    }, timeoutMs);
+
+    // Register event listeners
+    if (map.on) {
+      map.on('load', loadHandler);
+      map.on('style.load', styleLoadHandler);
+    } else {
+      // Fallback if 'on' method doesn't exist
+      handleResolve(); // Assume loaded if we can't listen for events
+    }
+  });
+}
+
+/**
+ * Check if map style is loaded
+ * @param map - MapInstance
+ * @returns true if style is loaded, false otherwise
+ */
+export function isMapStyleLoaded(map: MapInstance | null): boolean {
+  if (!map) return false;
+  return typeof map.isStyleLoaded === 'function' ? map.isStyleLoaded() : false;
+}
+
+// ============================================================================
+// GeoJSON Data Utilities
+// ============================================================================
 
 /**
  * Get GeoJSON data from a source
@@ -107,10 +208,7 @@ export function updateSourceData(
  * @param sourceId - Source ID
  * @returns GeoJSON FeatureCollection data or null if not found
  */
-export function getSourceData(
-  map: MapInstance | null,
-  sourceId: string
-): FeatureCollection | null {
+export function getSourceData(map: MapInstance | null, sourceId: string): FeatureCollection | null {
   if (!map) return null;
 
   const source = map.getSource?.(sourceId);
@@ -142,7 +240,7 @@ export function findFeatureById(
   return (
     data.features.find((f: Feature) => {
       if (!f.properties) return false;
-      return idProperties.some(prop => f.properties?.[prop] === featureId);
+      return idProperties.some((prop) => f.properties?.[prop] === featureId);
     }) || null
   );
 }
@@ -164,9 +262,7 @@ export function getFullFeatureProperties(
   idProperties: string[] = ['id', 'slug']
 ): Record<string, unknown> {
   // Try to find feature ID from partial properties
-  const featureId = idProperties.find(
-    prop => partialProperties[prop]
-  ) as string | undefined;
+  const featureId = idProperties.find((prop) => partialProperties[prop]) as string | undefined;
 
   if (!featureId || !partialProperties[featureId]) {
     return partialProperties;
@@ -208,11 +304,7 @@ export function setLayerVisibility(
   }
 
   try {
-    map.setLayoutProperty?.(
-      layerId,
-      'visibility',
-      visible ? 'visible' : 'none'
-    );
+    map.setLayoutProperty?.(layerId, 'visibility', visible ? 'visible' : 'none');
     return true;
   } catch (error) {
     console.error(`[geokit] Failed to set layer visibility:`, error);
@@ -311,9 +403,7 @@ export function updateFeatureSelection(
     });
 
     if (selectedId && !foundSelected) {
-      console.warn(
-        `[geokit] Feature ${selectedId} not found in source ${sourceId}`
-      );
+      console.warn(`[geokit] Feature ${selectedId} not found in source ${sourceId}`);
     }
 
     // Update source data
@@ -333,11 +423,111 @@ export function updateFeatureSelection(
 
     return success;
   } catch (error) {
-    console.error(
-      `[geokit] Failed to update selection for source: ${sourceId}`,
-      error
-    );
+    console.error(`[geokit] Failed to update selection for source: ${sourceId}`, error);
     return false;
   }
 }
 
+// ============================================================================
+// Layer Group Management Utilities
+// ============================================================================
+
+/**
+ * Layer group registry - stores layer groups for a map
+ * Allows managing multiple layers as a single unit
+ */
+const layerGroupRegistry = new WeakMap<MapInstance, Map<string, string[]>>();
+
+/**
+ * Create or register a layer group
+ * A layer group is a collection of layer IDs that can be managed together
+ * @param map - MapInstance
+ * @param groupId - Unique identifier for the layer group
+ * @param layerIds - Array of layer IDs that belong to this group
+ * @returns true if group was created/updated successfully
+ */
+export function createLayerGroup(
+  map: MapInstance | null,
+  groupId: string,
+  layerIds: string[]
+): boolean {
+  if (!map) return false;
+
+  let groups = layerGroupRegistry.get(map);
+  if (!groups) {
+    groups = new Map();
+    layerGroupRegistry.set(map, groups);
+  }
+
+  groups.set(groupId, [...layerIds]);
+  return true;
+}
+
+/**
+ * Get layer IDs for a layer group
+ * @param map - MapInstance
+ * @param groupId - Layer group ID
+ * @returns Array of layer IDs or null if group doesn't exist
+ */
+export function getLayerGroup(map: MapInstance | null, groupId: string): string[] | null {
+  if (!map) return null;
+
+  const groups = layerGroupRegistry.get(map);
+  if (!groups) return null;
+
+  return groups.get(groupId) || null;
+}
+
+/**
+ * Set visibility for all layers in a group
+ * @param map - MapInstance
+ * @param groupId - Layer group ID
+ * @param visible - Whether layers should be visible
+ * @returns true if operation succeeded, false if group doesn't exist
+ */
+export function setLayerGroupVisibility(
+  map: MapInstance | null,
+  groupId: string,
+  visible: boolean
+): boolean {
+  if (!map) return false;
+
+  const layerIds = getLayerGroup(map, groupId);
+  if (!layerIds) {
+    console.warn(`[geokit] Layer group not found: ${groupId}`);
+    return false;
+  }
+
+  setLayersVisibility(map, layerIds, visible);
+  return true;
+}
+
+/**
+ * Remove a layer group from the registry
+ * Note: This does NOT remove the layers from the map, only from the registry
+ * @param map - MapInstance
+ * @param groupId - Layer group ID
+ * @returns true if group was removed
+ */
+export function removeLayerGroup(map: MapInstance | null, groupId: string): boolean {
+  if (!map) return false;
+
+  const groups = layerGroupRegistry.get(map);
+  if (!groups) return false;
+
+  return groups.delete(groupId);
+}
+
+/**
+ * Get all layer group IDs for a map
+ * @param map - MapInstance
+ * @returns Array of group IDs
+ */
+export function getLayerGroupIds(map: MapInstance | null): string[] {
+  if (!map) return [];
+
+  const groups = layerGroupRegistry.get(map);
+  if (!groups) return [];
+
+  return Array.from(groups.keys());
+}
