@@ -580,17 +580,24 @@ export class IsochroneElement extends MapChildElement {
 
       // Add fill layer (below points)
       if (this.fillLayerId) {
+        const paintProperties: Record<string, unknown> = {
+          'fill-color': this.color,
+          'fill-opacity': this.opacity,
+          'fill-antialias': this.render === 'h3' ? false : true, // Disable antialiasing for H3 to avoid visible borders
+        };
+
+        // Only add fill-outline-color for H3 rendering to hide borders
+        // Don't include it when undefined to avoid Mapbox validation errors
+        if (this.render === 'h3') {
+          paintProperties['fill-outline-color'] = this.color;
+        }
+
         this.map.addLayer(
           {
             id: this.fillLayerId,
             type: 'fill',
             source: this.sourceId,
-            paint: {
-              'fill-color': this.color,
-              'fill-opacity': this.opacity,
-              'fill-antialias': this.render === 'h3' ? false : true, // Disable antialiasing for H3 to avoid visible borders
-              'fill-outline-color': this.render === 'h3' ? this.color : undefined, // Match fill color for H3 to hide borders
-            },
+            paint: paintProperties,
           },
           beforeLayerId
         );
