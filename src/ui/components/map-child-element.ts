@@ -9,6 +9,7 @@
 
 import { BaseElement } from './base-element';
 import { getUIProvider as getGlobalUIProvider, getUIProviderByName } from '../providers/registry';
+import { debug } from '../utils/logger';
 import type { MapInstance } from '../providers/types';
 
 /**
@@ -96,9 +97,6 @@ export class MapChildElement extends BaseElement {
   protected async onMapReady(): Promise<void> {
     // Prevent duplicate calls for the same map instance
     if (this.map && this._processedMapInstances.has(this.map)) {
-      console.log(
-        `[MapChildElement] onMapReady already called for ${this.constructor.name} with this map instance, skipping duplicate call`
-      );
       return;
     }
 
@@ -131,18 +129,8 @@ export class MapChildElement extends BaseElement {
         const handleMapReady = () => {
           const currentMap = mapElement.getMap?.();
           if (currentMap) {
-            // Only call onMapReady if we haven't already processed this map instance
-            // The onMapReady method itself will check and skip if already processed
-            console.log(
-              `[MapChildElement] gk-map-ready event received for ${this.constructor.name}, setting map and calling onMapReady`
-            );
             this.map = currentMap;
-            // Use void to fire-and-forget async call (each point needs its own execution)
             void this.onMapReady();
-          } else {
-            console.warn(
-              `[MapChildElement] gk-map-ready event received for ${this.constructor.name} but getMap() returned null`
-            );
           }
         };
 
@@ -180,7 +168,7 @@ export class MapChildElement extends BaseElement {
       parent = parent.parentElement;
     }
 
-    console.warn(`${this.constructor.name}: No parent gk-map element found`);
+    debug.warn(`[MapChildElement] No parent gk-map element found for ${this.constructor.name}`);
   }
 
   /**

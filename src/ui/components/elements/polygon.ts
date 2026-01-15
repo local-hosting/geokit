@@ -10,6 +10,7 @@
 import { MapChildElement } from '../map-child-element';
 import { normalizeCoordinatesArray } from '../../../utils/coordinates';
 import { simplifyPolygonRingToMaxPoints } from '../../../utils/simplify';
+import { debug } from '../../utils/logger';
 import type { LatLon } from '../../../types';
 
 export interface PolygonOptions {
@@ -68,37 +69,20 @@ export class PolygonElement extends MapChildElement {
 
   async connectedCallback(): Promise<void> {
     if (this.isInitialized) {
-      console.log(
-        `[Polygon] connectedCallback called but already initialized, layerId: ${this.layerId}`
-      );
       return;
     }
 
-    console.log('[Polygon] connectedCallback called - initializing new polygon element');
-
     // Apply options from create() factory method as attributes
-    // This ensures attributes are set after element is connected (works in JSDOM/Happy-DOM)
     const createOptions = (this as any)._createOptions;
     if (createOptions) {
-      console.log('[Polygon] Applying create options:', {
-        hasPoints: !!createOptions.points,
-        pointCount: createOptions.points?.length || 0,
-        visible: createOptions.visible,
-        fillColor: createOptions.fillColor,
-        fillOpacity: createOptions.fillOpacity,
-      });
       this.applyCreateOptions(createOptions);
-      // Clear stored options
       (this as any)._createOptions = undefined;
-    } else {
-      console.log('[Polygon] No create options found, will read from attributes');
     }
 
     // Generate unique IDs
     this.sourceId = `polygon-source-${crypto.randomUUID()}`;
     this.layerId = `polygon-fill-${crypto.randomUUID()}`;
     this.strokeLayerId = `polygon-stroke-${crypto.randomUUID()}`;
-    console.log(`[Polygon] Generated IDs - sourceId: ${this.sourceId}, layerId: ${this.layerId}`);
 
     // Find parent map
     this.addToParentMap();
@@ -107,105 +91,45 @@ export class PolygonElement extends MapChildElement {
     if (!this.isInitialized) {
       await super.connectedCallback();
     }
-
-    console.log(`[Polygon] connectedCallback completed, isInitialized: ${this.isInitialized}`);
   }
 
   protected async onMapReady(): Promise<void> {
-    // Polygons don't need to wait for idle - just need map and style loaded
     if (!this.map) {
-      console.warn('[Polygon] onMapReady called but no map instance');
       return;
     }
 
-    console.log(
-      `[Polygon] onMapReady called for ${this.layerId || 'new polygon'}, map exists:`,
-      !!this.map
-    );
-
     // Function to attempt creating the polygon
-    const tryCreatePolygon = (source: string) => {
-      if (!this.map) {
-        console.warn(`[Polygon] tryCreatePolygon(${source}) called but no map instance`);
-        return;
-      }
+    const tryCreatePolygon = () => {
+      if (!this.map) return;
 
       // Check if polygon layer already exists
-      const hasLayer = this.map.getLayer?.(this.layerId);
-      if (hasLayer) {
-        console.log(
-          `[Polygon] Layer ${this.layerId} already exists, skipping creation (source: ${source})`
-        );
-        return;
-      }
+      if (this.map.getLayer?.(this.layerId)) return;
 
-      console.log(
-        `[Polygon] Attempting to create polygon (source: ${source}), layerId: ${this.layerId}`
-      );
-
-      // Check if we have points
-      const pointsFromProp = this._propPoints;
-      const pointsAttr = pointsFromProp
-        ? JSON.stringify(pointsFromProp)
-        : this.safeGetAttribute('points');
-      const hasPoints = !!pointsAttr;
-      console.log(
-        `[Polygon] Has points: ${hasPoints}, from prop: ${!!pointsFromProp}, from attr: ${!!this.safeGetAttribute('points')}`
-      );
-
-      // Check visibility
-      const visible = this._propVisible ?? this.safeGetAttribute('visible');
-      console.log(
-        `[Polygon] Visibility: ${visible}, from prop: ${this._propVisible}, from attr: ${this.safeGetAttribute('visible')}`
-      );
-
-      // Try to create the polygon
       try {
         this.createPolygon();
-        // Check if layer was created
-        const layerCreated = this.map.getLayer?.(this.layerId);
-        console.log(
-          `[Polygon] createPolygon() completed, layer exists: ${!!layerCreated} (source: ${source})`
-        );
       } catch (error) {
-        console.error(
-          `[Polygon] Error creating polygon after map ready (source: ${source}):`,
-          error
-        );
+        console.error('[Polygon] Error creating polygon:', error);
       }
     };
 
     // Wait for style to be loaded
-    // waitForStyleLoaded already handles the case where style is already loaded
-    // Only set up once per onMapReady call to prevent duplicate callbacks
     if (!this._styleWaitSetup) {
-      console.log('[Polygon] Setting up waitForStyleLoaded callback');
       this._styleWaitSetup = true;
       this.waitForStyleLoaded(() => {
-        console.log('[Polygon] waitForStyleLoaded callback fired');
-        this._styleWaitSetup = false; // Reset after callback fires
-        tryCreatePolygon('waitForStyleLoaded');
+        this._styleWaitSetup = false;
+        tryCreatePolygon();
       });
-    } else {
-      console.log('[Polygon] waitForStyleLoaded already set up, skipping duplicate setup');
     }
 
     // Set up a fallback timeout only if style is not loaded
-    // This ensures polygon is created even if style.load event doesn't fire
     const map = this.map as any;
     const isStyleLoaded = map.isStyleLoaded && map.isStyleLoaded();
-    console.log(`[Polygon] Style loaded check: ${isStyleLoaded}`);
     if (!isStyleLoaded) {
-      console.log('[Polygon] Style not loaded, setting up 3s fallback timeout');
       setTimeout(() => {
         if (this.map && !this.map.getLayer?.(this.layerId)) {
-          // Layer still doesn't exist, try creating anyway
-          console.log('[Polygon] Fallback timeout fired, attempting creation');
-          tryCreatePolygon('fallback-timeout');
-        } else {
-          console.log('[Polygon] Fallback timeout fired but layer already exists or map is gone');
+          tryCreatePolygon();
         }
-      }, 3000); // Wait up to 3 seconds
+      }, 3000);
     }
   }
 
@@ -239,23 +163,11 @@ export class PolygonElement extends MapChildElement {
   }
 
   private createPolygon(): void {
-    if (!this.map) {
-      console.warn('[Polygon] Cannot create: no map');
-      return;
-    }
-
-    console.log(
-      `[Polygon] createPolygon() called for layerId: ${this.layerId}, sourceId: ${this.sourceId}`
-    );
+    if (!this.map) return;
 
     // Check visible - read from property first
     const visible = this._propVisible ?? this.safeGetAttribute('visible');
-    if (visible === false || visible === 'false') {
-      console.log(
-        `[Polygon] Skipping creation - visible is false (prop: ${this._propVisible}, attr: ${this.safeGetAttribute('visible')})`
-      );
-      return;
-    }
+    if (visible === false || visible === 'false') return;
 
     // Parse points - read from property first
     const pointsFromProp = this._propPoints;
@@ -263,14 +175,9 @@ export class PolygonElement extends MapChildElement {
       ? JSON.stringify(pointsFromProp)
       : this.safeGetAttribute('points');
     if (!pointsAttr) {
-      console.warn(
-        `[Polygon] points attribute is required for ${this.sourceId}, prop: ${!!pointsFromProp}, attr: ${!!this.safeGetAttribute('points')}`
-      );
+      debug.warn('[Polygon] points attribute is required');
       return;
     }
-
-    const pointCount = pointsFromProp ? pointsFromProp.length : JSON.parse(pointsAttr)?.length || 0;
-    console.log(`[Polygon] Creating polygon with ${pointCount} points`);
 
     let coordinates: number[][];
     try {
@@ -369,10 +276,6 @@ export class PolygonElement extends MapChildElement {
       throw error; // Re-throw to help with debugging
     }
 
-    console.log(
-      `[Polygon] Successfully created polygon layers: ${this.layerId}, ${this.strokeLayerId}`
-    );
-
     // Set up interactivity - read from property first
     const interactive = this._propInteractive ?? this.safeGetAttribute('interactive');
     if (interactive === true || interactive === 'true') {
@@ -440,13 +343,9 @@ export class PolygonElement extends MapChildElement {
   }
 
   protected onMapUnload(): void {
-    console.log(
-      `[Polygon] onMapUnload called for layerId: ${this.layerId}, sourceId: ${this.sourceId}`
-    );
     super.onMapUnload();
     this.cleanupMapLayers([this.layerId, this.strokeLayerId], [this.sourceId]);
-    this._styleWaitSetup = false; // Reset flag on unload
-    console.log(`[Polygon] Cleaned up layers after unload: ${this.layerId}, ${this.strokeLayerId}`);
+    this._styleWaitSetup = false;
   }
 
   disconnectedCallback(): void {
@@ -548,26 +447,19 @@ export class PolygonElement extends MapChildElement {
       // Only process the first ring (outer boundary)
       // Subsequent rings are holes, which gk-polygon doesn't support yet
       const outerRing = coordinates[0];
-      if (!outerRing) {
-        console.warn('Polygon has no outer ring');
-        return;
-      }
+      if (!outerRing) return;
 
       // Convert [lng, lat] to [lat, lng] format
       let points: LatLon[] = outerRing.map(([lng, lat]) => [lat, lng]);
 
       // Always simplify if polygon has too many points to prevent 65535 vertex limit errors
-      // Use the provided maxPoints or default to 50
       const targetMaxPoints = opts.maxPoints ?? maxPoints;
       if (points.length > targetMaxPoints) {
         points = simplifyPolygonRingToMaxPoints(targetMaxPoints)(points);
       }
 
       // Skip if too few points
-      if (points.length < 3) {
-        console.warn('Skipping polygon ring with fewer than 3 points');
-        return;
-      }
+      if (points.length < 3) return;
 
       // Convert to array format for gk-polygon
       const pointArray = points.map(([lat, lng]) => [lat, lng]);
@@ -591,8 +483,6 @@ export class PolygonElement extends MapChildElement {
       geometry.coordinates.forEach((polygonCoords) => {
         addPolygonRings(polygonCoords, options);
       });
-    } else {
-      console.warn('Unsupported geometry type for polygon:', geometry.type);
     }
 
     return polygons;
