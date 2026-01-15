@@ -152,6 +152,9 @@ export class H3Element extends MapChildElement {
             'fill-color': this.color,
             'fill-opacity': this.opacity,
           },
+          // Enable large mesh arrays to handle polygons with more than 65535 vertices
+          // This automatically splits large polygons into multiple segments
+          fillLargeMeshArrays: true,
         });
       }
 
