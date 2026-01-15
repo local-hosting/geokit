@@ -81,12 +81,32 @@ export class MapChildElement extends BaseElement {
   private _mapUnloadHandler: (() => void) | null = null;
   private _contextLostHandler: (() => void) | null = null;
   private _mapReadyParent: HTMLElement | null = null;
+  private _processedMapInstances: WeakSet<MapInstance> = new WeakSet();
 
   async connectedCallback(): Promise<void> {
     // Find parent map first
     this.addToParentMap();
     // Then call base class
     await super.connectedCallback();
+  }
+
+  /**
+   * Override onMapReady to add guard against duplicate calls
+   */
+  protected async onMapReady(): Promise<void> {
+    // Prevent duplicate calls for the same map instance
+    if (this.map && this._processedMapInstances.has(this.map)) {
+      console.log(
+        `[MapChildElement] onMapReady already called for ${this.constructor.name} with this map instance, skipping duplicate call`
+      );
+      return;
+    }
+
+    if (this.map) {
+      this._processedMapInstances.add(this.map);
+    }
+
+    await super.onMapReady();
   }
 
   /**
@@ -106,24 +126,36 @@ export class MapChildElement extends BaseElement {
         const mapElement = parent as HTMLElement & { getMap?: () => MapInstance | null };
         const map = mapElement.getMap?.();
 
+        // Always set up event listener for gk-map-ready to handle freeze/unfreeze
+        // This ensures child elements re-initialize when map unfreezes
+        const handleMapReady = () => {
+          const currentMap = mapElement.getMap?.();
+          if (currentMap) {
+            // Only call onMapReady if we haven't already processed this map instance
+            // The onMapReady method itself will check and skip if already processed
+            console.log(
+              `[MapChildElement] gk-map-ready event received for ${this.constructor.name}, setting map and calling onMapReady`
+            );
+            this.map = currentMap;
+            // Use void to fire-and-forget async call (each point needs its own execution)
+            void this.onMapReady();
+          } else {
+            console.warn(
+              `[MapChildElement] gk-map-ready event received for ${this.constructor.name} but getMap() returned null`
+            );
+          }
+        };
+
+        this._mapReadyHandler = handleMapReady;
+        this._mapReadyParent = parent;
+        parent.addEventListener('gk-map-ready', handleMapReady);
+
+        // If map already exists, initialize immediately
+        // The event listener above will handle re-initialization on unfreeze
+        // Note: onMapReady() will guard against duplicates, so it's safe to call both here and in the event handler
         if (map) {
-          // Map exists, set reference and call onMapReady
           this.map = map;
           void this.onMapReady();
-        } else {
-          // Map not ready yet, wait for it
-          const handleMapReady = () => {
-            const currentMap = mapElement.getMap?.();
-            if (currentMap) {
-              this.map = currentMap;
-              // Use void to fire-and-forget async call (each point needs its own execution)
-              void this.onMapReady();
-            }
-          };
-
-          this._mapReadyHandler = handleMapReady;
-          this._mapReadyParent = parent;
-          parent.addEventListener('gk-map-ready', handleMapReady);
         }
 
         // Listen for map unload to clean up resources
@@ -171,11 +203,26 @@ export class MapChildElement extends BaseElement {
     }
 
     this._mapReadyParent = null;
+    // Note: We don't clear _processedMapInstances here because WeakSet will automatically
+    // clean up when map instances are garbage collected. This prevents re-processing
+    // the same map instance if the element is reconnected.
   }
 
   disconnectedCallback(): void {
     // Clean up stored event listeners to prevent memory leaks
     this._cleanupMapListeners();
     super.disconnectedCallback();
+  }
+
+  /**
+   * Override onMapUnload to clear processed map instances
+   * This allows the element to be re-initialized if the map is recreated
+   */
+  protected onMapUnload(): void {
+    // Clear processed instances so we can process the map again if it's recreated
+    if (this.map) {
+      this._processedMapInstances.delete(this.map);
+    }
+    super.onMapUnload();
   }
 }

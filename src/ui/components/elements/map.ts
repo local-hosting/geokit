@@ -730,7 +730,8 @@ export class MapElement extends BaseElement {
               (layerId.startsWith('point-') ||
                 layerId.startsWith('polygon-') ||
                 layerId.startsWith('polyline-') ||
-                layerId.startsWith('marker-'))
+                layerId.startsWith('marker-') ||
+                layerId.startsWith('isochrone-'))
             ) {
               try {
                 if (map.getLayer?.(layerId)) {
@@ -750,7 +751,8 @@ export class MapElement extends BaseElement {
               sourceId.startsWith('point-') ||
               sourceId.startsWith('polygon-') ||
               sourceId.startsWith('polyline-') ||
-              sourceId.startsWith('marker-')
+              sourceId.startsWith('marker-') ||
+              sourceId.startsWith('isochrone-')
             ) {
               try {
                 if (map.getSource?.(sourceId)) {
@@ -1391,10 +1393,7 @@ export class MapElement extends BaseElement {
    * @param data - New GeoJSON FeatureCollection data
    * @returns true if update succeeded, false otherwise
    */
-  public updateSourceData(
-    sourceId: string,
-    data: GeoJSON.FeatureCollection
-  ): boolean {
+  public updateSourceData(sourceId: string, data: GeoJSON.FeatureCollection): boolean {
     const map = this.getMap();
     if (!map) return false;
 
@@ -1415,9 +1414,7 @@ export class MapElement extends BaseElement {
       }
     }
 
-    console.warn(
-      `[gk-map] Source ${sourceId} does not support setData() method`
-    );
+    console.warn(`[gk-map] Source ${sourceId} does not support setData() method`);
     return false;
   }
 
@@ -1481,10 +1478,7 @@ export class MapElement extends BaseElement {
         map.addLayer({ ...layerConfig, id: layerId, source: sourceId }, beforeId);
         return true;
       } catch (error) {
-        console.error(
-          `[gk-map] Failed to create source/layer ${sourceId}/${layerId}:`,
-          error
-        );
+        console.error(`[gk-map] Failed to create source/layer ${sourceId}/${layerId}:`, error);
         return false;
       }
     }
@@ -1543,11 +1537,7 @@ export class MapElement extends BaseElement {
     }
 
     try {
-      map.setLayoutProperty?.(
-        layerId,
-        'visibility',
-        visible ? 'visible' : 'none'
-      );
+      map.setLayoutProperty?.(layerId, 'visibility', visible ? 'visible' : 'none');
       return true;
     } catch (error) {
       console.error(`[gk-map] Failed to set layer visibility:`, error);
@@ -1621,7 +1611,7 @@ export class MapElement extends BaseElement {
     return (
       data.features.find((f: GeoJSON.Feature) => {
         if (!f.properties) return false;
-        return idProperties.some(prop => f.properties?.[prop] === featureId);
+        return idProperties.some((prop) => f.properties?.[prop] === featureId);
       }) || null
     );
   }
@@ -1641,9 +1631,7 @@ export class MapElement extends BaseElement {
     idProperties: string[] = ['id', 'slug']
   ): Record<string, unknown> {
     // Try to find feature ID from partial properties
-    const featureId = idProperties.find(
-      prop => partialProperties[prop]
-    ) as string | undefined;
+    const featureId = idProperties.find((prop) => partialProperties[prop]) as string | undefined;
 
     if (!featureId || !partialProperties[featureId]) {
       return partialProperties;
@@ -1693,9 +1681,7 @@ export class MapElement extends BaseElement {
         // Check if this is the selected feature
         const isSelected =
           selectedId !== null &&
-          idProperties.some(
-            prop => newFeature.properties?.[prop] === selectedId
-          );
+          idProperties.some((prop) => newFeature.properties?.[prop] === selectedId);
 
         if (isSelected) {
           foundSelected = true;
@@ -1709,9 +1695,7 @@ export class MapElement extends BaseElement {
       });
 
       if (selectedId && !foundSelected) {
-        console.warn(
-          `[gk-map] Feature ${selectedId} not found in source ${sourceId}`
-        );
+        console.warn(`[gk-map] Feature ${selectedId} not found in source ${sourceId}`);
       }
 
       // Update source data
@@ -1732,10 +1716,7 @@ export class MapElement extends BaseElement {
 
       return success;
     } catch (error) {
-      console.error(
-        `[gk-map] Failed to update selection for source: ${sourceId}`,
-        error
-      );
+      console.error(`[gk-map] Failed to update selection for source: ${sourceId}`, error);
       return false;
     }
   }
@@ -1747,10 +1728,7 @@ export class MapElement extends BaseElement {
    * @param filterExpression - MapLibre filter expression
    * @returns true if update succeeded, false otherwise
    */
-  public setLayerFilter(
-    layerId: string,
-    filterExpression: unknown[]
-  ): boolean {
+  public setLayerFilter(layerId: string, filterExpression: unknown[]): boolean {
     const map = this.getMap();
     if (!map?.getLayer || !(map as any).setFilter) return false;
 
@@ -1775,24 +1753,26 @@ export class MapElement extends BaseElement {
    * @param options - Map creation options
    * @returns New MapElement instance
    */
-  public static create(options: {
-    id?: string;
-    lat?: number | string;
-    lng?: number | string;
-    zoom?: number | string;
-    minZoom?: number | string;
-    maxZoom?: number | string;
-    pitch?: number | string;
-    bearing?: number | string;
-    mapStyle?: string;
-    provider?: string;
-    apiKey?: string;
-    interactive?: boolean;
-    autoHideControls?: boolean;
-    lazy?: boolean | string;
-    attributes?: Record<string, string>;
-    styles?: Partial<CSSStyleDeclaration>;
-  } = {}): MapElement {
+  public static create(
+    options: {
+      id?: string;
+      lat?: number | string;
+      lng?: number | string;
+      zoom?: number | string;
+      minZoom?: number | string;
+      maxZoom?: number | string;
+      pitch?: number | string;
+      bearing?: number | string;
+      mapStyle?: string;
+      provider?: string;
+      apiKey?: string;
+      interactive?: boolean;
+      autoHideControls?: boolean;
+      lazy?: boolean | string;
+      attributes?: Record<string, string>;
+      styles?: Partial<CSSStyleDeclaration>;
+    } = {}
+  ): MapElement {
     const map = new MapElement();
 
     // Set ID if provided
@@ -1931,9 +1911,7 @@ export class MapElement extends BaseElement {
           polylineFeatures.push(feature);
           break;
         default:
-          console.warn(
-            `[gk-map] Unsupported geometry type: ${feature.geometry.type}`
-          );
+          console.warn(`[gk-map] Unsupported geometry type: ${feature.geometry.type}`);
       }
     }
 
@@ -1949,10 +1927,7 @@ export class MapElement extends BaseElement {
     // Add polygons
     for (const polygonFeature of polygonFeatures) {
       if (options.polygons) {
-        const added = this.addPolygonFromGeoJSON(
-          polygonFeature,
-          options.polygons
-        );
+        const added = this.addPolygonFromGeoJSON(polygonFeature, options.polygons);
         counts.polygons += added;
       }
     }

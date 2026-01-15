@@ -162,6 +162,14 @@ export interface MapInstance {
   loaded?(): boolean;
   remove?(): void;
 
+  // Style management
+  getStyle?(): Record<string, unknown> | null;
+  isStyleLoaded?(): boolean;
+
+  // Image management
+  hasImage?(name: string): boolean;
+  addImage?(name: string, image: unknown, options?: { sdf?: boolean }): void;
+
   // Provider-specific extensions - allow any additional properties/methods
   [key: string]: unknown;
 }
