@@ -1380,6 +1380,592 @@ export class MapElement extends BaseElement {
     polygons.forEach((polygon) => this.appendChild(polygon));
     return polygons.length;
   }
+
+  // ============================================================================
+  // Universal Source/Layer Management Utilities
+  // ============================================================================
+
+  /**
+   * Update GeoJSON source data in place (avoids flicker from remove/add)
+   * @param sourceId - Source ID to update
+   * @param data - New GeoJSON FeatureCollection data
+   * @returns true if update succeeded, false otherwise
+   */
+  public updateSourceData(
+    sourceId: string,
+    data: GeoJSON.FeatureCollection
+  ): boolean {
+    const map = this.getMap();
+    if (!map) return false;
+
+    const source = map.getSource?.(sourceId);
+    if (!source) {
+      console.warn(`[gk-map] Source not found: ${sourceId}`);
+      return false;
+    }
+
+    // Check if source has setData method (GeoJSON sources should have this)
+    if (typeof (source as any).setData === 'function') {
+      try {
+        (source as any).setData(data);
+        return true;
+      } catch (error) {
+        console.error(`[gk-map] Failed to update source data:`, error);
+        return false;
+      }
+    }
+
+    console.warn(
+      `[gk-map] Source ${sourceId} does not support setData() method`
+    );
+    return false;
+  }
+
+  /**
+   * Upsert (update or insert) a source and layer
+   * If source exists, updates its data. If layer exists, ensures it's visible.
+   * If either doesn't exist, creates them.
+   * @param sourceId - Source ID
+   * @param layerId - Layer ID
+   * @param sourceData - GeoJSON FeatureCollection data
+   * @param layerConfig - Layer configuration
+   * @param beforeId - Optional layer ID to insert before
+   * @returns true if operation succeeded, false otherwise
+   */
+  public upsertSourceLayer(
+    sourceId: string,
+    layerId: string,
+    sourceData: GeoJSON.FeatureCollection,
+    layerConfig: {
+      type: string;
+      paint?: Record<string, unknown>;
+      layout?: Record<string, unknown>;
+      filter?: unknown[];
+      [key: string]: unknown;
+    },
+    beforeId?: string
+  ): boolean {
+    const map = this.getMap();
+    if (!map) return false;
+
+    const existingSource = map.getSource?.(sourceId);
+    const existingLayer = map.getLayer?.(layerId);
+
+    if (existingSource) {
+      // Source exists - update data in place
+      if (!this.updateSourceData(sourceId, sourceData)) {
+        return false;
+      }
+
+      if (existingLayer) {
+        // Layer exists - ensure visibility
+        map.setLayoutProperty?.(layerId, 'visibility', 'visible');
+        return true;
+      } else {
+        // Source exists but layer doesn't - add layer
+        try {
+          map.addLayer({ ...layerConfig, id: layerId, source: sourceId }, beforeId);
+          return true;
+        } catch (error) {
+          console.error(`[gk-map] Failed to add layer ${layerId}:`, error);
+          return false;
+        }
+      }
+    } else {
+      // Source doesn't exist - create both source and layer
+      try {
+        map.addSource(sourceId, {
+          type: 'geojson',
+          data: sourceData,
+        });
+        map.addLayer({ ...layerConfig, id: layerId, source: sourceId }, beforeId);
+        return true;
+      } catch (error) {
+        console.error(
+          `[gk-map] Failed to create source/layer ${sourceId}/${layerId}:`,
+          error
+        );
+        return false;
+      }
+    }
+  }
+
+  /**
+   * Remove source and its associated layers
+   * @param sourceId - Source ID to remove
+   * @returns true if removal succeeded, false otherwise
+   */
+  public removeSourceAndLayers(sourceId: string): boolean {
+    const map = this.getMap();
+    if (!map) return false;
+
+    try {
+      // Find all layers that use this source
+      const style = (map as any).getStyle?.();
+      if (style?.layers) {
+        const layersToRemove = style.layers
+          .filter((layer: any) => layer.source === sourceId)
+          .map((layer: any) => layer.id);
+
+        // Remove layers first
+        for (const layerId of layersToRemove) {
+          try {
+            map.removeLayer(layerId);
+          } catch {
+            // Layer might not exist, continue
+          }
+        }
+      }
+
+      // Remove source
+      map.removeSource(sourceId);
+      return true;
+    } catch (error) {
+      console.error(`[gk-map] Failed to remove source ${sourceId}:`, error);
+      return false;
+    }
+  }
+
+  // ============================================================================
+  // Universal Layer Visibility Helpers
+  // ============================================================================
+
+  /**
+   * Set visibility for a single layer
+   * @param layerId - Layer ID
+   * @param visible - Whether layer should be visible
+   * @returns true if operation succeeded, false otherwise
+   */
+  public setLayerVisibility(layerId: string, visible: boolean): boolean {
+    const map = this.getMap();
+    if (!map?.getLayer?.(layerId)) {
+      return false;
+    }
+
+    try {
+      map.setLayoutProperty?.(
+        layerId,
+        'visibility',
+        visible ? 'visible' : 'none'
+      );
+      return true;
+    } catch (error) {
+      console.error(`[gk-map] Failed to set layer visibility:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Set visibility for multiple layers at once
+   * @param layerIds - Array of layer IDs
+   * @param visible - Whether layers should be visible
+   */
+  public setLayersVisibility(layerIds: string[], visible: boolean): void {
+    layerIds.forEach((id) => this.setLayerVisibility(id, visible));
+  }
+
+  /**
+   * Check if a layer exists on the map
+   * @param layerId - Layer ID to check
+   * @returns true if layer exists, false otherwise
+   */
+  public hasLayer(layerId: string): boolean {
+    const map = this.getMap();
+    return !!map?.getLayer?.(layerId);
+  }
+
+  /**
+   * Check if a source exists on the map
+   * @param sourceId - Source ID to check
+   * @returns true if source exists, false otherwise
+   */
+  public hasSource(sourceId: string): boolean {
+    const map = this.getMap();
+    return !!map?.getSource?.(sourceId);
+  }
+
+  /**
+   * Get GeoJSON data from a source
+   * Handles both _data and _geojson internal properties
+   * @param sourceId - Source ID
+   * @returns GeoJSON FeatureCollection data or null if not found
+   */
+  public getSourceData(sourceId: string): GeoJSON.FeatureCollection | null {
+    const map = this.getMap();
+    if (!map) return null;
+
+    const source = map.getSource?.(sourceId);
+    if (!source || (source as any).type !== 'geojson') return null;
+
+    const data = (source as any)._data || (source as any)._geojson;
+    if (!data?.features) return null;
+
+    return data as GeoJSON.FeatureCollection;
+  }
+
+  /**
+   * Find a feature by ID in a source
+   * @param sourceId - Source ID to search
+   * @param featureId - Feature ID to find (checks properties.id, properties.slug, etc.)
+   * @param idProperties - Optional array of property names to check for ID (default: ['id', 'slug'])
+   * @returns Feature if found, null otherwise
+   */
+  public findFeatureById(
+    sourceId: string,
+    featureId: string,
+    idProperties: string[] = ['id', 'slug']
+  ): GeoJSON.Feature | null {
+    const data = this.getSourceData(sourceId);
+    if (!data) return null;
+
+    return (
+      data.features.find((f: GeoJSON.Feature) => {
+        if (!f.properties) return false;
+        return idProperties.some(prop => f.properties?.[prop] === featureId);
+      }) || null
+    );
+  }
+
+  /**
+   * Get full feature properties from source
+   * MapLibre may return limited properties from queryRenderedFeatures,
+   * so this looks up the full feature from the source
+   * @param sourceId - Source ID
+   * @param partialProperties - Partial properties from queryRenderedFeatures
+   * @param idProperties - Optional array of property names to check for ID
+   * @returns Full feature properties or partial if not found
+   */
+  public getFullFeatureProperties(
+    sourceId: string,
+    partialProperties: Record<string, unknown>,
+    idProperties: string[] = ['id', 'slug']
+  ): Record<string, unknown> {
+    // Try to find feature ID from partial properties
+    const featureId = idProperties.find(
+      prop => partialProperties[prop]
+    ) as string | undefined;
+
+    if (!featureId || !partialProperties[featureId]) {
+      return partialProperties;
+    }
+
+    const fullFeature = this.findFeatureById(
+      sourceId,
+      String(partialProperties[featureId]),
+      idProperties
+    );
+
+    if (fullFeature?.properties) {
+      return fullFeature.properties;
+    }
+
+    return partialProperties;
+  }
+
+  /**
+   * Update selection state in a GeoJSON source
+   * Sets a selection property on the selected feature, removes from others
+   * @param sourceId - Source ID to update
+   * @param selectedId - Feature ID to select (null to clear selection)
+   * @param selectionProperty - Property name to use for selection (default: '__selected')
+   * @param idProperties - Optional array of property names to check for ID
+   * @returns true if update was successful
+   */
+  public updateFeatureSelection(
+    sourceId: string,
+    selectedId: string | null,
+    selectionProperty: string = '__selected',
+    idProperties: string[] = ['id', 'slug']
+  ): boolean {
+    const data = this.getSourceData(sourceId);
+    if (!data) return false;
+
+    try {
+      let foundSelected = false;
+      const newFeatures = data.features.map((f: GeoJSON.Feature) => {
+        // Create a new feature object to trigger reactivity
+        const newFeature = JSON.parse(JSON.stringify(f)) as GeoJSON.Feature;
+
+        if (!newFeature.properties) {
+          newFeature.properties = {};
+        }
+
+        // Check if this is the selected feature
+        const isSelected =
+          selectedId !== null &&
+          idProperties.some(
+            prop => newFeature.properties?.[prop] === selectedId
+          );
+
+        if (isSelected) {
+          foundSelected = true;
+          newFeature.properties[selectionProperty] = true;
+        } else {
+          // Remove selection property if present
+          delete newFeature.properties[selectionProperty];
+        }
+
+        return newFeature;
+      });
+
+      if (selectedId && !foundSelected) {
+        console.warn(
+          `[gk-map] Feature ${selectedId} not found in source ${sourceId}`
+        );
+      }
+
+      // Update source data
+      const success = this.updateSourceData(sourceId, {
+        type: 'FeatureCollection',
+        features: newFeatures,
+      });
+
+      // Force repaint to show selection
+      if (success) {
+        const map = this.getMap();
+        if (map && typeof map.triggerRepaint === 'function') {
+          map.triggerRepaint();
+        } else if (map && typeof (map as any).repaint === 'function') {
+          (map as any).repaint();
+        }
+      }
+
+      return success;
+    } catch (error) {
+      console.error(
+        `[gk-map] Failed to update selection for source: ${sourceId}`,
+        error
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Update layer filter expression
+   * Universal method to apply MapLibre filter expressions to layers
+   * @param layerId - Layer ID
+   * @param filterExpression - MapLibre filter expression
+   * @returns true if update succeeded, false otherwise
+   */
+  public setLayerFilter(
+    layerId: string,
+    filterExpression: unknown[]
+  ): boolean {
+    const map = this.getMap();
+    if (!map?.getLayer || !(map as any).setFilter) return false;
+
+    try {
+      if (map.getLayer(layerId)) {
+        (map as any).setFilter(layerId, filterExpression);
+        return true;
+      }
+    } catch (error) {
+      console.warn(`[gk-map] Failed to set filter for layer: ${layerId}`, error);
+    }
+
+    return false;
+  }
+
+  // ============================================================================
+  // Factory Method for Programmatic Creation
+  // ============================================================================
+
+  /**
+   * Create a MapElement programmatically with options
+   * @param options - Map creation options
+   * @returns New MapElement instance
+   */
+  public static create(options: {
+    id?: string;
+    lat?: number | string;
+    lng?: number | string;
+    zoom?: number | string;
+    minZoom?: number | string;
+    maxZoom?: number | string;
+    pitch?: number | string;
+    bearing?: number | string;
+    mapStyle?: string;
+    provider?: string;
+    apiKey?: string;
+    interactive?: boolean;
+    autoHideControls?: boolean;
+    lazy?: boolean | string;
+    attributes?: Record<string, string>;
+    styles?: Partial<CSSStyleDeclaration>;
+  } = {}): MapElement {
+    const map = new MapElement();
+
+    // Set ID if provided
+    if (options.id) {
+      map.id = options.id;
+    }
+
+    // Set position attributes
+    if (options.lat !== undefined) {
+      map.setAttribute('lat', String(options.lat));
+    }
+    if (options.lng !== undefined) {
+      map.setAttribute('lng', String(options.lng));
+    }
+    if (options.zoom !== undefined) {
+      map.setAttribute('zoom', String(options.zoom));
+    }
+    if (options.minZoom !== undefined) {
+      map.setAttribute('min-zoom', String(options.minZoom));
+    }
+    if (options.maxZoom !== undefined) {
+      map.setAttribute('max-zoom', String(options.maxZoom));
+    }
+    if (options.pitch !== undefined) {
+      map.setAttribute('pitch', String(options.pitch));
+    }
+    if (options.bearing !== undefined) {
+      map.setAttribute('bearing', String(options.bearing));
+    }
+
+    // Set style
+    if (options.mapStyle) {
+      map.setAttribute('map-style', options.mapStyle);
+    }
+
+    // Set provider and API key
+    if (options.provider) {
+      map.setAttribute('provider', options.provider);
+    }
+    if (options.apiKey) {
+      map.setAttribute('api-key', options.apiKey);
+    }
+
+    // Set boolean attributes
+    if (options.interactive !== undefined) {
+      map.setAttribute('interactive', String(options.interactive));
+    }
+    if (options.autoHideControls) {
+      map.setAttribute('auto-hide-controls', '');
+    }
+    if (options.lazy !== undefined) {
+      map.setAttribute('lazy', String(options.lazy));
+    }
+
+    // Set additional attributes
+    if (options.attributes) {
+      for (const [key, value] of Object.entries(options.attributes)) {
+        map.setAttribute(key, value);
+      }
+    }
+
+    // Apply additional styles
+    if (options.styles) {
+      Object.assign(map.style, options.styles);
+    }
+
+    return map;
+  }
+
+  // ============================================================================
+  // Batch GeoJSON Operations
+  // ============================================================================
+
+  /**
+   * Add features from a GeoJSON FeatureCollection
+   * Automatically handles points, polygons, and polylines
+   * @param geojson - GeoJSON FeatureCollection
+   * @param options - Styling and behavior options
+   * @returns Object with counts of each feature type added
+   */
+  public addFeaturesFromGeoJSON(
+    geojson: GeoJSON.FeatureCollection,
+    options: {
+      points?: {
+        color?: string;
+        size?: number;
+        opacity?: number;
+        blur?: number;
+        shadow?: boolean;
+        shadowColor?: string;
+        shadowBlur?: number;
+        shadowOpacity?: number;
+        strokeWidth?: number;
+        strokeColor?: string;
+        idProperty?: string;
+        nameProperty?: string;
+      };
+      polygons?: {
+        fillColor?: string;
+        fillOpacity?: number;
+        strokeColor?: string;
+        strokeWidth?: number;
+        strokeOpacity?: number;
+        visible?: boolean;
+        simplify?: boolean;
+        maxPoints?: number;
+      };
+      polylines?: {
+        color?: string;
+        width?: number;
+        opacity?: number;
+      };
+    } = {}
+  ): { points: number; polygons: number; polylines: number } {
+    const counts = { points: 0, polygons: 0, polylines: 0 };
+
+    // Separate features by type
+    const pointFeatures: GeoJSON.Feature[] = [];
+    const polygonFeatures: GeoJSON.Feature[] = [];
+    const polylineFeatures: GeoJSON.Feature[] = [];
+
+    for (const feature of geojson.features) {
+      if (!feature.geometry) continue;
+
+      switch (feature.geometry.type) {
+        case 'Point':
+        case 'MultiPoint':
+          pointFeatures.push(feature);
+          break;
+        case 'Polygon':
+        case 'MultiPolygon':
+          polygonFeatures.push(feature);
+          break;
+        case 'LineString':
+        case 'MultiLineString':
+          polylineFeatures.push(feature);
+          break;
+        default:
+          console.warn(
+            `[gk-map] Unsupported geometry type: ${feature.geometry.type}`
+          );
+      }
+    }
+
+    // Add points
+    if (pointFeatures.length > 0 && options.points) {
+      const pointCollection: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: pointFeatures,
+      };
+      counts.points = this.addPointsFromGeoJSON(pointCollection, options.points);
+    }
+
+    // Add polygons
+    for (const polygonFeature of polygonFeatures) {
+      if (options.polygons) {
+        const added = this.addPolygonFromGeoJSON(
+          polygonFeature,
+          options.polygons
+        );
+        counts.polygons += added;
+      }
+    }
+
+    // Polylines not yet implemented in geokit, but structure is ready
+    if (polylineFeatures.length > 0) {
+      console.warn(
+        `[gk-map] Polylines not yet supported, ${polylineFeatures.length} features skipped`
+      );
+    }
+
+    return counts;
+  }
 }
 
 // Register custom element
