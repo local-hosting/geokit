@@ -580,15 +580,19 @@ export class IsochroneElement extends MapChildElement {
 
       // Add fill layer (below points)
       if (this.fillLayerId) {
+        // Ensure fill-antialias is explicitly boolean (not ternary result that could be coerced)
+        const isH3Render = this.render === 'h3';
+        const fillAntialias: boolean = isH3Render ? false : true;
+
         const paintProperties: Record<string, unknown> = {
           'fill-color': this.color,
           'fill-opacity': this.opacity,
-          'fill-antialias': this.render === 'h3' ? false : true, // Disable antialiasing for H3 to avoid visible borders
+          'fill-antialias': fillAntialias, // Disable antialiasing for H3 to avoid visible borders
         };
 
         // Only add fill-outline-color for H3 rendering to hide borders
         // Don't include it when undefined to avoid Mapbox validation errors
-        if (this.render === 'h3') {
+        if (isH3Render) {
           paintProperties['fill-outline-color'] = this.color;
         }
 
