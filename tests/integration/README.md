@@ -9,8 +9,8 @@ Integration tests validate real provider implementations against actual APIs.
 Create a `.env` file in the project root:
 
 ```bash
-MAPTILER_API_KEY=your_maptiler_key
-MAPBOX_ACCESS_TOKEN=your_mapbox_token
+MAPTILER_KEY=your_maptiler_key
+MAPBOX_TOKEN=your_mapbox_token
 ```
 
 ### 2. Mapbox Token Requirements
@@ -69,7 +69,7 @@ Integration tests automatically skip if environment variables are not set:
 
 ```typescript
 it.skipIf(!MAPBOX_TOKEN)('should fetch isochrone', async () => {
-  // Only runs if MAPBOX_ACCESS_TOKEN is set
+  // Only runs if MAPBOX_TOKEN is set
 });
 ```
 

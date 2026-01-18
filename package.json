@@ -65,6 +65,8 @@
     "preview:demo": "vite preview --config config/vite.demo.config.js",
     "test": "vitest run --config config/vitest.config.ts",
     "test:watch": "vitest --config config/vitest.config.ts",
+    "test:integration": "vitest run --config config/vitest.integration.config.ts",
+    "test:all": "vitest run --config config/vitest.config.ts && vitest run --config config/vitest.integration.config.ts",
     "test:browser": "vitest run --config config/vitest.browser.config.ts",
     "typecheck": "tsc -p config/tsconfig.json --noEmit",
     "lint": "eslint --config config/eslint.config.mjs . --ext .ts",

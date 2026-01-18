@@ -12,6 +12,7 @@ import { registerUIProvider } from '../../providers/registry';
 import { MapTilerUIProvider } from '../../providers/maptiler-provider';
 import { PointElement } from './point';
 import { PolygonElement } from './polygon';
+import { type IsochroneElement } from './isochrone';
 import type { MapInstance } from '../../providers/types';
 
 export class MapElement extends BaseElement {
@@ -40,6 +41,10 @@ export class MapElement extends BaseElement {
   private _frozenContainerStyle: { display?: string; visibility?: string } | null = null;
   private _mapCanvas: HTMLCanvasElement | null = null;
 
+  // Child element tracking
+  private _childObserver: MutationObserver | null = null;
+  private _trackedChildren: Map<string, Set<HTMLElement>> = new Map();
+
   constructor() {
     super();
     this.map = null;
@@ -63,6 +68,9 @@ export class MapElement extends BaseElement {
   async connectedCallback(): Promise<void> {
     // Show placeholder if map is not initialized
     this.showPlaceholderIfNeeded();
+
+    // Initialize child element tracking
+    this._initializeChildTracking();
 
     // If map is pool-managed (has data-pool-managed attribute), don't auto-initialize
     // It will be initialized explicitly via activateMap()
@@ -103,6 +111,9 @@ export class MapElement extends BaseElement {
   disconnectedCallback(): void {
     // Clean up auto-hide listeners
     this.cleanupAutoHideControls();
+
+    // Clean up child tracking observer
+    this._cleanupChildTracking();
 
     // Don't call super.disconnectedCallback() because it resets this.map = null
     // We want to preserve the map instance for reuse in the map pool
@@ -154,7 +165,7 @@ export class MapElement extends BaseElement {
             // Access env var - Vite will replace import.meta.env at build time
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore - import.meta is available in ESNext modules
-            const token = accessToken || import.meta.env?.MAPBOX_ACCESS_TOKEN;
+            const token = accessToken || import.meta.env?.MAPBOX_TOKEN;
             provider = await getProviderByName(
               'mapbox',
               token ? { accessToken: token } : undefined
@@ -169,7 +180,7 @@ export class MapElement extends BaseElement {
             // Access env var - Vite will replace import.meta.env at build time
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore - import.meta is available in ESNext modules
-            const token = accessToken || import.meta.env?.MAPBOX_ACCESS_TOKEN;
+            const token = accessToken || import.meta.env?.MAPBOX_TOKEN;
             if (token) config = { accessToken: token };
           } else if (apiKey) {
             config = { apiKey };
@@ -786,6 +797,189 @@ export class MapElement extends BaseElement {
     return counts;
   }
 
+  // ============================================================================
+  // Child Element Tracking
+  // ============================================================================
+
+  /**
+   * Initialize MutationObserver to track child element additions/removals
+   */
+  private _initializeChildTracking(): void {
+    if (this._childObserver) return; // Already initialized
+
+    // Track existing children
+    Array.from(this.children).forEach((child) => {
+      this._trackChild(child as HTMLElement);
+    });
+
+    // Set up MutationObserver to track future additions/removals
+    this._childObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            this._trackChild(node as HTMLElement);
+          }
+        });
+        mutation.removedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            this._untrackChild(node as HTMLElement);
+          }
+        });
+      });
+    });
+
+    this._childObserver.observe(this, {
+      childList: true,
+      subtree: false, // Only direct children
+    });
+  }
+
+  /**
+   * Clean up child tracking observer
+   */
+  private _cleanupChildTracking(): void {
+    if (this._childObserver) {
+      this._childObserver.disconnect();
+      this._childObserver = null;
+    }
+    this._trackedChildren.clear();
+  }
+
+  /**
+   * Track a child element by its tag name
+   */
+  private _trackChild(element: HTMLElement): void {
+    const tagName = element.tagName.toLowerCase();
+    if (!this._trackedChildren.has(tagName)) {
+      this._trackedChildren.set(tagName, new Set());
+    }
+    this._trackedChildren.get(tagName)!.add(element);
+
+    // Dispatch event
+    this.dispatchEvent(
+      new CustomEvent('child-added', {
+        detail: { element, tagName },
+        bubbles: false,
+      })
+    );
+  }
+
+  /**
+   * Untrack a child element
+   */
+  private _untrackChild(element: HTMLElement): void {
+    const tagName = element.tagName.toLowerCase();
+    const set = this._trackedChildren.get(tagName);
+    if (set) {
+      set.delete(element);
+      if (set.size === 0) {
+        this._trackedChildren.delete(tagName);
+      }
+    }
+
+    // Dispatch event
+    this.dispatchEvent(
+      new CustomEvent('child-removed', {
+        detail: { element, tagName },
+        bubbles: false,
+      })
+    );
+  }
+
+  /**
+   * Get all child elements of a specific type
+   */
+  private _getChildrenByTag(tagName: string): HTMLElement[] {
+    const set = this._trackedChildren.get(tagName.toLowerCase());
+    return set ? Array.from(set) : [];
+  }
+
+  /**
+   * Get all point elements
+   * @param filter - Optional filter criteria
+   */
+  public getPoints(filter?: { visible?: boolean; id?: string }): PointElement[] {
+    const points = this._getChildrenByTag('gk-point') as PointElement[];
+    if (!filter) return points;
+
+    return points.filter((point) => {
+      if (filter.visible !== undefined) {
+        const isVisible = point.getAttribute('visible') !== 'false';
+        if (isVisible !== filter.visible) return false;
+      }
+      if (filter.id !== undefined) {
+        const pointId = point.getAttribute('point-id');
+        if (pointId !== filter.id) return false;
+      }
+      return true;
+    });
+  }
+
+  /**
+   * Get all polygon elements
+   * @param filter - Optional filter criteria
+   */
+  public getPolygons(filter?: {
+    visible?: boolean;
+    dataAttribute?: { key: string; value: string };
+  }): PolygonElement[] {
+    const polygons = this._getChildrenByTag('gk-polygon') as PolygonElement[];
+    if (!filter) return polygons;
+
+    return polygons.filter((polygon) => {
+      if (filter.visible !== undefined) {
+        const isVisible = polygon.getAttribute('visible') !== 'false';
+        if (isVisible !== filter.visible) return false;
+      }
+      if (filter.dataAttribute) {
+        const attrValue = polygon.getAttribute(filter.dataAttribute.key);
+        if (attrValue !== filter.dataAttribute.value) return false;
+      }
+      return true;
+    });
+  }
+
+  /**
+   * Get all isochrone elements
+   * @param filter - Optional filter criteria
+   */
+  public getIsochrones(filter?: {
+    visible?: boolean;
+    selection?: boolean; // true = only selection, false = only travel time, undefined = all
+    dataAttribute?: { key: string; value: string };
+  }): IsochroneElement[] {
+    const isochrones = this._getChildrenByTag('gk-isochrone') as IsochroneElement[];
+    if (!filter) return isochrones;
+
+    return isochrones.filter((iso) => {
+      if (filter.visible !== undefined) {
+        const isVisible = iso.getAttribute('visible') !== 'false';
+        if (isVisible !== filter.visible) return false;
+      }
+      if (filter.selection !== undefined) {
+        const isSelection = iso.getAttribute('data-venue-selection') === 'true';
+        if (isSelection !== filter.selection) return false;
+      }
+      if (filter.dataAttribute) {
+        const attrValue = iso.getAttribute(filter.dataAttribute.key);
+        if (attrValue !== filter.dataAttribute.value) return false;
+      }
+      return true;
+    });
+  }
+
+  /**
+   * Remove all isochrones matching filter criteria
+   * @param filter - Optional filter criteria
+   */
+  public removeIsochrones(filter?: { selection?: boolean; visible?: boolean }): void {
+    const isochrones = this.getIsochrones(filter);
+    isochrones.forEach((iso) => {
+      iso.setAttribute('visible', 'false');
+      iso.remove();
+    });
+  }
+
   /**
    * Check if map is currently populating data
    */
@@ -956,12 +1150,29 @@ export class MapElement extends BaseElement {
           await this.waitForReady();
         }
         this.hidePlaceholder();
+        // Dispatch unfreeze event after reinitialization completes
+        // Note: initializeMap() already dispatches gk-map-ready, but we also dispatch
+        // gk-map-unfreeze to make the lifecycle explicit for components that need it
+        this.dispatchEvent(
+          new CustomEvent('gk-map-unfreeze', {
+            detail: { map: this.map, element: this },
+            bubbles: true,
+          })
+        );
         return true;
       }
 
-      // If map already exists and is initialized, just hide placeholder
+      // If map already exists and is initialized, dispatch unfreeze event
+      // This allows components to react to maps becoming active even if already initialized
       if (this.map && this.isInitialized) {
         this.hidePlaceholder();
+        // Dispatch unfreeze event so components can react (e.g., reload DMA polygons)
+        this.dispatchEvent(
+          new CustomEvent('gk-map-unfreeze', {
+            detail: { map: this.map, element: this },
+            bubbles: true,
+          })
+        );
         return true;
       }
 
@@ -972,6 +1183,13 @@ export class MapElement extends BaseElement {
       if (this.map) {
         await this.waitForReady();
         this.hidePlaceholder();
+        // Dispatch unfreeze event after initialization completes
+        this.dispatchEvent(
+          new CustomEvent('gk-map-unfreeze', {
+            detail: { map: this.map, element: this },
+            bubbles: true,
+          })
+        );
         return true;
       }
 
@@ -1005,6 +1223,14 @@ export class MapElement extends BaseElement {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
+
+    // Dispatch freeze event before freezing
+    this.dispatchEvent(
+      new CustomEvent('gk-map-freeze', {
+        detail: { map: this.map, element: this },
+        bubbles: true,
+      })
+    );
 
     // Show placeholder with "Restoring map..." message
     this.showPlaceholder('Restoring map...');
@@ -1178,7 +1404,7 @@ export class MapElement extends BaseElement {
    * Wait for map style to be loaded
    * Returns immediately if already loaded
    */
-  public async whenStyleReady(timeout: number = 10000): Promise<void> {
+  public async whenStyleReady(timeout: number = 2000): Promise<void> {
     if (!this.map) {
       throw new Error('[gk-map] No map instance');
     }
@@ -1190,12 +1416,20 @@ export class MapElement extends BaseElement {
       return;
     }
 
+    // Also check if style object exists (some SDKs don't expose isStyleLoaded correctly)
+    if (typeof map.getStyle === 'function') {
+      const style = map.getStyle();
+      if (style && typeof style === 'object') {
+        return; // Style exists, assume it's ready
+      }
+    }
+
     return new Promise((resolve, _reject) => {
       const timeoutId = setTimeout(() => {
         map.off?.('style.load', handleStyleLoad);
         map.off?.('load', handleLoad);
         // Resolve anyway after timeout - map might be usable
-        console.warn('[gk-map] Style load timeout, proceeding anyway');
+        // Don't warn - this is expected if style is already loaded
         resolve();
       }, timeout);
 
@@ -1379,8 +1613,39 @@ export class MapElement extends BaseElement {
     } = {}
   ): number {
     const polygons = PolygonElement.createFromGeoJSON(geojson, options);
-    polygons.forEach((polygon) => this.appendChild(polygon));
+    // Batch append using DocumentFragment for better performance
+    if (polygons.length > 0) {
+      const fragment = document.createDocumentFragment();
+      polygons.forEach((polygon) => fragment.appendChild(polygon));
+      this.appendChild(fragment);
+    }
     return polygons.length;
+  }
+
+  /**
+   * Add multiple polygons from GeoJSON features in a single batch operation
+   * More efficient than calling addPolygonFromGeoJSON multiple times
+   */
+  public addPolygonsFromGeoJSONBatch(
+    features: Array<{
+      geojson: GeoJSON.Feature | GeoJSON.Geometry;
+      options: Parameters<typeof MapElement.prototype.addPolygonFromGeoJSON>[1];
+    }>
+  ): number {
+    const fragment = document.createDocumentFragment();
+    let totalCount = 0;
+
+    for (const { geojson, options } of features) {
+      const polygons = PolygonElement.createFromGeoJSON(geojson, options);
+      polygons.forEach((polygon) => fragment.appendChild(polygon));
+      totalCount += polygons.length;
+    }
+
+    if (fragment.hasChildNodes()) {
+      this.appendChild(fragment);
+    }
+
+    return totalCount;
   }
 
   // ============================================================================
@@ -1745,6 +2010,65 @@ export class MapElement extends BaseElement {
   }
 
   // ============================================================================
+  // Control Management
+  // ============================================================================
+
+  /**
+   * Add a control to the map element
+   * Creates a gk-control-{type} element and appends it to this map
+   * @param config - Control configuration
+   * @returns The created control element or null if control type not found
+   */
+  public addControl(config: {
+    /** Control type (e.g., 'navigation', 'fullscreen', 'scale', 'geolocate') */
+    type: string;
+    /** Control position (e.g., 'top-right', 'bottom-left') */
+    position?: string;
+    /** Additional attributes to set on the control */
+    attributes?: Record<string, string>;
+  }): HTMLElement | null {
+    const ControlClass = customElements.get(`gk-control-${config.type}`);
+    if (!ControlClass) {
+      console.warn(`[gk-map] Control type not found: gk-control-${config.type}`);
+      return null;
+    }
+
+    const control = new ControlClass() as HTMLElement;
+
+    // Set position if provided
+    if (config.position) {
+      control.setAttribute('position', config.position);
+    }
+
+    // Set additional attributes
+    if (config.attributes) {
+      for (const [key, value] of Object.entries(config.attributes)) {
+        control.setAttribute(key, value);
+      }
+    }
+
+    this.appendChild(control);
+    return control;
+  }
+
+  /**
+   * Add multiple controls at once
+   * @param configs - Array of control configurations
+   * @returns Array of created control elements (nulls filtered out)
+   */
+  public addControls(
+    configs: Array<{
+      type: string;
+      position?: string;
+      attributes?: Record<string, string>;
+    }>
+  ): HTMLElement[] {
+    return configs
+      .map((config) => this.addControl(config))
+      .filter((control): control is HTMLElement => control !== null);
+  }
+
+  // ============================================================================
   // Factory Method for Programmatic Creation
   // ============================================================================
 
@@ -1837,6 +2161,31 @@ export class MapElement extends BaseElement {
     // Apply additional styles
     if (options.styles) {
       Object.assign(map.style, options.styles);
+    }
+
+    return map;
+  }
+
+  /**
+   * Create a MapElement with controls in one call
+   * Convenience factory that combines create() with addControls()
+   * @param options - Map creation options (same as create())
+   * @param controls - Array of control configurations to add
+   * @returns New MapElement instance with controls added
+   */
+  public static createWithControls(
+    options: Parameters<typeof MapElement.create>[0] = {},
+    controls: Array<{
+      type: string;
+      position?: string;
+      attributes?: Record<string, string>;
+    }> = []
+  ): MapElement {
+    const map = MapElement.create(options);
+
+    // Add controls
+    for (const controlConfig of controls) {
+      map.addControl(controlConfig);
     }
 
     return map;

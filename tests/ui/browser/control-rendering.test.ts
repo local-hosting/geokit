@@ -32,7 +32,7 @@ describe('Control Rendering', () => {
     const provider = new MapTilerUIProvider();
     registerUIProvider('maptiler', provider);
     await setUIProvider('maptiler', {
-      apiKey: import.meta.env.MAPTILER_API_KEY || 'test-key',
+      apiKey: import.meta.env.MAPTILER_KEY || 'test-key',
     });
 
     // Create container div
@@ -50,7 +50,7 @@ describe('Control Rendering', () => {
     container.appendChild(mapElement);
 
     // Set attributes after appending to DOM (Playwright requirement)
-    mapElement.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
+    mapElement.setAttribute('api-key', import.meta.env.MAPTILER_KEY || 'test-key');
     mapElement.setAttribute('lat', '40.7128');
     mapElement.setAttribute('lng', '-74.006');
     mapElement.setAttribute('zoom', '10');

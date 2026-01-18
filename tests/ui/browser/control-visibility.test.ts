@@ -30,7 +30,7 @@ describe('Control Visibility Toggle', () => {
     const provider = new MapTilerUIProvider();
     registerUIProvider('maptiler', provider);
     await setUIProvider('maptiler', {
-      apiKey: import.meta.env.MAPTILER_API_KEY || 'test-key',
+      apiKey: import.meta.env.MAPTILER_KEY || 'test-key',
     });
 
     // Create container div
@@ -48,7 +48,7 @@ describe('Control Visibility Toggle', () => {
     container.appendChild(mapElement);
 
     // Set attributes after appending to DOM (Playwright requirement)
-    mapElement.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
+    mapElement.setAttribute('api-key', import.meta.env.MAPTILER_KEY || 'test-key');
     mapElement.setAttribute('lat', '40.7128');
     mapElement.setAttribute('lng', '-74.006');
     mapElement.setAttribute('zoom', '10');
@@ -155,7 +155,7 @@ describe('Control Visibility Toggle', () => {
     container2.appendChild(mapElement2);
 
     // Set attributes after appending to DOM (Playwright requirement)
-    mapElement2.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
+    mapElement2.setAttribute('api-key', import.meta.env.MAPTILER_KEY || 'test-key');
     mapElement2.setAttribute('lat', '40.7128');
     mapElement2.setAttribute('lng', '-74.006');
     mapElement2.setAttribute('zoom', '10');
@@ -212,7 +212,7 @@ describe('Control Visibility Toggle', () => {
     heroContainer.appendChild(heroMap);
 
     // Set attributes after appending to DOM (Playwright requirement)
-    heroMap.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
+    heroMap.setAttribute('api-key', import.meta.env.MAPTILER_KEY || 'test-key');
     heroMap.setAttribute('lat', '40.7128');
     heroMap.setAttribute('lng', '-74.006');
     heroMap.setAttribute('zoom', '10');
@@ -265,7 +265,7 @@ describe('Control Visibility Toggle', () => {
     disabledContainer.appendChild(disabledMap);
 
     // Set attributes after appending to DOM (Playwright requirement)
-    disabledMap.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
+    disabledMap.setAttribute('api-key', import.meta.env.MAPTILER_KEY || 'test-key');
     disabledMap.setAttribute('lat', '40.7128');
     disabledMap.setAttribute('lng', '-74.006');
     disabledMap.setAttribute('zoom', '10');

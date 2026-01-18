@@ -228,6 +228,16 @@ export {
   simplifyGeometryMeters,
 } from './utils/simplify';
 
+// Smoothing utilities (Chaikin's corner cutting)
+export {
+  smoothRing,
+  smoothLine,
+  smoothPolygon,
+  smoothMultiPolygon,
+  smoothGeometry,
+  smoothFeatureCollection,
+} from './utils/smoothing';
+
 // Clustering utilities
 export type { ClusterPoint, Cluster } from './utils/clustering';
 export { gridCluster, gridClusterMeters, distanceCluster } from './utils/clustering';
@@ -342,3 +352,14 @@ export {
   getBoundsFromPoint,
   getBoundsFromArea,
 } from './utils/spatial';
+
+// API Providers
+export * from './api';
+
+// Demographic aggregation utilities
+export {
+  aggregateDemographics,
+  filterDemographicsByBounds,
+  filterDemographicsByPolygon,
+  getPolygonBounds,
+} from './utils/demographics/aggregate';

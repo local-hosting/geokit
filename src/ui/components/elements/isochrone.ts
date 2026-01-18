@@ -12,6 +12,7 @@
 import { MapChildElement } from '../map-child-element';
 import { getProviderForCapability } from '../../../api/providers/registry';
 import { polygonToH3, h3SetToMultiPolygon } from '../../../utils/h3';
+import { smoothFeatureCollection } from '../../../utils/smoothing';
 import { debug } from '../../utils/logger';
 import type { Polygon } from '../../../types';
 
@@ -55,7 +56,7 @@ export class IsochroneElement extends MapChildElement {
   private upgradeDebounceTimer: number | null = null; // Debounce timer for resolution upgrades
   private pendingUpgrade: boolean = false; // Track if an upgrade is pending
   private readonly UPGRADE_DEBOUNCE_MS = 500; // Wait 500ms after interaction stops before upgrading
-  private readonly MIN_ZOOM_FOR_UPGRADE = 11; // Only convert to hexagons when zoomed in close (zoom 11+)
+  private readonly MIN_ZOOM_FOR_UPGRADE = 8; // Convert to hexagons at zoom 8+
 
   constructor() {
     super();
@@ -325,12 +326,24 @@ export class IsochroneElement extends MapChildElement {
 
       for (const layer of style.layers) {
         // Find the first polygon layer (DMA regions)
-        if (!firstPolygonLayer && layer.type === 'fill' && layer.id?.startsWith('polygon-fill-')) {
+        // Support both 'polygon-fill-*' and '*-polygon-fill' patterns
+        if (
+          !firstPolygonLayer &&
+          layer.type === 'fill' &&
+          (layer.id?.startsWith('polygon-fill-') || layer.id?.includes('-polygon-fill'))
+        ) {
           firstPolygonLayer = layer.id;
         }
 
         // Also track first point layer as fallback
-        if (!firstPointLayer && layer.type === 'circle' && layer.id?.startsWith('point-')) {
+        // Support both 'point-*' and '*-points' patterns
+        if (
+          !firstPointLayer &&
+          layer.type === 'circle' &&
+          (layer.id?.startsWith('point-') ||
+            layer.id?.includes('-points') ||
+            layer.id?.includes('-glow'))
+        ) {
           firstPointLayer = layer.id;
         }
       }
@@ -377,10 +390,13 @@ export class IsochroneElement extends MapChildElement {
         // No target layer found - check if polygons were added after isochrones
         const style = map.getStyle?.();
         if (style?.layers) {
-          // Find first polygon layer
+          // Find first polygon layer (support both 'polygon-fill-*' and '*-polygon-fill' patterns)
           let firstPolygonLayer: string | undefined;
           for (const layer of style.layers) {
-            if (layer.type === 'fill' && layer.id?.startsWith('polygon-fill-')) {
+            if (
+              layer.type === 'fill' &&
+              (layer.id?.startsWith('polygon-fill-') || layer.id?.includes('-polygon-fill'))
+            ) {
               firstPolygonLayer = layer.id;
               break;
             }
@@ -540,7 +556,11 @@ export class IsochroneElement extends MapChildElement {
       // For H3 mode: start with raw polygon for instant visibility
       // Convert to hexagons only when user zooms/interacts
       // This provides fastest initial rendering
-      const processedData = result;
+      // For polygon mode: apply Chaikin smoothing for smoother edges
+      const processedData =
+        this.render === 'polygon'
+          ? smoothFeatureCollection(result, 3) // 3 iterations for smooth curves
+          : result;
       // Don't convert to H3 on initial render - use raw polygon for speed
       // Conversion to H3 will happen on map interaction via upgradeResolution()
 
@@ -570,6 +590,7 @@ export class IsochroneElement extends MapChildElement {
         // Ensure fill-antialias is explicitly boolean (not ternary result that could be coerced)
         const isH3Render = this.render === 'h3';
         const fillAntialias: boolean = isH3Render ? false : true;
+        const hideOutline = isH3Render || this.strokeWidth === 0;
 
         const paintProperties: Record<string, unknown> = {
           'fill-color': this.color,
@@ -577,9 +598,8 @@ export class IsochroneElement extends MapChildElement {
           'fill-antialias': fillAntialias, // Disable antialiasing for H3 to avoid visible borders
         };
 
-        // Only add fill-outline-color for H3 rendering to hide borders
-        // Don't include it when undefined to avoid Mapbox validation errors
-        if (isH3Render) {
+        // Hide fill outline when H3 or when stroke width is 0
+        if (hideOutline) {
           paintProperties['fill-outline-color'] = this.color;
         }
 
@@ -847,7 +867,10 @@ export class IsochroneElement extends MapChildElement {
   }
 
   get strokeWidth(): number {
-    return parseFloat(this.getAttribute('stroke-width') || '2') || 2;
+    const attr = this.getAttribute('stroke-width');
+    if (attr === null) return 0; // Default to no stroke
+    const parsed = parseFloat(attr);
+    return isNaN(parsed) ? 0 : parsed;
   }
 
   get visible(): boolean {
