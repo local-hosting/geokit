@@ -145,6 +145,39 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
     secondLanguagePct = totalPop > 0 ? Math.round((secondWeight / totalPop) * 100) : undefined;
   }
 
+  // Find top two ethnicities by weighted voting
+  const ethnicityVotes: Record<string, number> = {};
+  for (const result of validResults) {
+    if (result.topEthnicity && result.topEthnicityPct) {
+      const pop = result.totalPopulation || 0;
+      const weight = pop * (result.topEthnicityPct / 100);
+      ethnicityVotes[result.topEthnicity] = (ethnicityVotes[result.topEthnicity] || 0) + weight;
+    }
+    if (result.secondEthnicity && result.secondEthnicityPct) {
+      const pop = result.totalPopulation || 0;
+      const weight = pop * (result.secondEthnicityPct / 100);
+      ethnicityVotes[result.secondEthnicity] =
+        (ethnicityVotes[result.secondEthnicity] || 0) + weight;
+    }
+  }
+
+  let topEthnicity: string | undefined;
+  let topEthnicityPct: number | undefined;
+  let secondEthnicity: string | undefined;
+  let secondEthnicityPct: number | undefined;
+
+  const ethnicityEntries = Object.entries(ethnicityVotes).sort((a, b) => b[1] - a[1]);
+  if (ethnicityEntries.length > 0) {
+    const [topEth, topWeight] = ethnicityEntries[0];
+    topEthnicity = topEth;
+    topEthnicityPct = totalPop > 0 ? Math.round((topWeight / totalPop) * 100) : undefined;
+  }
+  if (ethnicityEntries.length > 1) {
+    const [secondEth, secondWeight] = ethnicityEntries[1];
+    secondEthnicity = secondEth;
+    secondEthnicityPct = totalPop > 0 ? Math.round((secondWeight / totalPop) * 100) : undefined;
+  }
+
   return {
     totalPopulation: totalPop,
     medianHouseholdIncome:
@@ -169,6 +202,10 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
     topLanguagePct,
     secondLanguage,
     secondLanguagePct,
+    topEthnicity,
+    topEthnicityPct,
+    secondEthnicity,
+    secondEthnicityPct,
     dataSource: validResults[0].dataSource,
     year: validResults[0].year,
     lastUpdated: new Date().toISOString(),
@@ -282,6 +319,49 @@ function aggregateByAverage(results: DemographicsResult[]): DemographicsResult {
         : undefined;
   }
 
+  // Find top two ethnicities by counting occurrences
+  const ethnicityCounts: Record<string, number> = {};
+  for (const result of results) {
+    if (result.topEthnicity) {
+      ethnicityCounts[result.topEthnicity] = (ethnicityCounts[result.topEthnicity] || 0) + 1;
+    }
+    if (result.secondEthnicity) {
+      ethnicityCounts[result.secondEthnicity] =
+        (ethnicityCounts[result.secondEthnicity] || 0) + 0.5;
+    }
+  }
+
+  let topEthnicity: string | undefined;
+  let topEthnicityPct: number | undefined;
+  let secondEthnicity: string | undefined;
+  let secondEthnicityPct: number | undefined;
+
+  const ethEntries = Object.entries(ethnicityCounts).sort((a, b) => b[1] - a[1]);
+  if (ethEntries.length > 0) {
+    const [topEth] = ethEntries[0];
+    topEthnicity = topEth;
+    const topEthPcts = results
+      .filter((r) => r.topEthnicity === topEth)
+      .map((r) => r.topEthnicityPct)
+      .filter((v): v is number => v !== undefined);
+    topEthnicityPct =
+      topEthPcts.length > 0
+        ? Math.round(topEthPcts.reduce((a, b) => a + b, 0) / topEthPcts.length)
+        : undefined;
+  }
+  if (ethEntries.length > 1) {
+    const [secondEth] = ethEntries[1];
+    secondEthnicity = secondEth;
+    const secondEthPcts = results
+      .filter((r) => r.topEthnicity === secondEth || r.secondEthnicity === secondEth)
+      .map((r) => (r.topEthnicity === secondEth ? r.topEthnicityPct : r.secondEthnicityPct))
+      .filter((v): v is number => v !== undefined);
+    secondEthnicityPct =
+      secondEthPcts.length > 0
+        ? Math.round(secondEthPcts.reduce((a, b) => a + b, 0) / secondEthPcts.length)
+        : undefined;
+  }
+
   return {
     totalPopulation: results.reduce((sum, r) => sum + (r.totalPopulation || 0), 0),
     medianHouseholdIncome:
@@ -316,6 +396,10 @@ function aggregateByAverage(results: DemographicsResult[]): DemographicsResult {
     topLanguagePct,
     secondLanguage,
     secondLanguagePct,
+    topEthnicity,
+    topEthnicityPct,
+    secondEthnicity,
+    secondEthnicityPct,
     dataSource: results[0]?.dataSource,
     year: results[0]?.year,
     lastUpdated: new Date().toISOString(),
