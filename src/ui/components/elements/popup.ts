@@ -77,6 +77,8 @@ export interface PopupContentOptions {
   headline?: string;
   /** Short badge displayed next to headline (e.g., "A" for cohort) */
   headlineBadge?: string;
+  /** Custom color for the badge (hex color, e.g., "#0073CF") */
+  headlineBadgeColor?: string;
   /** Secondary text below headline */
   subhead?: string;
   /** Array of tags to display (string or labeled tag) */
@@ -221,16 +223,9 @@ export class PopupElement extends MapChildElement {
         overflow: hidden;
       }
       
-      .geokit-popup-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+      h4.geokit-popup-title {
         margin: 0 0 4px 0;
         padding-right: 24px;
-      }
-
-      h4.geokit-popup-title {
-        margin: 0;
         font-weight: 700;
         color: #c9d1d9;
         font-size: 14px;
@@ -238,21 +233,18 @@ export class PopupElement extends MapChildElement {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        min-width: 0;
-        flex: 1;
       }
 
       .geokit-popup-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(88, 166, 255, 0.2);
-        color: #58a6ff;
-        font-size: 11px;
+        display: inline;
+        margin-left: 6px;
+        background: #58a6ff;
+        color: #fff;
+        font-size: 10px;
         font-weight: 600;
-        border-radius: 4px;
-        padding: 2px 6px;
-        flex-shrink: 0;
+        border-radius: 3px;
+        padding: 1px 5px;
+        vertical-align: middle;
       }
 
       h5.geokit-popup-address {
@@ -589,32 +581,37 @@ export class PopupElement extends MapChildElement {
    * Allows consuming apps to fully customize popup content
    */
   public static buildPopupContentGeneric(options: PopupContentOptions): HTMLElement {
-    const { headline, headlineBadge, subhead, tags, actions, footerLabel } = options;
+    const { headline, headlineBadge, headlineBadgeColor, subhead, tags, actions, footerLabel } =
+      options;
 
     // Create container element using only native DOM APIs
     const container = document.createElement('div');
     container.setAttribute('class', 'geokit-popup-content');
 
-    // Add headline (with optional badge)
+    // Add headline (with optional inline badge)
     if (headline || headlineBadge) {
-      const headerEl = document.createElement('div');
-      headerEl.setAttribute('class', 'geokit-popup-header');
+      const headlineEl = document.createElement('h4');
+      headlineEl.setAttribute('class', 'geokit-popup-title');
 
       if (headline) {
-        const headlineEl = document.createElement('h4');
-        headlineEl.setAttribute('class', 'geokit-popup-title');
-        headlineEl.textContent = headline;
-        headerEl.appendChild(headlineEl);
+        headlineEl.appendChild(document.createTextNode(headline));
       }
 
       if (headlineBadge) {
         const badgeEl = document.createElement('span');
         badgeEl.setAttribute('class', 'geokit-popup-badge');
         badgeEl.textContent = headlineBadge;
-        headerEl.appendChild(badgeEl);
+
+        // Apply custom badge color if provided (solid background, white text)
+        if (headlineBadgeColor) {
+          badgeEl.style.background = headlineBadgeColor;
+          badgeEl.style.color = '#fff';
+        }
+
+        headlineEl.appendChild(badgeEl);
       }
 
-      container.appendChild(headerEl);
+      container.appendChild(headlineEl);
     }
 
     // Add subhead
@@ -671,17 +668,18 @@ export class PopupElement extends MapChildElement {
       const actionsContainer = document.createElement('div');
       actionsContainer.setAttribute('class', 'geokit-popup-actions');
 
-      // Add footer label first (on left)
+      // Add footer label first (on left) - may be empty, will be filled dynamically
       if (footerLabel) {
         const labelEl = document.createElement('span');
         labelEl.setAttribute('class', 'geokit-popup-footer-label');
         labelEl.textContent = footerLabel;
         actionsContainer.appendChild(labelEl);
-
-        const spacer = document.createElement('span');
-        spacer.setAttribute('class', 'geokit-popup-actions-spacer');
-        actionsContainer.appendChild(spacer);
       }
+
+      // Always add spacer to push actions to the right
+      const spacer = document.createElement('span');
+      spacer.setAttribute('class', 'geokit-popup-actions-spacer');
+      actionsContainer.appendChild(spacer);
 
       // Add action links (on right)
       if (actions) {
