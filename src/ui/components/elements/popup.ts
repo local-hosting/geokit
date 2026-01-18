@@ -75,13 +75,15 @@ export interface PopupAction {
 export interface PopupContentOptions {
   /** Main title/headline */
   headline?: string;
+  /** Short badge displayed next to headline (e.g., "A" for cohort) */
+  headlineBadge?: string;
   /** Secondary text below headline */
   subhead?: string;
   /** Array of tags to display (string or labeled tag) */
   tags?: (string | PopupTag)[];
   /** Array of action links */
   actions?: PopupAction[];
-  /** Footer label displayed at bottom right (e.g., cohort type) */
+  /** Footer label displayed at bottom left (e.g., population count) */
   footerLabel?: string;
 }
 
@@ -219,21 +221,38 @@ export class PopupElement extends MapChildElement {
         overflow: hidden;
       }
       
-      h4.geokit-popup-title {
+      .geokit-popup-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         margin: 0 0 4px 0;
         padding-right: 24px;
+      }
+
+      h4.geokit-popup-title {
+        margin: 0;
         font-weight: 700;
         color: #c9d1d9;
         font-size: 14px;
         line-height: 1.4;
-        display: block;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 100%;
-        width: 100%;
         min-width: 0;
-        box-sizing: border-box;
+        flex: 1;
+      }
+
+      .geokit-popup-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(88, 166, 255, 0.2);
+        color: #58a6ff;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 4px;
+        padding: 2px 6px;
+        flex-shrink: 0;
       }
 
       h5.geokit-popup-address {
@@ -570,18 +589,32 @@ export class PopupElement extends MapChildElement {
    * Allows consuming apps to fully customize popup content
    */
   public static buildPopupContentGeneric(options: PopupContentOptions): HTMLElement {
-    const { headline, subhead, tags, actions, footerLabel } = options;
+    const { headline, headlineBadge, subhead, tags, actions, footerLabel } = options;
 
     // Create container element using only native DOM APIs
     const container = document.createElement('div');
     container.setAttribute('class', 'geokit-popup-content');
 
-    // Add headline
-    if (headline) {
-      const headlineEl = document.createElement('h4');
-      headlineEl.setAttribute('class', 'geokit-popup-title');
-      headlineEl.textContent = headline;
-      container.appendChild(headlineEl);
+    // Add headline (with optional badge)
+    if (headline || headlineBadge) {
+      const headerEl = document.createElement('div');
+      headerEl.setAttribute('class', 'geokit-popup-header');
+
+      if (headline) {
+        const headlineEl = document.createElement('h4');
+        headlineEl.setAttribute('class', 'geokit-popup-title');
+        headlineEl.textContent = headline;
+        headerEl.appendChild(headlineEl);
+      }
+
+      if (headlineBadge) {
+        const badgeEl = document.createElement('span');
+        badgeEl.setAttribute('class', 'geokit-popup-badge');
+        badgeEl.textContent = headlineBadge;
+        headerEl.appendChild(badgeEl);
+      }
+
+      container.appendChild(headerEl);
     }
 
     // Add subhead
