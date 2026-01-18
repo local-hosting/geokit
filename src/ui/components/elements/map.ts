@@ -1331,9 +1331,17 @@ export class MapElement extends BaseElement {
     this.isInitialized = false;
     this._isFrozen = true;
 
-    // Wait a frame to ensure WebGL context is fully released
+    // Wait multiple frames to ensure WebGL context is fully released
+    // Browsers release WebGL contexts asynchronously, so a single frame isn't enough
     // This prevents "Too many active WebGL contexts" warnings
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Additional 50ms delay to allow browser to fully garbage collect the context
+          setTimeout(resolve, 50);
+        });
+      });
+    });
   }
 
   /**
