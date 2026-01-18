@@ -185,8 +185,11 @@ function getPolygonBounds(polygon: Polygon | MultiPolygon): {
 
 /**
  * Find ZIP codes within an isochrone polygon
- * Samples points within the polygon's bounding box, filters by polygon containment,
- * then geocodes to find ZIP codes
+ *
+ * Uses three sampling strategies for comprehensive coverage:
+ * 1. Perimeter sampling - points along the polygon boundary (catches edge ZIPs)
+ * 2. Radial sampling - lines from center to perimeter (catches interior ZIPs)
+ * 3. Center point - the store location itself
  *
  * @param centerLat - Center latitude (store location)
  * @param centerLng - Center longitude (store location)
@@ -200,50 +203,81 @@ export async function findZipsInPolygon(
   polygon: Polygon | MultiPolygon,
   _searchRadiusMeters?: number
 ): Promise<string[]> {
-  // Get bounding box of the polygon
-  const bounds = getPolygonBounds(polygon);
+  // Get the outer ring of the polygon
+  const outerRing =
+    polygon.type === 'Polygon' ? polygon.coordinates[0] : polygon.coordinates[0]?.[0] || [];
 
-  // Generate a cache key based on the polygon bounds
-  const cacheKey = `poly:${bounds.minLng.toFixed(3)},${bounds.minLat.toFixed(3)},${bounds.maxLng.toFixed(3)},${bounds.maxLat.toFixed(3)}`;
+  if (outerRing.length < 3) {
+    return [];
+  }
+
+  // Calculate perimeter length to determine sampling density
+  let perimeterLength = 0;
+  for (let i = 0; i < outerRing.length - 1; i++) {
+    const [lng1, lat1] = outerRing[i];
+    const [lng2, lat2] = outerRing[i + 1];
+    perimeterLength += Math.sqrt((lng2 - lng1) ** 2 + (lat2 - lat1) ** 2);
+  }
+
+  // Generate cache key based on polygon shape (use perimeter + center)
+  const bounds = getPolygonBounds(polygon);
+  const cacheKey = `poly2:${centerLat.toFixed(4)},${centerLng.toFixed(4)}:${perimeterLength.toFixed(3)}:${bounds.minLng.toFixed(3)},${bounds.maxLng.toFixed(3)}`;
   const cached = zipCache.get(cacheKey);
   if (cached) {
     return cached.map((z) => z.zipcode);
   }
 
-  // Create a grid of sample points within the bounding box
-  const gridSize = 5; // 5x5 grid = 25 sample points
-  const lngStep = (bounds.maxLng - bounds.minLng) / (gridSize - 1);
-  const latStep = (bounds.maxLat - bounds.minLat) / (gridSize - 1);
-
   const samplePoints: Array<[number, number]> = [];
+  const addedPoints = new Set<string>();
 
-  // Generate grid points and filter by polygon containment
-  for (let i = 0; i < gridSize; i++) {
-    for (let j = 0; j < gridSize; j++) {
-      const sampleLat = bounds.minLat + i * latStep;
-      const sampleLng = bounds.minLng + j * lngStep;
-
-      // Only include points that are inside the polygon
-      if (pointInGeometry([sampleLat, sampleLng], polygon)) {
-        samplePoints.push([sampleLat, sampleLng]);
-      }
+  const addPoint = (lat: number, lng: number) => {
+    const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+    if (!addedPoints.has(key)) {
+      addedPoints.add(key);
+      samplePoints.push([lat, lng]);
     }
+  };
+
+  // 1. Always include center point
+  addPoint(centerLat, centerLng);
+
+  // 2. Sample along the polygon perimeter
+  // More points for larger polygons (1 point per ~0.02 degrees, roughly 1-2 km)
+  const perimeterSampleCount = Math.max(12, Math.min(40, Math.ceil(perimeterLength / 0.02)));
+  const perimeterStep = (outerRing.length - 1) / perimeterSampleCount;
+
+  for (let i = 0; i < perimeterSampleCount; i++) {
+    const idx = Math.floor(i * perimeterStep);
+    const [lng, lat] = outerRing[Math.min(idx, outerRing.length - 1)];
+    addPoint(lat, lng);
   }
 
-  // Always include center point if it's in the polygon
-  if (pointInGeometry([centerLat, centerLng], polygon)) {
-    // Add to front, avoid duplicates
-    const hasCenter = samplePoints.some(
-      ([lat, lng]) => Math.abs(lat - centerLat) < 0.0001 && Math.abs(lng - centerLng) < 0.0001
-    );
-    if (!hasCenter) {
-      samplePoints.unshift([centerLat, centerLng]);
+  // 3. Sample along radial lines from center to perimeter
+  // This catches interior ZIP codes that perimeter sampling might miss
+  const radialCount = Math.max(8, Math.min(16, Math.ceil(perimeterLength / 0.05)));
+  const radialSteps = 3; // Sample at 33%, 66%, and near-edge along each radial
+
+  for (let r = 0; r < radialCount; r++) {
+    // Pick evenly spaced points on the perimeter
+    const perimeterIdx = Math.floor((r / radialCount) * (outerRing.length - 1));
+    const [edgeLng, edgeLat] = outerRing[perimeterIdx];
+
+    // Sample along the line from center to edge
+    for (let s = 1; s <= radialSteps; s++) {
+      const t = s / (radialSteps + 1); // 0.25, 0.5, 0.75
+      const sampleLat = centerLat + (edgeLat - centerLat) * t;
+      const sampleLng = centerLng + (edgeLng - centerLng) * t;
+
+      // Verify point is inside polygon (radial might exit concave shapes)
+      if (pointInGeometry([sampleLat, sampleLng], polygon)) {
+        addPoint(sampleLat, sampleLng);
+      }
     }
   }
 
   // Fetch ZIPs for sample points (with concurrency limit)
   const zips = new Set<string>();
-  const BATCH_SIZE = 3;
+  const BATCH_SIZE = 5;
 
   for (let i = 0; i < samplePoints.length; i += BATCH_SIZE) {
     const batch = samplePoints.slice(i, i + BATCH_SIZE);
