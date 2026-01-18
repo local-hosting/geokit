@@ -205,6 +205,13 @@ export class MapboxAPIProvider extends BaseAPIProvider {
         },
       });
 
+      // Handle case where fetch returns undefined (network unavailable)
+      if (!response) {
+        throw new Error(
+          'Network request failed: fetch returned undefined. Network may be unavailable.'
+        );
+      }
+
       // Handle rate limiting with exponential backoff
       if (response.status === 429) {
         if (retryCount < this.MAX_RETRIES) {
@@ -383,6 +390,16 @@ export class MapboxAPIProvider extends BaseAPIProvider {
     const roundedLat = Math.round(lat * 10000) / 10000;
     const roundedLng = Math.round(lng * 10000) / 10000;
     return `iso:${roundedLat},${roundedLng}:${minutes.join(',')}:${mode}`;
+  }
+
+  /**
+   * Check if isochrone data is already cached for given options
+   * Useful for prefetch optimization - avoid redundant API calls
+   */
+  hasIsochroneCached(options: IsochroneOptions): boolean {
+    const { lat, lng, minutes = [5, 10, 15], mode = 'driving' } = options;
+    const cacheKey = this.getCacheKey(lat, lng, minutes, mode);
+    return this.cache.has(cacheKey);
   }
 
   /**
