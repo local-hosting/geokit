@@ -55,7 +55,7 @@ export class MapCollectionElement extends BaseElement {
     if (this.initialized) {
       this.cleanup();
     }
-    
+
     this.isInitialized = false;
     await super.connectedCallback();
     this.poolSize = parseInt(this.getAttribute('pool-size') || '6', 10);
@@ -210,6 +210,10 @@ export class MapCollectionElement extends BaseElement {
       return;
     }
 
+    // Sync activeCount with actual map states before processing
+    // This catches any drift from external freeze operations
+    this.syncActiveCount();
+
     const now = Date.now();
 
     try {
@@ -280,8 +284,6 @@ export class MapCollectionElement extends BaseElement {
    * Protected against concurrent activation and fast scrolling
    */
   private async activateSlot(slotInfo: SlotInfo): Promise<void> {
-    const slotId = this.getSlotId(slotInfo.slotElement);
-    
     // Already active or being activated - skip
     if (slotInfo.isActive || slotInfo.isActivating) {
       return;
@@ -318,11 +320,11 @@ export class MapCollectionElement extends BaseElement {
       // Mark active BEFORE unfreezing to prevent race conditions
       slotInfo.isActive = true;
       this.activeCount++;
-      
+
       // HMR safety check: enforce pool size limit
       if (this.activeCount > this.poolSize) {
         // Emergency cleanup: freeze the oldest active map (not the one we're activating)
-        const oldestActive = this.slots.find(s => s.isActive && s !== slotInfo);
+        const oldestActive = this.slots.find((s) => s.isActive && s !== slotInfo);
         if (oldestActive) {
           oldestActive.mapElement.freeze().catch(() => {});
           oldestActive.isActive = false;
@@ -398,7 +400,7 @@ export class MapCollectionElement extends BaseElement {
 
     if (candidates.length > 0) {
       const toFreeze = candidates[0].slotInfo;
-      
+
       // Await freeze to ensure WebGL context is released before creating new maps
       await toFreeze.mapElement.freeze();
       toFreeze.isActive = false;
@@ -489,9 +491,7 @@ export class MapCollectionElement extends BaseElement {
    * Clean up slots for maps that have been removed from the DOM
    */
   private handleRemovedMaps(): void {
-    const currentMapElements = new Set(
-      Array.from(this.querySelectorAll('gk-map')) as MapElement[]
-    );
+    const currentMapElements = new Set(Array.from(this.querySelectorAll('gk-map')) as MapElement[]);
 
     // Find slots whose map elements are no longer in the DOM
     const removedSlots = this.slots.filter((s) => !currentMapElements.has(s.mapElement));
@@ -636,6 +636,53 @@ export class MapCollectionElement extends BaseElement {
       .filter((s) => s.isActive)
       .map((s) => this.getSlotId(s.slotElement))
       .slice(0, this.poolSize);
+  }
+
+  /**
+   * Sync activeCount with actual map states
+   * Call this after external operations that may have frozen maps directly
+   * (e.g., when switching views and freezing all maps)
+   */
+  public syncActiveCount(): void {
+    let actualActive = 0;
+    for (const slot of this.slots) {
+      // Check if map actually has an active instance
+      const mapInstance = (slot.mapElement as any).getMap?.();
+      const isFrozen = (slot.mapElement as any)._isFrozen;
+
+      if (mapInstance && !isFrozen) {
+        actualActive++;
+        slot.isActive = true;
+      } else {
+        slot.isActive = false;
+      }
+    }
+
+    if (actualActive !== this.activeCount) {
+      this.activeCount = actualActive;
+    }
+  }
+
+  /**
+   * Freeze all active maps in the collection
+   * Returns a promise that resolves when all maps are frozen
+   */
+  public async freezeAll(): Promise<void> {
+    const freezePromises: Promise<void>[] = [];
+
+    for (const slot of this.slots) {
+      if (slot.isActive) {
+        slot.isActive = false;
+        freezePromises.push(
+          slot.mapElement.freeze().catch(() => {
+            // Ignore freeze errors
+          })
+        );
+      }
+    }
+
+    this.activeCount = 0;
+    await Promise.all(freezePromises);
   }
 }
 
