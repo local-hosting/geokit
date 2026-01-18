@@ -36,10 +36,16 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
   let weightedAge = 0;
   let weightedHomeValue = 0;
   let weightedRent = 0;
+  let weightedHouseholdSize = 0;
+  let weightedOwnerPct = 0;
+  let weightedRenterPct = 0;
   let totalPopWithIncome = 0;
   let totalPopWithAge = 0;
   let totalPopWithHomeValue = 0;
   let totalPopWithRent = 0;
+  let totalPopWithHouseholdSize = 0;
+  let totalPopWithOwnerPct = 0;
+  let totalPopWithRenterPct = 0;
 
   for (const result of validResults) {
     const pop = result.totalPopulation || 0;
@@ -60,6 +66,83 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
       weightedRent += result.medianRent * pop;
       totalPopWithRent += pop;
     }
+    if (result.averageHouseholdSize !== undefined) {
+      weightedHouseholdSize += result.averageHouseholdSize * pop;
+      totalPopWithHouseholdSize += pop;
+    }
+    if (result.ownerOccupiedPct !== undefined) {
+      weightedOwnerPct += result.ownerOccupiedPct * pop;
+      totalPopWithOwnerPct += pop;
+    }
+    if (result.renterOccupiedPct !== undefined) {
+      weightedRenterPct += result.renterOccupiedPct * pop;
+      totalPopWithRenterPct += pop;
+    }
+  }
+
+  // Find top two generations by weighted voting
+  const generationVotes: Record<string, number> = {};
+  for (const result of validResults) {
+    if (result.topGeneration && result.topGenerationPct) {
+      const pop = result.totalPopulation || 0;
+      const weight = pop * (result.topGenerationPct / 100);
+      generationVotes[result.topGeneration] = (generationVotes[result.topGeneration] || 0) + weight;
+    }
+    if (result.secondGeneration && result.secondGenerationPct) {
+      const pop = result.totalPopulation || 0;
+      const weight = pop * (result.secondGenerationPct / 100);
+      generationVotes[result.secondGeneration] =
+        (generationVotes[result.secondGeneration] || 0) + weight;
+    }
+  }
+
+  let topGeneration: string | undefined;
+  let topGenerationPct: number | undefined;
+  let secondGeneration: string | undefined;
+  let secondGenerationPct: number | undefined;
+
+  const generationEntries = Object.entries(generationVotes).sort((a, b) => b[1] - a[1]);
+  if (generationEntries.length > 0) {
+    const [topGen, topWeight] = generationEntries[0];
+    topGeneration = topGen;
+    topGenerationPct = totalPop > 0 ? Math.round((topWeight / totalPop) * 100) : undefined;
+  }
+  if (generationEntries.length > 1) {
+    const [secondGen, secondWeight] = generationEntries[1];
+    secondGeneration = secondGen;
+    secondGenerationPct = totalPop > 0 ? Math.round((secondWeight / totalPop) * 100) : undefined;
+  }
+
+  // Find top two languages by weighted voting
+  const languageVotes: Record<string, number> = {};
+  for (const result of validResults) {
+    if (result.topLanguage && result.topLanguagePct) {
+      const pop = result.totalPopulation || 0;
+      const weight = pop * (result.topLanguagePct / 100);
+      languageVotes[result.topLanguage] = (languageVotes[result.topLanguage] || 0) + weight;
+    }
+    if (result.secondLanguage && result.secondLanguagePct) {
+      const pop = result.totalPopulation || 0;
+      const weight = pop * (result.secondLanguagePct / 100);
+      languageVotes[result.secondLanguage] = (languageVotes[result.secondLanguage] || 0) + weight;
+    }
+  }
+
+  let topLanguage: string | undefined;
+  let topLanguagePct: number | undefined;
+  let secondLanguage: string | undefined;
+  let secondLanguagePct: number | undefined;
+
+  const languageEntries = Object.entries(languageVotes).sort((a, b) => b[1] - a[1]);
+  if (languageEntries.length > 0) {
+    const [topLang, topWeight] = languageEntries[0];
+    topLanguage = topLang;
+    topLanguagePct = totalPop > 0 ? Math.round((topWeight / totalPop) * 100) : undefined;
+  }
+  if (languageEntries.length > 1) {
+    const [secondLang, secondWeight] = languageEntries[1];
+    secondLanguage = secondLang;
+    secondLanguagePct = totalPop > 0 ? Math.round((secondWeight / totalPop) * 100) : undefined;
   }
 
   return {
@@ -70,6 +153,22 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
     medianHomeValue:
       totalPopWithHomeValue > 0 ? Math.round(weightedHomeValue / totalPopWithHomeValue) : undefined,
     medianRent: totalPopWithRent > 0 ? Math.round(weightedRent / totalPopWithRent) : undefined,
+    averageHouseholdSize:
+      totalPopWithHouseholdSize > 0
+        ? Math.round((weightedHouseholdSize / totalPopWithHouseholdSize) * 10) / 10
+        : undefined,
+    ownerOccupiedPct:
+      totalPopWithOwnerPct > 0 ? Math.round(weightedOwnerPct / totalPopWithOwnerPct) : undefined,
+    renterOccupiedPct:
+      totalPopWithRenterPct > 0 ? Math.round(weightedRenterPct / totalPopWithRenterPct) : undefined,
+    topGeneration,
+    topGenerationPct,
+    secondGeneration,
+    secondGenerationPct,
+    topLanguage,
+    topLanguagePct,
+    secondLanguage,
+    secondLanguagePct,
     dataSource: validResults[0].dataSource,
     year: validResults[0].year,
     lastUpdated: new Date().toISOString(),
@@ -88,6 +187,100 @@ function aggregateByAverage(results: DemographicsResult[]): DemographicsResult {
     .map((r) => r.medianHomeValue)
     .filter((v): v is number => v !== undefined);
   const rents = results.map((r) => r.medianRent).filter((v): v is number => v !== undefined);
+  const householdSizes = results
+    .map((r) => r.averageHouseholdSize)
+    .filter((v): v is number => v !== undefined);
+  const ownerPcts = results
+    .map((r) => r.ownerOccupiedPct)
+    .filter((v): v is number => v !== undefined);
+  const renterPcts = results
+    .map((r) => r.renterOccupiedPct)
+    .filter((v): v is number => v !== undefined);
+
+  // Find top two generations by counting occurrences
+  const generationCounts: Record<string, number> = {};
+  for (const result of results) {
+    if (result.topGeneration) {
+      generationCounts[result.topGeneration] = (generationCounts[result.topGeneration] || 0) + 1;
+    }
+    if (result.secondGeneration) {
+      generationCounts[result.secondGeneration] =
+        (generationCounts[result.secondGeneration] || 0) + 0.5; // Weight second less
+    }
+  }
+
+  let topGeneration: string | undefined;
+  let topGenerationPct: number | undefined;
+  let secondGeneration: string | undefined;
+  let secondGenerationPct: number | undefined;
+
+  const genEntries = Object.entries(generationCounts).sort((a, b) => b[1] - a[1]);
+  if (genEntries.length > 0) {
+    const [topGen] = genEntries[0];
+    topGeneration = topGen;
+    const topGenPcts = results
+      .filter((r) => r.topGeneration === topGen)
+      .map((r) => r.topGenerationPct)
+      .filter((v): v is number => v !== undefined);
+    topGenerationPct =
+      topGenPcts.length > 0
+        ? Math.round(topGenPcts.reduce((a, b) => a + b, 0) / topGenPcts.length)
+        : undefined;
+  }
+  if (genEntries.length > 1) {
+    const [secondGen] = genEntries[1];
+    secondGeneration = secondGen;
+    const secondGenPcts = results
+      .filter((r) => r.topGeneration === secondGen || r.secondGeneration === secondGen)
+      .map((r) => (r.topGeneration === secondGen ? r.topGenerationPct : r.secondGenerationPct))
+      .filter((v): v is number => v !== undefined);
+    secondGenerationPct =
+      secondGenPcts.length > 0
+        ? Math.round(secondGenPcts.reduce((a, b) => a + b, 0) / secondGenPcts.length)
+        : undefined;
+  }
+
+  // Find top two languages by counting occurrences
+  const languageCounts: Record<string, number> = {};
+  for (const result of results) {
+    if (result.topLanguage) {
+      languageCounts[result.topLanguage] = (languageCounts[result.topLanguage] || 0) + 1;
+    }
+    if (result.secondLanguage) {
+      languageCounts[result.secondLanguage] = (languageCounts[result.secondLanguage] || 0) + 0.5;
+    }
+  }
+
+  let topLanguage: string | undefined;
+  let topLanguagePct: number | undefined;
+  let secondLanguage: string | undefined;
+  let secondLanguagePct: number | undefined;
+
+  const langEntries = Object.entries(languageCounts).sort((a, b) => b[1] - a[1]);
+  if (langEntries.length > 0) {
+    const [topLang] = langEntries[0];
+    topLanguage = topLang;
+    const topLangPcts = results
+      .filter((r) => r.topLanguage === topLang)
+      .map((r) => r.topLanguagePct)
+      .filter((v): v is number => v !== undefined);
+    topLanguagePct =
+      topLangPcts.length > 0
+        ? Math.round(topLangPcts.reduce((a, b) => a + b, 0) / topLangPcts.length)
+        : undefined;
+  }
+  if (langEntries.length > 1) {
+    const [secondLang] = langEntries[1];
+    secondLanguage = secondLang;
+    const secondLangPcts = results
+      .filter((r) => r.topLanguage === secondLang || r.secondLanguage === secondLang)
+      .map((r) => (r.topLanguage === secondLang ? r.topLanguagePct : r.secondLanguagePct))
+      .filter((v): v is number => v !== undefined);
+    secondLanguagePct =
+      secondLangPcts.length > 0
+        ? Math.round(secondLangPcts.reduce((a, b) => a + b, 0) / secondLangPcts.length)
+        : undefined;
+  }
 
   return {
     totalPopulation: results.reduce((sum, r) => sum + (r.totalPopulation || 0), 0),
@@ -103,6 +296,26 @@ function aggregateByAverage(results: DemographicsResult[]): DemographicsResult {
         : undefined,
     medianRent:
       rents.length > 0 ? Math.round(rents.reduce((a, b) => a + b, 0) / rents.length) : undefined,
+    averageHouseholdSize:
+      householdSizes.length > 0
+        ? Math.round((householdSizes.reduce((a, b) => a + b, 0) / householdSizes.length) * 10) / 10
+        : undefined,
+    ownerOccupiedPct:
+      ownerPcts.length > 0
+        ? Math.round(ownerPcts.reduce((a, b) => a + b, 0) / ownerPcts.length)
+        : undefined,
+    renterOccupiedPct:
+      renterPcts.length > 0
+        ? Math.round(renterPcts.reduce((a, b) => a + b, 0) / renterPcts.length)
+        : undefined,
+    topGeneration,
+    topGenerationPct,
+    secondGeneration,
+    secondGenerationPct,
+    topLanguage,
+    topLanguagePct,
+    secondLanguage,
+    secondLanguagePct,
     dataSource: results[0]?.dataSource,
     year: results[0]?.year,
     lastUpdated: new Date().toISOString(),
