@@ -363,3 +363,14 @@ export {
   filterDemographicsByPolygon,
   getPolygonBounds,
 } from './utils/demographics/aggregate';
+
+// ZIP code utilities for demographics
+export type { ZipCentroid } from './utils/demographics/zipcode';
+export {
+  getZipForPoint,
+  findZipsInRadius,
+  filterZipsByPolygon,
+  findZipsInPolygon,
+  estimateTravelRadius,
+  clearZipCache,
+} from './utils/demographics/zipcode';

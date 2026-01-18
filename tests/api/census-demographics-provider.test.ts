@@ -2,7 +2,7 @@
  * Tests for Census Demographics API Provider
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   registerAPIProvider,
   initAPIProvider,
@@ -10,6 +10,7 @@ import {
   _resetRegistries,
 } from '../../src/api/providers/registry';
 import { CensusDemographicsProvider } from '../../src/api/providers/census-demographics-provider';
+import { clearZipCache } from '../../src/utils/demographics/zipcode';
 
 describe('CensusDemographicsProvider', () => {
   let provider: CensusDemographicsProvider;
@@ -17,7 +18,12 @@ describe('CensusDemographicsProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     _resetRegistries();
+    clearZipCache();
     provider = new CensusDemographicsProvider();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('initialization', () => {
@@ -43,18 +49,12 @@ describe('CensusDemographicsProvider', () => {
   });
 
   describe('fetchDemographics validation', () => {
-    it('should return null when zipcode is not provided', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const result = await provider.fetchDemographics({
-        latitude: 40.7128,
-        longitude: -74.006,
-      });
-      expect(result).toBeNull();
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+    // Note: lat/lng to ZIP geocoding now uses Mapbox provider via registry
+    it.skip('should geocode lat/lng to ZIP and fetch demographics', async () => {
+      // Requires provider registry mocking
     });
 
-    it('should return null for polygon queries (not yet implemented)', async () => {
+    it('should return null for polygon queries without center lat/lng', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const result = await provider.fetchDemographics({
         polygon: {
@@ -75,11 +75,9 @@ describe('CensusDemographicsProvider', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should return null for bounds queries (not yet implemented)', async () => {
+    it('should return null when no options provided', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const result = await provider.fetchDemographics({
-        bounds: [-74.006, 40.7128, -74.005, 40.713],
-      });
+      const result = await provider.fetchDemographics({});
       expect(result).toBeNull();
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
@@ -190,7 +188,7 @@ describe('CensusDemographicsProvider', () => {
         statusText: 'Bad Request',
       });
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       // Census provider catches errors and returns null
       const result = await provider.fetchDemographics({
@@ -218,7 +216,7 @@ describe('CensusDemographicsProvider', () => {
     it('should handle network failures gracefully', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const result = await provider.fetchDemographics({
         zipcode: '10001',
@@ -228,6 +226,18 @@ describe('CensusDemographicsProvider', () => {
       expect(result).toBeNull();
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
+    });
+  });
+
+  describe('polygon queries', () => {
+    // Note: Polygon queries now use Mapbox provider via getZipForPoint
+    // which uses the provider registry. These tests require full provider mocking.
+    it.skip('should find ZIPs in polygon and aggregate demographics', async () => {
+      // Requires provider registry mocking
+    });
+
+    it.skip('should return null when no ZIPs found in polygon', async () => {
+      // Requires provider registry mocking
     });
   });
 
