@@ -818,6 +818,11 @@ export class IsochroneElement extends MapChildElement {
       if (name === 'visible') {
         this.toggleVisibility();
       } else {
+        // Clear cache key to force re-fetch when attributes change
+        // This ensures the isochrone updates even if there's a timing issue
+        if (name === 'time' || name === 'mode') {
+          this.currentCacheKey = null;
+        }
         this.waitForStyleLoaded(() => this.fetchAndRenderIsochrone());
       }
     }
