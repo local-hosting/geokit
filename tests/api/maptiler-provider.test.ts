@@ -327,6 +327,171 @@ describe('MapTilerAPIProvider', () => {
     });
   });
 
+  describe('reverseGeocode validation', () => {
+    it('should throw error when not initialized with API key', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      await provider.initialize({});
+      consoleSpy.mockRestore();
+      await expect(provider.reverseGeocode({ lat: 40.7128, lng: -74.006 })).rejects.toThrow(
+        'MapTiler API Provider: No API key configured.'
+      );
+    });
+
+    it('should throw error when lat is invalid', async () => {
+      await provider.initialize({ apiKey: 'test-key' });
+      await expect(provider.reverseGeocode({ lat: NaN, lng: -74.006 })).rejects.toThrow(
+        'MapTiler API Provider: Valid lat/lng coordinates are required'
+      );
+    });
+
+    it('should throw error when lng is invalid', async () => {
+      await provider.initialize({ apiKey: 'test-key' });
+      await expect(
+        provider.reverseGeocode({ lat: 40.7128, lng: undefined as any })
+      ).rejects.toThrow('MapTiler API Provider: Valid lat/lng coordinates are required');
+    });
+  });
+
+  describe('reverseGeocode with mocked fetch', () => {
+    const mockReverseResponse = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [-74.006, 40.7128],
+          },
+          place_type: ['postal_code'],
+          text: '10001',
+          place_name: '10001, New York, NY, USA',
+          context: [
+            { id: 'municipality.123', text: 'New York' },
+            { id: 'region.456', text: 'New York' },
+            { id: 'country.789', text: 'United States', short_code: 'us' },
+          ],
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockReverseResponse),
+      } as Response);
+    });
+
+    it('should reverse geocode coordinates successfully', async () => {
+      await provider.initialize({ apiKey: 'test-api-key' });
+
+      const result = await provider.reverseGeocode({ lat: 40.7128, lng: -74.006 });
+
+      expect(result).toBeDefined();
+      expect(result?.postcode).toBe('10001');
+      expect(result?.city).toBe('New York');
+      expect(result?.state).toBe('New York');
+      expect(result?.countryCode).toBe('US');
+      expect(result?.coordinates).toEqual([-74.006, 40.7128]);
+      expect(fetch).toHaveBeenCalled();
+    });
+
+    it('should include coordinates in URL path', async () => {
+      await provider.initialize({ apiKey: 'test-api-key' });
+
+      await provider.reverseGeocode({ lat: 40.7128, lng: -74.006 });
+
+      const fetchCall = (fetch as any).mock.calls[0];
+      const url = new URL(fetchCall[0]);
+      expect(url.pathname).toContain('-74.006,40.7128');
+    });
+
+    it('should include API key in query params', async () => {
+      await provider.initialize({ apiKey: 'my-secret-key' });
+
+      await provider.reverseGeocode({ lat: 40.7128, lng: -74.006 });
+
+      const fetchCall = (fetch as any).mock.calls[0];
+      const url = new URL(fetchCall[0]);
+      expect(url.searchParams.get('key')).toBe('my-secret-key');
+    });
+
+    it('should map postcode type to postal_code', async () => {
+      await provider.initialize({ apiKey: 'test-api-key' });
+
+      await provider.reverseGeocode({ lat: 40.7128, lng: -74.006, types: ['postcode'] });
+
+      const fetchCall = (fetch as any).mock.calls[0];
+      const url = new URL(fetchCall[0]);
+      expect(url.searchParams.get('types')).toBe('postal_code');
+    });
+
+    it('should use cache for repeated requests', async () => {
+      await provider.initialize({ apiKey: 'test-api-key' });
+
+      const options = { lat: 40.7128, lng: -74.006 };
+
+      // First call
+      await provider.reverseGeocode(options);
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      // Second call with same options - should hit cache
+      await provider.reverseGeocode(options);
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      // Different coordinates - should fetch again
+      await provider.reverseGeocode({ lat: 34.0522, lng: -118.2437 });
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('should return null when no features found', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ type: 'FeatureCollection', features: [] }),
+      } as Response);
+
+      await provider.initialize({ apiKey: 'test-api-key' });
+
+      const result = await provider.reverseGeocode({ lat: 0, lng: 0 });
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('reverseGeocode error handling', () => {
+    beforeEach(async () => {
+      await provider.initialize({ apiKey: 'test-api-key' });
+    });
+
+    it('should handle 429 rate limiting', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        statusText: 'Too Many Requests',
+        json: () => Promise.resolve({}),
+      });
+
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      await expect(provider.reverseGeocode({ lat: 40.7128, lng: -74.006 })).rejects.toThrow(
+        'MapTiler API error: 429 - Too Many Requests'
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle API errors', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: () => Promise.resolve({ message: 'Invalid coordinates' }),
+      });
+
+      await expect(provider.reverseGeocode({ lat: 40.7128, lng: -74.006 })).rejects.toThrow(
+        'MapTiler API error: 400 Bad Request'
+      );
+    });
+  });
+
   describe('integration with registry', () => {
     it('should register and route geocoding capability', async () => {
       registerAPIProvider('maptiler', provider);
