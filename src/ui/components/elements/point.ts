@@ -26,6 +26,10 @@ export interface PointOptions {
   shadowColor?: string;
   shadowBlur?: number;
   shadowOpacity?: number;
+  glow?: boolean;
+  glowColor?: string;
+  glowOpacity?: number;
+  glowBlur?: number;
   pointId?: string;
   pointName?: string;
 }
@@ -45,6 +49,10 @@ export class PointElement extends MapChildElement {
     'shadow-color',
     'shadow-blur',
     'shadow-opacity',
+    'glow',
+    'glow-color',
+    'glow-opacity',
+    'glow-blur',
     'point-id',
     'point-name',
   ];
@@ -52,6 +60,7 @@ export class PointElement extends MapChildElement {
   private sourceId: string | null = null;
   private layerId: string | null = null;
   private shadowLayerId: string | null = null;
+  private glowLayerId: string | null = null;
   private popupInstance: { remove: () => void } | null = null;
   private selectionLayers: {
     selectionLayerId: string;
@@ -86,6 +95,10 @@ export class PointElement extends MapChildElement {
   private _propShadowColor?: string;
   private _propShadowBlur?: number;
   private _propShadowOpacity?: number;
+  private _propGlow?: boolean;
+  private _propGlowColor?: string;
+  private _propGlowOpacity?: number;
+  private _propGlowBlur?: number;
   private _propPointId?: string;
   private _propPointName?: string;
 
@@ -110,6 +123,12 @@ export class PointElement extends MapChildElement {
       if (options.shadowBlur !== undefined) this._propShadowBlur = options.shadowBlur;
       if (options.shadowOpacity !== undefined) this._propShadowOpacity = options.shadowOpacity;
     }
+    if (options.glow) {
+      this._propGlow = true;
+      if (options.glowColor) this._propGlowColor = options.glowColor;
+      if (options.glowOpacity !== undefined) this._propGlowOpacity = options.glowOpacity;
+      if (options.glowBlur !== undefined) this._propGlowBlur = options.glowBlur;
+    }
     if (options.pointId) this._propPointId = options.pointId;
     if (options.pointName) this._propPointName = options.pointName;
   }
@@ -131,6 +150,7 @@ export class PointElement extends MapChildElement {
         this.sourceId = `point-source-${uuid}`;
         this.layerId = `point-layer-${uuid}`;
         this.shadowLayerId = `point-shadow-${uuid}`;
+        this.glowLayerId = `point-glow-${uuid}`;
         this.hasGeneratedIds = true;
       }
 
@@ -295,6 +315,25 @@ export class PointElement extends MapChildElement {
     } catch (error) {
       console.error('[Point] Failed to add source:', error);
       return;
+    }
+
+    // Add glow layer if enabled (bottom layer - provides visual effect + larger hit area)
+    if (this.glow && this.glowLayerId) {
+      try {
+        this.map.addLayer({
+          id: this.glowLayerId,
+          type: 'circle',
+          source: this.sourceId,
+          paint: {
+            'circle-radius': this.getGlowRadiusExpression(),
+            'circle-color': this.glowColor,
+            'circle-opacity': this.glowOpacity,
+            'circle-blur': this.glowBlur,
+          },
+        });
+      } catch (error) {
+        console.error('[Point] Failed to add glow layer:', error);
+      }
     }
 
     // Add shadow layer if enabled
@@ -629,7 +668,7 @@ export class PointElement extends MapChildElement {
 
     // Cleanup layers
     this.cleanupMapLayers(
-      [this.layerId, this.shadowLayerId].filter(Boolean) as string[],
+      [this.layerId, this.shadowLayerId, this.glowLayerId].filter(Boolean) as string[],
       [this.sourceId].filter(Boolean) as string[]
     );
   }
@@ -688,6 +727,31 @@ export class PointElement extends MapChildElement {
     ];
   }
 
+  /**
+   * Get glow radius expression - larger than point for visual effect + hit area
+   * Uses exponential interpolation for smooth zoom transitions
+   */
+  private getGlowRadiusExpression(): unknown[] {
+    const scale = this.size / 6;
+    return [
+      'interpolate',
+      ['exponential', 1.5],
+      ['zoom'],
+      3,
+      Math.max(2, 3.5 * scale),
+      6,
+      Math.max(3, 5 * scale),
+      8,
+      Math.max(5, 8 * scale),
+      10,
+      Math.max(7, 11 * scale),
+      14,
+      Math.max(10, 14 * scale),
+      18,
+      Math.max(14, 18 * scale),
+    ];
+  }
+
   private updatePointStyle(): void {
     if (!this.map || !this.layerId) return;
 
@@ -723,8 +787,8 @@ export class PointElement extends MapChildElement {
         this.updatePointStyle();
       } else if (name === 'lat' || name === 'lng') {
         this.addPoint(); // Recreate for position changes
-      } else if (name?.startsWith('shadow')) {
-        this.addPoint(); // Recreate for shadow changes
+      } else if (name?.startsWith('shadow') || name?.startsWith('glow')) {
+        this.addPoint(); // Recreate for shadow/glow changes
       } else {
         this.addPoint();
       }
@@ -799,6 +863,27 @@ export class PointElement extends MapChildElement {
     return parseFloat(this.safeGetAttribute('shadow-opacity') || '0.4') || 0.4;
   }
 
+  get glow(): boolean {
+    if (this._propGlow !== undefined) return this._propGlow;
+    const glowAttr = this.safeGetAttribute('glow');
+    return glowAttr !== null && glowAttr !== 'false';
+  }
+
+  get glowColor(): string {
+    // Default to point color if not specified
+    return this._propGlowColor ?? this.safeGetAttribute('glow-color') ?? this.color;
+  }
+
+  get glowOpacity(): number {
+    if (this._propGlowOpacity !== undefined) return this._propGlowOpacity;
+    return parseFloat(this.safeGetAttribute('glow-opacity') || '0.15') || 0.15;
+  }
+
+  get glowBlur(): number {
+    if (this._propGlowBlur !== undefined) return this._propGlowBlur;
+    return parseFloat(this.safeGetAttribute('glow-blur') || '0.4') || 0.4;
+  }
+
   // Public API
   updatePosition(lat: number, lng: number): void {
     this._propLat = lat;
@@ -854,6 +939,10 @@ export class PointElement extends MapChildElement {
       shadowColor?: string;
       shadowBlur?: number;
       shadowOpacity?: number;
+      glow?: boolean;
+      glowColor?: string;
+      glowOpacity?: number;
+      glowBlur?: number;
       strokeWidth?: number;
       strokeColor?: string;
       idProperty?: string;
@@ -869,6 +958,10 @@ export class PointElement extends MapChildElement {
       shadowColor = '#000000',
       shadowBlur = 1,
       shadowOpacity = 0.15,
+      glow = false,
+      glowColor,
+      glowOpacity = 0.15,
+      glowBlur = 0.4,
       strokeWidth = 0,
       strokeColor = '#ffffff',
       idProperty = 'id',
@@ -896,6 +989,10 @@ export class PointElement extends MapChildElement {
         shadowColor,
         shadowBlur,
         shadowOpacity,
+        glow,
+        glowColor,
+        glowOpacity,
+        glowBlur,
         strokeWidth,
         strokeColor,
         pointId: feature.properties?.[idProperty]
