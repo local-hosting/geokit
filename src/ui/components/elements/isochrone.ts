@@ -66,7 +66,11 @@ export class IsochroneElement extends MapChildElement {
   protected override async onMapReady(): Promise<void> {
     // By the time onMapReady is called, the parent gk-map is fully initialized
     // No need to wait for style - it's already loaded
-    if (!this.map) return;
+    console.log('[Isochrone] onMapReady called, map:', !!this.map);
+    if (!this.map) {
+      console.warn('[Isochrone] onMapReady called but no map instance');
+      return;
+    }
 
     // Setup visibility observer to only fetch when element is visible
     this.setupVisibilityObserver();
@@ -490,9 +494,22 @@ export class IsochroneElement extends MapChildElement {
   }
 
   private async fetchAndRenderIsochrone(): Promise<void> {
-    if (!this.map) return;
+    console.log('[Isochrone] fetchAndRenderIsochrone called', {
+      hasMap: !!this.map,
+      visible: this.visible,
+      lat: this.getAttribute('lat'),
+      lng: this.getAttribute('lng'),
+    });
 
-    if (!this.visible) return;
+    if (!this.map) {
+      console.warn('[Isochrone] fetchAndRenderIsochrone: No map instance');
+      return;
+    }
+
+    if (!this.visible) {
+      console.log('[Isochrone] fetchAndRenderIsochrone: Not visible, skipping');
+      return;
+    }
 
     // Ensure IDs are initialized (in case connectedCallback hasn't completed)
     if (!this.sourceId) {
@@ -507,18 +524,38 @@ export class IsochroneElement extends MapChildElement {
     const time = this.time;
     const mode = this.mode;
 
-    if (isNaN(lat) || isNaN(lng)) return;
+    if (isNaN(lat) || isNaN(lng)) {
+      console.warn('[Isochrone] Invalid coordinates:', { lat, lng });
+      return;
+    }
 
     // Create cache key
     const cacheKey = `${lat},${lng},${time},${mode}`;
-    if (cacheKey === this.currentCacheKey) return; // Skip if same request
+    if (cacheKey === this.currentCacheKey) {
+      console.log('[Isochrone] Same cache key, skipping fetch');
+      return;
+    }
 
     this.currentCacheKey = cacheKey;
 
     // Get API provider that supports isochrone
     const provider = getProviderForCapability('isochrone');
+    console.log('[Isochrone] Provider for isochrone capability:', provider?.getName?.() || 'none');
     if (!provider) {
-      debug.warn('[Isochrone] No API provider supports isochrone capability');
+      console.error('[Isochrone] No API provider supports isochrone capability');
+      this.dispatchEvent(
+        new CustomEvent('isochrone-error', {
+          detail: {
+            error: new Error('No API provider supports isochrone capability'),
+            lat,
+            lng,
+            time,
+            mode,
+            element: this,
+          },
+          bubbles: true,
+        })
+      );
       return;
     }
 
