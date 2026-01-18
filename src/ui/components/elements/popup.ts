@@ -81,6 +81,8 @@ export interface PopupContentOptions {
   tags?: (string | PopupTag)[];
   /** Array of action links */
   actions?: PopupAction[];
+  /** Footer label displayed at bottom right (e.g., cohort type) */
+  footerLabel?: string;
 }
 
 export class PopupElement extends MapChildElement {
@@ -101,13 +103,14 @@ export class PopupElement extends MapChildElement {
   private static injectPopupStyles(): boolean {
     if (PopupElement.stylesInjected) return true;
 
-    const styleId = 'geokit-popup-styles';
-    if (typeof document !== 'undefined' && document.getElementById(styleId)) {
-      PopupElement.stylesInjected = true;
-      return true;
-    }
-
     if (typeof document === 'undefined') return false;
+
+    const styleId = 'geokit-popup-styles';
+    // Remove existing style element to allow HMR updates
+    const existingStyle = document.getElementById(styleId);
+    if (existingStyle) {
+      existingStyle.remove();
+    }
 
     const style = document.createElement('style');
     style.id = styleId;
@@ -196,10 +199,10 @@ export class PopupElement extends MapChildElement {
       .maplibregl-popup-content,
       .mapboxgl-popup-content {
         position: relative;
-        padding: 12px 32px 12px 14px;
+        padding: 12px 14px;
         border-radius: 6px;
-        min-width: 80px;
-        max-width: 300px;
+        min-width: 280px;
+        max-width: 400px;
         overflow-wrap: break-word;
         word-wrap: break-word;
       }
@@ -218,6 +221,7 @@ export class PopupElement extends MapChildElement {
       
       h4.geokit-popup-title {
         margin: 0 0 4px 0;
+        padding-right: 24px;
         font-weight: 700;
         color: #c9d1d9;
         font-size: 14px;
@@ -269,7 +273,13 @@ export class PopupElement extends MapChildElement {
         padding-top: 10px;
         border-top: 1px solid rgba(139, 148, 158, 0.2);
         display: flex;
+        align-items: center;
+        justify-content: space-between;
         gap: 6px;
+      }
+
+      .geokit-popup-actions-spacer {
+        flex: 1;
       }
 
       .geokit-popup-action {
@@ -308,6 +318,14 @@ export class PopupElement extends MapChildElement {
       .geokit-popup-action--text:hover {
         color: #79c0ff;
         text-decoration: underline;
+      }
+
+      .geokit-popup-footer-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: #6e7681;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
     `;
     document.head.appendChild(style);
@@ -552,7 +570,7 @@ export class PopupElement extends MapChildElement {
    * Allows consuming apps to fully customize popup content
    */
   public static buildPopupContentGeneric(options: PopupContentOptions): HTMLElement {
-    const { headline, subhead, tags, actions } = options;
+    const { headline, subhead, tags, actions, footerLabel } = options;
 
     // Create container element using only native DOM APIs
     const container = document.createElement('div');
@@ -615,38 +633,51 @@ export class PopupElement extends MapChildElement {
       }
     }
 
-    // Add action links
-    if (actions && actions.length > 0) {
+    // Add footer label and action links (on same line)
+    if ((actions && actions.length > 0) || footerLabel) {
       const actionsContainer = document.createElement('div');
       actionsContainer.setAttribute('class', 'geokit-popup-actions');
 
-      for (const action of actions) {
-        if (!action || !action.label || !action.href) continue;
+      // Add footer label first (on left)
+      if (footerLabel) {
+        const labelEl = document.createElement('span');
+        labelEl.setAttribute('class', 'geokit-popup-footer-label');
+        labelEl.textContent = footerLabel;
+        actionsContainer.appendChild(labelEl);
 
-        const linkEl = document.createElement('a');
-        const baseClass = action.svg
-          ? 'geokit-popup-action geokit-popup-action--icon'
-          : 'geokit-popup-action geokit-popup-action--text';
-        const fullClass = action.className ? `${baseClass} ${action.className}` : baseClass;
-        linkEl.setAttribute('class', fullClass);
-        linkEl.setAttribute('href', action.href);
-        linkEl.setAttribute('target', '_blank');
-        linkEl.setAttribute('rel', 'noopener noreferrer');
-        linkEl.setAttribute('title', action.label);
+        const spacer = document.createElement('span');
+        spacer.setAttribute('class', 'geokit-popup-actions-spacer');
+        actionsContainer.appendChild(spacer);
+      }
 
-        if (action.svg) {
-          // Use innerHTML for SVG content (trusted content from app)
-          linkEl.innerHTML = action.svg;
-        } else {
-          linkEl.textContent = action.label;
+      // Add action links (on right)
+      if (actions) {
+        for (const action of actions) {
+          if (!action || !action.label || !action.href) continue;
+
+          const linkEl = document.createElement('a');
+          const baseClass = action.svg
+            ? 'geokit-popup-action geokit-popup-action--icon'
+            : 'geokit-popup-action geokit-popup-action--text';
+          const fullClass = action.className ? `${baseClass} ${action.className}` : baseClass;
+          linkEl.setAttribute('class', fullClass);
+          linkEl.setAttribute('href', action.href);
+          linkEl.setAttribute('target', '_blank');
+          linkEl.setAttribute('rel', 'noopener noreferrer');
+          linkEl.setAttribute('title', action.label);
+
+          if (action.svg) {
+            // Use innerHTML for SVG content (trusted content from app)
+            linkEl.innerHTML = action.svg;
+          } else {
+            linkEl.textContent = action.label;
+          }
+
+          actionsContainer.appendChild(linkEl);
         }
-
-        actionsContainer.appendChild(linkEl);
       }
 
-      if (actionsContainer.hasChildNodes()) {
-        container.appendChild(actionsContainer);
-      }
+      container.appendChild(actionsContainer);
     }
 
     return container;
@@ -735,6 +766,74 @@ export class PopupElement extends MapChildElement {
     } catch (error) {
       console.error('[PopupElement] Failed to add popup to map:', error);
       return null;
+    }
+  }
+
+  /**
+   * Add tags to an existing popup
+   * Useful for adding async data (like demographics) after popup is shown
+   *
+   * @param popup - The popup instance returned from showPopupGeneric
+   * @param tags - Array of tags to add
+   */
+  public static addTagsToPopup(
+    popup: any,
+    tags: Array<{ label?: string; value: string } | string>
+  ): void {
+    if (!popup || !tags || tags.length === 0) return;
+
+    try {
+      const popupEl = popup.getElement?.();
+      if (!popupEl) return;
+
+      // Find or create the tags container
+      let tagsContainer = popupEl.querySelector('.geokit-popup-tags');
+      if (!tagsContainer) {
+        // Create tags container if it doesn't exist
+        const contentEl = popupEl.querySelector('.geokit-popup-content');
+        if (!contentEl) return;
+
+        tagsContainer = document.createElement('div');
+        tagsContainer.setAttribute('class', 'geokit-popup-tags');
+
+        // Insert before actions if they exist, otherwise append
+        const actionsEl = contentEl.querySelector('.geokit-popup-actions');
+        if (actionsEl) {
+          contentEl.insertBefore(tagsContainer, actionsEl);
+        } else {
+          contentEl.appendChild(tagsContainer);
+        }
+      }
+
+      // Add each tag
+      for (const tagItem of tags) {
+        if (!tagItem) continue;
+
+        const tagEl = document.createElement('span');
+        tagEl.setAttribute('class', 'geokit-popup-tag');
+
+        if (typeof tagItem === 'string') {
+          tagEl.textContent = tagItem;
+        } else {
+          if (tagItem.label) {
+            const labelEl = document.createElement('span');
+            labelEl.setAttribute('class', 'geokit-popup-tag-label');
+            labelEl.textContent = tagItem.label + ' ';
+            tagEl.appendChild(labelEl);
+
+            const valueEl = document.createElement('span');
+            valueEl.setAttribute('class', 'geokit-popup-tag-value');
+            valueEl.textContent = tagItem.value;
+            tagEl.appendChild(valueEl);
+          } else {
+            tagEl.textContent = tagItem.value;
+          }
+        }
+
+        tagsContainer.appendChild(tagEl);
+      }
+    } catch (error) {
+      console.warn('[PopupElement] Failed to add tags to popup:', error);
     }
   }
 
