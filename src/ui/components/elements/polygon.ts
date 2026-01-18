@@ -39,7 +39,6 @@ export class PolygonElement extends MapChildElement {
   private sourceId: string = '';
   private layerId: string = '';
   private strokeLayerId: string = '';
-  private _styleWaitSetup: boolean = false;
 
   // Store options as properties (works in JSDOM without setAttribute issues)
   private _propPoints?: number[][];
@@ -98,39 +97,23 @@ export class PolygonElement extends MapChildElement {
       return;
     }
 
-    // Function to attempt creating the polygon
-    const tryCreatePolygon = () => {
+    // Style is already ready (waited in waitForMapStyleReady), so create immediately
+    // Use requestAnimationFrame to batch layer creation with other polygons
+    // This prevents blocking the main thread when many polygons are added at once
+    requestAnimationFrame(() => {
       if (!this.map) return;
 
-      // Check if polygon layer already exists
-      if (this.map.getLayer?.(this.layerId)) return;
+      // Check if polygon layer already exists (might have been created during wait)
+      if (this.map.getLayer?.(this.layerId)) {
+        return; // Already created
+      }
 
       try {
         this.createPolygon();
       } catch (error) {
-        console.error('[Polygon] Error creating polygon:', error);
+        console.error(`[Polygon ${this.layerId}] Error creating polygon:`, error);
       }
-    };
-
-    // Wait for style to be loaded
-    if (!this._styleWaitSetup) {
-      this._styleWaitSetup = true;
-      this.waitForStyleLoaded(() => {
-        this._styleWaitSetup = false;
-        tryCreatePolygon();
-      });
-    }
-
-    // Set up a fallback timeout only if style is not loaded
-    const map = this.map as any;
-    const isStyleLoaded = map.isStyleLoaded && map.isStyleLoaded();
-    if (!isStyleLoaded) {
-      setTimeout(() => {
-        if (this.map && !this.map.getLayer?.(this.layerId)) {
-          tryCreatePolygon();
-        }
-      }, 3000);
-    }
+    });
   }
 
   /**
@@ -185,7 +168,7 @@ export class PolygonElement extends MapChildElement {
       // Normalize to [lat, lng] format first
       coordinates = normalizeCoordinatesArray(coordinates, 'latlon', 'auto');
     } catch (error) {
-      console.error('Polygon: Invalid points format', error);
+      debug.warn('[Polygon] Invalid points format', error);
       return;
     }
 
@@ -345,7 +328,6 @@ export class PolygonElement extends MapChildElement {
   protected onMapUnload(): void {
     super.onMapUnload();
     this.cleanupMapLayers([this.layerId, this.strokeLayerId], [this.sourceId]);
-    this._styleWaitSetup = false;
   }
 
   disconnectedCallback(): void {

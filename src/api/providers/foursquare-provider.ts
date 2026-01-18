@@ -16,6 +16,8 @@ import {
   type APICapability,
   type PlaceSearchOptions,
   type PlaceSearchResult,
+  type BehavioralOptions,
+  type BehavioralResult,
 } from './types';
 
 interface CacheEntry {
@@ -69,7 +71,7 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
   }
 
   getCapabilities(): APICapability[] {
-    return ['placeSearch'];
+    return ['placeSearch', 'behavioral'];
   }
 
   /**
@@ -161,7 +163,17 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
     cacheKey: string,
     retryCount = 0
   ): Promise<PlaceSearchResult[]> {
-    const { query, ll, radius, categories, limit = 10, sort, openNow, minPrice, maxPrice } = options;
+    const {
+      query,
+      ll,
+      radius,
+      categories,
+      limit = 10,
+      sort,
+      openNow,
+      minPrice,
+      maxPrice,
+    } = options;
 
     try {
       // Build API URL - Foursquare Places API v3
@@ -203,7 +215,10 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
       }
 
       // Add fields to get more details
-      url.searchParams.set('fields', 'fsq_id,name,geocodes,location,categories,distance,rating,price,hours,tel,website');
+      url.searchParams.set(
+        'fields',
+        'fsq_id,name,geocodes,location,categories,distance,rating,price,hours,tel,website'
+      );
 
       const response = await fetch(url.toString(), {
         headers: {
@@ -373,5 +388,72 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
     this.cacheHits = 0;
     this.cacheMisses = 0;
   }
-}
 
+  /**
+   * Fetch behavioral data for a venue
+   * Provides popularity, ratings, and visit patterns from Foursquare
+   */
+  async fetchBehavioral(options: BehavioralOptions): Promise<BehavioralResult | null> {
+    if (!this.apiKey) {
+      throw new Error('Foursquare API Provider: No API key configured.');
+    }
+
+    try {
+      let placeId = options.placeId;
+
+      // If no place ID, search for it
+      if (!placeId && (options.name || options.address)) {
+        const searchResults = await this.placeSearch({
+          query: options.name || options.address,
+          ll: [options.longitude, options.latitude],
+          limit: 1,
+        });
+
+        if (searchResults.length > 0) {
+          placeId = searchResults[0].id;
+        }
+      }
+
+      if (!placeId) {
+        console.warn('[Foursquare] Place ID not found for behavioral data');
+        return null;
+      }
+
+      // Get detailed place data including popularity and stats
+      const url = `https://api.foursquare.com/v3/places/${placeId}?fields=fsq_id,name,rating,popularity,stats,price,location`;
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: this.apiKey,
+          Accept: 'application/json',
+        },
+      });
+
+      if (response.status === 429) {
+        // Rate limited - retry with exponential backoff
+        await this.delay(this.RETRY_DELAY_MS);
+        return this.fetchBehavioral(options);
+      }
+
+      if (!response.ok) {
+        throw new Error(`Foursquare API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      return {
+        popularity: {
+          popularityScore: data.popularity?.total || undefined,
+          rating: data.rating,
+          reviewCount: data.stats?.total_ratings || undefined,
+          checkInCount: data.stats?.total_checkins || undefined,
+        },
+        dataSource: 'foursquare',
+        lastUpdated: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('[Foursquare] Error fetching behavioral data:', error);
+      return null;
+    }
+  }
+}

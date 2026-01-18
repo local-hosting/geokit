@@ -11,7 +11,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 // Load API keys from environment
-const MAPTILER_KEY = process.env.MAPTILER_API_KEY;
+const MAPTILER_KEY = process.env.MAPTILER_KEY;
 
 // Mock Mapbox GL JS
 class MockMap {

@@ -22,6 +22,18 @@ export class BaseElement extends HTMLElement {
   protected mapElement: HTMLElement | null = null;
   protected isInitialized: boolean = false;
   private _controlAddedToMap: boolean = false;
+  private _waitingForTransform: boolean = false;
+
+  // Shared style-ready cache per map instance
+  // This allows multiple elements to share the same style-ready promise
+  private static _styleReadyCache = new WeakMap<
+    MapInstance,
+    {
+      promise: Promise<void> | null;
+      callbacks: Set<() => void>;
+      listenersSetup: boolean;
+    }
+  >();
 
   /**
    * Override this method in subclasses to create the specific control
@@ -91,7 +103,7 @@ export class BaseElement extends HTMLElement {
   /**
    * Wait for map style to be loaded before executing callback
    * Prevents "Style is not done loading" errors
-   * Handles race conditions when multiple elements wait simultaneously
+   * Optimized: Uses shared cache per map instance so multiple elements share the same promise
    */
   protected waitForStyleLoaded(callback: () => void): void {
     if (!this.map) {
@@ -115,44 +127,97 @@ export class BaseElement extends HTMLElement {
       return;
     }
 
-    // Style not loaded yet - wait for it
-    // Listen for both 'load' and 'style.load' events to handle all cases
-    let callbackFired = false;
-    const fireCallback = () => {
-      if (callbackFired || !this.map) {
-        return;
-      }
+    // Get or create shared cache for this map instance
+    let cache = BaseElement._styleReadyCache.get(this.map);
+    if (!cache) {
+      cache = {
+        promise: null,
+        callbacks: new Set(),
+        listenersSetup: false,
+      };
+      BaseElement._styleReadyCache.set(this.map, cache);
+    }
 
-      // Double-check style is loaded (defensive)
-      const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
-      const styleLoaded = isStyleLoaded && isStyleLoaded.call(this.map);
+    // Add callback to shared set
+    cache.callbacks.add(callback);
 
-      if (styleLoaded) {
-        callbackFired = true;
-        // Remove listeners to prevent multiple calls
-        if (this.map.off) {
-          this.map.off('load', loadHandler);
-          this.map.off('style.load', styleLoadHandler);
+    // If listeners aren't set up yet, create shared promise and set up listeners once
+    if (!cache.listenersSetup) {
+      cache.listenersSetup = true;
+
+      cache.promise = new Promise<void>((resolve) => {
+        const fireAllCallbacks = () => {
+          // Double-check style is loaded
+          const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
+          const styleLoaded = isStyleLoaded && isStyleLoaded.call(this.map);
+
+          if (styleLoaded && cache) {
+            // Store callbacks before clearing (they might be added during iteration)
+            const callbacksToExecute = Array.from(cache.callbacks);
+            cache.callbacks.clear();
+
+            // Execute all queued callbacks
+            callbacksToExecute.forEach((cb) => {
+              try {
+                cb();
+              } catch (err) {
+                debug.warn('[BaseElement] Error in style-ready callback:', err);
+              }
+            });
+            resolve();
+          }
+        };
+
+        const loadHandler = () => {
+          fireAllCallbacks();
+        };
+
+        const styleLoadHandler = () => {
+          fireAllCallbacks();
+        };
+
+        // Register listeners once for all elements
+        if (this.map) {
+          if (this.map.on) {
+            this.map.on('load', loadHandler);
+            this.map.on('style.load', styleLoadHandler);
+          } else {
+            // Fallback if 'on' method doesn't exist
+            if (this.map.once) {
+              this.map.once('load', () => {
+                fireAllCallbacks();
+              });
+            }
+          }
         }
-        callback();
-      }
-    };
+      });
 
-    const loadHandler = () => {
-      fireCallback();
-    };
-
-    const styleLoadHandler = () => {
-      fireCallback();
-    };
-
-    // Register listeners - 'on' ensures all registered listeners fire
-    if (this.map.on) {
-      this.map.on('load', loadHandler);
-      this.map.on('style.load', styleLoadHandler);
-    } else {
-      // Fallback if 'on' method doesn't exist
-      this.map.once('load', callback);
+      // When promise resolves, execute callback (it's already been executed in fireAllCallbacks)
+      // But keep this as a fallback in case the promise resolves before callback is added
+      cache.promise.then(() => {
+        // Callback should already be executed, but check if it wasn't
+        if (cache && cache.callbacks.has(callback)) {
+          try {
+            callback();
+            cache.callbacks.delete(callback);
+          } catch (err) {
+            debug.warn('[BaseElement] Error in style-ready callback (fallback):', err);
+          }
+        }
+      });
+    } else if (cache.promise) {
+      // Listeners already set up, just wait for existing promise
+      cache.promise.then(() => {
+        // Callback should already be executed, but check if it wasn't
+        if (cache && cache.callbacks.has(callback)) {
+          try {
+            callback();
+            cache.callbacks.delete(callback);
+          } catch (err) {
+            debug.warn('[BaseElement] Error in style-ready callback (promise):', err);
+          }
+        }
+      });
     }
   }
 
@@ -265,7 +330,7 @@ export class BaseElement extends HTMLElement {
   /**
    * Wait for map load event to ensure all internal APIs are ready
    * This is especially important for MapTiler SDK controls which need
-   * the map to be fully initialized with all internal properties
+   * the map to be fully initialized with all internal properties including transform/projection
    */
   private waitForMapLoad(): Promise<void> {
     return new Promise((resolve) => {
@@ -280,27 +345,79 @@ export class BaseElement extends HTMLElement {
       const loadedResult = mapLoaded ? mapLoaded.call(this.map) : false;
       const styleLoadedResult = isStyleLoaded ? isStyleLoaded.call(this.map) : false;
 
-      // If map and style are already loaded, resolve immediately
-      if (loadedResult && styleLoadedResult) {
+      const mapAny = this.map as any;
+
+      // Check if map's transform/projection is ready (MapTiler SDK specific)
+      // This prevents "Cannot read properties of null (reading 'getProjection')" errors
+      const isTransformReady =
+        mapAny._transform ||
+        mapAny.transform ||
+        (mapAny._map && (mapAny._map._transform || mapAny._map.transform));
+
+      // If map and style are already loaded AND transform is ready, resolve immediately
+      if (loadedResult && styleLoadedResult && isTransformReady) {
         resolve();
         return;
       }
 
       // Check for internal _loaded flag (MapLibre GL specific)
       // This handles the case where the 'load' event already fired
-      const mapAny = this.map as any;
       if (mapAny._loaded || mapAny._styleDirty === false) {
+        // Even if loaded, wait for idle to ensure transform is ready
+        // This is critical for MapTiler SDK controls
+        const mapOnce = (this.map as { once?: (event: string, handler: () => void) => void }).once;
+        if (mapOnce) {
+          let resolved = false;
+          const timeout = setTimeout(() => {
+            if (!resolved) {
+              resolved = true;
+              resolve();
+            }
+          }, 500);
+
+          mapOnce.call(this.map, 'idle', () => {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timeout);
+              resolve();
+            }
+          });
+          return;
+        }
         resolve();
         return;
       }
 
-      // Wait for load event with timeout fallback
-      // If 'load' already fired, we'll hit the timeout
+      // Wait for load event, then idle event to ensure transform is ready
+      // The 'idle' event fires after the map has finished rendering and transform is initialized
       const mapOnce = (this.map as { once?: (event: string, handler: () => void) => void }).once;
-      if (mapOnce) {
+      const mapOn = (this.map as { on?: (event: string, handler: () => void) => void }).on;
+
+      if (mapOnce && mapOn) {
         let resolved = false;
 
-        // Timeout fallback - if event doesn't fire in 100ms, assume map is ready
+        // Timeout fallback - if events don't fire in 2 seconds, assume map is ready
+        const timeout = setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            resolve();
+          }
+        }, 2000);
+
+        // First wait for load event
+        mapOnce.call(this.map, 'load', () => {
+          // Then wait for idle event to ensure transform/projection is ready
+          mapOnce.call(this.map, 'idle', () => {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timeout);
+              resolve();
+            }
+          });
+        });
+      } else if (mapOnce) {
+        // Fallback: just wait for load if on() is not available
+        let resolved = false;
         const timeout = setTimeout(() => {
           if (!resolved) {
             resolved = true;
@@ -329,6 +446,34 @@ export class BaseElement extends HTMLElement {
    */
   protected addControlToMap(): void {
     if (!this.map || !this.control) return;
+
+    // Safety check: Verify map's transform/projection is ready (MapTiler SDK requirement)
+    // This prevents "Cannot read properties of null (reading 'getProjection')" errors
+    const mapAny = this.map as any;
+    const isTransformReady =
+      mapAny._transform ||
+      mapAny.transform ||
+      (mapAny._map && (mapAny._map._transform || mapAny._map.transform));
+
+    // If transform is not ready, wait for idle event before adding control
+    // Use flag to prevent multiple simultaneous waits
+    if (!isTransformReady && !this._waitingForTransform) {
+      const mapOnce = (this.map as { once?: (event: string, handler: () => void) => void }).once;
+      if (mapOnce) {
+        this._waitingForTransform = true;
+        mapOnce.call(this.map, 'idle', () => {
+          this._waitingForTransform = false;
+          // Retry adding control after idle event
+          this.addControlToMap();
+        });
+        return;
+      }
+    }
+
+    // If we're still waiting for transform, don't proceed yet
+    if (this._waitingForTransform) {
+      return;
+    }
 
     const position = this.getAttribute('position') || this.getDefaultPosition();
     const addControlMethod = (
@@ -501,6 +646,40 @@ export class BaseElement extends HTMLElement {
         })
       );
     });
+  }
+
+  /**
+   * Utility: Set up cursor pointer handling for a layer
+   * This can be used independently of setupLayerInteractivity
+   * @param layerId - Layer ID to attach cursor handlers to
+   * @param cursor - Cursor style (default: 'pointer')
+   * @returns Cleanup function to remove event listeners
+   */
+  protected setupLayerCursor(layerId: string, cursor: string = 'pointer'): (() => void) | null {
+    if (!this.map || !layerId) return null;
+
+    const mouseEnterHandler = () => {
+      const canvas = this.map?.getCanvas?.();
+      if (canvas) {
+        canvas.style.cursor = cursor;
+      }
+    };
+
+    const mouseLeaveHandler = () => {
+      const canvas = this.map?.getCanvas?.();
+      if (canvas) {
+        canvas.style.cursor = '';
+      }
+    };
+
+    this.map.on('mouseenter', layerId, mouseEnterHandler);
+    this.map.on('mouseleave', layerId, mouseLeaveHandler);
+
+    // Return cleanup function
+    return () => {
+      this.map?.off('mouseenter', layerId, mouseEnterHandler);
+      this.map?.off('mouseleave', layerId, mouseLeaveHandler);
+    };
   }
 
   /**
