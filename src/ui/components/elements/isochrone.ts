@@ -66,7 +66,6 @@ export class IsochroneElement extends MapChildElement {
   protected override async onMapReady(): Promise<void> {
     // By the time onMapReady is called, the parent gk-map is fully initialized
     // No need to wait for style - it's already loaded
-    console.log('[Isochrone] onMapReady called, map:', !!this.map);
     if (!this.map) {
       console.warn('[Isochrone] onMapReady called but no map instance');
       return;
@@ -494,22 +493,8 @@ export class IsochroneElement extends MapChildElement {
   }
 
   private async fetchAndRenderIsochrone(): Promise<void> {
-    console.log('[Isochrone] fetchAndRenderIsochrone called', {
-      hasMap: !!this.map,
-      visible: this.visible,
-      lat: this.getAttribute('lat'),
-      lng: this.getAttribute('lng'),
-    });
-
-    if (!this.map) {
-      console.warn('[Isochrone] fetchAndRenderIsochrone: No map instance');
-      return;
-    }
-
-    if (!this.visible) {
-      console.log('[Isochrone] fetchAndRenderIsochrone: Not visible, skipping');
-      return;
-    }
+    if (!this.map) return;
+    if (!this.visible) return;
 
     // Ensure IDs are initialized (in case connectedCallback hasn't completed)
     if (!this.sourceId) {
@@ -531,16 +516,12 @@ export class IsochroneElement extends MapChildElement {
 
     // Create cache key
     const cacheKey = `${lat},${lng},${time},${mode}`;
-    if (cacheKey === this.currentCacheKey) {
-      console.log('[Isochrone] Same cache key, skipping fetch');
-      return;
-    }
+    if (cacheKey === this.currentCacheKey) return;
 
     this.currentCacheKey = cacheKey;
 
     // Get API provider that supports isochrone
     const provider = getProviderForCapability('isochrone');
-    console.log('[Isochrone] Provider for isochrone capability:', provider?.getName?.() || 'none');
     if (!provider) {
       console.error('[Isochrone] No API provider supports isochrone capability');
       this.dispatchEvent(
