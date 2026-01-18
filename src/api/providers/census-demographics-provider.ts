@@ -18,6 +18,7 @@ import {
   type APICapability,
   type DemographicsOptions,
   type DemographicsResult,
+  type DemographicField,
 } from './types';
 import {
   findZipsInPolygon,
@@ -27,6 +28,103 @@ import {
 import { aggregateDemographics } from '../../utils/demographics/aggregate';
 import { ProviderCache, roundForCacheKey, type CacheStats } from './cache';
 import type { Polygon, MultiPolygon } from 'geojson';
+
+// ============================================================================
+// Census API Configuration
+// ============================================================================
+
+const CENSUS_BASE_URL = 'https://api.census.gov/data/2023/acs/acs5';
+const DEFAULT_FIELDS: DemographicField[] = ['basic', 'age', 'language'];
+
+/** Census API variable groups by field type */
+const CENSUS_VARIABLES: Record<DemographicField, string[]> = {
+  basic: [
+    'NAME',
+    'B01001_001E', // Total population
+    'B19013_001E', // Median household income
+    'B25077_001E', // Median home value
+    'B25064_001E', // Median gross rent
+    'B01002_001E', // Median age
+    'B25010_001E', // Average household size
+    'B25003_001E', // Total occupied housing units
+    'B25003_002E', // Owner-occupied
+    'B25003_003E', // Renter-occupied
+  ],
+  age: [
+    // Male age groups
+    'B01001_005E',
+    'B01001_006E',
+    'B01001_007E',
+    'B01001_008E',
+    'B01001_009E',
+    'B01001_010E',
+    'B01001_011E',
+    'B01001_012E',
+    'B01001_013E',
+    'B01001_014E',
+    'B01001_015E',
+    'B01001_016E',
+    'B01001_017E',
+    'B01001_018E',
+    'B01001_019E',
+    'B01001_020E',
+    'B01001_021E',
+    'B01001_022E',
+    'B01001_023E',
+    // Female age groups
+    'B01001_029E',
+    'B01001_030E',
+    'B01001_031E',
+    'B01001_032E',
+    'B01001_033E',
+    'B01001_034E',
+    'B01001_035E',
+    'B01001_036E',
+    'B01001_037E',
+    'B01001_038E',
+    'B01001_039E',
+    'B01001_040E',
+    'B01001_041E',
+    'B01001_042E',
+    'B01001_043E',
+    'B01001_044E',
+    'B01001_045E',
+    'B01001_046E',
+    'B01001_047E',
+  ],
+  language: [
+    'C16001_001E', // Total population 5+
+    'C16001_002E', // English only
+    'C16001_003E', // Spanish
+    'C16001_006E', // French
+    'C16001_009E', // German
+    'C16001_012E', // Slavic
+    'C16001_015E', // Other Indo-European
+    'C16001_018E', // Korean
+    'C16001_021E', // Chinese
+    'C16001_024E', // Vietnamese
+    'C16001_027E', // Tagalog
+    'C16001_030E', // Other Asian/Pacific
+    'C16001_033E', // Arabic
+    'C16001_036E', // Other
+  ],
+  ethnicity: [
+    'B02001_001E', // Total population
+    'B02001_002E', // White
+    'B02001_003E', // Black
+    'B02001_004E', // Native American
+    'B02001_005E', // Asian
+    'B02001_006E', // Pacific Islander
+    'B02001_007E', // Other
+    'B02001_008E', // Two or more
+    'B03003_001E', // Hispanic origin total
+    'B03003_003E', // Hispanic or Latino
+  ],
+};
+
+// ============================================================================
+// Census Response Parser
+// ============================================================================
 
 /**
  * Generate a cache key for a polygon based on its coordinates
@@ -101,157 +199,66 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
 
   /**
    * Fetch demographic data for a single ZIP code (with caching)
+   * @param zipcode - ZIP code to fetch
+   * @param fields - Which data fields to include (default: basic, age, language)
    */
-  async fetchZipDemographics(zipcode: string): Promise<DemographicsResult | null> {
-    // Check cache first
-    const cached = this.zipCache.get(zipcode);
+  async fetchZipDemographics(
+    zipcode: string,
+    fields: DemographicField[] = DEFAULT_FIELDS
+  ): Promise<DemographicsResult | null> {
+    // Check cache first (cache key includes fields)
+    const cacheKey = `${zipcode}:${fields.sort().join(',')}`;
+    const cached = this.zipCache.get(cacheKey);
     if (cached) {
       return cached;
     }
 
     try {
-      // Split into two requests to stay under Census API variable limit (~50)
-      const basicVariables = [
-        'NAME',
-        'B01001_001E', // Total population
-        'B19013_001E', // Median household income
-        'B25077_001E', // Median home value
-        'B25064_001E', // Median gross rent
-        'B01002_001E', // Median age
-        'B25010_001E', // Average household size
-        'B25003_001E', // Total occupied housing units
-        'B25003_002E', // Owner-occupied housing units
-        'B25003_003E', // Renter-occupied housing units
-      ].join(',');
-
-      const ageVariables = [
-        // Age groups for generation calculation (Male)
-        'B01001_005E', // 10-14
-        'B01001_006E', // 15-17
-        'B01001_007E', // 18-19
-        'B01001_008E', // 20
-        'B01001_009E', // 21
-        'B01001_010E', // 22-24
-        'B01001_011E', // 25-29
-        'B01001_012E', // 30-34
-        'B01001_013E', // 35-39
-        'B01001_014E', // 40-44
-        'B01001_015E', // 45-49
-        'B01001_016E', // 50-54
-        'B01001_017E', // 55-59
-        'B01001_018E', // 60-61
-        'B01001_019E', // 62-64
-        'B01001_020E', // 65-66
-        'B01001_021E', // 67-69
-        'B01001_022E', // 70-74
-        'B01001_023E', // 75-79
-        // Age groups for generation calculation (Female)
-        'B01001_029E', // 10-14
-        'B01001_030E', // 15-17
-        'B01001_031E', // 18-19
-        'B01001_032E', // 20
-        'B01001_033E', // 21
-        'B01001_034E', // 22-24
-        'B01001_035E', // 25-29
-        'B01001_036E', // 30-34
-        'B01001_037E', // 35-39
-        'B01001_038E', // 40-44
-        'B01001_039E', // 45-49
-        'B01001_040E', // 50-54
-        'B01001_041E', // 55-59
-        'B01001_042E', // 60-61
-        'B01001_043E', // 62-64
-        'B01001_044E', // 65-66
-        'B01001_045E', // 67-69
-        'B01001_046E', // 70-74
-        'B01001_047E', // 75-79
-      ].join(',');
-
-      // Language spoken at home (C16001 collapsed table)
-      const languageVariables = [
-        'C16001_001E', // Total population 5 years and over
-        'C16001_002E', // Speak only English
-        'C16001_003E', // Spanish
-        'C16001_006E', // French, Haitian, or Cajun
-        'C16001_009E', // German or other West Germanic
-        'C16001_012E', // Russian, Polish, or other Slavic
-        'C16001_015E', // Other Indo-European
-        'C16001_018E', // Korean
-        'C16001_021E', // Chinese (incl. Mandarin, Cantonese)
-        'C16001_024E', // Vietnamese
-        'C16001_027E', // Tagalog (incl. Filipino)
-        'C16001_030E', // Other Asian and Pacific Island
-        'C16001_033E', // Arabic
-        'C16001_036E', // Other languages
-      ].join(',');
-
-      const baseUrl = 'https://api.census.gov/data/2023/acs/acs5';
       const forClause = `for=zip%20code%20tabulation%20area:${zipcode}`;
 
-      // Fetch all requests in parallel
-      const [basicResponse, ageResponse, langResponse] = await Promise.all([
-        fetch(`${baseUrl}?get=${basicVariables}&${forClause}`),
-        fetch(`${baseUrl}?get=${ageVariables}&${forClause}`),
-        fetch(`${baseUrl}?get=${languageVariables}&${forClause}`),
-      ]);
+      // Fetch only requested field groups in parallel
+      const fetchPromises = fields.map((field) =>
+        fetch(`${CENSUS_BASE_URL}?get=${CENSUS_VARIABLES[field].join(',')}&${forClause}`)
+      );
 
-      if (!basicResponse.ok) {
-        throw new Error(`Census API error: ${basicResponse.statusText}`);
-      }
-
-      const basicData = await basicResponse.json();
-
-      // Parse Census API response (it returns arrays, not objects)
-      if (!Array.isArray(basicData) || basicData.length < 2) {
+      if (fetchPromises.length === 0) {
         return null;
       }
 
-      const basicHeaders = basicData[0] as string[];
-      const basicValues = basicData[1] as string[];
+      const responses = await Promise.all(fetchPromises);
 
-      // Parse age data if available
-      let ageHeaders: string[] = [];
-      let ageValues: string[] = [];
-      if (ageResponse.ok) {
-        const ageData = await ageResponse.json();
-        if (Array.isArray(ageData) && ageData.length >= 2) {
-          ageHeaders = ageData[0] as string[];
-          ageValues = ageData[1] as string[];
+      // Check for errors
+      for (const response of responses) {
+        if (!response.ok) {
+          throw new Error(`Census API error: ${response.statusText}`);
         }
       }
 
-      // Parse language data if available
-      let langHeaders: string[] = [];
-      let langValues: string[] = [];
-      if (langResponse.ok) {
-        const langData = await langResponse.json();
-        if (Array.isArray(langData) && langData.length >= 2) {
-          langHeaders = langData[0] as string[];
-          langValues = langData[1] as string[];
+      // Parse all responses and merge into single lookup
+      const parsedData = await Promise.all(responses.map((r) => r.json()));
+      const allHeaders: string[] = [];
+      const allValues: string[] = [];
+
+      for (const data of parsedData) {
+        if (Array.isArray(data) && data.length >= 2) {
+          allHeaders.push(...(data[0] as string[]));
+          allValues.push(...(data[1] as string[]));
         }
+      }
+
+      // Return null if no valid data was parsed
+      if (allHeaders.length === 0) {
+        return null;
       }
 
       const getValue = (varName: string): number | undefined => {
-        // Check basic data first
-        let index = basicHeaders.indexOf(varName);
-        if (index !== -1) {
-          const value = parseFloat(basicValues[index]);
-          return isNaN(value) ? undefined : value;
-        }
-        // Then check age data
-        index = ageHeaders.indexOf(varName);
-        if (index !== -1) {
-          const value = parseFloat(ageValues[index]);
-          return isNaN(value) ? undefined : value;
-        }
-        // Then check language data
-        index = langHeaders.indexOf(varName);
-        if (index !== -1) {
-          const value = parseFloat(langValues[index]);
-          return isNaN(value) ? undefined : value;
-        }
-        return undefined;
+        const index = allHeaders.indexOf(varName);
+        if (index === -1) return undefined;
+        const value = parseFloat(allValues[index]);
+        return isNaN(value) ? undefined : value;
       };
+
+      const includeEthnicity = fields.includes('ethnicity');
 
       // Calculate owner vs renter percentages
       const totalHousingUnits = getValue('B25003_001E');
@@ -375,6 +382,49 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
         }
       }
 
+      // Calculate top two ethnicities (only if ethnicity data was requested)
+      let topEthnicity: string | undefined;
+      let topEthnicityPct: number | undefined;
+      let secondEthnicity: string | undefined;
+      let secondEthnicityPct: number | undefined;
+
+      if (includeEthnicity) {
+        const racePop = getValue('B02001_001E') || 0;
+        const hispanicPop = getValue('B03003_003E') || 0;
+
+        if (racePop > 0) {
+          const whitePop = getValue('B02001_002E') || 0;
+          const nonHispanicWhite = Math.max(0, whitePop - hispanicPop * 0.9);
+
+          const ethnicities = [
+            { name: 'White', count: nonHispanicWhite },
+            { name: 'Hispanic', count: hispanicPop },
+            { name: 'Black', count: getValue('B02001_003E') || 0 },
+            { name: 'Asian', count: getValue('B02001_005E') || 0 },
+            { name: 'Mixed', count: getValue('B02001_008E') || 0 },
+            {
+              name: 'Native',
+              count: (getValue('B02001_004E') || 0) + (getValue('B02001_006E') || 0),
+            },
+          ];
+
+          const sortedEthnicities = ethnicities
+            .filter((e) => e.count > 0)
+            .sort((a, b) => b.count - a.count);
+
+          if (sortedEthnicities.length > 0) {
+            const top = sortedEthnicities[0];
+            topEthnicity = top.name;
+            topEthnicityPct = Math.round((top.count / racePop) * 100);
+          }
+          if (sortedEthnicities.length > 1) {
+            const second = sortedEthnicities[1];
+            secondEthnicity = second.name;
+            secondEthnicityPct = Math.round((second.count / racePop) * 100);
+          }
+        }
+      }
+
       const result: DemographicsResult = {
         totalPopulation: getValue('B01001_001E'),
         medianHouseholdIncome: getValue('B19013_001E'),
@@ -392,6 +442,10 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
         topLanguagePct,
         secondLanguage,
         secondLanguagePct,
+        topEthnicity,
+        topEthnicityPct,
+        secondEthnicity,
+        secondEthnicityPct,
         zipcode,
         dataSource: 'census',
         year: 2023, // ACS 5-year estimates (2019-2023)
@@ -399,7 +453,7 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
       };
 
       // Cache the result
-      this.zipCache.set(zipcode, result);
+      this.zipCache.set(cacheKey, result);
 
       return result;
     } catch (error) {
@@ -418,6 +472,8 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
    * - Polygon queries (finds ZIPs in polygon, aggregates results)
    */
   async fetchDemographics(options: DemographicsOptions): Promise<DemographicsResult | null> {
+    const fields = options.fields || DEFAULT_FIELDS;
+
     // Polygon-based query: find ZIPs in polygon and aggregate
     if (options.polygon) {
       return this.fetchPolygonDemographics(options);
@@ -425,7 +481,7 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
 
     // Direct ZIP code query
     if (options.zipcode) {
-      return this.fetchZipDemographics(options.zipcode);
+      return this.fetchZipDemographics(options.zipcode, fields);
     }
 
     // Point-based query: geocode to ZIP first
@@ -435,7 +491,7 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
         console.warn('[Census Demographics] Could not geocode point to ZIP code');
         return null;
       }
-      return this.fetchZipDemographics(zipcode);
+      return this.fetchZipDemographics(zipcode, fields);
     }
 
     console.warn('[Census Demographics] ZIP code, lat/lng, or polygon required');
@@ -451,6 +507,8 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
   ): Promise<DemographicsResult | null> {
     if (!options.polygon) return null;
 
+    const fields = options.fields || DEFAULT_FIELDS;
+
     // Need a center point to search from
     const centerLat = options.latitude;
     const centerLng = options.longitude;
@@ -465,8 +523,9 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
       ? options.radiusMiles * 1609.34
       : estimateTravelRadius(30, 'driving'); // Default 30 min drive
 
-    // Generate cache key and check cache
-    const cacheKey = getPolygonCacheKey(options.polygon, centerLat, centerLng, radiusMeters);
+    // Generate cache key and check cache (include fields in key)
+    const baseCacheKey = getPolygonCacheKey(options.polygon, centerLat, centerLng, radiusMeters);
+    const cacheKey = `${baseCacheKey}:${fields.sort().join(',')}`;
     const cached = this.polygonCache.get(cacheKey);
     if (cached) {
       return cached;
@@ -487,7 +546,9 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
 
       for (let i = 0; i < zipcodes.length; i += BATCH_SIZE) {
         const batch = zipcodes.slice(i, i + BATCH_SIZE);
-        const batchResults = await Promise.all(batch.map((zip) => this.fetchZipDemographics(zip)));
+        const batchResults = await Promise.all(
+          batch.map((zip) => this.fetchZipDemographics(zip, fields))
+        );
 
         for (const result of batchResults) {
           if (result) results.push(result);
