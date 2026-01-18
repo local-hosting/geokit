@@ -92,7 +92,12 @@ export class PolygonElement extends MapChildElement {
     }
   }
 
-  protected async onMapReady(): Promise<void> {
+  protected override async onMapReady(): Promise<void> {
+    // NOTE: We intentionally do NOT call super.onMapReady() here because:
+    // 1. The base class guard prevents re-processing the same map instance
+    // 2. But polygons NEED to re-render when maps unfreeze (new WebGL context)
+    // 3. We have our own duplicate detection via getLayer() check below
+
     if (!this.map) {
       return;
     }
@@ -325,9 +330,10 @@ export class PolygonElement extends MapChildElement {
     });
   }
 
-  protected onMapUnload(): void {
-    super.onMapUnload();
+  protected override onMapUnload(): void {
+    // Clean up layers BEFORE calling super (which sets this.map = null)
     this.cleanupMapLayers([this.layerId, this.strokeLayerId], [this.sourceId]);
+    super.onMapUnload();
   }
 
   disconnectedCallback(): void {
