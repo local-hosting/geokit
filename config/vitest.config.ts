@@ -23,10 +23,10 @@ export default defineConfig({
       '**/tests/ui/browser/**',
       '**/tests/integration/**',
     ],
-    pool: 'forks',
+    pool: 'threads',
     poolOptions: {
-      forks: {
-        singleFork: true,
+      threads: {
+        singleThread: true,
       },
     },
     coverage: {

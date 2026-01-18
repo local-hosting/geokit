@@ -186,6 +186,13 @@ export class MapChildElement extends BaseElement {
     this._cleanupMapListeners();
 
     let parent = this.parentElement;
+    // Debug: log only for IsochroneElement to avoid noise
+    const isIsochrone = this.constructor.name === 'IsochroneElement';
+    if (isIsochrone) {
+      console.log(
+        `[MapChildElement] addToParentMap called for ${this.constructor.name}, parent: ${parent?.tagName || 'none'}`
+      );
+    }
 
     while (parent) {
       if (parent.tagName.toLowerCase() === 'gk-map') {
@@ -194,10 +201,21 @@ export class MapChildElement extends BaseElement {
         const mapElement = parent as HTMLElement & { getMap?: () => MapInstance | null };
         const map = mapElement.getMap?.();
 
+        if (isIsochrone) {
+          console.log(
+            `[MapChildElement] Found parent gk-map for ${this.constructor.name}, hasMap: ${!!map}`
+          );
+        }
+
         // Always set up event listener for gk-map-ready to handle freeze/unfreeze
         // This ensures child elements re-initialize when map unfreezes
         const handleMapReady = async () => {
           const currentMap = mapElement.getMap?.();
+          if (isIsochrone) {
+            console.log(
+              `[MapChildElement] gk-map-ready event for ${this.constructor.name}, hasMap: ${!!currentMap}`
+            );
+          }
           if (currentMap) {
             this.map = currentMap;
             // Wait for style to be loaded before calling onMapReady
@@ -216,10 +234,19 @@ export class MapChildElement extends BaseElement {
         // Note: onMapReady() will guard against duplicates, so it's safe to call both here and in the event handler
         if (map) {
           this.map = map;
+          if (isIsochrone) {
+            console.log(
+              `[MapChildElement] Map already exists for ${this.constructor.name}, calling onMapReady`
+            );
+          }
           // Wait for style to be ready before calling onMapReady
           this.waitForMapStyleReady().then(() => {
             void this.onMapReady();
           });
+        } else if (isIsochrone) {
+          console.log(
+            `[MapChildElement] Map not yet available for ${this.constructor.name}, waiting for gk-map-ready event`
+          );
         }
 
         // Listen for map unload to clean up resources
