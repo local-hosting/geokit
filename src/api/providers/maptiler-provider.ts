@@ -5,32 +5,29 @@
  * Provides geocoding capabilities
  *
  * Features:
- * - LRU cache with 10-minute TTL
+ * - LRU cache with 30-minute TTL
  * - Rate limiting support
  */
 
-import { LRUCache } from 'lru-cache';
 import {
   BaseAPIProvider,
   type MapProviderConfig,
   type APICapability,
   type GeocodeOptions,
 } from './types';
+import { ProviderCache } from './cache';
 import type { FeatureCollection } from 'geojson';
-
-interface CacheEntry {
-  data: FeatureCollection;
-  timestamp: number;
-}
 
 export class MapTilerAPIProvider extends BaseAPIProvider {
   protected config: MapProviderConfig | null = null;
   private apiKey: string | null = null;
 
-  // LRU Cache: 100 entries, 10-minute TTL
-  private cache: LRUCache<string, CacheEntry>;
-  private cacheHits = 0;
-  private cacheMisses = 0;
+  // LRU Cache: 1000 entries, 30-minute TTL
+  private cache = new ProviderCache<FeatureCollection>({
+    maxEntries: 1000,
+    ttlMs: 30 * 60 * 1000,
+    name: 'MapTilerCache',
+  });
 
   // Rate limiting: queue requests and process with concurrency control
   private requestQueue: Array<{
@@ -46,12 +43,6 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
 
   constructor() {
     super();
-    this.cache = new LRUCache<string, CacheEntry>({
-      max: 1000,
-      ttl: 1000 * 60 * 30, // 30 minutes TTL
-      updateAgeOnGet: true,
-      updateAgeOnHas: false,
-    });
   }
 
   getName(): string {
@@ -92,10 +83,8 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
     // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached) {
-      this.cacheHits++;
-      return cached.data;
+      return cached;
     }
-    this.cacheMisses++;
 
     // Queue the actual API request with rate limiting
     return this.queueRequest(() => this.geocodeInternal(options, cacheKey));
@@ -215,10 +204,7 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
       const result = data as FeatureCollection;
 
       // Store in cache
-      this.cache.set(cacheKey, {
-        data: result,
-        timestamp: Date.now(),
-      });
+      this.cache.set(cacheKey, result);
 
       return result;
     } catch (error) {
@@ -233,15 +219,7 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
    * Get cache statistics
    */
   getCacheStats() {
-    return {
-      size: this.cache.size,
-      hits: this.cacheHits,
-      misses: this.cacheMisses,
-      hitRate:
-        this.cacheHits + this.cacheMisses > 0
-          ? ((this.cacheHits / (this.cacheHits + this.cacheMisses)) * 100).toFixed(1) + '%'
-          : '0%',
-    };
+    return this.cache.getStats();
   }
 
   /**
@@ -249,8 +227,5 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
    */
   clearCache(): void {
     this.cache.clear();
-    this.cacheHits = 0;
-    this.cacheMisses = 0;
   }
 }
-

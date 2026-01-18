@@ -5,12 +5,11 @@
  * Provides isochrone, directions, and matrix capabilities
  *
  * Features:
- * - LRU cache with 10-minute TTL
- * - Max 100 cached entries
+ * - LRU cache with 30-minute TTL
+ * - Max 1000 cached entries
  * - Automatic cache eviction
  */
 
-import { LRUCache } from 'lru-cache';
 import {
   BaseAPIProvider,
   type MapProviderConfig,
@@ -18,22 +17,22 @@ import {
   type IsochroneOptions,
   type DirectionsOptions,
   type GeocodeOptions,
+  type ReverseGeocodeOptions,
+  type ReverseGeocodeResult,
 } from './types';
+import { ProviderCache, coordinateCacheKey } from './cache';
 import type { FeatureCollection } from 'geojson';
-
-interface CacheEntry {
-  data: FeatureCollection;
-  timestamp: number;
-}
 
 export class MapboxAPIProvider extends BaseAPIProvider {
   protected config: MapProviderConfig | null = null;
   private accessToken: string | null = null;
 
-  // LRU Cache: 100 entries, 10-minute TTL
-  private cache: LRUCache<string, CacheEntry>;
-  private cacheHits = 0;
-  private cacheMisses = 0;
+  // LRU Cache: 1000 entries, 30-minute TTL
+  private cache = new ProviderCache<FeatureCollection>({
+    maxEntries: 1000,
+    ttlMs: 30 * 60 * 1000,
+    name: 'MapboxCache',
+  });
 
   // Rate limiting: queue requests and process with concurrency control
   private requestQueue: Array<{
@@ -50,12 +49,6 @@ export class MapboxAPIProvider extends BaseAPIProvider {
 
   constructor() {
     super();
-    this.cache = new LRUCache<string, CacheEntry>({
-      max: 1000, // Maximum 1000 entries (supports ~600 venues at multiple travel times)
-      ttl: 1000 * 60 * 30, // 30 minutes TTL
-      updateAgeOnGet: true, // LRU: reset age on access
-      updateAgeOnHas: false, // Don't reset age on has() check
-    });
   }
 
   getName(): string {
@@ -94,10 +87,8 @@ export class MapboxAPIProvider extends BaseAPIProvider {
     // Check cache first (synchronous, no rate limiting needed)
     const cached = this.cache.get(cacheKey);
     if (cached) {
-      this.cacheHits++;
-      return cached.data;
+      return cached;
     }
-    this.cacheMisses++;
 
     // Queue the actual API request with rate limiting
     return this.queueRequest(() => this.fetchIsochroneInternal(options, cacheKey));
@@ -238,10 +229,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       const result = data as FeatureCollection;
 
       // Store in cache
-      this.cache.set(cacheKey, {
-        data: result,
-        timestamp: Date.now(),
-      });
+      this.cache.set(cacheKey, result);
 
       return result;
     } catch (error) {
@@ -383,13 +371,126 @@ export class MapboxAPIProvider extends BaseAPIProvider {
   }
 
   /**
+   * Reverse geocode coordinates to address information
+   * Returns postal code, address, city, state, etc.
+   */
+  async reverseGeocode(options: ReverseGeocodeOptions): Promise<ReverseGeocodeResult | null> {
+    if (!this.accessToken) {
+      throw new Error('Mapbox API Provider: No access token configured.');
+    }
+
+    const { lat, lng, types, limit = 1 } = options;
+
+    // Validate coordinates
+    if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+      throw new Error('Mapbox API Provider: Valid lat/lng coordinates are required');
+    }
+
+    // Generate cache key
+    const cacheKey = `revgeo:${lat.toFixed(5)},${lng.toFixed(5)}:${types?.join(',') || ''}`;
+
+    // Check cache first
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      // Cache stores FeatureCollection, extract the result
+      return this.parseReverseGeocodeResponse(cached, lat, lng);
+    }
+
+    try {
+      // Mapbox reverse geocoding: pass coordinates as the query
+      const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json`);
+      url.searchParams.set('access_token', this.accessToken);
+      url.searchParams.set('limit', limit.toString());
+
+      // Filter by types if specified (e.g., 'postcode' for ZIP codes)
+      if (types && types.length > 0) {
+        url.searchParams.set('types', types.join(','));
+      }
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          Referer: 'http://localhost:5173/',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(
+          `Mapbox API error: ${response.status} ${response.statusText}${
+            (error as any).message ? ` - ${(error as any).message}` : ''
+          }`
+        );
+      }
+
+      const data = await response.json();
+      const featureCollection = data as FeatureCollection;
+
+      // Cache the raw response
+      this.cache.set(cacheKey, featureCollection);
+
+      return this.parseReverseGeocodeResponse(featureCollection, lat, lng);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to reverse geocode: ${error.message}`);
+      }
+      throw new Error('Failed to reverse geocode');
+    }
+  }
+
+  /**
+   * Parse Mapbox reverse geocode response into structured result
+   */
+  private parseReverseGeocodeResponse(
+    data: FeatureCollection,
+    lat: number,
+    lng: number
+  ): ReverseGeocodeResult | null {
+    if (!data.features || data.features.length === 0) {
+      return null;
+    }
+
+    const feature = data.features[0] as any;
+    const context = feature.context || [];
+
+    // Helper to find context item by type prefix
+    const findContext = (prefix: string): string | undefined => {
+      const item = context.find((c: any) => c.id?.startsWith(prefix));
+      return item?.text;
+    };
+
+    // Extract postal code - could be in the main feature or context
+    let postcode: string | undefined;
+    if (feature.id?.startsWith('postcode.')) {
+      postcode = feature.text;
+    } else {
+      postcode = findContext('postcode.');
+    }
+
+    // Build the result
+    const result: ReverseGeocodeResult = {
+      address: feature.place_name,
+      streetAddress: feature.id?.startsWith('address.') ? feature.text : findContext('address.'),
+      city: findContext('place.') || findContext('locality.'),
+      state: findContext('region.'),
+      postcode,
+      country: findContext('country.'),
+      countryCode: context
+        .find((c: any) => c.id?.startsWith('country.'))
+        ?.short_code?.toUpperCase(),
+      neighborhood: findContext('neighborhood.'),
+      coordinates: [lng, lat],
+      raw: feature,
+    };
+
+    return result;
+  }
+
+  /**
    * Generate cache key for isochrone request
    * Rounds coordinates to 4 decimals (~11m precision) for better cache hits
    */
   private getCacheKey(lat: number, lng: number, minutes: number[], mode: string): string {
-    const roundedLat = Math.round(lat * 10000) / 10000;
-    const roundedLng = Math.round(lng * 10000) / 10000;
-    return `iso:${roundedLat},${roundedLng}:${minutes.join(',')}:${mode}`;
+    return coordinateCacheKey(lat, lng, [`iso`, minutes.join(','), mode], 4);
   }
 
   /**
@@ -406,15 +507,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
    * Get cache statistics
    */
   getCacheStats() {
-    return {
-      size: this.cache.size,
-      hits: this.cacheHits,
-      misses: this.cacheMisses,
-      hitRate:
-        this.cacheHits + this.cacheMisses > 0
-          ? ((this.cacheHits / (this.cacheHits + this.cacheMisses)) * 100).toFixed(1) + '%'
-          : '0%',
-    };
+    return this.cache.getStats();
   }
 
   /**
@@ -422,7 +515,5 @@ export class MapboxAPIProvider extends BaseAPIProvider {
    */
   clearCache(): void {
     this.cache.clear();
-    this.cacheHits = 0;
-    this.cacheMisses = 0;
   }
 }
