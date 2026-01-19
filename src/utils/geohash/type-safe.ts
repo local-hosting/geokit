@@ -4,39 +4,49 @@ import { geohashBounds } from './bounds';
 import { geohashNeighbors } from './neighbors';
 
 /**
- * Encode coordinates to a geohash point (type-safe)
+ * Encode coordinates to a geohash point (type-safe, curried)
  *
- * @param coordinates - Coordinate pair [lat, lon]
  * @param precision - Length of geohash (default: 10)
- * @returns GeohashPoint (branded type)
+ * @returns Curried function that takes coordinates and returns GeohashPoint
  *
  * @example
  * ```typescript
- * const hashPoint = encodeGeohashPoint([40.7128, -74.0060], 10);
+ * const encodePoint10 = encodeGeohashPoint(10);
+ * const hashPoint = encodePoint10([40.7128, -74.0060]);
  * // This is now type-safe and can only be used with functions expecting GeohashPoint
+ *
+ * // Or use with map
+ * const hashes = coordinates.map(encodeGeohashPoint(10));
  * ```
  */
-export function encodeGeohashPoint(coordinates: LatLon, precision: number = 10): GeohashPoint {
-  const [lat, lon] = coordinates;
-  return Geohash.encode(lat, lon, precision) as GeohashPoint;
+export function encodeGeohashPoint(precision: number = 10) {
+  return (coordinates: LatLon): GeohashPoint => {
+    const [lat, lon] = coordinates;
+    return Geohash.encode(lat, lon, precision) as GeohashPoint;
+  };
 }
 
 /**
- * Encode coordinates to a geohash area (type-safe)
+ * Encode coordinates to a geohash area (type-safe, curried)
  *
- * @param coordinates - Coordinate pair [lat, lon]
  * @param precision - Length of geohash (default: 10)
- * @returns GeohashArea (branded type)
+ * @returns Curried function that takes coordinates and returns GeohashArea
  *
  * @example
  * ```typescript
- * const hashArea = encodeGeohashArea([40.7128, -74.0060], 7);
+ * const encodeArea7 = encodeGeohashArea(7);
+ * const hashArea = encodeArea7([40.7128, -74.0060]);
  * // This is now type-safe and can only be used with functions expecting GeohashArea
+ *
+ * // Or use with map
+ * const areas = coordinates.map(encodeGeohashArea(7));
  * ```
  */
-export function encodeGeohashArea(coordinates: LatLon, precision: number = 10): GeohashArea {
-  const [lat, lon] = coordinates;
-  return Geohash.encode(lat, lon, precision) as GeohashArea;
+export function encodeGeohashArea(precision: number = 10) {
+  return (coordinates: LatLon): GeohashArea => {
+    const [lat, lon] = coordinates;
+    return Geohash.encode(lat, lon, precision) as GeohashArea;
+  };
 }
 
 /**

@@ -2,21 +2,26 @@ import { latLngToCell, cellToLatLng, getResolution, isValidCell } from 'h3-js';
 import type { LatLon } from '../../types';
 
 /**
- * Convert coordinates to H3 cell ID
+ * Convert coordinates to H3 cell ID (curried)
  *
- * @param coordinates - Coordinate pair [lat, lon]
  * @param resolution - H3 resolution (0-15, default: 9)
- * @returns H3 cell ID
+ * @returns Curried function that takes coordinates and returns H3 cell ID
  *
  * @example
  * ```typescript
- * const h3Index = coordinatesToH3([40.7128, -74.0060], 9);
+ * const toH3Res9 = coordinatesToH3(9);
+ * const h3Index = toH3Res9([40.7128, -74.0060]);
  * // '892a1072c97ffff'
+ *
+ * // Or use with map
+ * const h3Indices = coordinates.map(coordinatesToH3(9));
  * ```
  */
-export function coordinatesToH3(coordinates: LatLon, resolution: number = 9): string {
-  const [lat, lon] = coordinates;
-  return latLngToCell(lat, lon, resolution);
+export function coordinatesToH3(resolution: number = 9) {
+  return (coordinates: LatLon): string => {
+    const [lat, lon] = coordinates;
+    return latLngToCell(lat, lon, resolution);
+  };
 }
 
 /**
@@ -69,20 +74,25 @@ export function validateH3(h3Index: string): boolean {
 }
 
 /**
- * Snap coordinates to the center of an H3 cell
+ * Snap coordinates to the center of an H3 cell (curried)
  * Useful for aligning coordinates to H3 grid boundaries
  *
- * @param coordinates - Coordinate pair [lat, lon]
  * @param resolution - H3 resolution (0-15, default: 9)
- * @returns Snapped coordinate pair [lat, lon] at the center of the H3 cell
+ * @returns Curried function that takes coordinates and returns snapped coordinates
  *
  * @example
  * ```typescript
- * const snapped = snapToH3Cell([40.7128, -74.0060], 9);
+ * const snapToRes9 = snapToH3Cell(9);
+ * const snapped = snapToRes9([40.7128, -74.0060]);
  * // Returns the center coordinates of the H3 cell containing the input point
+ *
+ * // Or use with map
+ * const snappedCoords = coordinates.map(snapToH3Cell(9));
  * ```
  */
-export function snapToH3Cell(coordinates: LatLon, resolution: number = 9): LatLon {
-  const h3Index = coordinatesToH3(coordinates, resolution);
-  return h3ToCoordinates(h3Index);
+export function snapToH3Cell(resolution: number = 9) {
+  return (coordinates: LatLon): LatLon => {
+    const h3Index = coordinatesToH3(resolution)(coordinates);
+    return h3ToCoordinates(h3Index);
+  };
 }

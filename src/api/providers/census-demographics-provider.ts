@@ -24,6 +24,7 @@ import {
   findZipsInPolygon,
   getZipForPoint,
   estimateTravelRadius,
+  getLocalDemographics,
 } from '../../utils/demographics/zipcode';
 import { aggregateDemographics } from '../../utils/demographics/aggregate';
 import { ProviderCache, roundForCacheKey, type CacheStats } from './cache';
@@ -36,77 +37,49 @@ import type { Polygon, MultiPolygon } from 'geojson';
 const CENSUS_BASE_URL = 'https://api.census.gov/data/2023/acs/acs5';
 const DEFAULT_FIELDS: DemographicField[] = ['basic', 'age', 'language'];
 
-/** Census API variable groups by field type */
+/** Census API variable groups by field type
+ * All from acs5 detailed tables (B/C tables) - can be combined in single request
+ * basic (7) + age (16) + language (3) = 26 variables
+ *
+ * Age uses key brackets (male only, doubled for estimate):
+ * - Gen Z: 18-24
+ * - Millennials: 25-44
+ * - Gen X: 45-64
+ * - Boomers: 65-74
+ */
 const CENSUS_VARIABLES: Record<DemographicField, string[]> = {
   basic: [
-    'NAME',
     'B01001_001E', // Total population
     'B19013_001E', // Median household income
-    'B25077_001E', // Median home value
     'B25064_001E', // Median gross rent
     'B01002_001E', // Median age
-    'B25010_001E', // Average household size
     'B25003_001E', // Total occupied housing units
     'B25003_002E', // Owner-occupied
     'B25003_003E', // Renter-occupied
   ],
   age: [
-    // Male age groups
-    'B01001_005E',
-    'B01001_006E',
-    'B01001_007E',
-    'B01001_008E',
-    'B01001_009E',
-    'B01001_010E',
-    'B01001_011E',
-    'B01001_012E',
-    'B01001_013E',
-    'B01001_014E',
-    'B01001_015E',
-    'B01001_016E',
-    'B01001_017E',
-    'B01001_018E',
-    'B01001_019E',
-    'B01001_020E',
-    'B01001_021E',
-    'B01001_022E',
-    'B01001_023E',
-    // Female age groups
-    'B01001_029E',
-    'B01001_030E',
-    'B01001_031E',
-    'B01001_032E',
-    'B01001_033E',
-    'B01001_034E',
-    'B01001_035E',
-    'B01001_036E',
-    'B01001_037E',
-    'B01001_038E',
-    'B01001_039E',
-    'B01001_040E',
-    'B01001_041E',
-    'B01001_042E',
-    'B01001_043E',
-    'B01001_044E',
-    'B01001_045E',
-    'B01001_046E',
-    'B01001_047E',
+    // Male age groups (will double for total estimate)
+    'B01001_007E', // 18-19 (Gen Z)
+    'B01001_008E', // 20 (Gen Z)
+    'B01001_009E', // 21 (Gen Z)
+    'B01001_010E', // 22-24 (Gen Z)
+    'B01001_011E', // 25-29 (Millennials)
+    'B01001_012E', // 30-34 (Millennials)
+    'B01001_013E', // 35-39 (Millennials)
+    'B01001_014E', // 40-44 (Millennials)
+    'B01001_015E', // 45-49 (Gen X)
+    'B01001_016E', // 50-54 (Gen X)
+    'B01001_017E', // 55-59 (Gen X)
+    'B01001_018E', // 60-61 (Gen X)
+    'B01001_019E', // 62-64 (Gen X/Boomers)
+    'B01001_020E', // 65-66 (Boomers)
+    'B01001_021E', // 67-69 (Boomers)
+    'B01001_022E', // 70-74 (Boomers)
   ],
   language: [
     'C16001_001E', // Total population 5+
-    'C16001_002E', // English only
     'C16001_003E', // Spanish
-    'C16001_006E', // French
-    'C16001_009E', // German
-    'C16001_012E', // Slavic
-    'C16001_015E', // Other Indo-European
-    'C16001_018E', // Korean
     'C16001_021E', // Chinese
-    'C16001_024E', // Vietnamese
-    'C16001_027E', // Tagalog
-    'C16001_030E', // Other Asian/Pacific
-    'C16001_033E', // Arabic
-    'C16001_036E', // Other
   ],
   ethnicity: [
     'B02001_001E', // Total population
@@ -206,7 +179,21 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
     zipcode: string,
     fields: DemographicField[] = DEFAULT_FIELDS
   ): Promise<DemographicsResult | null> {
-    // Check cache first (cache key includes fields)
+    // Check pre-loaded demographics cache first (instant, no API call)
+    const preloaded = getLocalDemographics(zipcode);
+    if (preloaded) {
+      // Add zipcode and metadata to match expected format
+      const result: DemographicsResult = {
+        ...preloaded,
+        zipcode,
+        dataSource: 'census-local',
+        year: 2023,
+        lastUpdated: new Date().toISOString(),
+      };
+      return result;
+    }
+
+    // Check runtime cache (cache key includes fields)
     const cacheKey = `${zipcode}:${fields.sort().join(',')}`;
     const cached = this.zipCache.get(cacheKey);
     if (cached) {
@@ -216,9 +203,26 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
     try {
       const forClause = `for=zip%20code%20tabulation%20area:${zipcode}`;
 
-      // Fetch only requested field groups in parallel
-      const fetchPromises = fields.map((field) =>
-        fetch(`${CENSUS_BASE_URL}?get=${CENSUS_VARIABLES[field].join(',')}&${forClause}`)
+      // Combine all requested variables into as few requests as possible
+      // Census API allows up to 50 variables per request
+      const MAX_VARS_PER_REQUEST = 50;
+      const allVariables: string[] = [];
+      for (const field of fields) {
+        allVariables.push(...CENSUS_VARIABLES[field]);
+      }
+
+      // Deduplicate variables (some may be shared across field groups)
+      const uniqueVariables = [...new Set(allVariables)];
+
+      // Split into chunks of MAX_VARS_PER_REQUEST
+      const variableChunks: string[][] = [];
+      for (let i = 0; i < uniqueVariables.length; i += MAX_VARS_PER_REQUEST) {
+        variableChunks.push(uniqueVariables.slice(i, i + MAX_VARS_PER_REQUEST));
+      }
+
+      // Fetch all chunks in parallel (usually 1-2 requests instead of 3-4)
+      const fetchPromises = variableChunks.map((vars) =>
+        fetch(`${CENSUS_BASE_URL}?get=${vars.join(',')}&${forClause}`)
       );
 
       if (fetchPromises.length === 0) {
@@ -227,15 +231,28 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
 
       const responses = await Promise.all(fetchPromises);
 
-      // Check for errors
+      // Parse all responses and merge into single lookup
+      // Handle errors and empty responses gracefully
+      const parsedData: unknown[] = [];
       for (const response of responses) {
         if (!response.ok) {
-          throw new Error(`Census API error: ${response.statusText}`);
+          // Skip failed responses (ZIP might not exist in Census data)
+          continue;
+        }
+        try {
+          const text = await response.text();
+          if (text && text.trim().length > 0) {
+            parsedData.push(JSON.parse(text));
+          }
+        } catch {
+          // Skip responses that can't be parsed (empty, truncated, etc.)
         }
       }
 
-      // Parse all responses and merge into single lookup
-      const parsedData = await Promise.all(responses.map((r) => r.json()));
+      if (parsedData.length === 0) {
+        // No valid data for this ZIP - cache null to avoid repeated lookups
+        return null;
+      }
       const allHeaders: string[] = [];
       const allValues: string[] = [];
 
@@ -255,10 +272,11 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
         const index = allHeaders.indexOf(varName);
         if (index === -1) return undefined;
         const value = parseFloat(allValues[index]);
-        return isNaN(value) ? undefined : value;
+        // Census uses -666666666 (and other large negative values) for "data not available"
+        // Filter out NaN and any negative values for fields that should never be negative
+        if (isNaN(value) || value < 0) return undefined;
+        return value;
       };
-
-      const includeEthnicity = fields.includes('ethnicity');
 
       // Calculate owner vs renter percentages
       const totalHousingUnits = getValue('B25003_001E');
@@ -277,47 +295,41 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
         }
       }
 
-      // Calculate generation percentages
-      // Based on 2023 ACS data, using approximate age ranges:
-      // Gen Z: 11-28 (born 1995-2012), Millennials: 29-44 (born 1981-1994)
-      // Gen X: 45-60 (born 1963-1978), Boomers: 61-79 (born 1944-1962)
+      // Calculate generation percentages using male age groups (doubled for estimate)
+      // This halves our variable count while maintaining reasonable accuracy
       const totalPop = getValue('B01001_001E') || 0;
 
-      // Sum male + female for each age group
-      const getAgeSum = (maleVar: string, femaleVar: string): number => {
-        return (getValue(maleVar) || 0) + (getValue(femaleVar) || 0);
-      };
-
-      // Gen Z (ages 10-29 as approximation for 12-27)
+      // Gen Z: 18-24 (male counts × 2)
       const genZ =
-        getAgeSum('B01001_005E', 'B01001_029E') + // 10-14
-        getAgeSum('B01001_006E', 'B01001_030E') + // 15-17
-        getAgeSum('B01001_007E', 'B01001_031E') + // 18-19
-        getAgeSum('B01001_008E', 'B01001_032E') + // 20
-        getAgeSum('B01001_009E', 'B01001_033E') + // 21
-        getAgeSum('B01001_010E', 'B01001_034E') + // 22-24
-        getAgeSum('B01001_011E', 'B01001_035E'); // 25-29
+        2 *
+        ((getValue('B01001_007E') || 0) + // 18-19
+          (getValue('B01001_008E') || 0) + // 20
+          (getValue('B01001_009E') || 0) + // 21
+          (getValue('B01001_010E') || 0)); // 22-24
 
-      // Millennials (ages 30-44 as approximation for 28-43)
+      // Millennials: 25-44 (male counts × 2)
       const millennials =
-        getAgeSum('B01001_012E', 'B01001_036E') + // 30-34
-        getAgeSum('B01001_013E', 'B01001_037E') + // 35-39
-        getAgeSum('B01001_014E', 'B01001_038E'); // 40-44
+        2 *
+        ((getValue('B01001_011E') || 0) + // 25-29
+          (getValue('B01001_012E') || 0) + // 30-34
+          (getValue('B01001_013E') || 0) + // 35-39
+          (getValue('B01001_014E') || 0)); // 40-44
 
-      // Gen X (ages 45-59 as approximation for 44-59)
+      // Gen X: 45-64 (male counts × 2)
       const genX =
-        getAgeSum('B01001_015E', 'B01001_039E') + // 45-49
-        getAgeSum('B01001_016E', 'B01001_040E') + // 50-54
-        getAgeSum('B01001_017E', 'B01001_041E'); // 55-59
+        2 *
+        ((getValue('B01001_015E') || 0) + // 45-49
+          (getValue('B01001_016E') || 0) + // 50-54
+          (getValue('B01001_017E') || 0) + // 55-59
+          (getValue('B01001_018E') || 0) + // 60-61
+          (getValue('B01001_019E') || 0)); // 62-64
 
-      // Boomers (ages 60-79 as approximation for 60-78)
+      // Boomers: 65-74 (male counts × 2)
       const boomers =
-        getAgeSum('B01001_018E', 'B01001_042E') + // 60-61
-        getAgeSum('B01001_019E', 'B01001_043E') + // 62-64
-        getAgeSum('B01001_020E', 'B01001_044E') + // 65-66
-        getAgeSum('B01001_021E', 'B01001_045E') + // 67-69
-        getAgeSum('B01001_022E', 'B01001_046E') + // 70-74
-        getAgeSum('B01001_023E', 'B01001_047E'); // 75-79
+        2 *
+        ((getValue('B01001_020E') || 0) + // 65-66
+          (getValue('B01001_021E') || 0) + // 67-69
+          (getValue('B01001_022E') || 0)); // 70-74
 
       // Find top two generations
       let topGeneration: string | undefined;
@@ -331,19 +343,18 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
           { name: 'Millennials', count: millennials },
           { name: 'Gen X', count: genX },
           { name: 'Boomers', count: boomers },
-        ];
+        ].filter((g) => g.count > 0);
 
         // Sort by count descending
         generations.sort((a, b) => b.count - a.count);
 
-        const top = generations[0];
-        topGeneration = top.name;
-        topGenerationPct = Math.round((top.count / totalPop) * 100);
-
+        if (generations.length > 0) {
+          topGeneration = generations[0].name;
+          topGenerationPct = Math.round((generations[0].count / totalPop) * 100);
+        }
         if (generations.length > 1) {
-          const second = generations[1];
-          secondGeneration = second.name;
-          secondGenerationPct = Math.round((second.count / totalPop) * 100);
+          secondGeneration = generations[1].name;
+          secondGenerationPct = Math.round((generations[1].count / totalPop) * 100);
         }
       }
 
@@ -357,14 +368,7 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
       if (langPop > 0) {
         const languages = [
           { name: 'Spanish', count: getValue('C16001_003E') || 0 },
-          { name: 'French', count: getValue('C16001_006E') || 0 },
-          { name: 'German', count: getValue('C16001_009E') || 0 },
-          { name: 'Slavic', count: getValue('C16001_012E') || 0 },
-          { name: 'Korean', count: getValue('C16001_018E') || 0 },
           { name: 'Chinese', count: getValue('C16001_021E') || 0 },
-          { name: 'Vietnamese', count: getValue('C16001_024E') || 0 },
-          { name: 'Tagalog', count: getValue('C16001_027E') || 0 },
-          { name: 'Arabic', count: getValue('C16001_033E') || 0 },
         ];
 
         // Sort by count descending and filter out zero counts
@@ -382,56 +386,11 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
         }
       }
 
-      // Calculate top two ethnicities (only if ethnicity data was requested)
-      let topEthnicity: string | undefined;
-      let topEthnicityPct: number | undefined;
-      let secondEthnicity: string | undefined;
-      let secondEthnicityPct: number | undefined;
-
-      if (includeEthnicity) {
-        const racePop = getValue('B02001_001E') || 0;
-        const hispanicPop = getValue('B03003_003E') || 0;
-
-        if (racePop > 0) {
-          const whitePop = getValue('B02001_002E') || 0;
-          const nonHispanicWhite = Math.max(0, whitePop - hispanicPop * 0.9);
-
-          const ethnicities = [
-            { name: 'White', count: nonHispanicWhite },
-            { name: 'Hispanic', count: hispanicPop },
-            { name: 'Black', count: getValue('B02001_003E') || 0 },
-            { name: 'Asian', count: getValue('B02001_005E') || 0 },
-            { name: 'Mixed', count: getValue('B02001_008E') || 0 },
-            {
-              name: 'Native',
-              count: (getValue('B02001_004E') || 0) + (getValue('B02001_006E') || 0),
-            },
-          ];
-
-          const sortedEthnicities = ethnicities
-            .filter((e) => e.count > 0)
-            .sort((a, b) => b.count - a.count);
-
-          if (sortedEthnicities.length > 0) {
-            const top = sortedEthnicities[0];
-            topEthnicity = top.name;
-            topEthnicityPct = Math.round((top.count / racePop) * 100);
-          }
-          if (sortedEthnicities.length > 1) {
-            const second = sortedEthnicities[1];
-            secondEthnicity = second.name;
-            secondEthnicityPct = Math.round((second.count / racePop) * 100);
-          }
-        }
-      }
-
       const result: DemographicsResult = {
         totalPopulation: getValue('B01001_001E'),
         medianHouseholdIncome: getValue('B19013_001E'),
-        medianHomeValue: getValue('B25077_001E'),
         medianRent: getValue('B25064_001E'),
         medianAge: getValue('B01002_001E'),
-        averageHouseholdSize: getValue('B25010_001E'),
         ownerOccupiedPct,
         renterOccupiedPct,
         topGeneration,
@@ -442,10 +401,6 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
         topLanguagePct,
         secondLanguage,
         secondLanguagePct,
-        topEthnicity,
-        topEthnicityPct,
-        secondEthnicity,
-        secondEthnicityPct,
         zipcode,
         dataSource: 'census',
         year: 2023, // ACS 5-year estimates (2019-2023)
@@ -533,21 +488,43 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
 
     try {
       // Find ZIP codes within the polygon area
-      const zipcodes = await findZipsInPolygon(centerLat, centerLng, options.polygon, radiusMeters);
+      const zipcodes = await findZipsInPolygon(centerLat, centerLng, options.polygon, {
+        mode: options.travelMode,
+        timeMinutes: options.travelTimeMinutes,
+      });
 
       if (zipcodes.length === 0) {
         return null;
       }
 
-      // Fetch demographics for each ZIP code (with concurrency limit)
-      // Individual ZIP results are cached by fetchZipDemographics
-      const BATCH_SIZE = 5;
+      // Fetch demographics for all ZIP codes
+      // Local data is instant, only API calls need batching
+      const BATCH_SIZE = 20;
       const results: DemographicsResult[] = [];
 
       for (let i = 0; i < zipcodes.length; i += BATCH_SIZE) {
         const batch = zipcodes.slice(i, i + BATCH_SIZE);
         const batchResults = await Promise.all(
-          batch.map((zip) => this.fetchZipDemographics(zip, fields))
+          batch.map(async (zip) => {
+            // Check runtime cache first
+            const zipCached = this.zipCache.get(`${zip}:${fields.sort().join(',')}`);
+            if (zipCached) {
+              return zipCached;
+            }
+            // Check pre-loaded local data
+            const local = getLocalDemographics(zip);
+            if (local) {
+              return {
+                ...local,
+                zipcode: zip,
+                dataSource: 'census-local',
+                year: 2023,
+                lastUpdated: new Date().toISOString(),
+              } as DemographicsResult;
+            }
+            // Fall back to API
+            return this.fetchZipDemographics(zip, fields);
+          })
         );
 
         for (const result of batchResults) {
@@ -561,10 +538,11 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
 
       // Aggregate results (weighted by population)
       const aggregated = aggregateDemographics(results);
+
       if (aggregated) {
         aggregated.dataSource = 'census-aggregated';
         // Store the ZIP codes that were aggregated
-        (aggregated as any).aggregatedZipcodes = results.map((r) => r.zipcode).filter(Boolean);
+        aggregated.aggregatedZipcodes = results.map((r) => r.zipcode).filter(Boolean) as string[];
       }
 
       // Cache the aggregated result
