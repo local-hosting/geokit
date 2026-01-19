@@ -258,39 +258,29 @@ export class MapElement extends BaseElement {
       // Set up features based on attributes
       this.setupHideAttribution();
 
-      if (styleAlreadyLoaded) {
-        // Style already loaded, wait for idle event to ensure control system is ready
+      // Optimize: Dispatch map-ready immediately when style is loaded
+      // Don't wait for 'idle' - it can delay by hundreds of ms
+      // Controls can be set up lazily, but map is ready for layers immediately
+      const dispatchMapReady = () => {
         this.isInitialized = true;
         this.hidePlaceholder();
-        if (this.map) {
-          this.map.once('idle', () => {
-            this.setupAutoHideControls();
-            this.dispatchEvent(
-              new CustomEvent('gk-map-ready', {
-                detail: { map: this.map, element: this },
-                bubbles: true,
-              })
-            );
-          });
-        }
+        this.setupAutoHideControls();
+        this.dispatchEvent(
+          new CustomEvent('gk-map-ready', {
+            detail: { map: this.map, element: this },
+            bubbles: true,
+          })
+        );
+      };
+
+      if (styleAlreadyLoaded) {
+        // Style already loaded - dispatch immediately (no idle wait)
+        dispatchMapReady();
       } else {
-        // Wait for map to be fully loaded, then wait for idle
+        // Wait for style to load, then dispatch immediately (no idle wait)
         if (this.map) {
-          this.map.on('load', () => {
-            this.isInitialized = true;
-            this.hidePlaceholder();
-            // Wait for idle to ensure internal control system is initialized
-            if (this.map) {
-              this.map.once('idle', () => {
-                this.setupAutoHideControls();
-                this.dispatchEvent(
-                  new CustomEvent('gk-map-ready', {
-                    detail: { map: this.map, element: this },
-                    bubbles: true,
-                  })
-                );
-              });
-            }
+          this.map.once('load', () => {
+            dispatchMapReady();
           });
         }
       }

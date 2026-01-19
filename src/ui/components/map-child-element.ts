@@ -92,6 +92,31 @@ export class MapChildElement extends BaseElement {
   }
 
   /**
+   * Check if map style is ready (synchronous check)
+   * Returns true if style is ready, false otherwise
+   */
+  private isMapStyleReady(): boolean {
+    if (!this.map) return false;
+
+    // First check if style is already loaded - this is the common case
+    const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
+    if (isStyleLoaded && isStyleLoaded.call(this.map)) {
+      return true; // Style already loaded
+    }
+
+    // Also check if map has a style object (some SDKs don't expose isStyleLoaded)
+    const getStyle = (this.map as { getStyle?: () => unknown }).getStyle;
+    if (getStyle) {
+      const style = getStyle.call(this.map);
+      if (style) {
+        return true; // Style exists, assume it's ready
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Wait for map style to be ready before proceeding
    * Uses the map element's whenStyleReady method if available
    * Optimized to check if style is already loaded before waiting
@@ -99,16 +124,9 @@ export class MapChildElement extends BaseElement {
   private async waitForMapStyleReady(): Promise<void> {
     if (!this.map || !this.mapElement) return;
 
-    // First check if style is already loaded - this is the common case
-    const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
-    if (isStyleLoaded && isStyleLoaded.call(this.map)) {
+    // Use synchronous check first to avoid Promise microtask
+    if (this.isMapStyleReady()) {
       return; // Style already loaded, no need to wait
-    }
-
-    // Also check if map has a style object (some SDKs don't expose isStyleLoaded)
-    const getStyle = (this.map as { getStyle?: () => unknown }).getStyle;
-    if (getStyle && getStyle.call(this.map)) {
-      return; // Style exists, assume it's ready
     }
 
     const mapElement = this.mapElement as HTMLElement & {
@@ -200,10 +218,15 @@ export class MapChildElement extends BaseElement {
           const currentMap = mapElement.getMap?.();
           if (currentMap) {
             this.map = currentMap;
-            // Wait for style to be loaded before calling onMapReady
-            // This ensures polygons can create layers immediately
-            await this.waitForMapStyleReady();
-            void this.onMapReady();
+            // Check if style is ready synchronously first to avoid microtask
+            if (this.isMapStyleReady()) {
+              // Style ready - initialize immediately (synchronous, no microtasks)
+              this.onMapReady();
+            } else {
+              // Style not ready - wait for it (async, but only when necessary)
+              await this.waitForMapStyleReady();
+              this.onMapReady();
+            }
           }
         };
 
@@ -211,15 +234,21 @@ export class MapChildElement extends BaseElement {
         this._mapReadyParent = parent;
         parent.addEventListener('gk-map-ready', handleMapReady);
 
-        // If map already exists, wait for style before initializing
+        // If map already exists, check if style is ready and initialize immediately
         // The event listener above will handle re-initialization on unfreeze
         // Note: onMapReady() will guard against duplicates, so it's safe to call both here and in the event handler
         if (map) {
           this.map = map;
-          // Wait for style to be ready before calling onMapReady
-          this.waitForMapStyleReady().then(() => {
-            void this.onMapReady();
-          });
+          // Use synchronous check to avoid Promise microtask
+          if (this.isMapStyleReady()) {
+            // Style is ready - initialize immediately (synchronous, no microtasks)
+            this.onMapReady();
+          } else {
+            // Style not ready - wait for it (async, but only when necessary)
+            this.waitForMapStyleReady().then(() => {
+              this.onMapReady();
+            });
+          }
         }
 
         // Listen for map unload to clean up resources
