@@ -103,22 +103,18 @@ export class PolygonElement extends MapChildElement {
     }
 
     // Style is already ready (waited in waitForMapStyleReady), so create immediately
-    // Use requestAnimationFrame to batch layer creation with other polygons
-    // This prevents blocking the main thread when many polygons are added at once
-    requestAnimationFrame(() => {
-      if (!this.map) return;
+    // Create synchronously to avoid staggered rendering when many polygons are added
+    // The fragment batching in FWMap.vue already prevents blocking the main thread
+    // Check if polygon layer already exists (might have been created during wait)
+    if (this.map.getLayer?.(this.layerId)) {
+      return; // Already created
+    }
 
-      // Check if polygon layer already exists (might have been created during wait)
-      if (this.map.getLayer?.(this.layerId)) {
-        return; // Already created
-      }
-
-      try {
-        this.createPolygon();
-      } catch (error) {
-        console.error(`[Polygon ${this.layerId}] Error creating polygon:`, error);
-      }
-    });
+    try {
+      this.createPolygon();
+    } catch (error) {
+      console.error(`[Polygon ${this.layerId}] Error creating polygon:`, error);
+    }
   }
 
   /**
