@@ -8,41 +8,61 @@
 import type { Position } from '../../types';
 
 /**
- * Apply Chaikin's algorithm to smooth a ring (closed polygon boundary)
+ * Apply Chaikin's algorithm to smooth a ring (curried)
  *
- * @param ring - Array of [lng, lat] coordinates (first and last should be same for closed ring)
  * @param iterations - Number of smoothing iterations (default: 2, more = smoother)
- * @returns Smoothed ring
+ * @returns Curried function that takes a ring and returns smoothed ring
+ *
+ * @example
+ * ```typescript
+ * const smooth3 = smoothRing(3);
+ * const smoothed = smooth3(ring);
+ *
+ * // Or use with map
+ * const smoothedRings = rings.map(smoothRing(2));
+ * ```
  */
-export function smoothRing(ring: Position[], iterations: number = 2): Position[] {
-  if (ring.length < 4) return ring; // Need at least 3 unique points + closing point
+export function smoothRing(iterations: number = 2) {
+  return (ring: Position[]): Position[] => {
+    if (ring.length < 4) return ring; // Need at least 3 unique points + closing point
 
-  let result = ring.slice();
+    let result = ring.slice();
 
-  for (let i = 0; i < iterations; i++) {
-    result = chaikinIteration(result, true);
-  }
+    for (let i = 0; i < iterations; i++) {
+      result = chaikinIteration(result, true);
+    }
 
-  return result;
+    return result;
+  };
 }
 
 /**
- * Apply Chaikin's algorithm to smooth a polyline (open line)
+ * Apply Chaikin's algorithm to smooth a polyline (curried)
  *
- * @param line - Array of [lng, lat] coordinates
  * @param iterations - Number of smoothing iterations (default: 2)
- * @returns Smoothed polyline
+ * @returns Curried function that takes a line and returns smoothed polyline
+ *
+ * @example
+ * ```typescript
+ * const smooth3 = smoothLine(3);
+ * const smoothed = smooth3(line);
+ *
+ * // Or use with map
+ * const smoothedLines = lines.map(smoothLine(2));
+ * ```
  */
-export function smoothLine(line: Position[], iterations: number = 2): Position[] {
-  if (line.length < 3) return line;
+export function smoothLine(iterations: number = 2) {
+  return (line: Position[]): Position[] => {
+    if (line.length < 3) return line;
 
-  let result = line.slice();
+    let result = line.slice();
 
-  for (let i = 0; i < iterations; i++) {
-    result = chaikinIteration(result, false);
-  }
+    for (let i = 0; i < iterations; i++) {
+      result = chaikinIteration(result, false);
+    }
 
-  return result;
+    return result;
+  };
 }
 
 /**
@@ -95,69 +115,97 @@ function chaikinIteration(points: Position[], isClosed: boolean): Position[] {
 }
 
 /**
- * Smooth a GeoJSON Polygon geometry
+ * Smooth a GeoJSON Polygon geometry (curried)
+ *
+ * @param iterations - Number of smoothing iterations (default: 2)
+ * @returns Curried function that takes a polygon and returns smoothed polygon
  */
-export function smoothPolygon(polygon: GeoJSON.Polygon, iterations: number = 2): GeoJSON.Polygon {
-  return {
-    type: 'Polygon',
-    coordinates: polygon.coordinates.map((ring) => smoothRing(ring as Position[], iterations)),
+export function smoothPolygon(iterations: number = 2) {
+  return (polygon: GeoJSON.Polygon): GeoJSON.Polygon => {
+    return {
+      type: 'Polygon',
+      coordinates: polygon.coordinates.map((ring) => smoothRing(iterations)(ring as Position[])),
+    };
   };
 }
 
 /**
- * Smooth a GeoJSON MultiPolygon geometry
+ * Smooth a GeoJSON MultiPolygon geometry (curried)
+ *
+ * @param iterations - Number of smoothing iterations (default: 2)
+ * @returns Curried function that takes a multipolygon and returns smoothed multipolygon
  */
-export function smoothMultiPolygon(
-  multiPolygon: GeoJSON.MultiPolygon,
-  iterations: number = 2
-): GeoJSON.MultiPolygon {
-  return {
-    type: 'MultiPolygon',
-    coordinates: multiPolygon.coordinates.map((polygon) =>
-      polygon.map((ring) => smoothRing(ring as Position[], iterations))
-    ),
+export function smoothMultiPolygon(iterations: number = 2) {
+  return (multiPolygon: GeoJSON.MultiPolygon): GeoJSON.MultiPolygon => {
+    return {
+      type: 'MultiPolygon',
+      coordinates: multiPolygon.coordinates.map((polygon) =>
+        polygon.map((ring) => smoothRing(iterations)(ring as Position[]))
+      ),
+    };
   };
 }
 
 /**
- * Smooth any GeoJSON geometry that has polygon-like structures
+ * Smooth any GeoJSON geometry that has polygon-like structures (curried)
+ *
+ * @param iterations - Number of smoothing iterations (default: 2)
+ * @returns Curried function that takes a geometry and returns smoothed geometry
+ *
+ * @example
+ * ```typescript
+ * const smooth3 = smoothGeometry(3);
+ * const smoothed = smooth3(geometry);
+ *
+ * // Or use with map
+ * const smoothedGeometries = geometries.map(smoothGeometry(2));
+ * ```
  */
-export function smoothGeometry(
-  geometry: GeoJSON.Geometry,
-  iterations: number = 2
-): GeoJSON.Geometry {
-  switch (geometry.type) {
-    case 'Polygon':
-      return smoothPolygon(geometry, iterations);
-    case 'MultiPolygon':
-      return smoothMultiPolygon(geometry, iterations);
-    case 'LineString':
-      return {
-        type: 'LineString',
-        coordinates: smoothLine(geometry.coordinates as Position[], iterations),
-      };
-    case 'MultiLineString':
-      return {
-        type: 'MultiLineString',
-        coordinates: geometry.coordinates.map((line) => smoothLine(line as Position[], iterations)),
-      };
-    default:
-      return geometry; // Points, GeometryCollection, etc. - return unchanged
-  }
+export function smoothGeometry(iterations: number = 2) {
+  return (geometry: GeoJSON.Geometry): GeoJSON.Geometry => {
+    switch (geometry.type) {
+      case 'Polygon':
+        return smoothPolygon(iterations)(geometry);
+      case 'MultiPolygon':
+        return smoothMultiPolygon(iterations)(geometry);
+      case 'LineString':
+        return {
+          type: 'LineString',
+          coordinates: smoothLine(iterations)(geometry.coordinates as Position[]),
+        };
+      case 'MultiLineString':
+        return {
+          type: 'MultiLineString',
+          coordinates: geometry.coordinates.map((line) =>
+            smoothLine(iterations)(line as Position[])
+          ),
+        };
+      default:
+        return geometry; // Points, GeometryCollection, etc. - return unchanged
+    }
+  };
 }
 
 /**
- * Smooth all features in a FeatureCollection
+ * Smooth all features in a FeatureCollection (curried)
+ *
+ * @param iterations - Number of smoothing iterations (default: 2)
+ * @returns Curried function that takes a feature collection and returns smoothed collection
+ *
+ * @example
+ * ```typescript
+ * const smooth3 = smoothFeatureCollection(3);
+ * const smoothed = smooth3(featureCollection);
+ * ```
  */
-export function smoothFeatureCollection(
-  fc: GeoJSON.FeatureCollection,
-  iterations: number = 2
-): GeoJSON.FeatureCollection {
-  return {
-    type: 'FeatureCollection',
-    features: fc.features.map((feature) => ({
-      ...feature,
-      geometry: smoothGeometry(feature.geometry, iterations),
-    })),
+export function smoothFeatureCollection(iterations: number = 2) {
+  return (fc: GeoJSON.FeatureCollection): GeoJSON.FeatureCollection => {
+    return {
+      type: 'FeatureCollection',
+      features: fc.features.map((feature) => ({
+        ...feature,
+        geometry: smoothGeometry(iterations)(feature.geometry),
+      })),
+    };
   };
 }

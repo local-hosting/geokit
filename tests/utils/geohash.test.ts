@@ -24,18 +24,18 @@ describe('geohash', () => {
 
   describe('encodeGeohash', () => {
     it('should encode coordinates to geohash', () => {
-      const hash = encodeGeohash(nyc, 9);
+      const hash = encodeGeohash(9)(nyc);
       expect(hash).toBe('dr5regw3p');
     });
 
     it('should use default precision of 10', () => {
-      const hash = encodeGeohash(nyc);
+      const hash = encodeGeohash()(nyc);
       expect(hash).toHaveLength(10);
     });
 
     it('should encode with different precisions', () => {
-      const hash5 = encodeGeohash(nyc, 5);
-      const hash10 = encodeGeohash(nyc, 10);
+      const hash5 = encodeGeohash(5)(nyc);
+      const hash10 = encodeGeohash(10)(nyc);
       expect(hash5).toHaveLength(5);
       expect(hash10).toHaveLength(10);
       expect(hash10.startsWith(hash5)).toBe(true);
@@ -51,7 +51,7 @@ describe('geohash', () => {
     });
 
     it('should roundtrip encode/decode', () => {
-      const hash = encodeGeohash(nyc, 9);
+      const hash = encodeGeohash(9)(nyc);
       const decoded = decodeGeohash(hash);
       expect(decoded[0]).toBeCloseTo(nyc[0], 3);
       expect(decoded[1]).toBeCloseTo(nyc[1], 3);
@@ -135,46 +135,46 @@ describe('geohash', () => {
   describe('type-safe functions', () => {
     describe('encodeGeohashPoint', () => {
       it('should encode coordinates to GeohashPoint', () => {
-        const hashPoint = encodeGeohashPoint(nyc, 9);
+        const hashPoint = encodeGeohashPoint(9)(nyc);
         expect(typeof hashPoint).toBe('string');
         expect(hashPoint).toBe('dr5regw3p');
       });
 
       it('should use default precision of 10', () => {
-        const hashPoint = encodeGeohashPoint(nyc);
+        const hashPoint = encodeGeohashPoint()(nyc);
         expect(hashPoint).toHaveLength(10);
       });
 
       it('should match encodeGeohash result', () => {
-        const hashPoint = encodeGeohashPoint(nyc, 9);
-        const hash = encodeGeohash(nyc, 9);
+        const hashPoint = encodeGeohashPoint(9)(nyc);
+        const hash = encodeGeohash(9)(nyc);
         expect(hashPoint).toBe(hash);
       });
     });
 
     describe('encodeGeohashArea', () => {
       it('should encode coordinates to GeohashArea', () => {
-        const hashArea = encodeGeohashArea(nyc, 7);
+        const hashArea = encodeGeohashArea(7)(nyc);
         expect(typeof hashArea).toBe('string');
         expect(hashArea).toHaveLength(7);
       });
 
       it('should use default precision of 10', () => {
-        const hashArea = encodeGeohashArea(nyc);
+        const hashArea = encodeGeohashArea()(nyc);
         expect(hashArea).toHaveLength(10);
       });
     });
 
     describe('decodeGeohashPoint', () => {
       it('should decode GeohashPoint to coordinates', () => {
-        const hashPoint = encodeGeohashPoint(nyc, 9);
+        const hashPoint = encodeGeohashPoint(9)(nyc);
         const coords = decodeGeohashPoint(hashPoint);
         expect(coords[0]).toBeCloseTo(40.7128, 3);
         expect(coords[1]).toBeCloseTo(-74.006, 3);
       });
 
       it('should roundtrip encode/decode', () => {
-        const hashPoint = encodeGeohashPoint(nyc, 9);
+        const hashPoint = encodeGeohashPoint(9)(nyc);
         const decoded = decodeGeohashPoint(hashPoint);
         expect(decoded[0]).toBeCloseTo(nyc[0], 3);
         expect(decoded[1]).toBeCloseTo(nyc[1], 3);
@@ -183,7 +183,7 @@ describe('geohash', () => {
 
     describe('decodeGeohashArea', () => {
       it('should decode GeohashArea to coordinates', () => {
-        const hashArea = encodeGeohashArea(nyc, 7);
+        const hashArea = encodeGeohashArea(7)(nyc);
         const coords = decodeGeohashArea(hashArea);
         expect(coords).toHaveLength(2);
         expect(typeof coords[0]).toBe('number');
@@ -193,7 +193,7 @@ describe('geohash', () => {
 
     describe('geohashPointBounds', () => {
       it('should return bounding box of GeohashPoint', () => {
-        const hashPoint = encodeGeohashPoint(nyc, 7);
+        const hashPoint = encodeGeohashPoint(7)(nyc);
         const bounds = geohashPointBounds(hashPoint);
         expect(bounds).toHaveLength(4);
         expect(bounds[0]).toBeLessThan(bounds[2]);
@@ -201,7 +201,7 @@ describe('geohash', () => {
       });
 
       it('should match geohashBounds result', () => {
-        const hashPoint = encodeGeohashPoint(nyc, 7);
+        const hashPoint = encodeGeohashPoint(7)(nyc);
         const bounds1 = geohashPointBounds(hashPoint);
         const bounds2 = geohashBounds(hashPoint);
         expect(bounds1).toEqual(bounds2);
@@ -210,7 +210,7 @@ describe('geohash', () => {
 
     describe('geohashAreaBounds', () => {
       it('should return bounding box of GeohashArea', () => {
-        const hashArea = encodeGeohashArea(nyc, 7);
+        const hashArea = encodeGeohashArea(7)(nyc);
         const bounds = geohashAreaBounds(hashArea);
         expect(bounds).toHaveLength(4);
         expect(bounds[0]).toBeLessThan(bounds[2]);
@@ -220,14 +220,14 @@ describe('geohash', () => {
 
     describe('geohashPointNeighbors', () => {
       it('should return array of 8 neighboring GeohashPoints', () => {
-        const hashPoint = encodeGeohashPoint(nyc, 7);
+        const hashPoint = encodeGeohashPoint(7)(nyc);
         const neighbors = geohashPointNeighbors(hashPoint);
         expect(neighbors).toHaveLength(8);
         expect(neighbors.every((n) => typeof n === 'string')).toBe(true);
       });
 
       it('should match geohashNeighborsArray result', () => {
-        const hashPoint = encodeGeohashPoint(nyc, 7);
+        const hashPoint = encodeGeohashPoint(7)(nyc);
         const neighbors1 = geohashPointNeighbors(hashPoint);
         const neighbors2 = geohashNeighborsArray(hashPoint);
         expect(neighbors1).toEqual(neighbors2);
@@ -236,7 +236,7 @@ describe('geohash', () => {
 
     describe('geohashAreaNeighbors', () => {
       it('should return array of 8 neighboring GeohashAreas', () => {
-        const hashArea = encodeGeohashArea(nyc, 7);
+        const hashArea = encodeGeohashArea(7)(nyc);
         const neighbors = geohashAreaNeighbors(hashArea);
         expect(neighbors).toHaveLength(8);
         expect(neighbors.every((n) => typeof n === 'string')).toBe(true);

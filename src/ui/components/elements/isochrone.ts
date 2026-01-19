@@ -577,7 +577,7 @@ export class IsochroneElement extends MapChildElement {
       // For polygon mode: apply Chaikin smoothing for smoother edges
       const processedData =
         this.render === 'polygon'
-          ? smoothFeatureCollection(result, 3) // 3 iterations for smooth curves
+          ? smoothFeatureCollection(3)(result) // 3 iterations for smooth curves
           : result;
       // Don't convert to H3 on initial render - use raw polygon for speed
       // Conversion to H3 will happen on map interaction via upgradeResolution()

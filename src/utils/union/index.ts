@@ -5,7 +5,13 @@
 import turfUnion from '@turf/union';
 import { polygon as turfPolygon, multiPolygon as turfMultiPolygon } from '@turf/helpers';
 import type { Polygon, MultiPolygon, Feature } from '../../types';
-import type { Feature as GeoJSONFeature, Polygon as GeoJSONPolygon, MultiPolygon as GeoJSONMultiPolygon, FeatureCollection, GeoJsonProperties } from 'geojson';
+import type {
+  Feature as GeoJSONFeature,
+  Polygon as GeoJSONPolygon,
+  MultiPolygon as GeoJSONMultiPolygon,
+  FeatureCollection,
+  GeoJsonProperties,
+} from 'geojson';
 
 type PolygonFeature = GeoJSONFeature<GeoJSONPolygon | GeoJSONMultiPolygon, GeoJsonProperties>;
 
@@ -26,12 +32,14 @@ export function unionPolygons(
   polygon2: Polygon | MultiPolygon
 ): Polygon | MultiPolygon | null {
   try {
-    const feature1: PolygonFeature = polygon1.type === 'Polygon'
-      ? turfPolygon(polygon1.coordinates)
-      : turfMultiPolygon(polygon1.coordinates);
-    const feature2: PolygonFeature = polygon2.type === 'Polygon'
-      ? turfPolygon(polygon2.coordinates)
-      : turfMultiPolygon(polygon2.coordinates);
+    const feature1: PolygonFeature =
+      polygon1.type === 'Polygon'
+        ? turfPolygon(polygon1.coordinates)
+        : turfMultiPolygon(polygon1.coordinates);
+    const feature2: PolygonFeature =
+      polygon2.type === 'Polygon'
+        ? turfPolygon(polygon2.coordinates)
+        : turfMultiPolygon(polygon2.coordinates);
 
     const fc: FeatureCollection<GeoJSONPolygon> = {
       type: 'FeatureCollection',
@@ -47,6 +55,28 @@ export function unionPolygons(
 }
 
 /**
+ * Curried union - merge a polygon with another (curried)
+ * Useful for composable operations like reduce
+ *
+ * @param polygon1 - First polygon (the base)
+ * @returns Curried function that takes second polygon and returns merged result
+ *
+ * @example
+ * ```typescript
+ * const mergeWithBase = unionWith(basePolygon);
+ * const merged = mergeWithBase(otherPolygon);
+ *
+ * // Or use with reduce
+ * const merged = polygons.reduce((acc, p) => unionWith(acc)(p) ?? acc, polygons[0]);
+ * ```
+ */
+export function unionWith(polygon1: Polygon | MultiPolygon) {
+  return (polygon2: Polygon | MultiPolygon): Polygon | MultiPolygon | null => {
+    return unionPolygons(polygon1, polygon2);
+  };
+}
+
+/**
  * Union multiple polygons into a single polygon
  *
  * @param polygons - Array of polygons to merge
@@ -57,17 +87,13 @@ export function unionPolygons(
  * const merged = unionAll([polygon1, polygon2, polygon3]);
  * ```
  */
-export function unionAll(
-  polygons: (Polygon | MultiPolygon)[]
-): Polygon | MultiPolygon | null {
+export function unionAll(polygons: (Polygon | MultiPolygon)[]): Polygon | MultiPolygon | null {
   if (polygons.length === 0) return null;
   if (polygons.length === 1) return polygons[0];
 
   try {
-    const features: PolygonFeature[] = polygons.map(p =>
-      p.type === 'Polygon'
-        ? turfPolygon(p.coordinates)
-        : turfMultiPolygon(p.coordinates)
+    const features: PolygonFeature[] = polygons.map((p) =>
+      p.type === 'Polygon' ? turfPolygon(p.coordinates) : turfMultiPolygon(p.coordinates)
     );
 
     const fc: FeatureCollection<GeoJSONPolygon> = {
@@ -101,7 +127,7 @@ export function unionFeatures(
   if (features.length === 1) return features[0];
 
   try {
-    const turfFeatures: PolygonFeature[] = features.map(f =>
+    const turfFeatures: PolygonFeature[] = features.map((f) =>
       f.geometry.type === 'Polygon'
         ? turfPolygon(f.geometry.coordinates, f.properties)
         : turfMultiPolygon(f.geometry.coordinates, f.properties)
