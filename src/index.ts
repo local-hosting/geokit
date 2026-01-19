@@ -314,10 +314,10 @@ export {
 export { convexHull } from './utils/hull';
 
 // Union utilities
-export { unionPolygons, unionAll, unionFeatures } from './utils/union';
+export { unionPolygons, unionAll, unionFeatures, unionWith } from './utils/union';
 
 // Difference utilities
-export { differencePolygons, differenceFeatures } from './utils/difference';
+export { differencePolygons, differenceFeatures, subtract } from './utils/difference';
 
 // Intersection utilities
 export type { LineSegment } from './utils/intersection';
@@ -367,6 +367,22 @@ export {
 // ZIP code utilities for demographics
 export type { ZipCentroid } from './utils/demographics/zipcode';
 export {
+  // H3-to-ZIP index (fast path for instant lookups)
+  loadH3ZipIndex,
+  loadH3ZipIndexFromUrl,
+  isH3IndexLoaded,
+  getH3IndexStats,
+  findZipsInPolygonLocal,
+  // Local demographics data (instant lookups, no API calls)
+  loadDemographicsData,
+  loadDemographicsDataFromUrl,
+  isDemographicsDataLoaded,
+  getLocalDemographics,
+  // Legacy aliases
+  loadDemographicsCache,
+  getCachedDemographics,
+  isDemographicsCacheLoaded,
+  // ZIP lookup functions
   getZipForPoint,
   findZipsInRadius,
   filterZipsByPolygon,
@@ -374,3 +390,10 @@ export {
   estimateTravelRadius,
   clearZipCache,
 } from './utils/demographics/zipcode';
+
+// Embedded H3-to-ZIP index (no file copy needed!)
+export { zipH3Index, initializeZipIndex } from './utils/demographics/zip-h3-index';
+
+// Cache utilities
+export type { CacheOptions, CacheStats } from './utils/cache';
+export { GeoCache, roundForCacheKey, coordinateCacheKey } from './utils/cache';
