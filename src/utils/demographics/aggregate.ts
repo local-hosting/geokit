@@ -214,25 +214,27 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
 
 /**
  * Aggregate by simple average (when population data unavailable)
+ * Optimized to use single loop instead of multiple map/filter chains
  */
 function aggregateByAverage(results: DemographicsResult[]): DemographicsResult {
-  const incomes = results
-    .map((r) => r.medianHouseholdIncome)
-    .filter((v): v is number => v !== undefined);
-  const ages = results.map((r) => r.medianAge).filter((v): v is number => v !== undefined);
-  const homeValues = results
-    .map((r) => r.medianHomeValue)
-    .filter((v): v is number => v !== undefined);
-  const rents = results.map((r) => r.medianRent).filter((v): v is number => v !== undefined);
-  const householdSizes = results
-    .map((r) => r.averageHouseholdSize)
-    .filter((v): v is number => v !== undefined);
-  const ownerPcts = results
-    .map((r) => r.ownerOccupiedPct)
-    .filter((v): v is number => v !== undefined);
-  const renterPcts = results
-    .map((r) => r.renterOccupiedPct)
-    .filter((v): v is number => v !== undefined);
+  // Collect values in single pass to reduce intermediate arrays
+  const incomes: number[] = [];
+  const ages: number[] = [];
+  const homeValues: number[] = [];
+  const rents: number[] = [];
+  const householdSizes: number[] = [];
+  const ownerPcts: number[] = [];
+  const renterPcts: number[] = [];
+
+  for (const r of results) {
+    if (r.medianHouseholdIncome !== undefined) incomes.push(r.medianHouseholdIncome);
+    if (r.medianAge !== undefined) ages.push(r.medianAge);
+    if (r.medianHomeValue !== undefined) homeValues.push(r.medianHomeValue);
+    if (r.medianRent !== undefined) rents.push(r.medianRent);
+    if (r.averageHouseholdSize !== undefined) householdSizes.push(r.averageHouseholdSize);
+    if (r.ownerOccupiedPct !== undefined) ownerPcts.push(r.ownerOccupiedPct);
+    if (r.renterOccupiedPct !== undefined) renterPcts.push(r.renterOccupiedPct);
+  }
 
   // Find top two generations by counting occurrences
   const generationCounts: Record<string, number> = {};

@@ -25,10 +25,11 @@ describe('GooglePlacesAPIProvider', () => {
       expect(provider.getName()).toBe('google-places');
     });
 
-    it('should have placeSearch and behavioral capabilities', () => {
+    it('should have placeSearch, ratings, and reviews capabilities', () => {
       const capabilities = provider.getCapabilities();
       expect(capabilities).toContain('placeSearch');
-      expect(capabilities).toContain('behavioral');
+      expect(capabilities).toContain('ratings');
+      expect(capabilities).toContain('reviews');
     });
 
     it('should initialize with API key', async () => {
