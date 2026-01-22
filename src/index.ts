@@ -391,8 +391,8 @@ export {
   clearZipCache,
 } from './utils/demographics/zipcode';
 
-// Embedded H3-to-ZIP index (no file copy needed!)
-export { zipH3Index, initializeZipIndex } from './utils/demographics/zip-h3-index';
+// H3-to-ZIP index loader (lazy-loaded from URL, saves ~690KB bundle size)
+export { initializeZipIndex, loadZipIndexData } from './utils/demographics/zip-h3-index';
 
 // Cache utilities
 export type { CacheOptions, CacheStats } from './utils/cache';

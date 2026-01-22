@@ -79,6 +79,10 @@ export interface PopupContentOptions {
   headlineBadge?: string;
   /** Custom color for the badge (hex color, e.g., "#0073CF") */
   headlineBadgeColor?: string;
+  /** Second badge displayed after first badge (e.g., "★ 2.9" for rating) */
+  headlineBadge2?: string;
+  /** Custom color for the second badge (hex color, e.g., "#DAA520" for golden) */
+  headlineBadge2Color?: string;
   /** Secondary text below headline */
   subhead?: string;
   /** Array of tags to display (string or labeled tag) */
@@ -581,15 +585,24 @@ export class PopupElement extends MapChildElement {
    * Allows consuming apps to fully customize popup content
    */
   public static buildPopupContentGeneric(options: PopupContentOptions): HTMLElement {
-    const { headline, headlineBadge, headlineBadgeColor, subhead, tags, actions, footerLabel } =
-      options;
+    const {
+      headline,
+      headlineBadge,
+      headlineBadgeColor,
+      headlineBadge2,
+      headlineBadge2Color,
+      subhead,
+      tags,
+      actions,
+      footerLabel,
+    } = options;
 
     // Create container element using only native DOM APIs
     const container = document.createElement('div');
     container.setAttribute('class', 'geokit-popup-content');
 
-    // Add headline (with optional inline badge)
-    if (headline || headlineBadge) {
+    // Add headline (with optional inline badges)
+    if (headline || headlineBadge || headlineBadge2) {
       const headlineEl = document.createElement('h4');
       headlineEl.setAttribute('class', 'geokit-popup-title');
 
@@ -609,6 +622,21 @@ export class PopupElement extends MapChildElement {
         }
 
         headlineEl.appendChild(badgeEl);
+      }
+
+      // Add second badge (e.g., rating) after first badge
+      if (headlineBadge2) {
+        const badge2El = document.createElement('span');
+        badge2El.setAttribute('class', 'geokit-popup-badge');
+        badge2El.textContent = headlineBadge2;
+
+        // Apply custom badge color if provided
+        if (headlineBadge2Color) {
+          badge2El.style.background = headlineBadge2Color;
+          badge2El.style.color = '#fff';
+        }
+
+        headlineEl.appendChild(badge2El);
       }
 
       container.appendChild(headlineEl);

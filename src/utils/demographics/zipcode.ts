@@ -32,6 +32,21 @@ let h3ZipIndex: Record<string, string[]> | null = null;
 const H3_INDEX_RESOLUTION = 5;
 
 /**
+ * Simple LRU cache for polygonToH3 results
+ * Key is polygon hash, value is H3 cells
+ */
+const polygonH3Cache = new Map<string, string[]>();
+const POLYGON_CACHE_MAX_SIZE = 50;
+
+function getPolygonHash(polygon: Polygon | MultiPolygon): string {
+  // Simple hash based on first few coordinates
+  const coords =
+    polygon.type === 'Polygon' ? polygon.coordinates[0] : polygon.coordinates[0]?.[0] || [];
+  const sample = coords.slice(0, 4);
+  return sample.map(([lng, lat]) => `${lng.toFixed(4)},${lat.toFixed(4)}`).join('|');
+}
+
+/**
  * Pre-fetched demographics data for instant lookups
  * Loaded from local data files (no Census API calls needed)
  */
@@ -43,7 +58,12 @@ let demographicsData: Record<string, any> | null = null;
  */
 export function loadDemographicsData(data: Record<string, any>): void {
   // Merge with existing data (allows loading multiple market files)
-  demographicsData = demographicsData ? { ...demographicsData, ...data } : data;
+  // Use Object.assign for better performance than spread operator
+  if (demographicsData) {
+    Object.assign(demographicsData, data);
+  } else {
+    demographicsData = data;
+  }
 }
 
 /**
@@ -77,6 +97,31 @@ export function isDemographicsDataLoaded(): boolean {
 export function getLocalDemographics(zipcode: string): any | null {
   if (!demographicsData) return null;
   return demographicsData[zipcode] || null;
+}
+
+/**
+ * Find ZIPs in a polygon using embedded H3 cells in demographics data
+ * This is an alternative to using the separate H3 index file
+ * Returns null if demographics data doesn't have H3 cells embedded
+ */
+export function findZipsFromEmbeddedH3(h3Cells: Set<string>): string[] | null {
+  if (!demographicsData) return null;
+
+  // Check if demographics data has embedded H3 cells
+  const firstZip = Object.keys(demographicsData)[0];
+  if (!firstZip || !demographicsData[firstZip]?.h3) {
+    return null; // No embedded H3 cells
+  }
+
+  // Find all ZIPs whose H3 cell matches one in the polygon
+  const matchingZips: string[] = [];
+  for (const [zipcode, data] of Object.entries(demographicsData)) {
+    if (data?.h3 && h3Cells.has(data.h3)) {
+      matchingZips.push(zipcode);
+    }
+  }
+
+  return matchingZips;
 }
 
 // Legacy aliases for backward compatibility
@@ -147,25 +192,15 @@ export function getH3IndexStats(): { loaded: boolean; cellCount: number; zipCoun
 }
 
 /**
- * Find ZIP codes using H3 index (instant, no API calls)
- * Returns null if index not loaded - caller should fall back to API method
- *
- * Uses multiple strategies to find ZIPs:
- * 1. Fill polygon with H3 cells (works for large polygons)
- * 2. Sample polygon vertices (catches edge cases)
- * 3. Sample polygon centroid (fallback for small polygons)
+ * Get H3 cells that cover a polygon (with caching)
+ * Shared between H3 index lookup and embedded H3 lookup
  */
-export function findZipsInPolygonLocal(polygon: Polygon | MultiPolygon): string[] | null {
-  if (!h3ZipIndex) {
-    return null; // Index not loaded, fall back to API
-  }
+function getPolygonH3Cells(polygon: Polygon | MultiPolygon): string[] {
+  const polygonHash = getPolygonHash(polygon);
+  let allCells = polygonH3Cache.get(polygonHash);
 
-  try {
-    const zips = new Set<string>();
-
-    // Strategy 1: Get H3 cells that fill the polygon
-    let allCells: string[] = [];
-
+  if (!allCells) {
+    allCells = [];
     if (polygon.type === 'Polygon') {
       allCells = polygonToH3(polygon, H3_INDEX_RESOLUTION);
     } else {
@@ -177,7 +212,66 @@ export function findZipsInPolygonLocal(polygon: Polygon | MultiPolygon): string[
       }
     }
 
-    // Collect ZIPs from filled cells
+    // Add vertex samples to catch edges
+    const outerRing =
+      polygon.type === 'Polygon' ? polygon.coordinates[0] : polygon.coordinates[0]?.[0] || [];
+    const sampleInterval = Math.max(1, Math.floor(outerRing.length / 8));
+    for (let i = 0; i < outerRing.length; i += sampleInterval) {
+      const [lng, lat] = outerRing[i];
+      try {
+        const cell = latLngToCell(lat, lng, H3_INDEX_RESOLUTION);
+        if (!allCells.includes(cell)) {
+          allCells.push(cell);
+        }
+      } catch {
+        // Skip invalid coordinates
+      }
+    }
+
+    // Cache result (with size limit)
+    if (polygonH3Cache.size >= POLYGON_CACHE_MAX_SIZE) {
+      const firstKey = polygonH3Cache.keys().next().value;
+      if (firstKey) polygonH3Cache.delete(firstKey);
+    }
+    polygonH3Cache.set(polygonHash, allCells);
+  }
+
+  return allCells;
+}
+
+/**
+ * Find ZIP codes using H3 index (instant, no API calls)
+ * Returns null if neither H3 index nor embedded H3 data available
+ *
+ * Tries two approaches:
+ * 1. Separate H3 index file (h3ZipIndex) - traditional approach
+ * 2. Embedded H3 cells in demographics data - no separate file needed
+ *
+ * Falls back to API if neither is available.
+ */
+export function findZipsInPolygonLocal(polygon: Polygon | MultiPolygon): string[] | null {
+  // Get H3 cells for the polygon (cached)
+  const allCells = getPolygonH3Cells(polygon);
+  const cellSet = new Set(allCells);
+
+  // APPROACH 1: Try embedded H3 cells in demographics data first
+  // This eliminates the need for the separate 692KB H3 index file
+  if (demographicsData) {
+    const embeddedResult = findZipsFromEmbeddedH3(cellSet);
+    if (embeddedResult !== null && embeddedResult.length > 0) {
+      return embeddedResult;
+    }
+  }
+
+  // APPROACH 2: Use separate H3 index if loaded
+  if (!h3ZipIndex) {
+    return null; // No H3 data available, fall back to API
+  }
+
+  try {
+    const zips = new Set<string>();
+
+    // Collect ZIPs from H3 cells (already computed and cached above)
     for (const cell of allCells) {
       const cellZips = h3ZipIndex[cell];
       if (cellZips) {
@@ -187,49 +281,32 @@ export function findZipsInPolygonLocal(polygon: Polygon | MultiPolygon): string[
       }
     }
 
-    // Strategy 2: Sample polygon vertices (catches edges the fill might miss)
-    const outerRing =
-      polygon.type === 'Polygon' ? polygon.coordinates[0] : polygon.coordinates[0]?.[0] || [];
+    // Fallback: Sample centroid for very small polygons
+    if (zips.size === 0) {
+      const outerRing =
+        polygon.type === 'Polygon' ? polygon.coordinates[0] : polygon.coordinates[0]?.[0] || [];
 
-    // Sample every Nth vertex plus corners
-    const sampleInterval = Math.max(1, Math.floor(outerRing.length / 8));
-    for (let i = 0; i < outerRing.length; i += sampleInterval) {
-      const [lng, lat] = outerRing[i];
-      try {
-        const cell = latLngToCell(lat, lng, H3_INDEX_RESOLUTION);
-        const cellZips = h3ZipIndex[cell];
-        if (cellZips) {
-          for (const zip of cellZips) {
-            zips.add(zip);
-          }
+      if (outerRing.length >= 3) {
+        let sumLat = 0;
+        let sumLng = 0;
+        for (const [lng, lat] of outerRing) {
+          sumLat += lat;
+          sumLng += lng;
         }
-      } catch {
-        // Skip invalid coordinates
-      }
-    }
+        const centroidLat = sumLat / outerRing.length;
+        const centroidLng = sumLng / outerRing.length;
 
-    // Strategy 3: Sample centroid (fallback for very small polygons)
-    if (zips.size === 0 && outerRing.length >= 3) {
-      // Calculate simple centroid
-      let sumLat = 0;
-      let sumLng = 0;
-      for (const [lng, lat] of outerRing) {
-        sumLat += lat;
-        sumLng += lng;
-      }
-      const centroidLat = sumLat / outerRing.length;
-      const centroidLng = sumLng / outerRing.length;
-
-      try {
-        const cell = latLngToCell(centroidLat, centroidLng, H3_INDEX_RESOLUTION);
-        const cellZips = h3ZipIndex[cell];
-        if (cellZips) {
-          for (const zip of cellZips) {
-            zips.add(zip);
+        try {
+          const cell = latLngToCell(centroidLat, centroidLng, H3_INDEX_RESOLUTION);
+          const cellZips = h3ZipIndex[cell];
+          if (cellZips) {
+            for (const zip of cellZips) {
+              zips.add(zip);
+            }
           }
+        } catch {
+          // Skip invalid centroid
         }
-      } catch {
-        // Skip invalid centroid
       }
     }
 
@@ -250,8 +327,14 @@ export interface ZipCentroid {
 
 /**
  * Cache for ZIP code lookups (avoid repeated API calls)
+ * Using LRU cache with size limit to prevent memory leaks
  */
-const zipCache = new Map<string, ZipCentroid[]>();
+import { GeoCache } from '../cache';
+const zipCache = new GeoCache<ZipCentroid[]>({
+  maxEntries: 200,
+  ttlMs: 30 * 60 * 1000, // 30 minutes
+  name: 'ZipLookupCache',
+});
 
 /**
  * Get ZIP code for a point using the registered geocoding provider (Mapbox)
@@ -310,7 +393,7 @@ export async function findZipsInRadius(
   radiusMeters: number,
   sampleCount = 9
 ): Promise<string[]> {
-  const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)},${radiusMeters}`;
+  const cacheKey = `radius:${lat.toFixed(4)},${lng.toFixed(4)},${radiusMeters}`;
   const cached = zipCache.get(cacheKey);
   if (cached) {
     return cached.map((z) => z.zipcode);
