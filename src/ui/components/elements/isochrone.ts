@@ -657,27 +657,15 @@ export class IsochroneElement extends MapChildElement {
       // Use a polling approach with a maximum number of attempts
       this.startLayerOrderMonitoring();
 
-      // Wait for map to render the layers before dispatching event
-      // This ensures the isochrone is visible before demographics are shown
-      if (this.map) {
-        this.map.once('render', () => {
-          // Dispatch event after map has rendered the isochrone
-          this.dispatchEvent(
-            new CustomEvent('isochrone-loaded', {
-              detail: { lat, lng, time, mode, data: result, element: this },
-              bubbles: true,
-            })
-          );
-        });
-      } else {
-        // Fallback: dispatch immediately if map is not available
-        this.dispatchEvent(
-          new CustomEvent('isochrone-loaded', {
-            detail: { lat, lng, time, mode, data: result, element: this },
-            bubbles: true,
-          })
-        );
-      }
+      // Dispatch event immediately after we have the data
+      // This allows demographics to start calculating concurrently with map rendering
+      // Demographics only need the polygon geometry, not the visual rendering
+      this.dispatchEvent(
+        new CustomEvent('isochrone-loaded', {
+          detail: { lat, lng, time, mode, data: result, element: this },
+          bubbles: true,
+        })
+      );
     } catch (error) {
       const errorMsg = `[Isochrone] ✗ Failed to fetch isochrone for ${lat.toFixed(6)},${lng.toFixed(6)}: ${error instanceof Error ? error.message : String(error)}`;
       console.error(errorMsg, error);
