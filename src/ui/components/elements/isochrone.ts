@@ -25,6 +25,8 @@ export interface IsochroneOptions {
   opacity?: number;
   strokeColor?: string;
   strokeWidth?: number;
+  /** Pre-computed isochrone data (GeoJSON FeatureCollection) - skips API fetch when provided */
+  data?: GeoJSON.FeatureCollection;
 }
 
 export class IsochroneElement extends MapChildElement {
@@ -40,6 +42,7 @@ export class IsochroneElement extends MapChildElement {
     'visible',
     'render', // 'polygon' or 'h3'
     'h3-resolution', // H3 resolution (0-15, default 7)
+    'data', // Pre-computed isochrone data (JSON string of GeoJSON FeatureCollection)
   ];
 
   private sourceId: string | null = null;
@@ -514,41 +517,71 @@ export class IsochroneElement extends MapChildElement {
       return;
     }
 
-    // Create cache key
-    const cacheKey = `${lat},${lng},${time},${mode}`;
+    // Create cache key (include 'stored' suffix when using pre-computed data)
+    const hasStoredData = this.storedData !== null;
+    const cacheKey = `${lat},${lng},${time},${mode}${hasStoredData ? ':stored' : ''}`;
     if (cacheKey === this.currentCacheKey) return;
 
     this.currentCacheKey = cacheKey;
 
-    // Get API provider that supports isochrone
-    const provider = getProviderForCapability('isochrone');
-    if (!provider) {
-      console.error('[Isochrone] No API provider supports isochrone capability');
-      this.dispatchEvent(
-        new CustomEvent('isochrone-error', {
-          detail: {
-            error: new Error('No API provider supports isochrone capability'),
-            lat,
-            lng,
-            time,
-            mode,
-            element: this,
-          },
-          bubbles: true,
-        })
-      );
-      return;
+    // Check for pre-computed isochrone data first
+    const storedData = this.storedData;
+    let result: GeoJSON.FeatureCollection | null = null;
+
+    if (storedData) {
+      // Use pre-computed data - skip API fetch
+      debug.log(`[Isochrone] Using stored data for ${lat.toFixed(6)},${lng.toFixed(6)}`);
+      result = storedData;
+    } else {
+      // Get API provider that supports isochrone
+      const provider = getProviderForCapability('isochrone');
+      if (!provider) {
+        console.error('[Isochrone] No API provider supports isochrone capability');
+        this.dispatchEvent(
+          new CustomEvent('isochrone-error', {
+            detail: {
+              error: new Error('No API provider supports isochrone capability'),
+              lat,
+              lng,
+              time,
+              mode,
+              element: this,
+            },
+            bubbles: true,
+          })
+        );
+        return;
+      }
+
+      try {
+        // Fetch isochrone data from API
+        result = (await provider.fetchIsochrone?.({
+          lat,
+          lng,
+          minutes: [time],
+          mode,
+        })) as GeoJSON.FeatureCollection | null;
+      } catch (error) {
+        const errorMsg = `[Isochrone] ✗ Failed to fetch isochrone for ${lat.toFixed(6)},${lng.toFixed(6)}: ${error instanceof Error ? error.message : String(error)}`;
+        console.error(errorMsg, error);
+        this.dispatchEvent(
+          new CustomEvent('isochrone-error', {
+            detail: {
+              error,
+              lat,
+              lng,
+              time,
+              mode,
+              element: this,
+            },
+            bubbles: true,
+          })
+        );
+        return;
+      }
     }
 
     try {
-      // Fetch isochrone data
-      const result = await provider.fetchIsochrone?.({
-        lat,
-        lng,
-        minutes: [time],
-        mode,
-      });
-
       // Store original API result for resolution upgrades
       // We need the original polygon to convert to higher resolution later
       (this as any)._originalIsochroneData = result;
@@ -911,6 +944,47 @@ export class IsochroneElement extends MapChildElement {
     const resolution = parseInt(this.getAttribute('h3-resolution') || '7');
     // Clamp to valid H3 resolution range (0-15)
     return Math.max(0, Math.min(15, resolution));
+  }
+
+  /**
+   * Get pre-computed isochrone data from the 'data' attribute or setData() call
+   * Returns null if not set or invalid JSON
+   */
+  get storedData(): GeoJSON.FeatureCollection | null {
+    // Check for data set via setData() first (avoids JSON parsing overhead)
+    const internalData = (this as any)._storedData;
+    if (internalData) return internalData;
+
+    // Fall back to data attribute
+    const dataAttr = this.getAttribute('data');
+    if (!dataAttr) return null;
+
+    try {
+      const parsed = JSON.parse(dataAttr);
+      // Validate it looks like a FeatureCollection
+      if (parsed && parsed.type === 'FeatureCollection' && Array.isArray(parsed.features)) {
+        return parsed as GeoJSON.FeatureCollection;
+      }
+      return null;
+    } catch {
+      debug.warn('[Isochrone] Invalid JSON in data attribute');
+      return null;
+    }
+  }
+
+  /**
+   * Set pre-computed isochrone data programmatically
+   * This avoids stringifying large JSON in attributes
+   */
+  setData(data: GeoJSON.FeatureCollection | null): void {
+    if (data) {
+      // Store internally and trigger re-render
+      (this as any)._storedData = data;
+      this.currentCacheKey = null; // Force re-render
+      this.waitForStyleLoaded(() => this.fetchAndRenderIsochrone());
+    } else {
+      delete (this as any)._storedData;
+    }
   }
 
   /**
