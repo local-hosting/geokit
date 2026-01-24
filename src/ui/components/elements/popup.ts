@@ -662,13 +662,13 @@ export class PopupElement extends MapChildElement {
         tagEl.setAttribute('class', 'geokit-popup-tag');
 
         // Helper to truncate text to max length
-        const truncate = (text: string, maxLen: number = 20): string => {
+        const truncate = (text: string, maxLen: number = 12): string => {
           return text.length > maxLen ? text.slice(0, maxLen) + '…' : text;
         };
 
         if (typeof tagItem === 'string') {
           tagEl.textContent = truncate(tagItem);
-          if (tagItem.length > 20) tagEl.setAttribute('title', tagItem);
+          if (tagItem.length > 12) tagEl.setAttribute('title', tagItem);
         } else {
           // Labeled tag: { label: 'DMA', value: 'Albuquerque' }
           if (tagItem.label) {
@@ -680,7 +680,7 @@ export class PopupElement extends MapChildElement {
           const truncatedValue = truncate(tagItem.value);
           const valueEl = document.createTextNode(truncatedValue);
           tagEl.appendChild(valueEl);
-          if (tagItem.value.length > 20) tagEl.setAttribute('title', tagItem.value);
+          if (tagItem.value.length > 12) tagEl.setAttribute('title', tagItem.value);
         }
 
         tagsContainer.appendChild(tagEl);
