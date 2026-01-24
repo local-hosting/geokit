@@ -59,7 +59,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p config/tsconfig.json && tsc -p config/tsconfig.cjs.json && node scripts/fix-esm-imports.js && node scripts/rename-cjs.js",
+    "build": "tsc -p config/tsconfig.json && tsc -p config/tsconfig.cjs.json && node scripts/build/fix-esm-imports.js && node scripts/build/rename-cjs.js",
     "dev": "vite --config config/vite.demo.config.js",
     "build:demo": "vite build --config config/vite.demo.config.js",
     "preview:demo": "vite preview --config config/vite.demo.config.js",
