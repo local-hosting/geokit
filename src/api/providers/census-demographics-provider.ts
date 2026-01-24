@@ -39,7 +39,7 @@ const DEFAULT_FIELDS: DemographicField[] = ['basic', 'age', 'language'];
 
 /** Census API variable groups by field type
  * All from acs5 detailed tables (B/C tables) - can be combined in single request
- * basic (7) + age (16) + language (3) = 26 variables
+ * Census API allows up to 50 variables per request
  *
  * Age uses key brackets (male only, doubled for estimate):
  * - Gen Z: 18-24
@@ -56,6 +56,7 @@ const CENSUS_VARIABLES: Record<DemographicField, string[]> = {
     'B25003_001E', // Total occupied housing units
     'B25003_002E', // Owner-occupied
     'B25003_003E', // Renter-occupied
+    'B25077_001E', // Median home value
   ],
   age: [
     // Male age groups (will double for total estimate)
@@ -92,6 +93,52 @@ const CENSUS_VARIABLES: Record<DemographicField, string[]> = {
     'B02001_008E', // Two or more
     'B03003_001E', // Hispanic origin total
     'B03003_003E', // Hispanic or Latino
+  ],
+  // NEW: Internet subscription type (B28011)
+  internet: [
+    'B28011_001E', // Total households
+    'B28011_002E', // With an Internet subscription
+    'B28011_004E', // Cellular data plan only
+    'B28011_008E', // Without an Internet subscription
+  ],
+  // NEW: Commute/transportation to work (B08301)
+  commute: [
+    'B08301_001E', // Total workers 16+
+    'B08301_003E', // Car, truck, or van - drove alone
+    'B08301_004E', // Car, truck, or van - carpooled
+    'B08301_010E', // Public transportation
+    'B08301_021E', // Worked from home
+  ],
+  // NEW: Occupation (C24010)
+  occupation: [
+    'C24010_001E', // Total civilian employed 16+
+    'C24010_003E', // Management, business, science, arts (male)
+    'C24010_039E', // Management, business, science, arts (female)
+    'C24010_019E', // Service occupations (male)
+    'C24010_055E', // Service occupations (female)
+    'C24010_027E', // Sales and office (male)
+    'C24010_063E', // Sales and office (female)
+    'C24010_030E', // Natural resources, construction, maintenance (male)
+    'C24010_066E', // Natural resources, construction, maintenance (female)
+    'C24010_034E', // Production, transportation, material moving (male)
+    'C24010_070E', // Production, transportation, material moving (female)
+  ],
+  // NEW: Telephone service (B28001)
+  phone: [
+    'B28001_001E', // Total households
+    'B28001_002E', // With telephone service
+    'B28001_005E', // With landline only
+    'B28001_006E', // With cellular only
+    'B28001_011E', // No telephone service
+  ],
+  // NEW: Vehicle access (B08201)
+  vehicles: [
+    'B08201_001E', // Total households
+    'B08201_002E', // No vehicle available
+    'B08201_003E', // 1 vehicle available
+    'B08201_004E', // 2 vehicles available
+    'B08201_005E', // 3 vehicles available
+    'B08201_006E', // 4 or more vehicles available
   ],
 };
 
@@ -386,11 +433,91 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
         }
       }
 
+      // Calculate internet access percentages (B28011)
+      const internetTotal = getValue('B28011_001E') || 0;
+      let broadbandPct: number | undefined;
+      let cellularOnlyPct: number | undefined;
+      let noInternetPct: number | undefined;
+
+      if (internetTotal > 0) {
+        const withInternet = getValue('B28011_002E') || 0;
+        const cellularOnly = getValue('B28011_004E') || 0;
+        const noInternet = getValue('B28011_008E') || 0;
+        broadbandPct = Math.round((withInternet / internetTotal) * 100);
+        cellularOnlyPct = Math.round((cellularOnly / internetTotal) * 100);
+        noInternetPct = Math.round((noInternet / internetTotal) * 100);
+      }
+
+      // Calculate commute/transportation percentages (B08301)
+      const commuteTotal = getValue('B08301_001E') || 0;
+      let droveAlonePct: number | undefined;
+      let carpoolPct: number | undefined;
+      let publicTransitPct: number | undefined;
+      let workedFromHomePct: number | undefined;
+
+      if (commuteTotal > 0) {
+        droveAlonePct = Math.round(((getValue('B08301_003E') || 0) / commuteTotal) * 100);
+        carpoolPct = Math.round(((getValue('B08301_004E') || 0) / commuteTotal) * 100);
+        publicTransitPct = Math.round(((getValue('B08301_010E') || 0) / commuteTotal) * 100);
+        workedFromHomePct = Math.round(((getValue('B08301_021E') || 0) / commuteTotal) * 100);
+      }
+
+      // Calculate occupation percentages (C24010) - male + female combined
+      const occupationTotal = getValue('C24010_001E') || 0;
+      let professionalPct: number | undefined;
+      let servicePct: number | undefined;
+      let salesOfficePct: number | undefined;
+      let constructionPct: number | undefined;
+      let productionPct: number | undefined;
+
+      if (occupationTotal > 0) {
+        const professional = (getValue('C24010_003E') || 0) + (getValue('C24010_039E') || 0);
+        const service = (getValue('C24010_019E') || 0) + (getValue('C24010_055E') || 0);
+        const salesOffice = (getValue('C24010_027E') || 0) + (getValue('C24010_063E') || 0);
+        const construction = (getValue('C24010_030E') || 0) + (getValue('C24010_066E') || 0);
+        const production = (getValue('C24010_034E') || 0) + (getValue('C24010_070E') || 0);
+
+        professionalPct = Math.round((professional / occupationTotal) * 100);
+        servicePct = Math.round((service / occupationTotal) * 100);
+        salesOfficePct = Math.round((salesOffice / occupationTotal) * 100);
+        constructionPct = Math.round((construction / occupationTotal) * 100);
+        productionPct = Math.round((production / occupationTotal) * 100);
+      }
+
+      // Calculate phone service percentages (B28001)
+      const phoneTotal = getValue('B28001_001E') || 0;
+      let landlinePct: number | undefined;
+      let cellphoneOnlyPct: number | undefined;
+      let noPhonePct: number | undefined;
+
+      if (phoneTotal > 0) {
+        landlinePct = Math.round(((getValue('B28001_005E') || 0) / phoneTotal) * 100);
+        cellphoneOnlyPct = Math.round(((getValue('B28001_006E') || 0) / phoneTotal) * 100);
+        noPhonePct = Math.round(((getValue('B28001_011E') || 0) / phoneTotal) * 100);
+      }
+
+      // Calculate vehicle access percentages (B08201)
+      const vehicleTotal = getValue('B08201_001E') || 0;
+      let noVehiclePct: number | undefined;
+      let oneVehiclePct: number | undefined;
+      let twoOrMoreVehiclesPct: number | undefined;
+
+      if (vehicleTotal > 0) {
+        noVehiclePct = Math.round(((getValue('B08201_002E') || 0) / vehicleTotal) * 100);
+        oneVehiclePct = Math.round(((getValue('B08201_003E') || 0) / vehicleTotal) * 100);
+        const twoPlus =
+          (getValue('B08201_004E') || 0) +
+          (getValue('B08201_005E') || 0) +
+          (getValue('B08201_006E') || 0);
+        twoOrMoreVehiclesPct = Math.round((twoPlus / vehicleTotal) * 100);
+      }
+
       const result: DemographicsResult = {
         totalPopulation: getValue('B01001_001E'),
         medianHouseholdIncome: getValue('B19013_001E'),
         medianRent: getValue('B25064_001E'),
         medianAge: getValue('B01002_001E'),
+        medianHomeValue: getValue('B25077_001E'),
         ownerOccupiedPct,
         renterOccupiedPct,
         topGeneration,
@@ -401,6 +528,29 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
         topLanguagePct,
         secondLanguage,
         secondLanguagePct,
+        // Internet access
+        broadbandPct,
+        cellularOnlyPct,
+        noInternetPct,
+        // Commute/transportation
+        droveAlonePct,
+        carpoolPct,
+        publicTransitPct,
+        workedFromHomePct,
+        // Occupation
+        professionalPct,
+        servicePct,
+        salesOfficePct,
+        constructionPct,
+        productionPct,
+        // Phone service
+        landlinePct,
+        cellphoneOnlyPct,
+        noPhonePct,
+        // Vehicle access
+        noVehiclePct,
+        oneVehiclePct,
+        twoOrMoreVehiclesPct,
         zipcode,
         dataSource: 'census',
         year: 2023, // ACS 5-year estimates (2019-2023)
