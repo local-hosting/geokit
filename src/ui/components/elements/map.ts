@@ -1571,6 +1571,8 @@ export class MapElement extends BaseElement {
     geojson: GeoJSON.FeatureCollection,
     options: {
       color?: string;
+      /** Property name to read color from each feature (takes precedence over color option) */
+      colorProperty?: string;
       size?: number;
       opacity?: number;
       blur?: number;
@@ -1578,6 +1580,10 @@ export class MapElement extends BaseElement {
       shadowColor?: string;
       shadowBlur?: number;
       shadowOpacity?: number;
+      glow?: boolean;
+      glowColor?: string;
+      glowOpacity?: number;
+      glowBlur?: number;
       strokeWidth?: number;
       strokeColor?: string;
       idProperty?: string;

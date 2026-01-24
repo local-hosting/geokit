@@ -932,6 +932,8 @@ export class PointElement extends MapChildElement {
     geojson: GeoJSON.FeatureCollection,
     options: {
       color?: string;
+      /** Property name to read color from each feature (takes precedence over color option) */
+      colorProperty?: string;
       size?: number;
       opacity?: number;
       blur?: number;
@@ -950,7 +952,8 @@ export class PointElement extends MapChildElement {
     } = {}
   ): PointElement[] {
     const {
-      color = '#3b82f6',
+      color: defaultColor = '#3b82f6',
+      colorProperty,
       size = 8,
       opacity = 1,
       blur = 0,
@@ -978,10 +981,16 @@ export class PointElement extends MapChildElement {
 
       const [lng, lat] = feature.geometry.coordinates;
 
+      // Get color from feature property if colorProperty is specified, otherwise use default
+      const featureColor =
+        colorProperty && feature.properties?.[colorProperty]
+          ? String(feature.properties[colorProperty])
+          : defaultColor;
+
       const point = PointElement.create({
         lat,
         lng,
-        color,
+        color: featureColor,
         size,
         opacity,
         blur,
