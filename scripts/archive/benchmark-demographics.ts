@@ -7,7 +7,7 @@
  * 2. Census API calls (individual ZIP lookups)
  * 3. Aggregation (combining multiple ZIPs)
  *
- * Usage: npx tsx scripts/benchmark-demographics.ts
+ * Usage: npx tsx scripts/archive/benchmark-demographics.ts
  */
 
 import { dirname, resolve } from 'path';

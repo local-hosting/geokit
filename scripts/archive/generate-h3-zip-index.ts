@@ -9,8 +9,8 @@
  * https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2023_Gazetteer/
  *
  * Usage:
- *   npx tsx scripts/generate-h3-zip-index.ts
- *   npx tsx scripts/generate-h3-zip-index.ts --output ./data/zip-h3-index.json
+ *   npx tsx scripts/archive/generate-h3-zip-index.ts
+ *   npx tsx scripts/archive/generate-h3-zip-index.ts --output ./data/zip-h3-index.json
  */
 
 import { latLngToCell } from 'h3-js';
