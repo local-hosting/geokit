@@ -45,6 +45,7 @@ export class MapCollectionElement extends BaseElement {
   private isProcessing: boolean = false; // Lock to prevent concurrent processing
   private pendingReprocess: boolean = false; // Track if reprocess needed after current run
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
+  private wasHidden: boolean = false; // Track if collection was previously hidden
 
   constructor() {
     super();
@@ -543,9 +544,37 @@ export class MapCollectionElement extends BaseElement {
 
   /**
    * Check for maps stuck in loading state and reset them
+   * Also detects when the collection transitions from hidden to visible
    */
   private checkStuckMaps(): void {
     const now = Date.now();
+
+    // Check if collection visibility changed (hidden -> visible)
+    const collectionRect = this.getBoundingClientRect();
+    const collectionStyle = window.getComputedStyle(this);
+    const isCurrentlyHidden =
+      collectionStyle.visibility === 'hidden' ||
+      collectionStyle.display === 'none' ||
+      collectionRect.width === 0 ||
+      collectionRect.height === 0;
+
+    if (this.wasHidden && !isCurrentlyHidden) {
+      // Collection just became visible - trigger immediate reprocessing
+      this.wasHidden = false;
+      // Reset health check timestamps to allow immediate activation
+      for (const slot of this.slots) {
+        slot.lastHealthCheckAttempt = 0;
+      }
+      setTimeout(() => this.processVisibilityChanges(), 0);
+      return;
+    }
+
+    this.wasHidden = isCurrentlyHidden;
+
+    // Skip health check if collection is hidden
+    if (isCurrentlyHidden) {
+      return;
+    }
     const STUCK_THRESHOLD_MS = 15000; // 15 seconds - map should load by then
 
     for (const slot of this.slots) {
@@ -652,6 +681,21 @@ export class MapCollectionElement extends BaseElement {
       .filter((s) => s.isActive)
       .map((s) => this.getSlotId(s.slotElement))
       .slice(0, this.poolSize);
+  }
+
+  /**
+   * Refresh the collection - reprocess visibility and activate visible maps
+   * Call this after the collection becomes visible again (e.g., view switch)
+   */
+  public refresh(): void {
+    // Reset health check timestamps to allow immediate activation
+    for (const slot of this.slots) {
+      slot.lastHealthCheckAttempt = 0;
+      slot.failCount = 0;
+      slot.lastFailTime = 0;
+    }
+    // Trigger immediate reprocessing
+    this.processVisibilityChanges();
   }
 
   /**
