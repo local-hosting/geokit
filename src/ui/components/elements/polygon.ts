@@ -236,25 +236,29 @@ export class PolygonElement extends MapChildElement {
       );
 
       // Add stroke layer (after fill layer) - read from properties first
-      const strokeColor =
-        this._propStrokeColor ?? this.safeGetAttribute('stroke-color') ?? '#000000';
+      // Skip stroke layer entirely if strokeWidth is 0 to avoid hairline rendering artifacts
       const strokeWidth =
         this._propStrokeWidth ?? parseFloat(this.safeGetAttribute('stroke-width') || '2');
-      const strokeOpacity =
-        this._propStrokeOpacity ?? parseFloat(this.safeGetAttribute('stroke-opacity') || '1');
-      this.map.addLayer(
-        {
-          id: this.strokeLayerId,
-          type: 'line',
-          source: this.sourceId,
-          paint: {
-            'line-color': strokeColor,
-            'line-width': strokeWidth,
-            'line-opacity': strokeOpacity,
+
+      if (strokeWidth > 0) {
+        const strokeColor =
+          this._propStrokeColor ?? this.safeGetAttribute('stroke-color') ?? '#000000';
+        const strokeOpacity =
+          this._propStrokeOpacity ?? parseFloat(this.safeGetAttribute('stroke-opacity') || '1');
+        this.map.addLayer(
+          {
+            id: this.strokeLayerId,
+            type: 'line',
+            source: this.sourceId,
+            paint: {
+              'line-color': strokeColor,
+              'line-width': strokeWidth,
+              'line-opacity': strokeOpacity,
+            },
           },
-        },
-        beforeId
-      );
+          beforeId
+        );
+      }
     } catch (error) {
       console.error(`[Polygon] Error creating polygon ${this.sourceId}:`, error);
       throw error; // Re-throw to help with debugging

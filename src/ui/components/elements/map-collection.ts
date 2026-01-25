@@ -464,17 +464,26 @@ export class MapCollectionElement extends BaseElement {
   private handleNewMaps(): void {
     const mapElements = Array.from(this.querySelectorAll('gk-map')) as MapElement[];
     const existingElements = new Set(this.slots.map((s) => s.mapElement));
+    let hasNewMaps = false;
 
     for (const mapElement of mapElements) {
       if (!existingElements.has(mapElement)) {
         mapElement.setPoolManaged(true);
         mapElement.showPlaceholder();
 
+        // Check if element is currently visible in viewport
+        const rect = mapElement.getBoundingClientRect();
+        const isInViewport =
+          rect.top < window.innerHeight + this.viewportPadding &&
+          rect.bottom > -this.viewportPadding &&
+          rect.width > 0 &&
+          rect.height > 0;
+
         const slotInfo: SlotInfo = {
           slotElement: mapElement,
           mapElement,
           isActive: false,
-          isVisible: false,
+          isVisible: isInViewport, // Set initial visibility based on actual position
           isActivating: false,
           failCount: 0,
           lastFailTime: 0,
@@ -483,7 +492,14 @@ export class MapCollectionElement extends BaseElement {
         };
         this.slots.push(slotInfo);
         this.intersectionObserver?.observe(mapElement);
+        hasNewMaps = true;
       }
+    }
+
+    // If we added new visible maps, trigger processing immediately
+    if (hasNewMaps) {
+      // Use short delay to allow IntersectionObserver to also fire
+      setTimeout(() => this.processVisibilityChanges(), 50);
     }
   }
 

@@ -24,12 +24,14 @@ export class MapElement extends BaseElement {
     'max-zoom',
     'style',
     'pitch',
+    'max-pitch',
     'bearing',
     'interactive',
     'hide-controls',
     'auto-hide-controls',
     'show-attribution',
     'provider',
+    'sync-url',
   ];
 
   private _controlsVisible: boolean = true;
@@ -40,6 +42,13 @@ export class MapElement extends BaseElement {
   private _isInitializing: boolean = false; // Prevent concurrent initialization
   private _frozenContainerStyle: { display?: string; visibility?: string } | null = null;
   private _mapCanvas: HTMLCanvasElement | null = null;
+
+  // URL sync state
+  private _urlSyncEnabled: boolean = false;
+  private _urlSyncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private _hashChangeHandler: (() => void) | null = null;
+  private _mapMoveEndHandler: (() => void) | null = null;
+  private _isUpdatingFromUrl: boolean = false; // Prevent circular updates
 
   // Child element tracking
   private _childObserver: MutationObserver | null = null;
@@ -111,6 +120,9 @@ export class MapElement extends BaseElement {
   disconnectedCallback(): void {
     // Clean up auto-hide listeners
     this.cleanupAutoHideControls();
+
+    // Clean up URL sync listeners
+    this.cleanupUrlSync();
 
     // Clean up child tracking observer
     this._cleanupChildTracking();
@@ -217,12 +229,20 @@ export class MapElement extends BaseElement {
       // Default to dataviz-dark to avoid deprecated "Streets Default v2"
       const styleAttr = this.getAttribute('map-style') || 'dataviz-dark';
 
+      // Parse max-pitch attribute (default 60 prevents disorienting "upside down" tilting)
+      const maxPitchAttr = this.getAttribute('max-pitch');
+      const maxPitch = maxPitchAttr ? parseFloat(maxPitchAttr) : undefined;
+
+      // Check for URL hash state if sync-url is enabled
+      const urlState = this.hasAttribute('sync-url') ? this.parseUrlHashState() : null;
+
       const options = {
-        lat: parseFloat(this.getAttribute('lat') || '0'),
-        lng: parseFloat(this.getAttribute('lng') || '0'),
-        zoom: parseFloat(this.getAttribute('zoom') || '2'),
-        pitch: parseFloat(this.getAttribute('pitch') || '0'),
-        bearing: parseFloat(this.getAttribute('bearing') || '0'),
+        lat: urlState?.lat ?? parseFloat(this.getAttribute('lat') || '0'),
+        lng: urlState?.lng ?? parseFloat(this.getAttribute('lng') || '0'),
+        zoom: urlState?.zoom ?? parseFloat(this.getAttribute('zoom') || '2'),
+        pitch: urlState?.pitch ?? parseFloat(this.getAttribute('pitch') || '0'),
+        maxPitch,
+        bearing: urlState?.bearing ?? parseFloat(this.getAttribute('bearing') || '0'),
         style: styleAttr,
         interactive: this.getAttribute('interactive') !== 'false',
       };
@@ -265,6 +285,7 @@ export class MapElement extends BaseElement {
         this.isInitialized = true;
         this.hidePlaceholder();
         this.setupAutoHideControls();
+        this.setupUrlSync();
         this.dispatchEvent(
           new CustomEvent('gk-map-ready', {
             detail: { map: this.map, element: this },
@@ -561,6 +582,176 @@ export class MapElement extends BaseElement {
     }
   }
 
+  // ============================================================================
+  // URL Hash Sync
+  // ============================================================================
+
+  /**
+   * Parse map state from URL hash
+   * Supports format: #map=zoom/lat/lng/pitch/bearing
+   * @returns Parsed state or null if not present/invalid
+   */
+  private parseUrlHashState(): {
+    zoom: number;
+    lat: number;
+    lng: number;
+    pitch: number;
+    bearing: number;
+  } | null {
+    const hash = window.location.hash;
+    if (!hash || !hash.startsWith('#map=')) {
+      return null;
+    }
+
+    try {
+      const parts = hash.slice(5).split('/');
+      if (parts.length < 3) return null;
+
+      const zoom = parseFloat(parts[0]);
+      const lat = parseFloat(parts[1]);
+      const lng = parseFloat(parts[2]);
+      const pitch = parts.length > 3 ? parseFloat(parts[3]) : 0;
+      const bearing = parts.length > 4 ? parseFloat(parts[4]) : 0;
+
+      // Validate values
+      if (isNaN(zoom) || isNaN(lat) || isNaN(lng) || isNaN(pitch) || isNaN(bearing)) {
+        return null;
+      }
+
+      // Validate ranges
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return null;
+      }
+
+      return { zoom, lat, lng, pitch, bearing };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Update URL hash with current map state
+   * Uses debouncing to avoid excessive URL updates during panning
+   */
+  private updateUrlHash(): void {
+    if (!this.map || !this._urlSyncEnabled || this._isUpdatingFromUrl) {
+      return;
+    }
+
+    // Clear existing debounce timer
+    if (this._urlSyncDebounceTimer) {
+      clearTimeout(this._urlSyncDebounceTimer);
+    }
+
+    // Debounce URL updates (150ms)
+    this._urlSyncDebounceTimer = setTimeout(() => {
+      if (!this.map) return;
+
+      const map = this.map as any;
+      const center = map.getCenter?.();
+      const zoom = map.getZoom?.();
+      const pitch = map.getPitch?.();
+      const bearing = map.getBearing?.();
+
+      if (!center || zoom === undefined) return;
+
+      // Round values for cleaner URLs
+      const roundedZoom = Math.round(zoom * 100) / 100;
+      const roundedLat = Math.round(center.lat * 100000) / 100000;
+      const roundedLng = Math.round(center.lng * 100000) / 100000;
+      const roundedPitch = Math.round((pitch || 0) * 10) / 10;
+      const roundedBearing = Math.round((bearing || 0) * 10) / 10;
+
+      // Build hash string - only include pitch/bearing if non-zero
+      let hashString = `#map=${roundedZoom}/${roundedLat}/${roundedLng}`;
+      if (roundedPitch !== 0 || roundedBearing !== 0) {
+        hashString += `/${roundedPitch}/${roundedBearing}`;
+      }
+
+      // Update URL without triggering navigation
+      const currentUrl = new URL(window.location.href);
+      if (currentUrl.hash !== hashString) {
+        history.replaceState(null, '', hashString);
+      }
+    }, 150);
+  }
+
+  /**
+   * Apply URL hash state to the map
+   */
+  private applyUrlHashState(): void {
+    const state = this.parseUrlHashState();
+    if (!state || !this.map) return;
+
+    this._isUpdatingFromUrl = true;
+    const map = this.map as any;
+
+    try {
+      map.jumpTo?.({
+        center: [state.lng, state.lat],
+        zoom: state.zoom,
+        pitch: state.pitch,
+        bearing: state.bearing,
+      });
+    } finally {
+      // Reset flag after a short delay to allow map events to settle
+      setTimeout(() => {
+        this._isUpdatingFromUrl = false;
+      }, 100);
+    }
+  }
+
+  /**
+   * Set up URL hash synchronization
+   * Called when map is ready and sync-url attribute is present
+   */
+  private setupUrlSync(): void {
+    if (!this.hasAttribute('sync-url') || this._urlSyncEnabled) {
+      return;
+    }
+
+    this._urlSyncEnabled = true;
+
+    // Apply URL state if present (may have already been applied during init)
+    // This handles cases where URL was changed while map was loading
+    this.applyUrlHashState();
+
+    // Listen for map movement to update URL
+    this._mapMoveEndHandler = () => this.updateUrlHash();
+    if (this.map) {
+      this.map.on('moveend', this._mapMoveEndHandler);
+    }
+
+    // Listen for URL hash changes (e.g., browser back/forward)
+    this._hashChangeHandler = () => {
+      if (this._isUpdatingFromUrl) return;
+      this.applyUrlHashState();
+    };
+    window.addEventListener('hashchange', this._hashChangeHandler);
+  }
+
+  /**
+   * Clean up URL hash synchronization
+   */
+  private cleanupUrlSync(): void {
+    if (this._urlSyncDebounceTimer) {
+      clearTimeout(this._urlSyncDebounceTimer);
+      this._urlSyncDebounceTimer = null;
+    }
+
+    if (this._mapMoveEndHandler && this.map) {
+      this.map.off('moveend', this._mapMoveEndHandler);
+      this._mapMoveEndHandler = null;
+    }
+
+    if (this._hashChangeHandler) {
+      window.removeEventListener('hashchange', this._hashChangeHandler);
+      this._hashChangeHandler = null;
+    }
+
+    this._urlSyncEnabled = false;
+  }
+
   /**
    * Show or hide map controls
    * Works with SDK controls added via addControl()
@@ -609,6 +800,16 @@ export class MapElement extends BaseElement {
       } else {
         this.cleanupAutoHideControls();
         this.setControlsVisible(true);
+      }
+      return;
+    }
+
+    // Handle sync-url toggle
+    if (name === 'sync-url') {
+      if (newValue !== null && this.isInitialized) {
+        this.setupUrlSync();
+      } else {
+        this.cleanupUrlSync();
       }
       return;
     }
@@ -2090,6 +2291,7 @@ export class MapElement extends BaseElement {
       minZoom?: number | string;
       maxZoom?: number | string;
       pitch?: number | string;
+      maxPitch?: number | string;
       bearing?: number | string;
       mapStyle?: string;
       provider?: string;
@@ -2126,6 +2328,9 @@ export class MapElement extends BaseElement {
     }
     if (options.pitch !== undefined) {
       map.setAttribute('pitch', String(options.pitch));
+    }
+    if (options.maxPitch !== undefined) {
+      map.setAttribute('max-pitch', String(options.maxPitch));
     }
     if (options.bearing !== undefined) {
       map.setAttribute('bearing', String(options.bearing));

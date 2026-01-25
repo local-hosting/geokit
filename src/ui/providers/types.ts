@@ -22,6 +22,7 @@ export interface MapOptions {
   lng?: number;
   zoom?: number;
   pitch?: number;
+  maxPitch?: number;
   bearing?: number;
   style?: string;
   interactive?: boolean;
