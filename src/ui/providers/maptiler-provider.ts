@@ -81,6 +81,11 @@ export class MapTilerUIProvider extends BaseUIProvider {
           maptilerModule.config.apiKey = config.apiKey;
         }
 
+        // Disable telemetry - we don't need MapTiler usage analytics
+        if (maptilerModule.config) {
+          maptilerModule.config.telemetry = false;
+        }
+
         // Expose to window for backward compatibility
         if (typeof window !== 'undefined') {
           (window as any).maptilersdk = maptilerModule;
