@@ -2,10 +2,31 @@
  * MapTiler UI Provider
  *
  * Implements BaseUIProvider for MapTiler SDK
- * Handles map rendering, controls, markers, and popups
+ * Handles map rendering, controls, markers, and popups.
+ * Supports loading the SDK from a script URL (e.g. CDN UMD) via config.sdkScriptUrl;
+ * the script must set window.maptilersdk.
  */
 
 import { BaseUIProvider } from './types';
+
+function loadScriptAndGetGlobal(url: string, globalName: string): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    if (typeof (window as any)[globalName] !== 'undefined') {
+      resolve((window as any)[globalName]);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = url;
+    script.async = false;
+    script.onload = () => {
+      const g = (window as any)[globalName];
+      if (g) resolve(g);
+      else reject(new Error(`Script loaded but window.${globalName} was not set`));
+    };
+    script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+    document.head.appendChild(script);
+  });
+}
 import type {
   MapProviderConfig,
   MapOptions,
@@ -41,7 +62,7 @@ export class MapTilerUIProvider extends BaseUIProvider {
       return Promise.resolve(this.sdk);
     }
 
-    // Check if SDK is already loaded globally
+    // Check if SDK is already loaded globally (e.g. from CDN script tag)
     if (typeof window !== 'undefined' && (window as any).maptilersdk) {
       this.sdk = (window as any).maptilersdk;
       if (config?.apiKey) {
@@ -50,7 +71,7 @@ export class MapTilerUIProvider extends BaseUIProvider {
       return Promise.resolve(this.sdk);
     }
 
-    // Load SDK dynamically
+    // Load SDK dynamically: optional script URL (CDN) or dynamic import
     this.sdkLoadPromise = (async () => {
       try {
         // Suppress API key warning if no key provided yet
@@ -68,8 +89,15 @@ export class MapTilerUIProvider extends BaseUIProvider {
           };
         }
 
-        // Dynamic import of MapTiler SDK
-        const maptilerModule = await import('@maptiler/sdk');
+        let maptilerModule: any;
+
+        if (typeof window !== 'undefined' && config?.sdkScriptUrl) {
+          // Load from CDN/script URL (script must set window.maptilersdk)
+          maptilerModule = await loadScriptAndGetGlobal(config.sdkScriptUrl, 'maptilersdk');
+        } else {
+          // Dynamic import of MapTiler SDK from bundle
+          maptilerModule = await import('@maptiler/sdk');
+        }
 
         // Restore console.warn
         if (warningSuppressed) {

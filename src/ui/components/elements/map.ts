@@ -8,7 +8,7 @@
  */
 
 import { BaseElement } from '../base-element';
-import { registerUIProvider } from '../../providers/registry';
+import { registerUIProvider, getProviderByName } from '../../providers/registry';
 import { MapTilerUIProvider } from '../../providers/maptiler-provider';
 import { PointElement } from './point';
 import { PolygonElement } from './polygon';
@@ -154,14 +154,24 @@ export class MapElement extends BaseElement {
 
       // If provider is explicitly specified, use it
       if (providerName) {
-        const { getProviderByName, registerUIProvider } = await import('../../providers/registry');
         const existingProvider = await getProviderByName(providerName).catch(() => null);
 
-        // Always load CSS for the provider (even if already registered)
+        // Load CSS for the provider (skip if already loaded via preload)
         if (providerName === 'maptiler') {
-          await import('@maptiler/sdk/dist/maptiler-sdk.css');
+          // Check if CSS is already loaded (e.g., via HTML preload)
+          const hasMaptilerCss = Array.from(document.styleSheets).some((sheet) =>
+            sheet.href?.includes('maptiler-sdk')
+          );
+          if (!hasMaptilerCss) {
+            await import('@maptiler/sdk/dist/maptiler-sdk.css');
+          }
         } else if (providerName === 'mapbox') {
-          await import('mapbox-gl/dist/mapbox-gl.css');
+          const hasMapboxCss = Array.from(document.styleSheets).some((sheet) =>
+            sheet.href?.includes('mapbox-gl')
+          );
+          if (!hasMapboxCss) {
+            await import('mapbox-gl/dist/mapbox-gl.css');
+          }
         }
 
         if (!existingProvider) {
@@ -208,7 +218,6 @@ export class MapElement extends BaseElement {
           if (apiKey) {
             console.warn('[geokit] Auto-initializing MapTiler provider from api-key attribute');
             registerUIProvider('maptiler', new MapTilerUIProvider());
-            const { getProviderByName } = await import('../../providers/registry');
             provider = await getProviderByName('maptiler', { apiKey });
           } else {
             throw new Error(
@@ -280,18 +289,31 @@ export class MapElement extends BaseElement {
 
       // Optimize: Dispatch map-ready immediately when style is loaded
       // Don't wait for 'idle' - it can delay by hundreds of ms
-      // Controls can be set up lazily, but map is ready for layers immediately
+      // Non-critical setup (controls, URL sync) is deferred to avoid blocking
       const dispatchMapReady = () => {
         this.isInitialized = true;
         this.hidePlaceholder();
-        this.setupAutoHideControls();
-        this.setupUrlSync();
+
+        // Dispatch map-ready immediately so layers can be added
         this.dispatchEvent(
           new CustomEvent('gk-map-ready', {
             detail: { map: this.map, element: this },
             bubbles: true,
           })
         );
+
+        // Defer non-critical setup to avoid blocking first paint
+        const deferredSetup = () => {
+          this.setupAutoHideControls();
+          this.setupUrlSync();
+        };
+
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(deferredSetup, { timeout: 200 });
+        } else {
+          // Fallback for Safari (no requestIdleCallback)
+          setTimeout(deferredSetup, 0);
+        }
       };
 
       if (styleAlreadyLoaded) {
@@ -307,7 +329,10 @@ export class MapElement extends BaseElement {
       }
     } catch (error) {
       console.error('Failed to initialize map:', error);
-      // Keep placeholder visible on error
+      // Keep placeholder visible on error, but ensure it shows an error message
+      this.showPlaceholder('Map failed to initialize');
+      // Reset initialization flag so it can be retried
+      this.isInitialized = false;
     } finally {
       this._isInitializing = false;
     }
@@ -367,7 +392,10 @@ export class MapElement extends BaseElement {
       let needsReplacement = false;
 
       if (currentStyle) {
-        if (typeof currentStyle === 'object' && currentStyle.name === 'Streets Default v2') {
+        if (typeof currentStyle === 'string' && currentStyle.startsWith('http')) {
+          // Already a full style URL (MapTiler or dev proxy) - don't replace
+          needsReplacement = false;
+        } else if (typeof currentStyle === 'object' && currentStyle.name === 'Streets Default v2') {
           needsReplacement = true;
         } else if (typeof currentStyle === 'string' && currentStyle.includes('streets-v2')) {
           needsReplacement = true;
@@ -669,9 +697,10 @@ export class MapElement extends BaseElement {
       }
 
       // Update URL without triggering navigation
+      // Preserve existing history.state (required for Vue Router compatibility)
       const currentUrl = new URL(window.location.href);
       if (currentUrl.hash !== hashString) {
-        history.replaceState(null, '', hashString);
+        history.replaceState(history.state, '', hashString);
       }
     }, 150);
   }
@@ -1337,10 +1366,27 @@ export class MapElement extends BaseElement {
         this.showPlaceholder('Restoring map...');
         await this._unfreeze();
         // Wait for map to be fully ready after reinitialization
+        // Note: initializeMap() already hides placeholder in dispatchMapReady(),
+        // but we wait for ready state to ensure map is usable
         if (this.map) {
-          await this.waitForReady();
+          try {
+            await this.waitForReady();
+          } catch {
+            // Timeout or error waiting for ready - but map might still be usable
+            // Check if map is actually initialized
+            if (this.isInitialized) {
+              // Map is initialized, just hide placeholder
+              this.hidePlaceholder();
+            } else {
+              // Map not initialized, keep placeholder visible
+              console.warn('[gk-map] Map ready timeout, but map not initialized');
+            }
+          }
         }
-        this.hidePlaceholder();
+        // Ensure placeholder is hidden if map is initialized (in case waitForReady failed)
+        if (this.isInitialized) {
+          this.hidePlaceholder();
+        }
         // Dispatch unfreeze event after reinitialization completes
         // Note: initializeMap() already dispatches gk-map-ready, but we also dispatch
         // gk-map-unfreeze to make the lifecycle explicit for components that need it
@@ -1371,9 +1417,26 @@ export class MapElement extends BaseElement {
       await this.initializeMap();
 
       // Wait for map to be fully ready
+      // Note: initializeMap() already hides placeholder in dispatchMapReady(),
+      // but we wait for ready state to ensure map is usable
       if (this.map) {
-        await this.waitForReady();
-        this.hidePlaceholder();
+        try {
+          await this.waitForReady();
+        } catch {
+          // Timeout or error waiting for ready - but map might still be usable
+          // Check if map is actually initialized
+          if (this.isInitialized) {
+            // Map is initialized, just hide placeholder
+            this.hidePlaceholder();
+          } else {
+            // Map not initialized, keep placeholder visible
+            console.warn('[gk-map] Map ready timeout, but map not initialized');
+          }
+        }
+        // Ensure placeholder is hidden if map is initialized (in case waitForReady failed)
+        if (this.isInitialized) {
+          this.hidePlaceholder();
+        }
         // Dispatch unfreeze event after initialization completes
         this.dispatchEvent(
           new CustomEvent('gk-map-unfreeze', {
