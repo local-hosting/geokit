@@ -286,6 +286,7 @@ export class MapElement extends BaseElement {
 
       // Set up features based on attributes
       this.setupHideAttribution();
+      this.injectControlThemeStyles();
 
       // Optimize: Dispatch map-ready immediately when style is loaded
       // Don't wait for 'idle' - it can delay by hundreds of ms
@@ -504,6 +505,73 @@ export class MapElement extends BaseElement {
 
     this.injectHideAttributionStyles();
     this.classList.add('gk-hide-attribution');
+  }
+
+  /**
+   * Inject CSS for dark theme + liquid glass on MapLibre controls (once per document)
+   */
+  private injectControlThemeStyles(): void {
+    const styleId = 'gk-control-theme-style';
+    if (document.getElementById(styleId)) return;
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      /* Dark liquid glass: control groups and containers */
+      gk-map .maplibregl-ctrl-group,
+      gk-map .mapboxgl-ctrl-group {
+        background: rgba(18, 18, 22, 0.52) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+      }
+      /* Individual control buttons (zoom, compass, fullscreen) */
+      gk-map .maplibregl-ctrl,
+      gk-map .mapboxgl-ctrl {
+        background: transparent !important;
+        border: none !important;
+      }
+      gk-map .maplibregl-ctrl button,
+      gk-map .mapboxgl-ctrl button {
+        background: transparent !important;
+        border: none !important;
+        width: 29px !important;
+        height: 29px !important;
+      }
+      gk-map .maplibregl-ctrl button:hover,
+      gk-map .mapboxgl-ctrl button:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+      }
+      gk-map .maplibregl-ctrl button:active,
+      gk-map .mapboxgl-ctrl button:active {
+        background: rgba(255, 255, 255, 0.12) !important;
+      }
+      /* Dark theme: light icons (invert MapLibre default dark icons) */
+      gk-map .maplibregl-ctrl-icon,
+      gk-map .mapboxgl-ctrl-icon {
+        filter: invert(1) brightness(1.1) contrast(0.9) !important;
+        opacity: 0.92;
+      }
+      /* Scale bar: same glass treatment */
+      gk-map .maplibregl-ctrl-scale,
+      gk-map .mapboxgl-ctrl-scale {
+        background: rgba(18, 18, 22, 0.52) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 6px !important;
+        padding: 4px 8px !important;
+      }
+      gk-map .maplibregl-ctrl-scale-inner,
+      gk-map .mapboxgl-ctrl-scale-inner {
+        border-color: rgba(255, 255, 255, 0.35) !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        font-size: 10px !important;
+      }
+    `;
+    document.head.appendChild(style);
   }
 
   /**
@@ -1387,6 +1455,8 @@ export class MapElement extends BaseElement {
         if (this.isInitialized) {
           this.hidePlaceholder();
         }
+        // Resize and repaint so map fills container after scroll-back (container may have been zero-size when frozen)
+        this.resizeAndRepaintMap();
         // Dispatch unfreeze event after reinitialization completes
         // Note: initializeMap() already dispatches gk-map-ready, but we also dispatch
         // gk-map-unfreeze to make the lifecycle explicit for components that need it
@@ -1403,6 +1473,8 @@ export class MapElement extends BaseElement {
       // This allows components to react to maps becoming active even if already initialized
       if (this.map && this.isInitialized) {
         this.hidePlaceholder();
+        // Resize/repaint so map displays correctly when scrolled back into view
+        this.resizeAndRepaintMap();
         // Dispatch unfreeze event so components can react (e.g., reload DMA polygons)
         this.dispatchEvent(
           new CustomEvent('gk-map-unfreeze', {
@@ -1610,6 +1682,22 @@ export class MapElement extends BaseElement {
     // Map was destroyed, so we need to reinitialize it
     this._isFrozen = false;
 
+    // Wait for container to have dimensions (e.g. after scroll-back, layout may not be done yet)
+    const rect = this.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          const r = this.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            resolve();
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        requestAnimationFrame(check);
+      });
+    }
+
     // Set flag to indicate map was just unfrozen - this helps isochrones restore
     this.dataset.wasJustUnfrozen = 'true';
 
@@ -1724,6 +1812,23 @@ export class MapElement extends BaseElement {
         }
       };
       requestAnimationFrame(checkReady);
+    });
+  }
+
+  /**
+   * Resize map to container and trigger repaint.
+   * Call after unfreeze so the map fills the container when scrolled back into view.
+   */
+  private resizeAndRepaintMap(): void {
+    if (!this.map) return;
+    const map = this.map as { resize?: () => void; triggerRepaint?: () => void };
+    requestAnimationFrame(() => {
+      if (typeof map.resize === 'function') {
+        map.resize();
+      }
+      if (typeof map.triggerRepaint === 'function') {
+        map.triggerRepaint();
+      }
     });
   }
 

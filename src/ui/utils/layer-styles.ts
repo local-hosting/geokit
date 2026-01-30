@@ -103,18 +103,22 @@ export function getPointRadiusInterpolation(options: CircleStyleOptions = {}): u
     'interpolate',
     ['exponential', exponent],
     ['zoom'],
+    0,
+    0.35 * scale, // Full zoom out - very small dots
+    2,
+    0.5 * scale, // Hero minZoom 2 - small dots when fully zoomed out
     3,
-    1.5 * scale, // Min zoom - small dots
+    0.75 * scale, // Min zoom - small dots
     6,
-    2 * scale, // Country view
+    1.4 * scale, // Country view
     8,
-    3 * scale, // Regional view
+    2.2 * scale, // Regional view (medium zoom)
     10,
-    4 * scale, // City view
+    3 * scale, // City view
     14,
-    5 * scale, // Neighborhood
+    4.5 * scale, // Neighborhood
     18,
-    6.5 * scale, // Max zoom - larger dots
+    6 * scale, // Max zoom - larger dots
   ];
 }
 
@@ -131,18 +135,22 @@ export function getGlowRadiusInterpolation(options: CircleStyleOptions = {}): un
     'interpolate',
     ['exponential', exponent],
     ['zoom'],
+    0,
+    0.9 * scale, // Full zoom out - smaller glow
+    2,
+    1.3 * scale, // Hero minZoom 2 - small glow when fully zoomed out
     3,
-    3.5 * scale, // Min zoom
+    2 * scale, // Min zoom
     6,
-    5 * scale, // Country view
+    4 * scale, // Country view
     8,
-    8 * scale, // Regional view
+    6 * scale, // Regional view (medium zoom)
     10,
-    11 * scale, // City view
+    8 * scale, // City view
     14,
-    14 * scale, // Neighborhood
+    11 * scale, // Neighborhood
     18,
-    18 * scale, // Max zoom
+    16 * scale, // Max zoom
   ];
 }
 

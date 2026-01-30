@@ -228,15 +228,31 @@ export class PopupElement extends MapChildElement {
       }
       
       h4.geokit-popup-title {
-        margin: 0 0 4px 0;
+        margin: 0 0 2px 0;
         padding-right: 24px;
         font-weight: 700;
         color: #c9d1d9;
-        font-size: 14px;
+        font-size: 12px;
         line-height: 1.4;
-        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .geokit-popup-title-text {
+        min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .geokit-popup-title-badges {
+        flex-shrink: 0;
+      }
+
+      .geokit-popup-title-badges > .geokit-popup-badge:first-of-type {
+        margin-left: 0;
       }
 
       .geokit-popup-badge {
@@ -253,7 +269,7 @@ export class PopupElement extends MapChildElement {
 
       h5.geokit-popup-address {
         margin: 0 0 8px 0;
-        font-size: 12px;
+        font-size: 10px;
         font-weight: 400;
         color: #8b949e !important;
         line-height: 1.4;
@@ -261,7 +277,8 @@ export class PopupElement extends MapChildElement {
       }
 
       .geokit-popup-tags {
-        margin-top: 8px;
+        margin-top: 14px;
+        margin-bottom: 2px;
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
@@ -341,6 +358,15 @@ export class PopupElement extends MapChildElement {
         color: #6e7681;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .geokit-popup-footer-label svg {
+        width: 12px;
+        height: 12px;
+        flex-shrink: 0;
       }
     `;
     document.head.appendChild(style);
@@ -601,42 +627,55 @@ export class PopupElement extends MapChildElement {
     const container = document.createElement('div');
     container.setAttribute('class', 'geokit-popup-content');
 
-    // Add headline (with optional inline badges)
+    // Add headline (with optional inline badges); title text truncates with ellipsis, badges stay visible
     if (headline || headlineBadge || headlineBadge2) {
       const headlineEl = document.createElement('h4');
       headlineEl.setAttribute('class', 'geokit-popup-title');
 
       if (headline) {
-        headlineEl.appendChild(document.createTextNode(headline));
+        const textSpan = document.createElement('span');
+        textSpan.setAttribute('class', 'geokit-popup-title-text');
+        textSpan.appendChild(document.createTextNode(headline));
+        headlineEl.appendChild(textSpan);
       }
 
-      if (headlineBadge) {
-        const badgeEl = document.createElement('span');
-        badgeEl.setAttribute('class', 'geokit-popup-badge');
-        badgeEl.textContent = headlineBadge;
+      if (headlineBadge || headlineBadge2) {
+        const badgesWrap = document.createElement('span');
+        badgesWrap.setAttribute('class', 'geokit-popup-title-badges');
 
-        // Apply custom badge color if provided (solid background, white text)
-        if (headlineBadgeColor) {
-          badgeEl.style.background = headlineBadgeColor;
-          badgeEl.style.color = '#fff';
+        if (headlineBadge) {
+          const badgeEl = document.createElement('span');
+          badgeEl.setAttribute('class', 'geokit-popup-badge');
+          badgeEl.textContent = headlineBadge;
+
+          // Apply custom badge color if provided (solid background, white text)
+          if (headlineBadgeColor) {
+            badgeEl.style.background = headlineBadgeColor;
+            badgeEl.style.color = '#fff';
+          }
+
+          badgesWrap.appendChild(badgeEl);
         }
 
-        headlineEl.appendChild(badgeEl);
-      }
+        // Add second badge (e.g., rating) after first badge; ensure space before it when there is preceding content
+        if (headlineBadge2) {
+          if (headline || headlineBadge) {
+            badgesWrap.appendChild(document.createTextNode('\u00A0')); // non-breaking space before rating
+          }
+          const badge2El = document.createElement('span');
+          badge2El.setAttribute('class', 'geokit-popup-badge');
+          badge2El.textContent = headlineBadge2;
 
-      // Add second badge (e.g., rating) after first badge
-      if (headlineBadge2) {
-        const badge2El = document.createElement('span');
-        badge2El.setAttribute('class', 'geokit-popup-badge');
-        badge2El.textContent = headlineBadge2;
+          // Apply custom badge color if provided
+          if (headlineBadge2Color) {
+            badge2El.style.background = headlineBadge2Color;
+            badge2El.style.color = '#fff';
+          }
 
-        // Apply custom badge color if provided
-        if (headlineBadge2Color) {
-          badge2El.style.background = headlineBadge2Color;
-          badge2El.style.color = '#fff';
+          badgesWrap.appendChild(badge2El);
         }
 
-        headlineEl.appendChild(badge2El);
+        headlineEl.appendChild(badgesWrap);
       }
 
       container.appendChild(headlineEl);

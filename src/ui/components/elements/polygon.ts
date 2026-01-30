@@ -214,8 +214,8 @@ export class PolygonElement extends MapChildElement {
         data: geojson,
       });
 
-      // Find the first point layer to insert polygon layers before it
-      // This ensures polygons render below points
+      // Find insertion point: insert before points
+      // This ensures: polygons (below) < points (top)
       const beforeId = this.findFirstPointLayer();
 
       // Add fill layer - read from properties first
@@ -312,7 +312,7 @@ export class PolygonElement extends MapChildElement {
     }
   }
 
-  private updateFillStyle(): void {
+  public updateFillStyle(): void {
     this.updatePaintProperties(this.layerId, {
       'fill-color': this._propFillColor ?? this.safeGetAttribute('fill-color') ?? '#3FB1CE',
       'fill-opacity':

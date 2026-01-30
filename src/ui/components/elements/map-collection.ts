@@ -601,6 +601,7 @@ export class MapCollectionElement extends BaseElement {
           // Map is active but still showing placeholder - might be stuck
           // Check if map instance exists
           const mapInstance = (slot.mapElement as any).getMap?.();
+          const isInitialized = (slot.mapElement as any).isInitialized;
           if (!mapInstance) {
             // Map instance missing but marked active - reset
             slot.isActive = false;
@@ -608,6 +609,10 @@ export class MapCollectionElement extends BaseElement {
             slot.failCount = 0;
             slot.lastFailTime = 0;
             setTimeout(() => this.activateSlot(slot), 1000);
+          } else if (isInitialized) {
+            // Map is initialized but placeholder still visible - hide it
+            // This can happen due to timing issues or if waitForReady() timed out
+            slot.mapElement.hidePlaceholder();
           }
         }
       }
