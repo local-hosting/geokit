@@ -158,13 +158,14 @@ export class MapboxAPIProvider extends BaseAPIProvider {
     const { lat, lng, minutes, mode, colors } = options;
 
     // Map mode to Mapbox profile
+    // Use 'driving' (not 'driving-traffic') for stable, reproducible isochrones
     const modeMap: Record<string, string> = {
-      driving: 'driving-traffic',
+      driving: 'driving',
       walking: 'walking',
       cycling: 'cycling',
-      'driving-traffic': 'driving-traffic',
+      'driving-traffic': 'driving-traffic', // Explicit option if traffic-aware routing is needed
     };
-    const profile = modeMap[mode] || 'driving-traffic';
+    const profile = modeMap[mode] || 'driving';
 
     try {
       // Build API URL

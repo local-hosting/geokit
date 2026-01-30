@@ -311,7 +311,7 @@ export class IsochroneElement extends MapChildElement {
 
   /**
    * Find the first layer to insert isochrone layers before it
-   * This ensures isochrones render: isochrones (bottom) → DMA polygon (middle) → points (top)
+   * This ensures isochrones render: polygons (bottom) → isochrones (middle) → points (top)
    */
   private findFirstInsertionLayer(): string | undefined {
     if (!this.map) return undefined;
@@ -325,23 +325,25 @@ export class IsochroneElement extends MapChildElement {
       const style = getStyle();
       if (!style || !style.layers) return undefined;
 
-      // Strategy: Insert before the first polygon layer (DMA regions)
-      // This ensures: isochrones (bottom) → polygon (middle) → points (top)
-      let firstPolygonLayer: string | undefined;
+      // Strategy: Insert after the last polygon layer (DMA fill + stroke), before points
+      // This ensures: DMA fill → DMA stroke → isochrones (above DMA) → points (top)
+      let lastPolygonLayer: string | undefined;
       let firstPointLayer: string | undefined;
 
       for (const layer of style.layers) {
-        // Find the first polygon layer (DMA regions)
-        // Support both 'polygon-fill-*' and '*-polygon-fill' patterns
-        if (
-          !firstPolygonLayer &&
+        // Find the last polygon layer (DMA regions) - include both fill and stroke
+        // so isochrone renders above the DMA stroke layer
+        const isPolygonFill =
           layer.type === 'fill' &&
-          (layer.id?.startsWith('polygon-fill-') || layer.id?.includes('-polygon-fill'))
-        ) {
-          firstPolygonLayer = layer.id;
+          (layer.id?.startsWith('polygon-fill-') || layer.id?.includes('-polygon-fill'));
+        const isPolygonStroke =
+          layer.type === 'line' &&
+          (layer.id?.startsWith('polygon-stroke-') || layer.id?.includes('-polygon-stroke'));
+        if (isPolygonFill || isPolygonStroke) {
+          lastPolygonLayer = layer.id; // Keep updating to get the last one (including stroke)
         }
 
-        // Also track first point layer as fallback
+        // Also track first point layer as target
         // Support both 'point-*' and '*-points' patterns
         if (
           !firstPointLayer &&
@@ -354,9 +356,27 @@ export class IsochroneElement extends MapChildElement {
         }
       }
 
-      // Insert before the first polygon layer to ensure isochrones are below polygons
-      if (firstPolygonLayer) {
-        return firstPolygonLayer;
+      // If we have polygons, find the layer after the last polygon to insert before
+      if (lastPolygonLayer) {
+        // Find the next layer after the last polygon
+        const layers = style.layers;
+        let foundLastPolygon = false;
+        for (const layer of layers) {
+          if (foundLastPolygon) {
+            // This is the first layer after the last polygon
+            // Insert before this layer (which will be after polygons)
+            return layer.id;
+          }
+          if (layer.id === lastPolygonLayer) {
+            foundLastPolygon = true;
+          }
+        }
+        // If last polygon is the last layer, insert before points (or at end)
+        if (firstPointLayer) {
+          return firstPointLayer;
+        }
+        // No layer after polygon, add at end (will be above polygons)
+        return undefined;
       }
 
       // If no polygons but we have points, insert before the first point
@@ -376,7 +396,7 @@ export class IsochroneElement extends MapChildElement {
 
   /**
    * Ensure isochrone layers are in the correct order
-   * Order: isochrones (bottom) → DMA polygon (middle) → points (top)
+   * Order: polygons (bottom) → isochrones (middle) → points (top)
    * Called after rendering to handle late-loading layers
    * @returns true if ordering was successful, false if target layers not found yet
    */
@@ -396,24 +416,60 @@ export class IsochroneElement extends MapChildElement {
         // No target layer found - check if polygons were added after isochrones
         const style = map.getStyle?.();
         if (style?.layers) {
-          // Find first polygon layer (support both 'polygon-fill-*' and '*-polygon-fill' patterns)
-          let firstPolygonLayer: string | undefined;
+          // Find last polygon layer (fill or stroke so isochrone is above DMA stroke)
+          let lastPolygonLayer: string | undefined;
           for (const layer of style.layers) {
-            if (
+            const isPolygonFill =
               layer.type === 'fill' &&
-              (layer.id?.startsWith('polygon-fill-') || layer.id?.includes('-polygon-fill'))
-            ) {
-              firstPolygonLayer = layer.id;
-              break;
+              (layer.id?.startsWith('polygon-fill-') || layer.id?.includes('-polygon-fill'));
+            const isPolygonStroke =
+              layer.type === 'line' &&
+              (layer.id?.startsWith('polygon-stroke-') || layer.id?.includes('-polygon-stroke'));
+            if (isPolygonFill || isPolygonStroke) {
+              lastPolygonLayer = layer.id;
             }
           }
 
-          // If we found a polygon layer and our isochrone is above it, move below it
-          if (firstPolygonLayer && this.fillLayerId && map.getLayer?.(this.fillLayerId)) {
+          // If we found a polygon layer, find the layer after it to insert before
+          if (lastPolygonLayer && this.fillLayerId && map.getLayer?.(this.fillLayerId)) {
             try {
-              map.moveLayer?.(this.fillLayerId, firstPolygonLayer);
-              if (this.lineLayerId && map.getLayer?.(this.lineLayerId)) {
-                map.moveLayer?.(this.lineLayerId, firstPolygonLayer);
+              // Find the next layer after the last polygon
+              const layers = style.layers;
+              let foundLastPolygon = false;
+              let nextLayerId: string | undefined;
+              for (const layer of layers) {
+                if (foundLastPolygon) {
+                  nextLayerId = layer.id;
+                  break;
+                }
+                if (layer.id === lastPolygonLayer) {
+                  foundLastPolygon = true;
+                }
+              }
+
+              // Move isochrone after the last polygon (before the next layer, or at end)
+              if (nextLayerId) {
+                map.moveLayer?.(this.fillLayerId, nextLayerId);
+                if (this.lineLayerId && map.getLayer?.(this.lineLayerId)) {
+                  map.moveLayer?.(this.lineLayerId, nextLayerId);
+                }
+              } else {
+                // No layer after polygon, isochrone is already in correct position (above polygons)
+                // Just ensure line layer is with fill layer
+                if (this.lineLayerId && map.getLayer?.(this.lineLayerId) && this.fillLayerId) {
+                  // Move line layer right after fill layer
+                  const layers = style.layers;
+                  let fillLayerIndex = -1;
+                  for (let i = 0; i < layers.length; i++) {
+                    if (layers[i].id === this.fillLayerId) {
+                      fillLayerIndex = i;
+                      break;
+                    }
+                  }
+                  if (fillLayerIndex >= 0 && fillLayerIndex < layers.length - 1) {
+                    map.moveLayer?.(this.lineLayerId, layers[fillLayerIndex + 1].id || '');
+                  }
+                }
               }
               return true;
             } catch {
@@ -426,7 +482,7 @@ export class IsochroneElement extends MapChildElement {
 
       let moved = false;
 
-      // Move fill layer to correct position (below polygons and points)
+      // Move fill layer to correct position (above polygons, below points)
       if (this.fillLayerId && map.getLayer?.(this.fillLayerId)) {
         try {
           map.moveLayer?.(this.fillLayerId, insertionLayer);
@@ -436,7 +492,7 @@ export class IsochroneElement extends MapChildElement {
         }
       }
 
-      // Move line layer to correct position (below polygons and points)
+      // Move line layer to correct position (above polygons, below points)
       if (this.lineLayerId && map.getLayer?.(this.lineLayerId)) {
         try {
           map.moveLayer?.(this.lineLayerId, insertionLayer);
@@ -517,20 +573,27 @@ export class IsochroneElement extends MapChildElement {
       return;
     }
 
+    // Check if stored data matches current settings
+    // Stored data is tagged with the time/mode it was set for
+    const storedData = this.storedData;
+    const storedDataTime = (this as any)._storedDataTime;
+    const storedDataMode = (this as any)._storedDataMode;
+    const canUseStoredData =
+      storedData !== null && storedDataTime === time && storedDataMode === mode;
+
     // Create cache key (include 'stored' suffix when using pre-computed data)
-    const hasStoredData = this.storedData !== null;
-    const cacheKey = `${lat},${lng},${time},${mode}${hasStoredData ? ':stored' : ''}`;
+    const cacheKey = `${lat},${lng},${time},${mode}${canUseStoredData ? ':stored' : ''}`;
     if (cacheKey === this.currentCacheKey) return;
 
     this.currentCacheKey = cacheKey;
 
-    // Check for pre-computed isochrone data first
-    const storedData = this.storedData;
     let result: GeoJSON.FeatureCollection | null = null;
 
-    if (storedData) {
-      // Use pre-computed data - skip API fetch
-      debug.log(`[Isochrone] Using stored data for ${lat.toFixed(6)},${lng.toFixed(6)}`);
+    if (canUseStoredData) {
+      // Use pre-computed data - skip API fetch (settings match what was stored)
+      debug.log(
+        `[Isochrone] Using stored data for ${lat.toFixed(6)},${lng.toFixed(6)} (${time}m ${mode})`
+      );
       result = storedData;
     } else {
       // Get API provider that supports isochrone
@@ -618,7 +681,7 @@ export class IsochroneElement extends MapChildElement {
       // Remove existing layers (but preserve IDs for reuse)
       this.cleanupExistingLayers();
 
-      // Find where to insert layers (below points, above polygons)
+      // Find where to insert layers (above polygons, below points)
       const beforeLayerId = this.findFirstInsertionLayer();
 
       // Ensure IDs exist (regenerate if needed)
@@ -636,7 +699,7 @@ export class IsochroneElement extends MapChildElement {
         data: processedData,
       });
 
-      // Add fill layer (below points)
+      // Add fill layer (above polygons, below points)
       if (this.fillLayerId) {
         // Ensure fill-antialias is explicitly boolean (not ternary result that could be coerced)
         const isH3Render = this.render === 'h3';
@@ -665,7 +728,7 @@ export class IsochroneElement extends MapChildElement {
         );
       }
 
-      // Add line layer (below points) - skip for H3 rendering to avoid stroke on hexagons
+      // Add line layer (above polygons, below points) - skip for H3 rendering to avoid stroke on hexagons
       if (this.lineLayerId && this.strokeWidth > 0 && this.render !== 'h3') {
         this.map.addLayer(
           {
@@ -686,7 +749,7 @@ export class IsochroneElement extends MapChildElement {
         );
       }
 
-      // Ensure isochrones are below points
+      // Ensure isochrones are above polygons and below points
       // Use a polling approach with a maximum number of attempts
       this.startLayerOrderMonitoring();
 
@@ -974,16 +1037,22 @@ export class IsochroneElement extends MapChildElement {
 
   /**
    * Set pre-computed isochrone data programmatically
-   * This avoids stringifying large JSON in attributes
+   * This avoids stringifying large JSON in attributes.
+   * The data is tagged with the current time/mode so it's only used when settings match.
    */
   setData(data: GeoJSON.FeatureCollection | null): void {
     if (data) {
-      // Store internally and trigger re-render
+      // Store internally along with the time/mode it was set for
+      // This allows us to reuse it later if the user switches back to these settings
       (this as any)._storedData = data;
+      (this as any)._storedDataTime = this.time;
+      (this as any)._storedDataMode = this.mode;
       this.currentCacheKey = null; // Force re-render
       this.waitForStyleLoaded(() => this.fetchAndRenderIsochrone());
     } else {
       delete (this as any)._storedData;
+      delete (this as any)._storedDataTime;
+      delete (this as any)._storedDataMode;
     }
   }
 
