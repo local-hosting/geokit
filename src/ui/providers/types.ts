@@ -10,6 +10,8 @@
 export interface MapProviderConfig {
   apiKey?: string;
   accessToken?: string;
+  /** Optional URL to load MapTiler SDK from (e.g. CDN UMD). Script must set window.maptilersdk. */
+  sdkScriptUrl?: string;
   [key: string]: unknown;
 }
 
