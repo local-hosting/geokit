@@ -104,17 +104,17 @@ export function getPointRadiusInterpolation(options: CircleStyleOptions = {}): u
     ['exponential', exponent],
     ['zoom'],
     0,
-    0.35 * scale, // Full zoom out - very small dots
+    1.2 * scale, // Full zoom out - visible dots
     2,
-    0.5 * scale, // Hero minZoom 2 - small dots when fully zoomed out
+    1.5 * scale, // Hero minZoom 2 - visible when zoomed out
     3,
-    0.75 * scale, // Min zoom - small dots
+    2 * scale, // Min zoom
     6,
-    1.4 * scale, // Country view
+    2.5 * scale, // Country view
     8,
-    2.2 * scale, // Regional view (medium zoom)
+    3 * scale, // Regional view (medium zoom)
     10,
-    3 * scale, // City view
+    3.5 * scale, // City view
     14,
     4.5 * scale, // Neighborhood
     18,
@@ -136,13 +136,13 @@ export function getGlowRadiusInterpolation(options: CircleStyleOptions = {}): un
     ['exponential', exponent],
     ['zoom'],
     0,
-    0.9 * scale, // Full zoom out - smaller glow
+    2.5 * scale, // Full zoom out - visible glow
     2,
-    1.3 * scale, // Hero minZoom 2 - small glow when fully zoomed out
+    3 * scale, // Hero minZoom 2 - visible when zoomed out
     3,
-    2 * scale, // Min zoom
+    4 * scale, // Min zoom
     6,
-    4 * scale, // Country view
+    5 * scale, // Country view
     8,
     6 * scale, // Regional view (medium zoom)
     10,
@@ -190,7 +190,7 @@ export function getShadowRadiusInterpolation(options: CircleStyleOptions = {}): 
 
 /**
  * Get zoom-based stroke width interpolation
- * Scales stroke width proportionally with zoom
+ * Thinner at low zoom so the border doesn’t dominate small circles
  *
  * @param baseWidth - Base stroke width at mid zoom
  * @returns MapLibre interpolation expression
@@ -200,6 +200,10 @@ export function getStrokeWidthInterpolation(baseWidth: number): unknown[] {
     'interpolate',
     ['linear'],
     ['zoom'],
+    0,
+    Math.max(0.25, baseWidth * 0.2), // Zoomed out: thin stroke so border isn’t huge
+    2,
+    Math.max(0.35, baseWidth * 0.3),
     3,
     baseWidth * 0.5,
     10,
