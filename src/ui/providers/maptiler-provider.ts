@@ -1,11 +1,32 @@
 /**
  * MapTiler UI Provider
- * 
+ *
  * Implements BaseUIProvider for MapTiler SDK
- * Handles map rendering, controls, markers, and popups
+ * Handles map rendering, controls, markers, and popups.
+ * Supports loading the SDK from a script URL (e.g. CDN UMD) via config.sdkScriptUrl;
+ * the script must set window.maptilersdk.
  */
 
 import { BaseUIProvider } from './types';
+
+function loadScriptAndGetGlobal(url: string, globalName: string): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    if (typeof (window as any)[globalName] !== 'undefined') {
+      resolve((window as any)[globalName]);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = url;
+    script.async = false;
+    script.onload = () => {
+      const g = (window as any)[globalName];
+      if (g) resolve(g);
+      else reject(new Error(`Script loaded but window.${globalName} was not set`));
+    };
+    script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+    document.head.appendChild(script);
+  });
+}
 import type {
   MapProviderConfig,
   MapOptions,
@@ -41,7 +62,7 @@ export class MapTilerUIProvider extends BaseUIProvider {
       return Promise.resolve(this.sdk);
     }
 
-    // Check if SDK is already loaded globally
+    // Check if SDK is already loaded globally (e.g. from CDN script tag)
     if (typeof window !== 'undefined' && (window as any).maptilersdk) {
       this.sdk = (window as any).maptilersdk;
       if (config?.apiKey) {
@@ -50,7 +71,7 @@ export class MapTilerUIProvider extends BaseUIProvider {
       return Promise.resolve(this.sdk);
     }
 
-    // Load SDK dynamically
+    // Load SDK dynamically: optional script URL (CDN) or dynamic import
     this.sdkLoadPromise = (async () => {
       try {
         // Suppress API key warning if no key provided yet
@@ -68,8 +89,15 @@ export class MapTilerUIProvider extends BaseUIProvider {
           };
         }
 
-        // Dynamic import of MapTiler SDK
-        const maptilerModule = await import('@maptiler/sdk');
+        let maptilerModule: any;
+
+        if (typeof window !== 'undefined' && config?.sdkScriptUrl) {
+          // Load from CDN/script URL (script must set window.maptilersdk)
+          maptilerModule = await loadScriptAndGetGlobal(config.sdkScriptUrl, 'maptilersdk');
+        } else {
+          // Dynamic import of MapTiler SDK from bundle
+          maptilerModule = await import('@maptiler/sdk');
+        }
 
         // Restore console.warn
         if (warningSuppressed) {
@@ -79,6 +107,11 @@ export class MapTilerUIProvider extends BaseUIProvider {
         // Set API key if provided
         if (config?.apiKey && maptilerModule.config) {
           maptilerModule.config.apiKey = config.apiKey;
+        }
+
+        // Disable telemetry - we don't need MapTiler usage analytics
+        if (maptilerModule.config) {
+          maptilerModule.config.telemetry = false;
         }
 
         // Expose to window for backward compatibility
@@ -112,22 +145,24 @@ export class MapTilerUIProvider extends BaseUIProvider {
     let style: any = options.style;
     if (!style) {
       // Default to DATAVIZ_DARK style using SDK enum if available
-      style = this.sdk?.MapStyle?.DATAVIZ?.DARK || 
-              `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${this.config?.apiKey || ''}`;
+      style =
+        this.sdk?.MapStyle?.DATAVIZ?.DARK ||
+        `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${this.config?.apiKey || ''}`;
     } else if (typeof style === 'string' && !style.startsWith('http')) {
       // Convert style name to SDK enum or URL
       const styleMap: Record<string, any> = {
         'dataviz-dark': this.sdk?.MapStyle?.DATAVIZ?.DARK,
-        'dataviz': this.sdk?.MapStyle?.DATAVIZ?.DEFAULT,
-        'streets': this.sdk?.MapStyle?.STREETS?.DEFAULT,
+        dataviz: this.sdk?.MapStyle?.DATAVIZ?.DEFAULT,
+        streets: this.sdk?.MapStyle?.STREETS?.DEFAULT,
         'streets-dark': this.sdk?.MapStyle?.STREETS?.DARK,
-        'satellite': this.sdk?.MapStyle?.SATELLITE?.DEFAULT,
-        'hybrid': this.sdk?.MapStyle?.HYBRID?.DEFAULT,
-        'outdoor': this.sdk?.MapStyle?.OUTDOOR?.DEFAULT,
-        'basic': this.sdk?.MapStyle?.BASIC?.DEFAULT,
+        satellite: this.sdk?.MapStyle?.SATELLITE?.DEFAULT,
+        hybrid: this.sdk?.MapStyle?.HYBRID?.DEFAULT,
+        outdoor: this.sdk?.MapStyle?.OUTDOOR?.DEFAULT,
+        basic: this.sdk?.MapStyle?.BASIC?.DEFAULT,
       };
-      style = styleMap[style.toLowerCase()] || 
-              `https://api.maptiler.com/maps/${style}/style.json?key=${this.config?.apiKey || ''}`;
+      style =
+        styleMap[style.toLowerCase()] ||
+        `https://api.maptiler.com/maps/${style}/style.json?key=${this.config?.apiKey || ''}`;
     }
 
     const mapOptions = {
@@ -136,6 +171,8 @@ export class MapTilerUIProvider extends BaseUIProvider {
       center: [options.lng || 0, options.lat || 0],
       zoom: options.zoom || 2,
       pitch: options.pitch || 0,
+      // Limit max pitch to prevent disorienting "upside down" tilting (SDK default is 85)
+      maxPitch: options.maxPitch ?? 60,
       bearing: options.bearing || 0,
       // Hide MapTiler logo for paid accounts
       maptilerLogo: false,
@@ -212,4 +249,3 @@ export class MapTilerUIProvider extends BaseUIProvider {
     return this.sdk?.helpers || null;
   }
 }
-

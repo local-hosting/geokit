@@ -19,85 +19,83 @@ export interface Cluster<T = unknown> {
 }
 
 /**
- * Grid-based clustering
+ * Grid-based clustering (curried)
  * Groups points into grid cells of specified size
  *
  * @param cellSize - Grid cell size in degrees
- * @param points - Array of points to cluster
- * @returns Array of clusters
+ * @returns Curried function that takes points and returns clusters
  *
  * @example
  * ```typescript
+ * const clusterBy001 = gridCluster(0.01);
  * const points = [
  *   { coordinates: [40.7128, -74.0060] },
  *   { coordinates: [40.7130, -74.0062] },
  *   { coordinates: [40.7580, -73.9855] }
  * ];
- * const clusters = gridCluster(0.01, points);
+ * const clusters = clusterBy001(points);
  * ```
  */
-export function gridCluster<T = unknown>(
-  cellSize: number,
-  points: ClusterPoint<T>[]
-): Cluster<T>[] {
-  const grid: Map<string, ClusterPoint<T>[]> = new Map();
+export function gridCluster<T = unknown>(cellSize: number) {
+  return (points: ClusterPoint<T>[]): Cluster<T>[] => {
+    const grid: Map<string, ClusterPoint<T>[]> = new Map();
 
-  // Assign points to grid cells
-  for (const point of points) {
-    const [lat, lon] = point.coordinates;
-    const cellLat = Math.floor(lat / cellSize);
-    const cellLon = Math.floor(lon / cellSize);
-    const key = `${cellLat},${cellLon}`;
+    // Assign points to grid cells
+    for (const point of points) {
+      const [lat, lon] = point.coordinates;
+      const cellLat = Math.floor(lat / cellSize);
+      const cellLon = Math.floor(lon / cellSize);
+      const key = `${cellLat},${cellLon}`;
 
-    if (!grid.has(key)) {
-      grid.set(key, []);
+      if (!grid.has(key)) {
+        grid.set(key, []);
+      }
+      grid.get(key)!.push(point);
     }
-    grid.get(key)!.push(point);
-  }
 
-  // Convert grid cells to clusters
-  const clusters: Cluster<T>[] = [];
+    // Convert grid cells to clusters
+    const clusters: Cluster<T>[] = [];
 
-  for (const [, cellPoints] of grid) {
-    // Calculate center as average of points
-    const sumLat = cellPoints.reduce((sum, p) => sum + p.coordinates[0], 0);
-    const sumLon = cellPoints.reduce((sum, p) => sum + p.coordinates[1], 0);
-    const center: LatLon = [sumLat / cellPoints.length, sumLon / cellPoints.length];
+    for (const [, cellPoints] of grid) {
+      // Calculate center as average of points
+      const sumLat = cellPoints.reduce((sum, p) => sum + p.coordinates[0], 0);
+      const sumLon = cellPoints.reduce((sum, p) => sum + p.coordinates[1], 0);
+      const center: LatLon = [sumLat / cellPoints.length, sumLon / cellPoints.length];
 
-    clusters.push({
-      center,
-      points: cellPoints,
-      count: cellPoints.length,
-    });
-  }
+      clusters.push({
+        center,
+        points: cellPoints,
+        count: cellPoints.length,
+      });
+    }
 
-  return clusters;
+    return clusters;
+  };
 }
 
 /**
- * Grid-based clustering with cell size in meters
+ * Grid-based clustering with cell size in meters (curried)
  *
  * @param cellSizeMeters - Grid cell size in meters
- * @param points - Array of points to cluster
- * @returns Array of clusters
+ * @returns Curried function that takes points and returns clusters
  *
  * @example
  * ```typescript
- * const clusters = gridClusterMeters(1000, points); // 1km cells
+ * const clusterByKm = gridClusterMeters(1000);
+ * const clusters = clusterByKm(points); // 1km cells
  * ```
  */
-export function gridClusterMeters<T = unknown>(
-  cellSizeMeters: number,
-  points: ClusterPoint<T>[]
-): Cluster<T>[] {
-  if (points.length === 0) {
-    return [];
-  }
+export function gridClusterMeters<T = unknown>(cellSizeMeters: number) {
+  return (points: ClusterPoint<T>[]): Cluster<T>[] => {
+    if (points.length === 0) {
+      return [];
+    }
 
-  // Use average latitude to convert meters to degrees
-  const avgLat = points.reduce((sum, point) => sum + point.coordinates[0], 0) / points.length;
-  const metersPerDegree = METERS_PER_DEGREE_EQUATOR * Math.cos(avgLat * DEGREES_TO_RADIANS);
-  const cellSizeDegrees = cellSizeMeters / metersPerDegree;
+    // Use average latitude to convert meters to degrees
+    const avgLat = points.reduce((sum, point) => sum + point.coordinates[0], 0) / points.length;
+    const metersPerDegree = METERS_PER_DEGREE_EQUATOR * Math.cos(avgLat * DEGREES_TO_RADIANS);
+    const cellSizeDegrees = cellSizeMeters / metersPerDegree;
 
-  return gridCluster(cellSizeDegrees, points);
+    return gridCluster<T>(cellSizeDegrees)(points);
+  };
 }

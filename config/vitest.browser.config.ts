@@ -28,8 +28,8 @@ export default defineConfig({
     },
     env: {
       // Pass through environment variables to tests
-      MAPTILER_API_KEY: process.env.MAPTILER_API_KEY || '',
-      MAPBOX_ACCESS_TOKEN: process.env.MAPBOX_ACCESS_TOKEN || '',
+      MAPTILER_KEY: process.env.MAPTILER_KEY || '',
+      MAPBOX_TOKEN: process.env.MAPBOX_TOKEN || '',
       // Control browser console logging: 'none' (default), 'error', 'warn', or '1' (all)
       GEOKIT_BROWSER_LOGS: process.env.GEOKIT_BROWSER_LOGS || 'none',
     },

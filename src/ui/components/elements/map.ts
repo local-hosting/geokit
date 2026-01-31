@@ -8,10 +8,11 @@
  */
 
 import { BaseElement } from '../base-element';
-import { registerUIProvider } from '../../providers/registry';
+import { registerUIProvider, getProviderByName } from '../../providers/registry';
 import { MapTilerUIProvider } from '../../providers/maptiler-provider';
 import { PointElement } from './point';
 import { PolygonElement } from './polygon';
+import { type IsochroneElement } from './isochrone';
 import type { MapInstance } from '../../providers/types';
 
 export class MapElement extends BaseElement {
@@ -23,12 +24,14 @@ export class MapElement extends BaseElement {
     'max-zoom',
     'style',
     'pitch',
+    'max-pitch',
     'bearing',
     'interactive',
     'hide-controls',
     'auto-hide-controls',
     'show-attribution',
     'provider',
+    'sync-url',
   ];
 
   private _controlsVisible: boolean = true;
@@ -39,6 +42,17 @@ export class MapElement extends BaseElement {
   private _isInitializing: boolean = false; // Prevent concurrent initialization
   private _frozenContainerStyle: { display?: string; visibility?: string } | null = null;
   private _mapCanvas: HTMLCanvasElement | null = null;
+
+  // URL sync state
+  private _urlSyncEnabled: boolean = false;
+  private _urlSyncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private _hashChangeHandler: (() => void) | null = null;
+  private _mapMoveEndHandler: (() => void) | null = null;
+  private _isUpdatingFromUrl: boolean = false; // Prevent circular updates
+
+  // Child element tracking
+  private _childObserver: MutationObserver | null = null;
+  private _trackedChildren: Map<string, Set<HTMLElement>> = new Map();
 
   constructor() {
     super();
@@ -63,6 +77,9 @@ export class MapElement extends BaseElement {
   async connectedCallback(): Promise<void> {
     // Show placeholder if map is not initialized
     this.showPlaceholderIfNeeded();
+
+    // Initialize child element tracking
+    this._initializeChildTracking();
 
     // If map is pool-managed (has data-pool-managed attribute), don't auto-initialize
     // It will be initialized explicitly via activateMap()
@@ -104,6 +121,12 @@ export class MapElement extends BaseElement {
     // Clean up auto-hide listeners
     this.cleanupAutoHideControls();
 
+    // Clean up URL sync listeners
+    this.cleanupUrlSync();
+
+    // Clean up child tracking observer
+    this._cleanupChildTracking();
+
     // Don't call super.disconnectedCallback() because it resets this.map = null
     // We want to preserve the map instance for reuse in the map pool
     // Only clean up if we have a flag indicating permanent removal
@@ -131,14 +154,24 @@ export class MapElement extends BaseElement {
 
       // If provider is explicitly specified, use it
       if (providerName) {
-        const { getProviderByName, registerUIProvider } = await import('../../providers/registry');
         const existingProvider = await getProviderByName(providerName).catch(() => null);
 
-        // Always load CSS for the provider (even if already registered)
+        // Load CSS for the provider (skip if already loaded via preload)
         if (providerName === 'maptiler') {
-          await import('@maptiler/sdk/dist/maptiler-sdk.css');
+          // Check if CSS is already loaded (e.g., via HTML preload)
+          const hasMaptilerCss = Array.from(document.styleSheets).some((sheet) =>
+            sheet.href?.includes('maptiler-sdk')
+          );
+          if (!hasMaptilerCss) {
+            await import('@maptiler/sdk/dist/maptiler-sdk.css');
+          }
         } else if (providerName === 'mapbox') {
-          await import('mapbox-gl/dist/mapbox-gl.css');
+          const hasMapboxCss = Array.from(document.styleSheets).some((sheet) =>
+            sheet.href?.includes('mapbox-gl')
+          );
+          if (!hasMapboxCss) {
+            await import('mapbox-gl/dist/mapbox-gl.css');
+          }
         }
 
         if (!existingProvider) {
@@ -154,7 +187,7 @@ export class MapElement extends BaseElement {
             // Access env var - Vite will replace import.meta.env at build time
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore - import.meta is available in ESNext modules
-            const token = accessToken || import.meta.env?.MAPBOX_ACCESS_TOKEN;
+            const token = accessToken || import.meta.env?.MAPBOX_TOKEN;
             provider = await getProviderByName(
               'mapbox',
               token ? { accessToken: token } : undefined
@@ -169,7 +202,7 @@ export class MapElement extends BaseElement {
             // Access env var - Vite will replace import.meta.env at build time
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore - import.meta is available in ESNext modules
-            const token = accessToken || import.meta.env?.MAPBOX_ACCESS_TOKEN;
+            const token = accessToken || import.meta.env?.MAPBOX_TOKEN;
             if (token) config = { accessToken: token };
           } else if (apiKey) {
             config = { apiKey };
@@ -185,7 +218,6 @@ export class MapElement extends BaseElement {
           if (apiKey) {
             console.warn('[geokit] Auto-initializing MapTiler provider from api-key attribute');
             registerUIProvider('maptiler', new MapTilerUIProvider());
-            const { getProviderByName } = await import('../../providers/registry');
             provider = await getProviderByName('maptiler', { apiKey });
           } else {
             throw new Error(
@@ -206,12 +238,20 @@ export class MapElement extends BaseElement {
       // Default to streets to avoid deprecated styles and API key requirements
       const styleAttr = this.getAttribute('map-style') || 'streets';
 
+      // Parse max-pitch attribute (default 60 prevents disorienting "upside down" tilting)
+      const maxPitchAttr = this.getAttribute('max-pitch');
+      const maxPitch = maxPitchAttr ? parseFloat(maxPitchAttr) : undefined;
+
+      // Check for URL hash state if sync-url is enabled
+      const urlState = this.hasAttribute('sync-url') ? this.parseUrlHashState() : null;
+
       const options = {
-        lat: parseFloat(this.getAttribute('lat') || '0'),
-        lng: parseFloat(this.getAttribute('lng') || '0'),
-        zoom: parseFloat(this.getAttribute('zoom') || '2'),
-        pitch: parseFloat(this.getAttribute('pitch') || '0'),
-        bearing: parseFloat(this.getAttribute('bearing') || '0'),
+        lat: urlState?.lat ?? parseFloat(this.getAttribute('lat') || '0'),
+        lng: urlState?.lng ?? parseFloat(this.getAttribute('lng') || '0'),
+        zoom: urlState?.zoom ?? parseFloat(this.getAttribute('zoom') || '2'),
+        pitch: urlState?.pitch ?? parseFloat(this.getAttribute('pitch') || '0'),
+        maxPitch,
+        bearing: urlState?.bearing ?? parseFloat(this.getAttribute('bearing') || '0'),
         style: styleAttr,
         interactive: this.getAttribute('interactive') !== 'false',
       };
@@ -246,46 +286,54 @@ export class MapElement extends BaseElement {
 
       // Set up features based on attributes
       this.setupHideAttribution();
+      this.injectControlThemeStyles();
 
-      if (styleAlreadyLoaded) {
-        // Style already loaded, wait for idle event to ensure control system is ready
+      // Optimize: Dispatch map-ready immediately when style is loaded
+      // Don't wait for 'idle' - it can delay by hundreds of ms
+      // Non-critical setup (controls, URL sync) is deferred to avoid blocking
+      const dispatchMapReady = () => {
         this.isInitialized = true;
         this.hidePlaceholder();
-        if (this.map) {
-          this.map.once('idle', () => {
-            this.setupAutoHideControls();
-            this.dispatchEvent(
-              new CustomEvent('gk-map-ready', {
-                detail: { map: this.map, element: this },
-                bubbles: true,
-              })
-            );
-          });
+
+        // Dispatch map-ready immediately so layers can be added
+        this.dispatchEvent(
+          new CustomEvent('gk-map-ready', {
+            detail: { map: this.map, element: this },
+            bubbles: true,
+          })
+        );
+
+        // Defer non-critical setup to avoid blocking first paint
+        const deferredSetup = () => {
+          this.setupAutoHideControls();
+          this.setupUrlSync();
+        };
+
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(deferredSetup, { timeout: 200 });
+        } else {
+          // Fallback for Safari (no requestIdleCallback)
+          setTimeout(deferredSetup, 0);
         }
+      };
+
+      if (styleAlreadyLoaded) {
+        // Style already loaded - dispatch immediately (no idle wait)
+        dispatchMapReady();
       } else {
-        // Wait for map to be fully loaded, then wait for idle
+        // Wait for style to load, then dispatch immediately (no idle wait)
         if (this.map) {
-          this.map.on('load', () => {
-            this.isInitialized = true;
-            this.hidePlaceholder();
-            // Wait for idle to ensure internal control system is initialized
-            if (this.map) {
-              this.map.once('idle', () => {
-                this.setupAutoHideControls();
-                this.dispatchEvent(
-                  new CustomEvent('gk-map-ready', {
-                    detail: { map: this.map, element: this },
-                    bubbles: true,
-                  })
-                );
-              });
-            }
+          this.map.once('load', () => {
+            dispatchMapReady();
           });
         }
       }
     } catch (error) {
       console.error('Failed to initialize map:', error);
-      // Keep placeholder visible on error
+      // Keep placeholder visible on error, but ensure it shows an error message
+      this.showPlaceholder('Map failed to initialize');
+      // Reset initialization flag so it can be retried
+      this.isInitialized = false;
     } finally {
       this._isInitializing = false;
     }
@@ -345,7 +393,10 @@ export class MapElement extends BaseElement {
       let needsReplacement = false;
 
       if (currentStyle) {
-        if (typeof currentStyle === 'object' && currentStyle.name === 'Streets Default v2') {
+        if (typeof currentStyle === 'string' && currentStyle.startsWith('http')) {
+          // Already a full style URL (MapTiler or dev proxy) - don't replace
+          needsReplacement = false;
+        } else if (typeof currentStyle === 'object' && currentStyle.name === 'Streets Default v2') {
           needsReplacement = true;
         } else if (typeof currentStyle === 'string' && currentStyle.includes('streets-v2')) {
           needsReplacement = true;
@@ -457,6 +508,73 @@ export class MapElement extends BaseElement {
   }
 
   /**
+   * Inject CSS for dark theme + liquid glass on MapLibre controls (once per document)
+   */
+  private injectControlThemeStyles(): void {
+    const styleId = 'gk-control-theme-style';
+    if (document.getElementById(styleId)) return;
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      /* Dark liquid glass: control groups and containers */
+      gk-map .maplibregl-ctrl-group,
+      gk-map .mapboxgl-ctrl-group {
+        background: rgba(18, 18, 22, 0.52) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+      }
+      /* Individual control buttons (zoom, compass, fullscreen) */
+      gk-map .maplibregl-ctrl,
+      gk-map .mapboxgl-ctrl {
+        background: transparent !important;
+        border: none !important;
+      }
+      gk-map .maplibregl-ctrl button,
+      gk-map .mapboxgl-ctrl button {
+        background: transparent !important;
+        border: none !important;
+        width: 29px !important;
+        height: 29px !important;
+      }
+      gk-map .maplibregl-ctrl button:hover,
+      gk-map .mapboxgl-ctrl button:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+      }
+      gk-map .maplibregl-ctrl button:active,
+      gk-map .mapboxgl-ctrl button:active {
+        background: rgba(255, 255, 255, 0.12) !important;
+      }
+      /* Dark theme: light icons (invert MapLibre default dark icons) */
+      gk-map .maplibregl-ctrl-icon,
+      gk-map .mapboxgl-ctrl-icon {
+        filter: invert(1) brightness(1.1) contrast(0.9) !important;
+        opacity: 0.92;
+      }
+      /* Scale bar: same glass treatment */
+      gk-map .maplibregl-ctrl-scale,
+      gk-map .mapboxgl-ctrl-scale {
+        background: rgba(18, 18, 22, 0.52) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 6px !important;
+        padding: 4px 8px !important;
+      }
+      gk-map .maplibregl-ctrl-scale-inner,
+      gk-map .mapboxgl-ctrl-scale-inner {
+        border-color: rgba(255, 255, 255, 0.35) !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        font-size: 10px !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  /**
    * Inject CSS styles to hide attribution (once per document)
    */
   private injectHideAttributionStyles(): void {
@@ -560,6 +678,177 @@ export class MapElement extends BaseElement {
     }
   }
 
+  // ============================================================================
+  // URL Hash Sync
+  // ============================================================================
+
+  /**
+   * Parse map state from URL hash
+   * Supports format: #map=zoom/lat/lng/pitch/bearing
+   * @returns Parsed state or null if not present/invalid
+   */
+  private parseUrlHashState(): {
+    zoom: number;
+    lat: number;
+    lng: number;
+    pitch: number;
+    bearing: number;
+  } | null {
+    const hash = window.location.hash;
+    if (!hash || !hash.startsWith('#map=')) {
+      return null;
+    }
+
+    try {
+      const parts = hash.slice(5).split('/');
+      if (parts.length < 3) return null;
+
+      const zoom = parseFloat(parts[0]);
+      const lat = parseFloat(parts[1]);
+      const lng = parseFloat(parts[2]);
+      const pitch = parts.length > 3 ? parseFloat(parts[3]) : 0;
+      const bearing = parts.length > 4 ? parseFloat(parts[4]) : 0;
+
+      // Validate values
+      if (isNaN(zoom) || isNaN(lat) || isNaN(lng) || isNaN(pitch) || isNaN(bearing)) {
+        return null;
+      }
+
+      // Validate ranges
+      if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return null;
+      }
+
+      return { zoom, lat, lng, pitch, bearing };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Update URL hash with current map state
+   * Uses debouncing to avoid excessive URL updates during panning
+   */
+  private updateUrlHash(): void {
+    if (!this.map || !this._urlSyncEnabled || this._isUpdatingFromUrl) {
+      return;
+    }
+
+    // Clear existing debounce timer
+    if (this._urlSyncDebounceTimer) {
+      clearTimeout(this._urlSyncDebounceTimer);
+    }
+
+    // Debounce URL updates (150ms)
+    this._urlSyncDebounceTimer = setTimeout(() => {
+      if (!this.map) return;
+
+      const map = this.map as any;
+      const center = map.getCenter?.();
+      const zoom = map.getZoom?.();
+      const pitch = map.getPitch?.();
+      const bearing = map.getBearing?.();
+
+      if (!center || zoom === undefined) return;
+
+      // Round values for cleaner URLs
+      const roundedZoom = Math.round(zoom * 100) / 100;
+      const roundedLat = Math.round(center.lat * 100000) / 100000;
+      const roundedLng = Math.round(center.lng * 100000) / 100000;
+      const roundedPitch = Math.round((pitch || 0) * 10) / 10;
+      const roundedBearing = Math.round((bearing || 0) * 10) / 10;
+
+      // Build hash string - only include pitch/bearing if non-zero
+      let hashString = `#map=${roundedZoom}/${roundedLat}/${roundedLng}`;
+      if (roundedPitch !== 0 || roundedBearing !== 0) {
+        hashString += `/${roundedPitch}/${roundedBearing}`;
+      }
+
+      // Update URL without triggering navigation
+      // Preserve existing history.state (required for Vue Router compatibility)
+      const currentUrl = new URL(window.location.href);
+      if (currentUrl.hash !== hashString) {
+        history.replaceState(history.state, '', hashString);
+      }
+    }, 150);
+  }
+
+  /**
+   * Apply URL hash state to the map
+   */
+  private applyUrlHashState(): void {
+    const state = this.parseUrlHashState();
+    if (!state || !this.map) return;
+
+    this._isUpdatingFromUrl = true;
+    const map = this.map as any;
+
+    try {
+      map.jumpTo?.({
+        center: [state.lng, state.lat],
+        zoom: state.zoom,
+        pitch: state.pitch,
+        bearing: state.bearing,
+      });
+    } finally {
+      // Reset flag after a short delay to allow map events to settle
+      setTimeout(() => {
+        this._isUpdatingFromUrl = false;
+      }, 100);
+    }
+  }
+
+  /**
+   * Set up URL hash synchronization
+   * Called when map is ready and sync-url attribute is present
+   */
+  private setupUrlSync(): void {
+    if (!this.hasAttribute('sync-url') || this._urlSyncEnabled) {
+      return;
+    }
+
+    this._urlSyncEnabled = true;
+
+    // Apply URL state if present (may have already been applied during init)
+    // This handles cases where URL was changed while map was loading
+    this.applyUrlHashState();
+
+    // Listen for map movement to update URL
+    this._mapMoveEndHandler = () => this.updateUrlHash();
+    if (this.map) {
+      this.map.on('moveend', this._mapMoveEndHandler);
+    }
+
+    // Listen for URL hash changes (e.g., browser back/forward)
+    this._hashChangeHandler = () => {
+      if (this._isUpdatingFromUrl) return;
+      this.applyUrlHashState();
+    };
+    window.addEventListener('hashchange', this._hashChangeHandler);
+  }
+
+  /**
+   * Clean up URL hash synchronization
+   */
+  private cleanupUrlSync(): void {
+    if (this._urlSyncDebounceTimer) {
+      clearTimeout(this._urlSyncDebounceTimer);
+      this._urlSyncDebounceTimer = null;
+    }
+
+    if (this._mapMoveEndHandler && this.map) {
+      this.map.off('moveend', this._mapMoveEndHandler);
+      this._mapMoveEndHandler = null;
+    }
+
+    if (this._hashChangeHandler) {
+      window.removeEventListener('hashchange', this._hashChangeHandler);
+      this._hashChangeHandler = null;
+    }
+
+    this._urlSyncEnabled = false;
+  }
+
   /**
    * Show or hide map controls
    * Works with SDK controls added via addControl()
@@ -608,6 +897,16 @@ export class MapElement extends BaseElement {
       } else {
         this.cleanupAutoHideControls();
         this.setControlsVisible(true);
+      }
+      return;
+    }
+
+    // Handle sync-url toggle
+    if (name === 'sync-url') {
+      if (newValue !== null && this.isInitialized) {
+        this.setupUrlSync();
+      } else {
+        this.cleanupUrlSync();
       }
       return;
     }
@@ -730,7 +1029,8 @@ export class MapElement extends BaseElement {
               (layerId.startsWith('point-') ||
                 layerId.startsWith('polygon-') ||
                 layerId.startsWith('polyline-') ||
-                layerId.startsWith('marker-'))
+                layerId.startsWith('marker-') ||
+                layerId.startsWith('isochrone-'))
             ) {
               try {
                 if (map.getLayer?.(layerId)) {
@@ -750,7 +1050,8 @@ export class MapElement extends BaseElement {
               sourceId.startsWith('point-') ||
               sourceId.startsWith('polygon-') ||
               sourceId.startsWith('polyline-') ||
-              sourceId.startsWith('marker-')
+              sourceId.startsWith('marker-') ||
+              sourceId.startsWith('isochrone-')
             ) {
               try {
                 if (map.getSource?.(sourceId)) {
@@ -782,6 +1083,189 @@ export class MapElement extends BaseElement {
     });
 
     return counts;
+  }
+
+  // ============================================================================
+  // Child Element Tracking
+  // ============================================================================
+
+  /**
+   * Initialize MutationObserver to track child element additions/removals
+   */
+  private _initializeChildTracking(): void {
+    if (this._childObserver) return; // Already initialized
+
+    // Track existing children
+    Array.from(this.children).forEach((child) => {
+      this._trackChild(child as HTMLElement);
+    });
+
+    // Set up MutationObserver to track future additions/removals
+    this._childObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            this._trackChild(node as HTMLElement);
+          }
+        });
+        mutation.removedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            this._untrackChild(node as HTMLElement);
+          }
+        });
+      });
+    });
+
+    this._childObserver.observe(this, {
+      childList: true,
+      subtree: false, // Only direct children
+    });
+  }
+
+  /**
+   * Clean up child tracking observer
+   */
+  private _cleanupChildTracking(): void {
+    if (this._childObserver) {
+      this._childObserver.disconnect();
+      this._childObserver = null;
+    }
+    this._trackedChildren.clear();
+  }
+
+  /**
+   * Track a child element by its tag name
+   */
+  private _trackChild(element: HTMLElement): void {
+    const tagName = element.tagName.toLowerCase();
+    if (!this._trackedChildren.has(tagName)) {
+      this._trackedChildren.set(tagName, new Set());
+    }
+    this._trackedChildren.get(tagName)!.add(element);
+
+    // Dispatch event
+    this.dispatchEvent(
+      new CustomEvent('child-added', {
+        detail: { element, tagName },
+        bubbles: false,
+      })
+    );
+  }
+
+  /**
+   * Untrack a child element
+   */
+  private _untrackChild(element: HTMLElement): void {
+    const tagName = element.tagName.toLowerCase();
+    const set = this._trackedChildren.get(tagName);
+    if (set) {
+      set.delete(element);
+      if (set.size === 0) {
+        this._trackedChildren.delete(tagName);
+      }
+    }
+
+    // Dispatch event
+    this.dispatchEvent(
+      new CustomEvent('child-removed', {
+        detail: { element, tagName },
+        bubbles: false,
+      })
+    );
+  }
+
+  /**
+   * Get all child elements of a specific type
+   */
+  private _getChildrenByTag(tagName: string): HTMLElement[] {
+    const set = this._trackedChildren.get(tagName.toLowerCase());
+    return set ? Array.from(set) : [];
+  }
+
+  /**
+   * Get all point elements
+   * @param filter - Optional filter criteria
+   */
+  public getPoints(filter?: { visible?: boolean; id?: string }): PointElement[] {
+    const points = this._getChildrenByTag('gk-point') as PointElement[];
+    if (!filter) return points;
+
+    return points.filter((point) => {
+      if (filter.visible !== undefined) {
+        const isVisible = point.getAttribute('visible') !== 'false';
+        if (isVisible !== filter.visible) return false;
+      }
+      if (filter.id !== undefined) {
+        const pointId = point.getAttribute('point-id');
+        if (pointId !== filter.id) return false;
+      }
+      return true;
+    });
+  }
+
+  /**
+   * Get all polygon elements
+   * @param filter - Optional filter criteria
+   */
+  public getPolygons(filter?: {
+    visible?: boolean;
+    dataAttribute?: { key: string; value: string };
+  }): PolygonElement[] {
+    const polygons = this._getChildrenByTag('gk-polygon') as PolygonElement[];
+    if (!filter) return polygons;
+
+    return polygons.filter((polygon) => {
+      if (filter.visible !== undefined) {
+        const isVisible = polygon.getAttribute('visible') !== 'false';
+        if (isVisible !== filter.visible) return false;
+      }
+      if (filter.dataAttribute) {
+        const attrValue = polygon.getAttribute(filter.dataAttribute.key);
+        if (attrValue !== filter.dataAttribute.value) return false;
+      }
+      return true;
+    });
+  }
+
+  /**
+   * Get all isochrone elements
+   * @param filter - Optional filter criteria
+   */
+  public getIsochrones(filter?: {
+    visible?: boolean;
+    selection?: boolean; // true = only selection, false = only travel time, undefined = all
+    dataAttribute?: { key: string; value: string };
+  }): IsochroneElement[] {
+    const isochrones = this._getChildrenByTag('gk-isochrone') as IsochroneElement[];
+    if (!filter) return isochrones;
+
+    return isochrones.filter((iso) => {
+      if (filter.visible !== undefined) {
+        const isVisible = iso.getAttribute('visible') !== 'false';
+        if (isVisible !== filter.visible) return false;
+      }
+      if (filter.selection !== undefined) {
+        const isSelection = iso.getAttribute('data-venue-selection') === 'true';
+        if (isSelection !== filter.selection) return false;
+      }
+      if (filter.dataAttribute) {
+        const attrValue = iso.getAttribute(filter.dataAttribute.key);
+        if (attrValue !== filter.dataAttribute.value) return false;
+      }
+      return true;
+    });
+  }
+
+  /**
+   * Remove all isochrones matching filter criteria
+   * @param filter - Optional filter criteria
+   */
+  public removeIsochrones(filter?: { selection?: boolean; visible?: boolean }): void {
+    const isochrones = this.getIsochrones(filter);
+    isochrones.forEach((iso) => {
+      iso.setAttribute('visible', 'false');
+      iso.remove();
+    });
   }
 
   /**
@@ -950,16 +1434,54 @@ export class MapElement extends BaseElement {
         this.showPlaceholder('Restoring map...');
         await this._unfreeze();
         // Wait for map to be fully ready after reinitialization
+        // Note: initializeMap() already hides placeholder in dispatchMapReady(),
+        // but we wait for ready state to ensure map is usable
         if (this.map) {
-          await this.waitForReady();
+          try {
+            await this.waitForReady();
+          } catch {
+            // Timeout or error waiting for ready - but map might still be usable
+            // Check if map is actually initialized
+            if (this.isInitialized) {
+              // Map is initialized, just hide placeholder
+              this.hidePlaceholder();
+            } else {
+              // Map not initialized, keep placeholder visible
+              console.warn('[gk-map] Map ready timeout, but map not initialized');
+            }
+          }
         }
-        this.hidePlaceholder();
+        // Ensure placeholder is hidden if map is initialized (in case waitForReady failed)
+        if (this.isInitialized) {
+          this.hidePlaceholder();
+        }
+        // Resize and repaint so map fills container after scroll-back (container may have been zero-size when frozen)
+        this.resizeAndRepaintMap();
+        // Dispatch unfreeze event after reinitialization completes
+        // Note: initializeMap() already dispatches gk-map-ready, but we also dispatch
+        // gk-map-unfreeze to make the lifecycle explicit for components that need it
+        this.dispatchEvent(
+          new CustomEvent('gk-map-unfreeze', {
+            detail: { map: this.map, element: this },
+            bubbles: true,
+          })
+        );
         return true;
       }
 
-      // If map already exists and is initialized, just hide placeholder
+      // If map already exists and is initialized, dispatch unfreeze event
+      // This allows components to react to maps becoming active even if already initialized
       if (this.map && this.isInitialized) {
         this.hidePlaceholder();
+        // Resize/repaint so map displays correctly when scrolled back into view
+        this.resizeAndRepaintMap();
+        // Dispatch unfreeze event so components can react (e.g., reload DMA polygons)
+        this.dispatchEvent(
+          new CustomEvent('gk-map-unfreeze', {
+            detail: { map: this.map, element: this },
+            bubbles: true,
+          })
+        );
         return true;
       }
 
@@ -967,9 +1489,33 @@ export class MapElement extends BaseElement {
       await this.initializeMap();
 
       // Wait for map to be fully ready
+      // Note: initializeMap() already hides placeholder in dispatchMapReady(),
+      // but we wait for ready state to ensure map is usable
       if (this.map) {
-        await this.waitForReady();
-        this.hidePlaceholder();
+        try {
+          await this.waitForReady();
+        } catch {
+          // Timeout or error waiting for ready - but map might still be usable
+          // Check if map is actually initialized
+          if (this.isInitialized) {
+            // Map is initialized, just hide placeholder
+            this.hidePlaceholder();
+          } else {
+            // Map not initialized, keep placeholder visible
+            console.warn('[gk-map] Map ready timeout, but map not initialized');
+          }
+        }
+        // Ensure placeholder is hidden if map is initialized (in case waitForReady failed)
+        if (this.isInitialized) {
+          this.hidePlaceholder();
+        }
+        // Dispatch unfreeze event after initialization completes
+        this.dispatchEvent(
+          new CustomEvent('gk-map-unfreeze', {
+            detail: { map: this.map, element: this },
+            bubbles: true,
+          })
+        );
         return true;
       }
 
@@ -1003,6 +1549,14 @@ export class MapElement extends BaseElement {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
+
+    // Dispatch freeze event before freezing
+    this.dispatchEvent(
+      new CustomEvent('gk-map-freeze', {
+        detail: { map: this.map, element: this },
+        bubbles: true,
+      })
+    );
 
     // Show placeholder with "Restoring map..." message
     this.showPlaceholder('Restoring map...');
@@ -1114,9 +1668,17 @@ export class MapElement extends BaseElement {
     this.isInitialized = false;
     this._isFrozen = true;
 
-    // Wait a frame to ensure WebGL context is fully released
+    // Wait multiple frames to ensure WebGL context is fully released
+    // Browsers release WebGL contexts asynchronously, so a single frame isn't enough
     // This prevents "Too many active WebGL contexts" warnings
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Additional 50ms delay to allow browser to fully garbage collect the context
+          setTimeout(resolve, 50);
+        });
+      });
+    });
   }
 
   /**
@@ -1130,6 +1692,22 @@ export class MapElement extends BaseElement {
 
     // Map was destroyed, so we need to reinitialize it
     this._isFrozen = false;
+
+    // Wait for container to have dimensions (e.g. after scroll-back, layout may not be done yet)
+    const rect = this.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          const r = this.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            resolve();
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        requestAnimationFrame(check);
+      });
+    }
 
     // Set flag to indicate map was just unfrozen - this helps isochrones restore
     this.dataset.wasJustUnfrozen = 'true';
@@ -1187,7 +1765,7 @@ export class MapElement extends BaseElement {
    * Wait for map style to be loaded
    * Returns immediately if already loaded
    */
-  public async whenStyleReady(timeout: number = 10000): Promise<void> {
+  public async whenStyleReady(timeout: number = 2000): Promise<void> {
     if (!this.map) {
       throw new Error('[gk-map] No map instance');
     }
@@ -1199,12 +1777,20 @@ export class MapElement extends BaseElement {
       return;
     }
 
+    // Also check if style object exists (some SDKs don't expose isStyleLoaded correctly)
+    if (typeof map.getStyle === 'function') {
+      const style = map.getStyle();
+      if (style && typeof style === 'object') {
+        return; // Style exists, assume it's ready
+      }
+    }
+
     return new Promise((resolve, _reject) => {
       const timeoutId = setTimeout(() => {
         map.off?.('style.load', handleStyleLoad);
         map.off?.('load', handleLoad);
         // Resolve anyway after timeout - map might be usable
-        console.warn('[gk-map] Style load timeout, proceeding anyway');
+        // Don't warn - this is expected if style is already loaded
         resolve();
       }, timeout);
 
@@ -1237,6 +1823,23 @@ export class MapElement extends BaseElement {
         }
       };
       requestAnimationFrame(checkReady);
+    });
+  }
+
+  /**
+   * Resize map to container and trigger repaint.
+   * Call after unfreeze so the map fills the container when scrolled back into view.
+   */
+  private resizeAndRepaintMap(): void {
+    if (!this.map) return;
+    const map = this.map as { resize?: () => void; triggerRepaint?: () => void };
+    requestAnimationFrame(() => {
+      if (typeof map.resize === 'function') {
+        map.resize();
+      }
+      if (typeof map.triggerRepaint === 'function') {
+        map.triggerRepaint();
+      }
     });
   }
 
@@ -1348,6 +1951,8 @@ export class MapElement extends BaseElement {
     geojson: GeoJSON.FeatureCollection,
     options: {
       color?: string;
+      /** Property name to read color from each feature (takes precedence over color option) */
+      colorProperty?: string;
       size?: number;
       opacity?: number;
       blur?: number;
@@ -1355,6 +1960,10 @@ export class MapElement extends BaseElement {
       shadowColor?: string;
       shadowBlur?: number;
       shadowOpacity?: number;
+      glow?: boolean;
+      glowColor?: string;
+      glowOpacity?: number;
+      glowBlur?: number;
       strokeWidth?: number;
       strokeColor?: string;
       idProperty?: string;
@@ -1388,8 +1997,686 @@ export class MapElement extends BaseElement {
     } = {}
   ): number {
     const polygons = PolygonElement.createFromGeoJSON(geojson, options);
-    polygons.forEach((polygon) => this.appendChild(polygon));
+    // Batch append using DocumentFragment for better performance
+    if (polygons.length > 0) {
+      const fragment = document.createDocumentFragment();
+      polygons.forEach((polygon) => fragment.appendChild(polygon));
+      this.appendChild(fragment);
+    }
     return polygons.length;
+  }
+
+  /**
+   * Add multiple polygons from GeoJSON features in a single batch operation
+   * More efficient than calling addPolygonFromGeoJSON multiple times
+   */
+  public addPolygonsFromGeoJSONBatch(
+    features: Array<{
+      geojson: GeoJSON.Feature | GeoJSON.Geometry;
+      options: Parameters<typeof MapElement.prototype.addPolygonFromGeoJSON>[1];
+    }>
+  ): number {
+    const fragment = document.createDocumentFragment();
+    let totalCount = 0;
+
+    for (const { geojson, options } of features) {
+      const polygons = PolygonElement.createFromGeoJSON(geojson, options);
+      polygons.forEach((polygon) => fragment.appendChild(polygon));
+      totalCount += polygons.length;
+    }
+
+    if (fragment.hasChildNodes()) {
+      this.appendChild(fragment);
+    }
+
+    return totalCount;
+  }
+
+  // ============================================================================
+  // Universal Source/Layer Management Utilities
+  // ============================================================================
+
+  /**
+   * Update GeoJSON source data in place (avoids flicker from remove/add)
+   * @param sourceId - Source ID to update
+   * @param data - New GeoJSON FeatureCollection data
+   * @returns true if update succeeded, false otherwise
+   */
+  public updateSourceData(sourceId: string, data: GeoJSON.FeatureCollection): boolean {
+    const map = this.getMap();
+    if (!map) return false;
+
+    const source = map.getSource?.(sourceId);
+    if (!source) {
+      console.warn(`[gk-map] Source not found: ${sourceId}`);
+      return false;
+    }
+
+    // Check if source has setData method (GeoJSON sources should have this)
+    if (typeof (source as any).setData === 'function') {
+      try {
+        (source as any).setData(data);
+        return true;
+      } catch (error) {
+        console.error(`[gk-map] Failed to update source data:`, error);
+        return false;
+      }
+    }
+
+    console.warn(`[gk-map] Source ${sourceId} does not support setData() method`);
+    return false;
+  }
+
+  /**
+   * Upsert (update or insert) a source and layer
+   * If source exists, updates its data. If layer exists, ensures it's visible.
+   * If either doesn't exist, creates them.
+   * @param sourceId - Source ID
+   * @param layerId - Layer ID
+   * @param sourceData - GeoJSON FeatureCollection data
+   * @param layerConfig - Layer configuration
+   * @param beforeId - Optional layer ID to insert before
+   * @returns true if operation succeeded, false otherwise
+   */
+  public upsertSourceLayer(
+    sourceId: string,
+    layerId: string,
+    sourceData: GeoJSON.FeatureCollection,
+    layerConfig: {
+      type: string;
+      paint?: Record<string, unknown>;
+      layout?: Record<string, unknown>;
+      filter?: unknown[];
+      [key: string]: unknown;
+    },
+    beforeId?: string
+  ): boolean {
+    const map = this.getMap();
+    if (!map) return false;
+
+    const existingSource = map.getSource?.(sourceId);
+    const existingLayer = map.getLayer?.(layerId);
+
+    if (existingSource) {
+      // Source exists - update data in place
+      if (!this.updateSourceData(sourceId, sourceData)) {
+        return false;
+      }
+
+      if (existingLayer) {
+        // Layer exists - ensure visibility
+        map.setLayoutProperty?.(layerId, 'visibility', 'visible');
+        return true;
+      } else {
+        // Source exists but layer doesn't - add layer
+        try {
+          map.addLayer({ ...layerConfig, id: layerId, source: sourceId }, beforeId);
+          return true;
+        } catch (error) {
+          console.error(`[gk-map] Failed to add layer ${layerId}:`, error);
+          return false;
+        }
+      }
+    } else {
+      // Source doesn't exist - create both source and layer
+      try {
+        map.addSource(sourceId, {
+          type: 'geojson',
+          data: sourceData,
+        });
+        map.addLayer({ ...layerConfig, id: layerId, source: sourceId }, beforeId);
+        return true;
+      } catch (error) {
+        console.error(`[gk-map] Failed to create source/layer ${sourceId}/${layerId}:`, error);
+        return false;
+      }
+    }
+  }
+
+  /**
+   * Remove source and its associated layers
+   * @param sourceId - Source ID to remove
+   * @returns true if removal succeeded, false otherwise
+   */
+  public removeSourceAndLayers(sourceId: string): boolean {
+    const map = this.getMap();
+    if (!map) return false;
+
+    try {
+      // Find all layers that use this source
+      const style = (map as any).getStyle?.();
+      if (style?.layers) {
+        const layersToRemove = style.layers
+          .filter((layer: any) => layer.source === sourceId)
+          .map((layer: any) => layer.id);
+
+        // Remove layers first
+        for (const layerId of layersToRemove) {
+          try {
+            map.removeLayer(layerId);
+          } catch {
+            // Layer might not exist, continue
+          }
+        }
+      }
+
+      // Remove source
+      map.removeSource(sourceId);
+      return true;
+    } catch (error) {
+      console.error(`[gk-map] Failed to remove source ${sourceId}:`, error);
+      return false;
+    }
+  }
+
+  // ============================================================================
+  // Universal Layer Visibility Helpers
+  // ============================================================================
+
+  /**
+   * Set visibility for a single layer
+   * @param layerId - Layer ID
+   * @param visible - Whether layer should be visible
+   * @returns true if operation succeeded, false otherwise
+   */
+  public setLayerVisibility(layerId: string, visible: boolean): boolean {
+    const map = this.getMap();
+    if (!map?.getLayer?.(layerId)) {
+      return false;
+    }
+
+    try {
+      map.setLayoutProperty?.(layerId, 'visibility', visible ? 'visible' : 'none');
+      return true;
+    } catch (error) {
+      console.error(`[gk-map] Failed to set layer visibility:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Set visibility for multiple layers at once
+   * @param layerIds - Array of layer IDs
+   * @param visible - Whether layers should be visible
+   */
+  public setLayersVisibility(layerIds: string[], visible: boolean): void {
+    layerIds.forEach((id) => this.setLayerVisibility(id, visible));
+  }
+
+  /**
+   * Check if a layer exists on the map
+   * @param layerId - Layer ID to check
+   * @returns true if layer exists, false otherwise
+   */
+  public hasLayer(layerId: string): boolean {
+    const map = this.getMap();
+    return !!map?.getLayer?.(layerId);
+  }
+
+  /**
+   * Check if a source exists on the map
+   * @param sourceId - Source ID to check
+   * @returns true if source exists, false otherwise
+   */
+  public hasSource(sourceId: string): boolean {
+    const map = this.getMap();
+    return !!map?.getSource?.(sourceId);
+  }
+
+  /**
+   * Get GeoJSON data from a source
+   * Handles both _data and _geojson internal properties
+   * @param sourceId - Source ID
+   * @returns GeoJSON FeatureCollection data or null if not found
+   */
+  public getSourceData(sourceId: string): GeoJSON.FeatureCollection | null {
+    const map = this.getMap();
+    if (!map) return null;
+
+    const source = map.getSource?.(sourceId);
+    if (!source || (source as any).type !== 'geojson') return null;
+
+    const data = (source as any)._data || (source as any)._geojson;
+    if (!data?.features) return null;
+
+    return data as GeoJSON.FeatureCollection;
+  }
+
+  /**
+   * Find a feature by ID in a source
+   * @param sourceId - Source ID to search
+   * @param featureId - Feature ID to find (checks properties.id, properties.slug, etc.)
+   * @param idProperties - Optional array of property names to check for ID (default: ['id', 'slug'])
+   * @returns Feature if found, null otherwise
+   */
+  public findFeatureById(
+    sourceId: string,
+    featureId: string,
+    idProperties: string[] = ['id', 'slug']
+  ): GeoJSON.Feature | null {
+    const data = this.getSourceData(sourceId);
+    if (!data) return null;
+
+    return (
+      data.features.find((f: GeoJSON.Feature) => {
+        if (!f.properties) return false;
+        return idProperties.some((prop) => f.properties?.[prop] === featureId);
+      }) || null
+    );
+  }
+
+  /**
+   * Get full feature properties from source
+   * MapLibre may return limited properties from queryRenderedFeatures,
+   * so this looks up the full feature from the source
+   * @param sourceId - Source ID
+   * @param partialProperties - Partial properties from queryRenderedFeatures
+   * @param idProperties - Optional array of property names to check for ID
+   * @returns Full feature properties or partial if not found
+   */
+  public getFullFeatureProperties(
+    sourceId: string,
+    partialProperties: Record<string, unknown>,
+    idProperties: string[] = ['id', 'slug']
+  ): Record<string, unknown> {
+    // Try to find feature ID from partial properties
+    const featureId = idProperties.find((prop) => partialProperties[prop]) as string | undefined;
+
+    if (!featureId || !partialProperties[featureId]) {
+      return partialProperties;
+    }
+
+    const fullFeature = this.findFeatureById(
+      sourceId,
+      String(partialProperties[featureId]),
+      idProperties
+    );
+
+    if (fullFeature?.properties) {
+      return fullFeature.properties;
+    }
+
+    return partialProperties;
+  }
+
+  /**
+   * Update selection state in a GeoJSON source
+   * Sets a selection property on the selected feature, removes from others
+   * @param sourceId - Source ID to update
+   * @param selectedId - Feature ID to select (null to clear selection)
+   * @param selectionProperty - Property name to use for selection (default: '__selected')
+   * @param idProperties - Optional array of property names to check for ID
+   * @returns true if update was successful
+   */
+  public updateFeatureSelection(
+    sourceId: string,
+    selectedId: string | null,
+    selectionProperty: string = '__selected',
+    idProperties: string[] = ['id', 'slug']
+  ): boolean {
+    const data = this.getSourceData(sourceId);
+    if (!data) return false;
+
+    try {
+      let foundSelected = false;
+      const newFeatures = data.features.map((f: GeoJSON.Feature) => {
+        // Create a new feature object to trigger reactivity
+        const newFeature = JSON.parse(JSON.stringify(f)) as GeoJSON.Feature;
+
+        if (!newFeature.properties) {
+          newFeature.properties = {};
+        }
+
+        // Check if this is the selected feature
+        const isSelected =
+          selectedId !== null &&
+          idProperties.some((prop) => newFeature.properties?.[prop] === selectedId);
+
+        if (isSelected) {
+          foundSelected = true;
+          newFeature.properties[selectionProperty] = true;
+        } else {
+          // Remove selection property if present
+          delete newFeature.properties[selectionProperty];
+        }
+
+        return newFeature;
+      });
+
+      if (selectedId && !foundSelected) {
+        console.warn(`[gk-map] Feature ${selectedId} not found in source ${sourceId}`);
+      }
+
+      // Update source data
+      const success = this.updateSourceData(sourceId, {
+        type: 'FeatureCollection',
+        features: newFeatures,
+      });
+
+      // Force repaint to show selection
+      if (success) {
+        const map = this.getMap();
+        if (map && typeof map.triggerRepaint === 'function') {
+          map.triggerRepaint();
+        } else if (map && typeof (map as any).repaint === 'function') {
+          (map as any).repaint();
+        }
+      }
+
+      return success;
+    } catch (error) {
+      console.error(`[gk-map] Failed to update selection for source: ${sourceId}`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Update layer filter expression
+   * Universal method to apply MapLibre filter expressions to layers
+   * @param layerId - Layer ID
+   * @param filterExpression - MapLibre filter expression
+   * @returns true if update succeeded, false otherwise
+   */
+  public setLayerFilter(layerId: string, filterExpression: unknown[]): boolean {
+    const map = this.getMap();
+    if (!map?.getLayer || !(map as any).setFilter) return false;
+
+    try {
+      if (map.getLayer(layerId)) {
+        (map as any).setFilter(layerId, filterExpression);
+        return true;
+      }
+    } catch (error) {
+      console.warn(`[gk-map] Failed to set filter for layer: ${layerId}`, error);
+    }
+
+    return false;
+  }
+
+  // ============================================================================
+  // Control Management
+  // ============================================================================
+
+  /**
+   * Add a control to the map element
+   * Creates a gk-control-{type} element and appends it to this map
+   * @param config - Control configuration
+   * @returns The created control element or null if control type not found
+   */
+  public addControl(config: {
+    /** Control type (e.g., 'navigation', 'fullscreen', 'scale', 'geolocate') */
+    type: string;
+    /** Control position (e.g., 'top-right', 'bottom-left') */
+    position?: string;
+    /** Additional attributes to set on the control */
+    attributes?: Record<string, string>;
+  }): HTMLElement | null {
+    const ControlClass = customElements.get(`gk-control-${config.type}`);
+    if (!ControlClass) {
+      console.warn(`[gk-map] Control type not found: gk-control-${config.type}`);
+      return null;
+    }
+
+    const control = new ControlClass() as HTMLElement;
+
+    // Set position if provided
+    if (config.position) {
+      control.setAttribute('position', config.position);
+    }
+
+    // Set additional attributes
+    if (config.attributes) {
+      for (const [key, value] of Object.entries(config.attributes)) {
+        control.setAttribute(key, value);
+      }
+    }
+
+    this.appendChild(control);
+    return control;
+  }
+
+  /**
+   * Add multiple controls at once
+   * @param configs - Array of control configurations
+   * @returns Array of created control elements (nulls filtered out)
+   */
+  public addControls(
+    configs: Array<{
+      type: string;
+      position?: string;
+      attributes?: Record<string, string>;
+    }>
+  ): HTMLElement[] {
+    return configs
+      .map((config) => this.addControl(config))
+      .filter((control): control is HTMLElement => control !== null);
+  }
+
+  // ============================================================================
+  // Factory Method for Programmatic Creation
+  // ============================================================================
+
+  /**
+   * Create a MapElement programmatically with options
+   * @param options - Map creation options
+   * @returns New MapElement instance
+   */
+  public static create(
+    options: {
+      id?: string;
+      lat?: number | string;
+      lng?: number | string;
+      zoom?: number | string;
+      minZoom?: number | string;
+      maxZoom?: number | string;
+      pitch?: number | string;
+      maxPitch?: number | string;
+      bearing?: number | string;
+      mapStyle?: string;
+      provider?: string;
+      apiKey?: string;
+      interactive?: boolean;
+      autoHideControls?: boolean;
+      lazy?: boolean | string;
+      attributes?: Record<string, string>;
+      styles?: Partial<CSSStyleDeclaration>;
+    } = {}
+  ): MapElement {
+    const map = new MapElement();
+
+    // Set ID if provided
+    if (options.id) {
+      map.id = options.id;
+    }
+
+    // Set position attributes
+    if (options.lat !== undefined) {
+      map.setAttribute('lat', String(options.lat));
+    }
+    if (options.lng !== undefined) {
+      map.setAttribute('lng', String(options.lng));
+    }
+    if (options.zoom !== undefined) {
+      map.setAttribute('zoom', String(options.zoom));
+    }
+    if (options.minZoom !== undefined) {
+      map.setAttribute('min-zoom', String(options.minZoom));
+    }
+    if (options.maxZoom !== undefined) {
+      map.setAttribute('max-zoom', String(options.maxZoom));
+    }
+    if (options.pitch !== undefined) {
+      map.setAttribute('pitch', String(options.pitch));
+    }
+    if (options.maxPitch !== undefined) {
+      map.setAttribute('max-pitch', String(options.maxPitch));
+    }
+    if (options.bearing !== undefined) {
+      map.setAttribute('bearing', String(options.bearing));
+    }
+
+    // Set style
+    if (options.mapStyle) {
+      map.setAttribute('map-style', options.mapStyle);
+    }
+
+    // Set provider and API key
+    if (options.provider) {
+      map.setAttribute('provider', options.provider);
+    }
+    if (options.apiKey) {
+      map.setAttribute('api-key', options.apiKey);
+    }
+
+    // Set boolean attributes
+    if (options.interactive !== undefined) {
+      map.setAttribute('interactive', String(options.interactive));
+    }
+    if (options.autoHideControls) {
+      map.setAttribute('auto-hide-controls', '');
+    }
+    if (options.lazy !== undefined) {
+      map.setAttribute('lazy', String(options.lazy));
+    }
+
+    // Set additional attributes
+    if (options.attributes) {
+      for (const [key, value] of Object.entries(options.attributes)) {
+        map.setAttribute(key, value);
+      }
+    }
+
+    // Apply additional styles
+    if (options.styles) {
+      Object.assign(map.style, options.styles);
+    }
+
+    return map;
+  }
+
+  /**
+   * Create a MapElement with controls in one call
+   * Convenience factory that combines create() with addControls()
+   * @param options - Map creation options (same as create())
+   * @param controls - Array of control configurations to add
+   * @returns New MapElement instance with controls added
+   */
+  public static createWithControls(
+    options: Parameters<typeof MapElement.create>[0] = {},
+    controls: Array<{
+      type: string;
+      position?: string;
+      attributes?: Record<string, string>;
+    }> = []
+  ): MapElement {
+    const map = MapElement.create(options);
+
+    // Add controls
+    for (const controlConfig of controls) {
+      map.addControl(controlConfig);
+    }
+
+    return map;
+  }
+
+  // ============================================================================
+  // Batch GeoJSON Operations
+  // ============================================================================
+
+  /**
+   * Add features from a GeoJSON FeatureCollection
+   * Automatically handles points, polygons, and polylines
+   * @param geojson - GeoJSON FeatureCollection
+   * @param options - Styling and behavior options
+   * @returns Object with counts of each feature type added
+   */
+  public addFeaturesFromGeoJSON(
+    geojson: GeoJSON.FeatureCollection,
+    options: {
+      points?: {
+        color?: string;
+        size?: number;
+        opacity?: number;
+        blur?: number;
+        shadow?: boolean;
+        shadowColor?: string;
+        shadowBlur?: number;
+        shadowOpacity?: number;
+        strokeWidth?: number;
+        strokeColor?: string;
+        idProperty?: string;
+        nameProperty?: string;
+      };
+      polygons?: {
+        fillColor?: string;
+        fillOpacity?: number;
+        strokeColor?: string;
+        strokeWidth?: number;
+        strokeOpacity?: number;
+        visible?: boolean;
+        simplify?: boolean;
+        maxPoints?: number;
+      };
+      polylines?: {
+        color?: string;
+        width?: number;
+        opacity?: number;
+      };
+    } = {}
+  ): { points: number; polygons: number; polylines: number } {
+    const counts = { points: 0, polygons: 0, polylines: 0 };
+
+    // Separate features by type
+    const pointFeatures: GeoJSON.Feature[] = [];
+    const polygonFeatures: GeoJSON.Feature[] = [];
+    const polylineFeatures: GeoJSON.Feature[] = [];
+
+    for (const feature of geojson.features) {
+      if (!feature.geometry) continue;
+
+      switch (feature.geometry.type) {
+        case 'Point':
+        case 'MultiPoint':
+          pointFeatures.push(feature);
+          break;
+        case 'Polygon':
+        case 'MultiPolygon':
+          polygonFeatures.push(feature);
+          break;
+        case 'LineString':
+        case 'MultiLineString':
+          polylineFeatures.push(feature);
+          break;
+        default:
+          console.warn(`[gk-map] Unsupported geometry type: ${feature.geometry.type}`);
+      }
+    }
+
+    // Add points
+    if (pointFeatures.length > 0 && options.points) {
+      const pointCollection: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: pointFeatures,
+      };
+      counts.points = this.addPointsFromGeoJSON(pointCollection, options.points);
+    }
+
+    // Add polygons
+    for (const polygonFeature of polygonFeatures) {
+      if (options.polygons) {
+        const added = this.addPolygonFromGeoJSON(polygonFeature, options.polygons);
+        counts.polygons += added;
+      }
+    }
+
+    // Polylines not yet implemented in geokit, but structure is ready
+    if (polylineFeatures.length > 0) {
+      console.warn(
+        `[gk-map] Polylines not yet supported, ${polylineFeatures.length} features skipped`
+      );
+    }
+
+    return counts;
   }
 }
 

@@ -16,13 +16,13 @@ function canCreateWebGLContext(): boolean {
   }
 }
 
-const isTestEnv = 
-  typeof navigator !== 'undefined' && 
-  (navigator.userAgent.includes('jsdom') || 
-   navigator.userAgent.includes('Happy DOM') ||
-   navigator.userAgent.includes('happy-dom') ||
-   typeof WebGLRenderingContext === 'undefined' ||
-   !canCreateWebGLContext());
+const isTestEnv =
+  typeof navigator !== 'undefined' &&
+  (navigator.userAgent.includes('jsdom') ||
+    navigator.userAgent.includes('Happy DOM') ||
+    navigator.userAgent.includes('happy-dom') ||
+    typeof WebGLRenderingContext === 'undefined' ||
+    !canCreateWebGLContext());
 
 describe.skipIf(isTestEnv)('Control Rendering', () => {
   let container: HTMLDivElement;
@@ -41,7 +41,7 @@ describe.skipIf(isTestEnv)('Control Rendering', () => {
     const provider = new MapTilerUIProvider();
     registerUIProvider('maptiler', provider);
     await setUIProvider('maptiler', {
-      apiKey: import.meta.env.MAPTILER_API_KEY || 'test-key',
+      apiKey: import.meta.env.MAPTILER_KEY || 'test-key',
     });
 
     // Create container div
@@ -53,7 +53,7 @@ describe.skipIf(isTestEnv)('Control Rendering', () => {
 
     // Create map element
     mapElement = document.createElement('gk-map') as HTMLElement & { getMap?: () => any };
-    mapElement.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
+    mapElement.setAttribute('api-key', import.meta.env.MAPTILER_KEY || 'test-key');
     mapElement.setAttribute('lat', '40.7128');
     mapElement.setAttribute('lng', '-74.006');
     mapElement.setAttribute('zoom', '10');
@@ -81,7 +81,7 @@ describe.skipIf(isTestEnv)('Control Rendering', () => {
         mapElement.removeEventListener('gk-ready', handler);
         reject(new Error('Map initialization timeout'));
       }, 5000); // 5 second timeout
-      
+
       const handler = () => {
         clearTimeout(timeout);
         mapElement.removeEventListener('gk-ready', handler);

@@ -19,6 +19,9 @@ export * from './components/controls';
 // Re-export elements
 export * from './components/elements';
 
+// Re-export utilities
+export * from './utils';
+
 // Auto-register all components (side-effects)
 import './components/controls/navigation-control';
 import './components/controls/scale-control';

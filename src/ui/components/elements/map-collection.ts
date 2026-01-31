@@ -45,6 +45,7 @@ export class MapCollectionElement extends BaseElement {
   private isProcessing: boolean = false; // Lock to prevent concurrent processing
   private pendingReprocess: boolean = false; // Track if reprocess needed after current run
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
+  private wasHidden: boolean = false; // Track if collection was previously hidden
 
   constructor() {
     super();
@@ -55,7 +56,7 @@ export class MapCollectionElement extends BaseElement {
     if (this.initialized) {
       this.cleanup();
     }
-    
+
     this.isInitialized = false;
     await super.connectedCallback();
     this.poolSize = parseInt(this.getAttribute('pool-size') || '6', 10);
@@ -210,6 +211,10 @@ export class MapCollectionElement extends BaseElement {
       return;
     }
 
+    // Sync activeCount with actual map states before processing
+    // This catches any drift from external freeze operations
+    this.syncActiveCount();
+
     const now = Date.now();
 
     try {
@@ -280,8 +285,6 @@ export class MapCollectionElement extends BaseElement {
    * Protected against concurrent activation and fast scrolling
    */
   private async activateSlot(slotInfo: SlotInfo): Promise<void> {
-    const slotId = this.getSlotId(slotInfo.slotElement);
-    
     // Already active or being activated - skip
     if (slotInfo.isActive || slotInfo.isActivating) {
       return;
@@ -318,11 +321,11 @@ export class MapCollectionElement extends BaseElement {
       // Mark active BEFORE unfreezing to prevent race conditions
       slotInfo.isActive = true;
       this.activeCount++;
-      
+
       // HMR safety check: enforce pool size limit
       if (this.activeCount > this.poolSize) {
         // Emergency cleanup: freeze the oldest active map (not the one we're activating)
-        const oldestActive = this.slots.find(s => s.isActive && s !== slotInfo);
+        const oldestActive = this.slots.find((s) => s.isActive && s !== slotInfo);
         if (oldestActive) {
           oldestActive.mapElement.freeze().catch(() => {});
           oldestActive.isActive = false;
@@ -398,7 +401,7 @@ export class MapCollectionElement extends BaseElement {
 
     if (candidates.length > 0) {
       const toFreeze = candidates[0].slotInfo;
-      
+
       // Await freeze to ensure WebGL context is released before creating new maps
       await toFreeze.mapElement.freeze();
       toFreeze.isActive = false;
@@ -462,17 +465,26 @@ export class MapCollectionElement extends BaseElement {
   private handleNewMaps(): void {
     const mapElements = Array.from(this.querySelectorAll('gk-map')) as MapElement[];
     const existingElements = new Set(this.slots.map((s) => s.mapElement));
+    let hasNewMaps = false;
 
     for (const mapElement of mapElements) {
       if (!existingElements.has(mapElement)) {
         mapElement.setPoolManaged(true);
         mapElement.showPlaceholder();
 
+        // Check if element is currently visible in viewport
+        const rect = mapElement.getBoundingClientRect();
+        const isInViewport =
+          rect.top < window.innerHeight + this.viewportPadding &&
+          rect.bottom > -this.viewportPadding &&
+          rect.width > 0 &&
+          rect.height > 0;
+
         const slotInfo: SlotInfo = {
           slotElement: mapElement,
           mapElement,
           isActive: false,
-          isVisible: false,
+          isVisible: isInViewport, // Set initial visibility based on actual position
           isActivating: false,
           failCount: 0,
           lastFailTime: 0,
@@ -481,7 +493,14 @@ export class MapCollectionElement extends BaseElement {
         };
         this.slots.push(slotInfo);
         this.intersectionObserver?.observe(mapElement);
+        hasNewMaps = true;
       }
+    }
+
+    // If we added new visible maps, trigger processing immediately
+    if (hasNewMaps) {
+      // Use short delay to allow IntersectionObserver to also fire
+      setTimeout(() => this.processVisibilityChanges(), 50);
     }
   }
 
@@ -489,9 +508,7 @@ export class MapCollectionElement extends BaseElement {
    * Clean up slots for maps that have been removed from the DOM
    */
   private handleRemovedMaps(): void {
-    const currentMapElements = new Set(
-      Array.from(this.querySelectorAll('gk-map')) as MapElement[]
-    );
+    const currentMapElements = new Set(Array.from(this.querySelectorAll('gk-map')) as MapElement[]);
 
     // Find slots whose map elements are no longer in the DOM
     const removedSlots = this.slots.filter((s) => !currentMapElements.has(s.mapElement));
@@ -527,9 +544,37 @@ export class MapCollectionElement extends BaseElement {
 
   /**
    * Check for maps stuck in loading state and reset them
+   * Also detects when the collection transitions from hidden to visible
    */
   private checkStuckMaps(): void {
     const now = Date.now();
+
+    // Check if collection visibility changed (hidden -> visible)
+    const collectionRect = this.getBoundingClientRect();
+    const collectionStyle = window.getComputedStyle(this);
+    const isCurrentlyHidden =
+      collectionStyle.visibility === 'hidden' ||
+      collectionStyle.display === 'none' ||
+      collectionRect.width === 0 ||
+      collectionRect.height === 0;
+
+    if (this.wasHidden && !isCurrentlyHidden) {
+      // Collection just became visible - trigger immediate reprocessing
+      this.wasHidden = false;
+      // Reset health check timestamps to allow immediate activation
+      for (const slot of this.slots) {
+        slot.lastHealthCheckAttempt = 0;
+      }
+      setTimeout(() => this.processVisibilityChanges(), 0);
+      return;
+    }
+
+    this.wasHidden = isCurrentlyHidden;
+
+    // Skip health check if collection is hidden
+    if (isCurrentlyHidden) {
+      return;
+    }
     const STUCK_THRESHOLD_MS = 15000; // 15 seconds - map should load by then
 
     for (const slot of this.slots) {
@@ -556,6 +601,7 @@ export class MapCollectionElement extends BaseElement {
           // Map is active but still showing placeholder - might be stuck
           // Check if map instance exists
           const mapInstance = (slot.mapElement as any).getMap?.();
+          const isInitialized = (slot.mapElement as any).isInitialized;
           if (!mapInstance) {
             // Map instance missing but marked active - reset
             slot.isActive = false;
@@ -563,6 +609,10 @@ export class MapCollectionElement extends BaseElement {
             slot.failCount = 0;
             slot.lastFailTime = 0;
             setTimeout(() => this.activateSlot(slot), 1000);
+          } else if (isInitialized) {
+            // Map is initialized but placeholder still visible - hide it
+            // This can happen due to timing issues or if waitForReady() timed out
+            slot.mapElement.hidePlaceholder();
           }
         }
       }
@@ -636,6 +686,68 @@ export class MapCollectionElement extends BaseElement {
       .filter((s) => s.isActive)
       .map((s) => this.getSlotId(s.slotElement))
       .slice(0, this.poolSize);
+  }
+
+  /**
+   * Refresh the collection - reprocess visibility and activate visible maps
+   * Call this after the collection becomes visible again (e.g., view switch)
+   */
+  public refresh(): void {
+    // Reset health check timestamps to allow immediate activation
+    for (const slot of this.slots) {
+      slot.lastHealthCheckAttempt = 0;
+      slot.failCount = 0;
+      slot.lastFailTime = 0;
+    }
+    // Trigger immediate reprocessing
+    this.processVisibilityChanges();
+  }
+
+  /**
+   * Sync activeCount with actual map states
+   * Call this after external operations that may have frozen maps directly
+   * (e.g., when switching views and freezing all maps)
+   */
+  public syncActiveCount(): void {
+    let actualActive = 0;
+    for (const slot of this.slots) {
+      // Check if map actually has an active instance
+      const mapInstance = (slot.mapElement as any).getMap?.();
+      const isFrozen = (slot.mapElement as any)._isFrozen;
+
+      if (mapInstance && !isFrozen) {
+        actualActive++;
+        slot.isActive = true;
+      } else {
+        slot.isActive = false;
+      }
+    }
+
+    if (actualActive !== this.activeCount) {
+      this.activeCount = actualActive;
+    }
+  }
+
+  /**
+   * Freeze all active maps in the collection
+   * Returns a promise that resolves when all maps are frozen
+   */
+  public async freezeAll(): Promise<void> {
+    const freezePromises: Promise<void>[] = [];
+
+    for (const slot of this.slots) {
+      if (slot.isActive) {
+        slot.isActive = false;
+        freezePromises.push(
+          slot.mapElement.freeze().catch(() => {
+            // Ignore freeze errors
+          })
+        );
+      }
+    }
+
+    this.activeCount = 0;
+    await Promise.all(freezePromises);
   }
 }
 

@@ -1,9 +1,13 @@
 import { defineConfig } from 'vitest/config';
 import dotenv from 'dotenv';
 import path from 'path';
+import { existsSync } from 'fs';
 
-// Load .env from project root
-dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
+// Load .env from project root if it exists
+const envPath = path.resolve(__dirname, '..', '.env');
+if (existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+}
 
 export default defineConfig({
   test: {
@@ -12,12 +16,17 @@ export default defineConfig({
     setupFiles: ['./tests/setup/happy-dom-polyfills.ts'],
     hookTimeout: 60000, // 60 seconds for hooks (map initialization can take time)
     testTimeout: 30000, // 30 seconds for individual tests
-    // Exclude browser-only tests (they require Playwright)
-    exclude: ['**/node_modules/**', '**/dist/**', '**/tests/ui/browser/**'],
-    pool: 'forks',
+    // Exclude browser-only tests and integration tests (they require Playwright/real API keys)
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/tests/ui/browser/**',
+      '**/tests/integration/**',
+    ],
+    pool: 'threads',
     poolOptions: {
-      forks: {
-        singleFork: true,
+      threads: {
+        singleThread: true,
       },
     },
     coverage: {
@@ -27,8 +36,9 @@ export default defineConfig({
     },
     env: {
       // Pass through environment variables to tests
-      MAPTILER_API_KEY: process.env.MAPTILER_API_KEY || '',
-      MAPBOX_ACCESS_TOKEN: process.env.MAPBOX_ACCESS_TOKEN || '',
+      MAPTILER_KEY: process.env.MAPTILER_KEY || '',
+      MAPBOX_TOKEN: process.env.MAPBOX_TOKEN || '',
+      FOURSQUARE_API_KEY: process.env.FOURSQUARE_API_KEY || '',
     },
   },
 });

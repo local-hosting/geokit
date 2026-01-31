@@ -116,6 +116,7 @@ export {
   createFeatureCollection,
   extractGeometry,
   formatJSONCompact,
+  getFeatureId,
   isValidPosition,
   isValidPoint,
   isValidLineString,
@@ -227,6 +228,16 @@ export {
   simplifyGeometryMeters,
 } from './utils/simplify';
 
+// Smoothing utilities (Chaikin's corner cutting)
+export {
+  smoothRing,
+  smoothLine,
+  smoothPolygon,
+  smoothMultiPolygon,
+  smoothGeometry,
+  smoothFeatureCollection,
+} from './utils/smoothing';
+
 // Clustering utilities
 export type { ClusterPoint, Cluster } from './utils/clustering';
 export { gridCluster, gridClusterMeters, distanceCluster } from './utils/clustering';
@@ -303,10 +314,10 @@ export {
 export { convexHull } from './utils/hull';
 
 // Union utilities
-export { unionPolygons, unionAll, unionFeatures } from './utils/union';
+export { unionPolygons, unionAll, unionFeatures, unionWith } from './utils/union';
 
 // Difference utilities
-export { differencePolygons, differenceFeatures } from './utils/difference';
+export { differencePolygons, differenceFeatures, subtract } from './utils/difference';
 
 // Intersection utilities
 export type { LineSegment } from './utils/intersection';
@@ -341,3 +352,48 @@ export {
   getBoundsFromPoint,
   getBoundsFromArea,
 } from './utils/spatial';
+
+// API Providers
+export * from './api';
+
+// Demographic aggregation utilities
+export {
+  aggregateDemographics,
+  filterDemographicsByBounds,
+  filterDemographicsByPolygon,
+  getPolygonBounds,
+} from './utils/demographics/aggregate';
+
+// ZIP code utilities for demographics
+export type { ZipCentroid } from './utils/demographics/zipcode';
+export {
+  // H3-to-ZIP index (fast path for instant lookups)
+  loadH3ZipIndex,
+  loadH3ZipIndexFromUrl,
+  isH3IndexLoaded,
+  getH3IndexStats,
+  findZipsInPolygonLocal,
+  // Local demographics data (instant lookups, no API calls)
+  loadDemographicsData,
+  loadDemographicsDataFromUrl,
+  isDemographicsDataLoaded,
+  getLocalDemographics,
+  // Legacy aliases
+  loadDemographicsCache,
+  getCachedDemographics,
+  isDemographicsCacheLoaded,
+  // ZIP lookup functions
+  getZipForPoint,
+  findZipsInRadius,
+  filterZipsByPolygon,
+  findZipsInPolygon,
+  estimateTravelRadius,
+  clearZipCache,
+} from './utils/demographics/zipcode';
+
+// H3-to-ZIP index loader (lazy-loaded from URL, saves ~690KB bundle size)
+export { initializeZipIndex, loadZipIndexData } from './utils/demographics/zip-h3-index';
+
+// Cache utilities
+export type { CacheOptions, CacheStats } from './utils/cache';
+export { GeoCache, roundForCacheKey, coordinateCacheKey } from './utils/cache';

@@ -9,6 +9,7 @@
 
 import { BaseElement } from './base-element';
 import { getUIProvider as getGlobalUIProvider, getUIProviderByName } from '../providers/registry';
+import { debug } from '../utils/logger';
 import type { MapInstance } from '../providers/types';
 
 /**
@@ -77,16 +78,121 @@ export class MapChildElement extends BaseElement {
     }
   }
   // Event handler references for cleanup
-  private _mapReadyHandler: (() => void) | null = null;
+  private _mapReadyHandler: (() => void | Promise<void>) | null = null;
   private _mapUnloadHandler: (() => void) | null = null;
   private _contextLostHandler: (() => void) | null = null;
   private _mapReadyParent: HTMLElement | null = null;
+  private _processedMapInstances: WeakSet<MapInstance> = new WeakSet();
 
   async connectedCallback(): Promise<void> {
     // Find parent map first
     this.addToParentMap();
     // Then call base class
     await super.connectedCallback();
+  }
+
+  /**
+   * Check if map style is ready (synchronous check)
+   * Returns true if style is ready, false otherwise
+   */
+  private isMapStyleReady(): boolean {
+    if (!this.map) return false;
+
+    // First check if style is already loaded - this is the common case
+    const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
+    if (isStyleLoaded && isStyleLoaded.call(this.map)) {
+      return true; // Style already loaded
+    }
+
+    // Also check if map has a style object (some SDKs don't expose isStyleLoaded)
+    const getStyle = (this.map as { getStyle?: () => unknown }).getStyle;
+    if (getStyle) {
+      const style = getStyle.call(this.map);
+      if (style) {
+        return true; // Style exists, assume it's ready
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Wait for map style to be ready before proceeding
+   * Uses the map element's whenStyleReady method if available
+   * Optimized to check if style is already loaded before waiting
+   */
+  private async waitForMapStyleReady(): Promise<void> {
+    if (!this.map || !this.mapElement) return;
+
+    // Use synchronous check first to avoid Promise microtask
+    if (this.isMapStyleReady()) {
+      return; // Style already loaded, no need to wait
+    }
+
+    const mapElement = this.mapElement as HTMLElement & {
+      whenStyleReady?: (timeout?: number) => Promise<void>;
+    };
+
+    // Use map element's whenStyleReady if available (with shorter timeout)
+    if (mapElement.whenStyleReady) {
+      try {
+        await mapElement.whenStyleReady(2000); // Reduced timeout - style should be ready by now
+      } catch {
+        // Timeout or error - continue anyway (style might still be usable)
+      }
+      return;
+    }
+
+    // Fallback: wait for style load event with short timeout
+    return new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => {
+        if (this.map && this.map.off) {
+          this.map.off('load', loadHandler);
+          this.map.off('style.load', styleLoadHandler);
+        }
+        resolve(); // Resolve anyway after timeout - style might still work
+      }, 2000); // Reduced timeout
+
+      const loadHandler = () => {
+        clearTimeout(timeout);
+        if (this.map && this.map.off) {
+          this.map.off('style.load', styleLoadHandler);
+        }
+        resolve();
+      };
+
+      const styleLoadHandler = () => {
+        clearTimeout(timeout);
+        if (this.map && this.map.off) {
+          this.map.off('load', loadHandler);
+        }
+        resolve();
+      };
+
+      if (this.map && this.map.on) {
+        this.map.on('load', loadHandler);
+        this.map.on('style.load', styleLoadHandler);
+      } else {
+        clearTimeout(timeout);
+        resolve(); // No event system, resolve immediately
+      }
+    });
+  }
+
+  /**
+   * Override onMapReady to add guard against duplicate calls
+   */
+  protected async onMapReady(): Promise<void> {
+    // Prevent duplicate calls for the same map instance
+    if (this.map && this._processedMapInstances.has(this.map)) {
+      return;
+    }
+
+    if (this.map) {
+      this._processedMapInstances.add(this.map);
+    }
+
+    await super.onMapReady();
   }
 
   /**
@@ -106,24 +212,43 @@ export class MapChildElement extends BaseElement {
         const mapElement = parent as HTMLElement & { getMap?: () => MapInstance | null };
         const map = mapElement.getMap?.();
 
-        if (map) {
-          // Map exists, set reference and call onMapReady
-          this.map = map;
-          void this.onMapReady();
-        } else {
-          // Map not ready yet, wait for it
-          const handleMapReady = () => {
-            const currentMap = mapElement.getMap?.();
-            if (currentMap) {
-              this.map = currentMap;
-              // Use void to fire-and-forget async call (each point needs its own execution)
-              void this.onMapReady();
+        // Always set up event listener for gk-map-ready to handle freeze/unfreeze
+        // This ensures child elements re-initialize when map unfreezes
+        const handleMapReady = async () => {
+          const currentMap = mapElement.getMap?.();
+          if (currentMap) {
+            this.map = currentMap;
+            // Check if style is ready synchronously first to avoid microtask
+            if (this.isMapStyleReady()) {
+              // Style ready - initialize immediately (synchronous, no microtasks)
+              this.onMapReady();
+            } else {
+              // Style not ready - wait for it (async, but only when necessary)
+              await this.waitForMapStyleReady();
+              this.onMapReady();
             }
-          };
+          }
+        };
 
-          this._mapReadyHandler = handleMapReady;
-          this._mapReadyParent = parent;
-          parent.addEventListener('gk-map-ready', handleMapReady);
+        this._mapReadyHandler = handleMapReady;
+        this._mapReadyParent = parent;
+        parent.addEventListener('gk-map-ready', handleMapReady);
+
+        // If map already exists, check if style is ready and initialize immediately
+        // The event listener above will handle re-initialization on unfreeze
+        // Note: onMapReady() will guard against duplicates, so it's safe to call both here and in the event handler
+        if (map) {
+          this.map = map;
+          // Use synchronous check to avoid Promise microtask
+          if (this.isMapStyleReady()) {
+            // Style is ready - initialize immediately (synchronous, no microtasks)
+            this.onMapReady();
+          } else {
+            // Style not ready - wait for it (async, but only when necessary)
+            this.waitForMapStyleReady().then(() => {
+              this.onMapReady();
+            });
+          }
         }
 
         // Listen for map unload to clean up resources
@@ -148,7 +273,7 @@ export class MapChildElement extends BaseElement {
       parent = parent.parentElement;
     }
 
-    console.warn(`${this.constructor.name}: No parent gk-map element found`);
+    debug.warn(`[MapChildElement] No parent gk-map element found for ${this.constructor.name}`);
   }
 
   /**
@@ -171,11 +296,26 @@ export class MapChildElement extends BaseElement {
     }
 
     this._mapReadyParent = null;
+    // Note: We don't clear _processedMapInstances here because WeakSet will automatically
+    // clean up when map instances are garbage collected. This prevents re-processing
+    // the same map instance if the element is reconnected.
   }
 
   disconnectedCallback(): void {
     // Clean up stored event listeners to prevent memory leaks
     this._cleanupMapListeners();
     super.disconnectedCallback();
+  }
+
+  /**
+   * Override onMapUnload to clear processed map instances
+   * This allows the element to be re-initialized if the map is recreated
+   */
+  protected onMapUnload(): void {
+    // Clear processed instances so we can process the map again if it's recreated
+    if (this.map) {
+      this._processedMapInstances.delete(this.map);
+    }
+    super.onMapUnload();
   }
 }

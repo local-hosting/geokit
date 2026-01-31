@@ -114,8 +114,28 @@ if (typeof window !== 'undefined' && typeof ImageData === 'undefined') {
   };
 }
 
+// Polyfill Cache API if not available (required by MapTiler SDK)
+if (typeof window !== 'undefined' && typeof caches === 'undefined') {
+  (globalThis as any).caches = {
+    open: () =>
+      Promise.resolve({
+        match: () => Promise.resolve(undefined),
+        put: () => Promise.resolve(),
+        delete: () => Promise.resolve(false),
+        keys: () => Promise.resolve([]),
+        add: () => Promise.resolve(),
+        addAll: () => Promise.resolve(),
+      }),
+    has: () => Promise.resolve(false),
+    delete: () => Promise.resolve(false),
+    keys: () => Promise.resolve([]),
+    match: () => Promise.resolve(undefined),
+  };
+}
+
 // Suppress known MapLibre warnings in test environment
 const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
 console.error = (...args: any[]) => {
   const message = args[0];
   if (
@@ -131,6 +151,18 @@ console.error = (...args: any[]) => {
     return;
   }
   originalConsoleError(...args);
+};
+
+// Suppress Cache API warnings from MapTiler SDK
+console.warn = (...args: any[]) => {
+  const message = args[0];
+  if (
+    typeof message === 'string' &&
+    message.includes('The cache API is only available in secure contexts')
+  ) {
+    return;
+  }
+  originalConsoleWarn(...args);
 };
 
 // Suppress unhandled promise rejections from MapTiler SDK telemetry and MapLibre GL
@@ -151,4 +183,3 @@ if (typeof window !== 'undefined') {
     }
   });
 }
-
