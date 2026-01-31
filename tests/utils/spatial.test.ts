@@ -160,7 +160,7 @@ describe('spatial', () => {
   describe('Conversion Functions', () => {
     describe('geohashPointToH3Point', () => {
       it('should convert GeohashPoint to H3Point', () => {
-        const geohashPoint = encodeGeohashPoint(nyc, 9);
+        const geohashPoint = encodeGeohashPoint(9)(nyc);
         const h3Point = geohashPointToH3Point(geohashPoint, 9);
 
         expect(typeof h3Point).toBe('string');
@@ -168,7 +168,7 @@ describe('spatial', () => {
       });
 
       it('should preserve approximate location', () => {
-        const geohashPoint = encodeGeohashPoint(nyc, 9);
+        const geohashPoint = encodeGeohashPoint(9)(nyc);
         const h3Point = geohashPointToH3Point(geohashPoint, 9);
         const decoded = decodePointToCoordinates(h3Point);
 
@@ -180,7 +180,7 @@ describe('spatial', () => {
 
     describe('geohashAreaToH3Area', () => {
       it('should convert GeohashArea to H3Area', () => {
-        const geohashArea = encodeGeohashArea(nyc, 7);
+        const geohashArea = encodeGeohashArea(7)(nyc);
         const h3Area = geohashAreaToH3Area(geohashArea, 7);
 
         expect(typeof h3Area).toBe('string');
@@ -190,7 +190,7 @@ describe('spatial', () => {
 
     describe('h3PointToGeohashPoint', () => {
       it('should convert H3Point to GeohashPoint', () => {
-        const h3Point = coordinatesToH3Point(nyc, 9);
+        const h3Point = coordinatesToH3Point(9)(nyc);
         const geohashPoint = h3PointToGeohashPoint(h3Point, 9);
 
         expect(typeof geohashPoint).toBe('string');
@@ -198,7 +198,7 @@ describe('spatial', () => {
       });
 
       it('should preserve approximate location', () => {
-        const h3Point = coordinatesToH3Point(nyc, 9);
+        const h3Point = coordinatesToH3Point(9)(nyc);
         const geohashPoint = h3PointToGeohashPoint(h3Point, 9);
         const decoded = decodePointToCoordinates(geohashPoint);
 
@@ -210,7 +210,7 @@ describe('spatial', () => {
 
     describe('h3AreaToGeohashArea', () => {
       it('should convert H3Area to GeohashArea', () => {
-        const h3Area = coordinatesToH3Area(nyc, 7);
+        const h3Area = coordinatesToH3Area(7)(nyc);
         const geohashArea = h3AreaToGeohashArea(h3Area, 7);
 
         expect(typeof geohashArea).toBe('string');
@@ -220,7 +220,7 @@ describe('spatial', () => {
 
     describe('roundtrip conversions', () => {
       it('should roundtrip GeohashPoint -> H3Point -> GeohashPoint', () => {
-        const original = encodeGeohashPoint(nyc, 9);
+        const original = encodeGeohashPoint(9)(nyc);
         const h3 = geohashPointToH3Point(original, 9);
         const back = h3PointToGeohashPoint(h3, 9);
 
@@ -232,7 +232,7 @@ describe('spatial', () => {
       });
 
       it('should roundtrip H3Point -> GeohashPoint -> H3Point', () => {
-        const original = coordinatesToH3Point(nyc, 9);
+        const original = coordinatesToH3Point(9)(nyc);
         const geohash = h3PointToGeohashPoint(original, 9);
         const back = geohashPointToH3Point(geohash, 9);
 
@@ -248,7 +248,7 @@ describe('spatial', () => {
   describe('Universal Functions', () => {
     describe('decodePointToCoordinates', () => {
       it('should decode GeohashPoint', () => {
-        const geohashPoint = encodeGeohashPoint(nyc, 9);
+        const geohashPoint = encodeGeohashPoint(9)(nyc);
         const coords = decodePointToCoordinates(geohashPoint);
 
         expect(coords).toHaveLength(2);
@@ -257,7 +257,7 @@ describe('spatial', () => {
       });
 
       it('should decode H3Point', () => {
-        const h3Point = coordinatesToH3Point(nyc, 9);
+        const h3Point = coordinatesToH3Point(9)(nyc);
         const coords = decodePointToCoordinates(h3Point);
 
         expect(coords).toHaveLength(2);
@@ -268,7 +268,7 @@ describe('spatial', () => {
 
     describe('decodeAreaToCoordinates', () => {
       it('should decode GeohashArea', () => {
-        const geohashArea = encodeGeohashArea(nyc, 7);
+        const geohashArea = encodeGeohashArea(7)(nyc);
         const coords = decodeAreaToCoordinates(geohashArea);
 
         expect(coords).toHaveLength(2);
@@ -277,7 +277,7 @@ describe('spatial', () => {
       });
 
       it('should decode H3Area', () => {
-        const h3Area = coordinatesToH3Area(nyc, 7);
+        const h3Area = coordinatesToH3Area(7)(nyc);
         const coords = decodeAreaToCoordinates(h3Area);
 
         expect(coords).toHaveLength(2);
@@ -288,7 +288,7 @@ describe('spatial', () => {
 
     describe('getBoundsFromPoint', () => {
       it('should get bounds from GeohashPoint', () => {
-        const geohashPoint = encodeGeohashPoint(nyc, 9);
+        const geohashPoint = encodeGeohashPoint(9)(nyc);
         const bounds = getBoundsFromPoint(geohashPoint);
 
         expect(bounds).toHaveLength(4);
@@ -297,7 +297,7 @@ describe('spatial', () => {
       });
 
       it('should get bounds from H3Point', () => {
-        const h3Point = coordinatesToH3Point(nyc, 9);
+        const h3Point = coordinatesToH3Point(9)(nyc);
         const bounds = getBoundsFromPoint(h3Point);
 
         expect(bounds).toHaveLength(4);
@@ -308,7 +308,7 @@ describe('spatial', () => {
 
     describe('getBoundsFromArea', () => {
       it('should get bounds from GeohashArea', () => {
-        const geohashArea = encodeGeohashArea(nyc, 7);
+        const geohashArea = encodeGeohashArea(7)(nyc);
         const bounds = getBoundsFromArea(geohashArea);
 
         expect(bounds).toHaveLength(4);
@@ -317,7 +317,7 @@ describe('spatial', () => {
       });
 
       it('should get bounds from H3Area', () => {
-        const h3Area = coordinatesToH3Area(nyc, 7);
+        const h3Area = coordinatesToH3Area(7)(nyc);
         const bounds = getBoundsFromArea(h3Area);
 
         expect(bounds).toHaveLength(4);
@@ -329,8 +329,8 @@ describe('spatial', () => {
 
   describe('Type Safety', () => {
     it('should maintain type distinction between point and area', () => {
-      const geohashPoint = encodeGeohashPoint(nyc, 9);
-      const geohashArea = encodeGeohashArea(nyc, 7);
+      const geohashPoint = encodeGeohashPoint(9)(nyc);
+      const geohashArea = encodeGeohashArea(7)(nyc);
 
       // These are both strings at runtime
       expect(typeof geohashPoint).toBe('string');
@@ -343,8 +343,8 @@ describe('spatial', () => {
     });
 
     it('should maintain type distinction between Geohash and H3', () => {
-      const geohashPoint = encodeGeohashPoint(nyc, 9);
-      const h3Point = coordinatesToH3Point(nyc, 9);
+      const geohashPoint = encodeGeohashPoint(9)(nyc);
+      const h3Point = coordinatesToH3Point(9)(nyc);
 
       // Runtime values are different formats
       expect(isGeohash(geohashPoint)).toBe(true);
@@ -386,7 +386,7 @@ describe('spatial', () => {
       const original: [number, number] = [40.7128, -74.006];
 
       // LatLng → GeohashPoint
-      const geohashPoint = encodeGeohashPoint(original, 9);
+      const geohashPoint = encodeGeohashPoint(9)(original);
       expect(isGeohash(geohashPoint)).toBe(true);
 
       // GeohashPoint → H3Point
@@ -403,7 +403,7 @@ describe('spatial', () => {
       const original: [number, number] = [40.7128, -74.006];
 
       // LatLng → H3Point
-      const h3Point = coordinatesToH3Point(original, 9);
+      const h3Point = coordinatesToH3Point(9)(original);
       expect(isH3(h3Point)).toBe(true);
 
       // H3Point → GeohashPoint
@@ -424,7 +424,7 @@ describe('spatial', () => {
       expect(latLng).toEqual([40.7128, -74.006]);
 
       // LatLng → GeohashPoint
-      const geohashPoint = encodeGeohashPoint(latLng!, 9);
+      const geohashPoint = encodeGeohashPoint(9)(latLng!);
 
       // GeohashPoint → H3Point
       const h3Point = geohashPointToH3Point(geohashPoint, 9);
@@ -462,7 +462,7 @@ describe('spatial', () => {
 
       // GeoJSON → LatLng → GeohashPoint
       const backToLatLng = normalizeCoordinateInput(point);
-      const geohashPoint = encodeGeohashPoint(backToLatLng!, 9);
+      const geohashPoint = encodeGeohashPoint(9)(backToLatLng!);
       expect(isGeohash(geohashPoint)).toBe(true);
 
       // GeohashPoint → H3Point
@@ -479,7 +479,7 @@ describe('spatial', () => {
       const original: [number, number] = [40.7128, -74.006];
 
       // LatLng → GeohashArea
-      const geohashArea = encodeGeohashArea(original, 7);
+      const geohashArea = encodeGeohashArea(7)(original);
       expect(isGeohash(geohashArea)).toBe(true);
 
       // GeohashArea → H3Area

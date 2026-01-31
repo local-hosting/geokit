@@ -10,6 +10,8 @@
 export interface MapProviderConfig {
   apiKey?: string;
   accessToken?: string;
+  /** Optional URL to load MapTiler SDK from (e.g. CDN UMD). Script must set window.maptilersdk. */
+  sdkScriptUrl?: string;
   [key: string]: unknown;
 }
 
@@ -22,6 +24,7 @@ export interface MapOptions {
   lng?: number;
   zoom?: number;
   pitch?: number;
+  maxPitch?: number;
   bearing?: number;
   style?: string;
   interactive?: boolean;
@@ -161,6 +164,14 @@ export interface MapInstance {
   // Lifecycle
   loaded?(): boolean;
   remove?(): void;
+
+  // Style management
+  getStyle?(): Record<string, unknown> | null;
+  isStyleLoaded?(): boolean;
+
+  // Image management
+  hasImage?(name: string): boolean;
+  addImage?(name: string, image: unknown, options?: { sdf?: boolean }): void;
 
   // Provider-specific extensions - allow any additional properties/methods
   [key: string]: unknown;

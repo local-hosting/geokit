@@ -59,6 +59,28 @@ export function differencePolygons(
 }
 
 /**
+ * Curried difference - subtract a polygon from a base (curried)
+ * Useful for composable operations like reduce
+ *
+ * @param base - Base polygon (the one to subtract from)
+ * @returns Curried function that takes polygon to subtract and returns result
+ *
+ * @example
+ * ```typescript
+ * const subtractFrom = subtractFrom(basePolygon);
+ * const result = subtractFrom(holePolygon);
+ *
+ * // Or use with reduce to punch multiple holes
+ * const result = holes.reduce((acc, hole) => subtractFrom(acc)(hole) ?? acc, basePolygon);
+ * ```
+ */
+export function subtract(base: Polygon | MultiPolygon) {
+  return (toSubtract: Polygon | MultiPolygon): Polygon | MultiPolygon | null => {
+    return differencePolygons(base, toSubtract);
+  };
+}
+
+/**
  * Calculate the difference between polygon features
  * Returns the portion of feature1 that does not overlap with feature2
  * Note: Turf.js difference clips all subsequent polygons from the first

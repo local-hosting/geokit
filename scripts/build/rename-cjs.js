@@ -54,7 +54,7 @@ async function renameJsToCjs(dir) {
 }
 
 async function main() {
-  const distCjs = join(__dirname, '..', 'dist', 'cjs');
+  const distCjs = join(__dirname, '..', '..', 'dist', 'cjs');
 
   try {
     await renameJsToCjs(distCjs);

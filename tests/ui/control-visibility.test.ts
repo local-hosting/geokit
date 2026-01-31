@@ -16,13 +16,13 @@ function canCreateWebGLContext(): boolean {
   }
 }
 
-const isTestEnv = 
-  typeof navigator !== 'undefined' && 
-  (navigator.userAgent.includes('jsdom') || 
-   navigator.userAgent.includes('Happy DOM') ||
-   navigator.userAgent.includes('happy-dom') ||
-   typeof WebGLRenderingContext === 'undefined' ||
-   !canCreateWebGLContext());
+const isTestEnv =
+  typeof navigator !== 'undefined' &&
+  (navigator.userAgent.includes('jsdom') ||
+    navigator.userAgent.includes('Happy DOM') ||
+    navigator.userAgent.includes('happy-dom') ||
+    typeof WebGLRenderingContext === 'undefined' ||
+    !canCreateWebGLContext());
 
 describe.skipIf(isTestEnv)('Control Visibility Toggle', () => {
   let container: HTMLDivElement;
@@ -40,7 +40,7 @@ describe.skipIf(isTestEnv)('Control Visibility Toggle', () => {
     const provider = new MapTilerUIProvider();
     registerUIProvider('maptiler', provider);
     await setUIProvider('maptiler', {
-      apiKey: import.meta.env.MAPTILER_API_KEY || 'test-key',
+      apiKey: import.meta.env.MAPTILER_KEY || 'test-key',
     });
 
     // Create container div
@@ -52,7 +52,7 @@ describe.skipIf(isTestEnv)('Control Visibility Toggle', () => {
 
     // Create map element
     mapElement = document.createElement('gk-map') as HTMLElement & { getMap?: () => unknown };
-    mapElement.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
+    mapElement.setAttribute('api-key', import.meta.env.MAPTILER_KEY || 'test-key');
     mapElement.setAttribute('lat', '40.7128');
     mapElement.setAttribute('lng', '-74.006');
     mapElement.setAttribute('zoom', '10');
@@ -77,7 +77,7 @@ describe.skipIf(isTestEnv)('Control Visibility Toggle', () => {
         mapElement.removeEventListener('gk-ready', handler);
         reject(new Error('Map initialization timeout'));
       }, 5000); // 5 second timeout
-      
+
       const handler = () => {
         clearTimeout(timeout);
         mapElement.removeEventListener('gk-ready', handler);
@@ -154,7 +154,7 @@ describe.skipIf(isTestEnv)('Control Visibility Toggle', () => {
     const mapElement2 = document.createElement('gk-map') as HTMLElement & {
       getMap?: () => unknown;
     };
-    mapElement2.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
+    mapElement2.setAttribute('api-key', import.meta.env.MAPTILER_KEY || 'test-key');
     mapElement2.setAttribute('lat', '40.7128');
     mapElement2.setAttribute('lng', '-74.006');
     mapElement2.setAttribute('zoom', '10');
@@ -167,7 +167,7 @@ describe.skipIf(isTestEnv)('Control Visibility Toggle', () => {
         mapElement2.removeEventListener('gk-ready', handler);
         reject(new Error('Map initialization timeout'));
       }, 5000);
-      
+
       const handler = () => {
         clearTimeout(timeout);
         mapElement2.removeEventListener('gk-ready', handler);
@@ -203,7 +203,7 @@ describe.skipIf(isTestEnv)('Control Visibility Toggle', () => {
     document.body.appendChild(heroContainer);
 
     const heroMap = document.createElement('gk-map') as HTMLElement & { getMap?: () => unknown };
-    heroMap.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
+    heroMap.setAttribute('api-key', import.meta.env.MAPTILER_KEY || 'test-key');
     heroMap.setAttribute('lat', '40.7128');
     heroMap.setAttribute('lng', '-74.006');
     heroMap.setAttribute('zoom', '10');
@@ -217,7 +217,7 @@ describe.skipIf(isTestEnv)('Control Visibility Toggle', () => {
         heroMap.removeEventListener('gk-ready', handler);
         reject(new Error('Map initialization timeout'));
       }, 5000);
-      
+
       const handler = () => {
         clearTimeout(timeout);
         heroMap.removeEventListener('gk-ready', handler);
@@ -250,7 +250,7 @@ describe.skipIf(isTestEnv)('Control Visibility Toggle', () => {
     const disabledMap = document.createElement('gk-map') as HTMLElement & {
       getMap?: () => unknown;
     };
-    disabledMap.setAttribute('api-key', import.meta.env.MAPTILER_API_KEY || 'test-key');
+    disabledMap.setAttribute('api-key', import.meta.env.MAPTILER_KEY || 'test-key');
     disabledMap.setAttribute('lat', '40.7128');
     disabledMap.setAttribute('lng', '-74.006');
     disabledMap.setAttribute('zoom', '10');
@@ -264,7 +264,7 @@ describe.skipIf(isTestEnv)('Control Visibility Toggle', () => {
         disabledMap.removeEventListener('gk-ready', handler);
         reject(new Error('Map initialization timeout'));
       }, 5000);
-      
+
       const handler = () => {
         clearTimeout(timeout);
         disabledMap.removeEventListener('gk-ready', handler);

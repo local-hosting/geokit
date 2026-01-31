@@ -292,7 +292,7 @@
     <gk-map-collection 
       id="map-collection"
       pool-size="6" 
-      api-key="RQ3bgkQD4yIU6DBJbX0I"
+      api-key="YOUR_MAPTILER_KEY"
       map-style="dataviz-dark"
       viewport-padding="300"
       style="display: contents;">
@@ -502,10 +502,10 @@
     // Configure API keys from environment
     configure({
       maptiler: { 
-        apiKey: import.meta.env.MAPTILER_API_KEY 
+        apiKey: import.meta.env.MAPTILER_KEY 
       },
       mapbox: { 
-        accessToken: import.meta.env.MAPBOX_ACCESS_TOKEN 
+        accessToken: import.meta.env.MAPBOX_TOKEN 
       }
     });
     

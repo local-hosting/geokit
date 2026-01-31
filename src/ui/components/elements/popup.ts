@@ -38,6 +38,59 @@ export interface PointPopupProperties {
   'id:store-number'?: string;
   id?: string;
   address?: string;
+  city?: string;
+  state?: string;
+}
+
+/**
+ * A tag with an optional label prefix
+ * e.g., { label: 'DMA', value: 'Albuquerque Santa Fe' }
+ */
+export interface PopupTag {
+  /** Optional label prefix (shown in lighter color) */
+  label?: string;
+  /** Tag value */
+  value: string;
+}
+
+/**
+ * An action link in the popup
+ * e.g., { label: 'View Details', href: '/path/123', svg: '<svg>...</svg>' }
+ */
+export interface PopupAction {
+  /** Display text for the link (used as tooltip, or displayed if no icon) */
+  label: string;
+  /** URL to navigate to */
+  href: string;
+  /** Optional SVG string for icon button (if not provided, shows label as text link) */
+  svg?: string;
+  /** Optional CSS class to add to the action link */
+  className?: string;
+}
+
+/**
+ * Generic popup content options for buildPopupContentGeneric
+ * Allows apps to customize popup content without hardcoding property names
+ */
+export interface PopupContentOptions {
+  /** Main title/headline */
+  headline?: string;
+  /** Short badge displayed next to headline (e.g., "A" for cohort) */
+  headlineBadge?: string;
+  /** Custom color for the badge (hex color, e.g., "#0073CF") */
+  headlineBadgeColor?: string;
+  /** Second badge displayed after first badge (e.g., "★ 2.9" for rating) */
+  headlineBadge2?: string;
+  /** Custom color for the second badge (hex color, e.g., "#DAA520" for golden) */
+  headlineBadge2Color?: string;
+  /** Secondary text below headline */
+  subhead?: string;
+  /** Array of tags to display (string or labeled tag) */
+  tags?: (string | PopupTag)[];
+  /** Array of action links */
+  actions?: PopupAction[];
+  /** Footer label displayed at bottom left (e.g., population count) */
+  footerLabel?: string;
 }
 
 export class PopupElement extends MapChildElement {
@@ -58,13 +111,14 @@ export class PopupElement extends MapChildElement {
   private static injectPopupStyles(): boolean {
     if (PopupElement.stylesInjected) return true;
 
-    const styleId = 'geokit-popup-styles';
-    if (typeof document !== 'undefined' && document.getElementById(styleId)) {
-      PopupElement.stylesInjected = true;
-      return true;
-    }
-
     if (typeof document === 'undefined') return false;
+
+    const styleId = 'geokit-popup-styles';
+    // Remove existing style element to allow HMR updates
+    const existingStyle = document.getElementById(styleId);
+    if (existingStyle) {
+      existingStyle.remove();
+    }
 
     const style = document.createElement('style');
     style.id = styleId;
@@ -153,10 +207,10 @@ export class PopupElement extends MapChildElement {
       .maplibregl-popup-content,
       .mapboxgl-popup-content {
         position: relative;
-        padding: 12px 32px 12px 14px;
+        padding: 12px 14px;
         border-radius: 6px;
-        min-width: 80px;
-        max-width: 300px;
+        min-width: 280px;
+        max-width: 400px;
         overflow-wrap: break-word;
         word-wrap: break-word;
       }
@@ -174,24 +228,48 @@ export class PopupElement extends MapChildElement {
       }
       
       h4.geokit-popup-title {
-        margin: 0 0 4px 0;
+        margin: 0 0 2px 0;
+        padding-right: 24px;
         font-weight: 700;
         color: #c9d1d9;
-        font-size: 14px;
+        font-size: 12px;
         line-height: 1.4;
-        display: block;
-        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .geokit-popup-title-text {
+        min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 100%;
-        width: 100%;
-        min-width: 0;
-        box-sizing: border-box;
+        white-space: nowrap;
+      }
+
+      .geokit-popup-title-badges {
+        flex-shrink: 0;
+      }
+
+      .geokit-popup-title-badges > .geokit-popup-badge:first-of-type {
+        margin-left: 0;
+      }
+
+      .geokit-popup-badge {
+        display: inline;
+        margin-left: 6px;
+        background: #58a6ff;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 600;
+        border-radius: 3px;
+        padding: 1px 5px;
+        vertical-align: middle;
       }
 
       h5.geokit-popup-address {
         margin: 0 0 8px 0;
-        font-size: 12px;
+        font-size: 10px;
         font-weight: 400;
         color: #8b949e !important;
         line-height: 1.4;
@@ -199,19 +277,96 @@ export class PopupElement extends MapChildElement {
       }
 
       .geokit-popup-tags {
-        margin-top: 8px;
+        margin-top: 14px;
+        margin-bottom: 2px;
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
       }
 
       .geokit-popup-tag {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
         background: rgba(139, 148, 158, 0.15);
-        color: #8b949e;
+        color: #c9d1d9;
         font-size: 11px;
         border-radius: 4px;
         padding: 3px 8px;
+        gap: 4px;
+      }
+
+      .geokit-popup-tag-label {
+        color: #6e7681;
+        font-weight: 500;
+      }
+
+      .geokit-popup-actions {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(139, 148, 158, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+      }
+
+      .geokit-popup-actions-spacer {
+        flex: 1;
+      }
+
+      .geokit-popup-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.15s ease;
+        color: #8b949e;
+      }
+
+      /* Icon button style (when SVG is provided) */
+      .geokit-popup-action--icon {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+      }
+
+      .geokit-popup-action--icon:hover {
+        background-color: rgba(139, 148, 158, 0.15);
+      }
+
+      .geokit-popup-action svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      /* Text link style (fallback when no SVG) */
+      .geokit-popup-action--text {
+        color: #58a6ff;
+        font-size: 12px;
+        padding: 4px 8px;
+      }
+
+      .geokit-popup-action--text:hover {
+        color: #79c0ff;
+        text-decoration: underline;
+      }
+
+      .geokit-popup-footer-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: #6e7681;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .geokit-popup-footer-label svg {
+        width: 12px;
+        height: 12px;
+        flex-shrink: 0;
       }
     `;
     document.head.appendChild(style);
@@ -393,7 +548,7 @@ export class PopupElement extends MapChildElement {
       const parts: string[] = [];
       if (properties.city) parts.push(String(properties.city).trim());
       if (properties.state) parts.push(String(properties.state).trim());
-      
+
       if (parts.length > 0) {
         const addressText = parts.join(', ');
         const addressEl = document.createElement('h5');
@@ -452,6 +607,335 @@ export class PopupElement extends MapChildElement {
   }
 
   /**
+   * Build popup content with generic headline, subhead, and tags
+   * Allows consuming apps to fully customize popup content
+   */
+  public static buildPopupContentGeneric(options: PopupContentOptions): HTMLElement {
+    const {
+      headline,
+      headlineBadge,
+      headlineBadgeColor,
+      headlineBadge2,
+      headlineBadge2Color,
+      subhead,
+      tags,
+      actions,
+      footerLabel,
+    } = options;
+
+    // Create container element using only native DOM APIs
+    const container = document.createElement('div');
+    container.setAttribute('class', 'geokit-popup-content');
+
+    // Add headline (with optional inline badges); title text truncates with ellipsis, badges stay visible
+    if (headline || headlineBadge || headlineBadge2) {
+      const headlineEl = document.createElement('h4');
+      headlineEl.setAttribute('class', 'geokit-popup-title');
+
+      if (headline) {
+        const textSpan = document.createElement('span');
+        textSpan.setAttribute('class', 'geokit-popup-title-text');
+        textSpan.appendChild(document.createTextNode(headline));
+        headlineEl.appendChild(textSpan);
+      }
+
+      if (headlineBadge || headlineBadge2) {
+        const badgesWrap = document.createElement('span');
+        badgesWrap.setAttribute('class', 'geokit-popup-title-badges');
+
+        if (headlineBadge) {
+          const badgeEl = document.createElement('span');
+          badgeEl.setAttribute('class', 'geokit-popup-badge');
+          badgeEl.textContent = headlineBadge;
+
+          // Apply custom badge color if provided (solid background, white text)
+          if (headlineBadgeColor) {
+            badgeEl.style.background = headlineBadgeColor;
+            badgeEl.style.color = '#fff';
+          }
+
+          badgesWrap.appendChild(badgeEl);
+        }
+
+        // Add second badge (e.g., rating) after first badge; ensure space before it when there is preceding content
+        if (headlineBadge2) {
+          if (headline || headlineBadge) {
+            badgesWrap.appendChild(document.createTextNode('\u00A0')); // non-breaking space before rating
+          }
+          const badge2El = document.createElement('span');
+          badge2El.setAttribute('class', 'geokit-popup-badge');
+          badge2El.textContent = headlineBadge2;
+
+          // Apply custom badge color if provided
+          if (headlineBadge2Color) {
+            badge2El.style.background = headlineBadge2Color;
+            badge2El.style.color = '#fff';
+          }
+
+          badgesWrap.appendChild(badge2El);
+        }
+
+        headlineEl.appendChild(badgesWrap);
+      }
+
+      container.appendChild(headlineEl);
+    }
+
+    // Add subhead
+    if (subhead) {
+      const subheadEl = document.createElement('h5');
+      subheadEl.setAttribute('class', 'geokit-popup-address');
+      subheadEl.textContent = subhead;
+      container.appendChild(subheadEl);
+    }
+
+    // Add tags
+    if (tags && tags.length > 0) {
+      const tagsContainer = document.createElement('div');
+      tagsContainer.setAttribute('class', 'geokit-popup-tags');
+
+      for (const tagItem of tags) {
+        if (!tagItem) continue;
+
+        const tagEl = document.createElement('span');
+        tagEl.setAttribute('class', 'geokit-popup-tag');
+
+        // Helper to truncate text to max length
+        const truncate = (text: string, maxLen: number = 12): string => {
+          return text.length > maxLen ? text.slice(0, maxLen) + '…' : text;
+        };
+
+        if (typeof tagItem === 'string') {
+          tagEl.textContent = truncate(tagItem);
+          if (tagItem.length > 12) tagEl.setAttribute('title', tagItem);
+        } else {
+          // Labeled tag: { label: 'DMA', value: 'Albuquerque' }
+          if (tagItem.label) {
+            const labelEl = document.createElement('span');
+            labelEl.setAttribute('class', 'geokit-popup-tag-label');
+            labelEl.textContent = tagItem.label;
+            tagEl.appendChild(labelEl);
+          }
+          const truncatedValue = truncate(tagItem.value);
+          const valueEl = document.createTextNode(truncatedValue);
+          tagEl.appendChild(valueEl);
+          if (tagItem.value.length > 12) tagEl.setAttribute('title', tagItem.value);
+        }
+
+        tagsContainer.appendChild(tagEl);
+      }
+
+      if (tagsContainer.hasChildNodes()) {
+        container.appendChild(tagsContainer);
+      }
+    }
+
+    // Add footer label and action links (on same line)
+    if ((actions && actions.length > 0) || footerLabel) {
+      const actionsContainer = document.createElement('div');
+      actionsContainer.setAttribute('class', 'geokit-popup-actions');
+
+      // Add footer label first (on left) - may be empty, will be filled dynamically
+      if (footerLabel) {
+        const labelEl = document.createElement('span');
+        labelEl.setAttribute('class', 'geokit-popup-footer-label');
+        labelEl.textContent = footerLabel;
+        actionsContainer.appendChild(labelEl);
+      }
+
+      // Always add spacer to push actions to the right
+      const spacer = document.createElement('span');
+      spacer.setAttribute('class', 'geokit-popup-actions-spacer');
+      actionsContainer.appendChild(spacer);
+
+      // Add action links (on right)
+      if (actions) {
+        for (const action of actions) {
+          if (!action || !action.label || !action.href) continue;
+
+          const linkEl = document.createElement('a');
+          const baseClass = action.svg
+            ? 'geokit-popup-action geokit-popup-action--icon'
+            : 'geokit-popup-action geokit-popup-action--text';
+          const fullClass = action.className ? `${baseClass} ${action.className}` : baseClass;
+          linkEl.setAttribute('class', fullClass);
+          linkEl.setAttribute('href', action.href);
+          linkEl.setAttribute('target', '_blank');
+          linkEl.setAttribute('rel', 'noopener noreferrer');
+          linkEl.setAttribute('title', action.label);
+
+          if (action.svg) {
+            // Use innerHTML for SVG content (trusted content from app)
+            linkEl.innerHTML = action.svg;
+          } else {
+            linkEl.textContent = action.label;
+          }
+
+          actionsContainer.appendChild(linkEl);
+        }
+      }
+
+      container.appendChild(actionsContainer);
+    }
+
+    return container;
+  }
+
+  /**
+   * Show a popup with generic content (headline, subhead, tags)
+   * More flexible than showPointPopup - lets consuming app control all content
+   */
+  public static showPopupGeneric(
+    map: any,
+    lngLat: { lng: number; lat: number },
+    options: PopupContentOptions,
+    closeButton: boolean = true
+  ): any {
+    if (!map || !lngLat) return null;
+
+    // Build popup content
+    const popupContentEl = PopupElement.buildPopupContentGeneric(options);
+    if (!popupContentEl || !popupContentEl.hasChildNodes()) return null;
+
+    // Use provider from map instance
+    const activeProvider = MapChildElement.getProviderFromMapInstance(map);
+    if (!activeProvider || !activeProvider.createPopup) {
+      console.error('[PopupElement] No provider available for creating popup');
+      return null;
+    }
+
+    // Close all existing popups first
+    PopupElement.closeAllPopups(map);
+
+    // Determine anchor based on viewport position
+    const anchor = PopupElement.determineAnchor(map, lngLat);
+    const offset: [number, number] = anchor === 'bottom' ? [0, -10] : [0, 10];
+
+    // Create popup
+    const newPopup = PopupElement.createPopupWithProvider(activeProvider, {
+      anchor,
+      offset,
+      closeButton,
+    });
+
+    if (!newPopup) {
+      console.error('[PopupElement] Failed to create popup instance');
+      return null;
+    }
+
+    // Validate coordinates
+    const lng = typeof lngLat.lng === 'number' ? lngLat.lng : parseFloat(String(lngLat.lng));
+    const lat = typeof lngLat.lat === 'number' ? lngLat.lat : parseFloat(String(lngLat.lat));
+
+    if (isNaN(lng) || isNaN(lat)) {
+      console.error('[PopupElement] Invalid coordinates:', lngLat);
+      return null;
+    }
+
+    const coordinates: [number, number] = [lng, lat];
+
+    // Ensure styles are injected
+    PopupElement.injectPopupStyles();
+
+    // Add popup to map
+    try {
+      newPopup.setLngLat(coordinates).setDOMContent(popupContentEl).addTo(map);
+
+      // Reposition after render
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          try {
+            newPopup.setLngLat(coordinates);
+            if (map && typeof (map as any).triggerRepaint === 'function') {
+              (map as any).triggerRepaint();
+            }
+          } catch {
+            // Ignore errors if popup was removed
+          }
+
+          const popupElement = newPopup.getElement?.();
+          if (popupElement) {
+            PopupElement.stylePopupElement(popupElement, anchor);
+          }
+        });
+      });
+
+      return newPopup;
+    } catch (error) {
+      console.error('[PopupElement] Failed to add popup to map:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Add tags to an existing popup
+   * Useful for adding async data (like demographics) after popup is shown
+   *
+   * @param popup - The popup instance returned from showPopupGeneric
+   * @param tags - Array of tags to add
+   */
+  public static addTagsToPopup(
+    popup: any,
+    tags: Array<{ label?: string; value: string } | string>
+  ): void {
+    if (!popup || !tags || tags.length === 0) return;
+
+    try {
+      const popupEl = popup.getElement?.();
+      if (!popupEl) return;
+
+      // Find or create the tags container
+      let tagsContainer = popupEl.querySelector('.geokit-popup-tags');
+      if (!tagsContainer) {
+        // Create tags container if it doesn't exist
+        const contentEl = popupEl.querySelector('.geokit-popup-content');
+        if (!contentEl) return;
+
+        tagsContainer = document.createElement('div');
+        tagsContainer.setAttribute('class', 'geokit-popup-tags');
+
+        // Insert before actions if they exist, otherwise append
+        const actionsEl = contentEl.querySelector('.geokit-popup-actions');
+        if (actionsEl) {
+          contentEl.insertBefore(tagsContainer, actionsEl);
+        } else {
+          contentEl.appendChild(tagsContainer);
+        }
+      }
+
+      // Add each tag
+      for (const tagItem of tags) {
+        if (!tagItem) continue;
+
+        const tagEl = document.createElement('span');
+        tagEl.setAttribute('class', 'geokit-popup-tag');
+
+        if (typeof tagItem === 'string') {
+          tagEl.textContent = tagItem;
+        } else {
+          if (tagItem.label) {
+            const labelEl = document.createElement('span');
+            labelEl.setAttribute('class', 'geokit-popup-tag-label');
+            labelEl.textContent = tagItem.label + ' ';
+            tagEl.appendChild(labelEl);
+
+            const valueEl = document.createElement('span');
+            valueEl.setAttribute('class', 'geokit-popup-tag-value');
+            valueEl.textContent = tagItem.value;
+            tagEl.appendChild(valueEl);
+          } else {
+            tagEl.textContent = tagItem.value;
+          }
+        }
+
+        tagsContainer.appendChild(tagEl);
+      }
+    } catch (error) {
+      console.warn('[PopupElement] Failed to add tags to popup:', error);
+    }
+  }
+
+  /**
    * Close all popups on a map instance
    */
   public static closeAllPopups(map: any): void {
@@ -467,14 +951,16 @@ export class PopupElement extends MapChildElement {
           popups.forEach((popupEl: HTMLElement) => {
             try {
               // Try to find and click the close button first (proper way)
-              const closeButton = popupEl.querySelector?.('.maplibregl-popup-close-button, .mapboxgl-popup-close-button') as HTMLElement;
+              const closeButton = popupEl.querySelector?.(
+                '.maplibregl-popup-close-button, .mapboxgl-popup-close-button'
+              ) as HTMLElement;
               if (closeButton) {
                 closeButton.click();
               } else {
                 // Fallback: remove the popup element directly from DOM
                 popupEl.remove();
               }
-            } catch (err) {
+            } catch {
               // If clicking fails, try direct removal
               try {
                 popupEl.remove();
@@ -500,7 +986,7 @@ export class PopupElement extends MapChildElement {
           }
         });
       }
-    } catch (error) {
+    } catch {
       // Silently handle errors - popups might already be removed
     }
   }
@@ -515,7 +1001,7 @@ export class PopupElement extends MapChildElement {
       // Convert lngLat object to array format [lng, lat] for MapLibre/MapTiler
       const lngLatArray: [number, number] = [lngLat.lng, lngLat.lat];
       const point = map.project(lngLatArray);
-      
+
       if (!point || typeof point.x !== 'number' || typeof point.y !== 'number') {
         return 'bottom';
       }
@@ -528,7 +1014,7 @@ export class PopupElement extends MapChildElement {
       }
 
       return 'bottom';
-    } catch (error) {
+    } catch {
       // Fallback to bottom if projection fails
       return 'bottom';
     }
@@ -638,12 +1124,12 @@ export class PopupElement extends MapChildElement {
             // Force a reposition by setting coordinates again
             // This is necessary because MapLibre may not position correctly on first render
             newPopup.setLngLat(coordinates);
-            
+
             // Also trigger a repaint to ensure the popup is positioned correctly
             if (map && typeof (map as any).triggerRepaint === 'function') {
               (map as any).triggerRepaint();
             }
-          } catch (err) {
+          } catch {
             // Ignore errors if popup was removed
           }
 
@@ -691,6 +1177,77 @@ export class PopupElement extends MapChildElement {
       onComplete?.();
     }, 300); // Match CSS transition duration
   }
+
+  /**
+   * Close popup with a Promise that resolves when animation completes
+   */
+  public static closePopup(popup: any): Promise<void> {
+    return new Promise((resolve) => {
+      if (!popup) {
+        resolve();
+        return;
+      }
+      PopupElement.fadeOutPopup(popup, () => resolve());
+    });
+  }
+}
+
+// ============================================================================
+// Cross-Map Popup Coordination
+// ============================================================================
+
+const CLEAR_POPUPS_EVENT = 'gk-clear-all-popups';
+
+/**
+ * Dispatch event to close popups in other map instances
+ * Used for coordinating popups across multiple maps (e.g., in a grid/collection)
+ *
+ * @param sourceId - Optional identifier for the source map (e.g., market slug)
+ *                   Other maps can use this to avoid closing their own popup
+ */
+export function dispatchClearPopupsEvent(sourceId?: string): void {
+  if (typeof document === 'undefined') return;
+
+  document.dispatchEvent(
+    new CustomEvent(CLEAR_POPUPS_EVENT, {
+      detail: { sourceId },
+    })
+  );
+}
+
+/**
+ * Subscribe to popup clear events from other maps
+ * Returns an unsubscribe function
+ *
+ * @param sourceId - This map's identifier (won't trigger callback for own events)
+ * @param onClear - Callback to invoke when another map requests popup clearing
+ * @returns Unsubscribe function to remove the listener
+ *
+ * @example
+ * const unsubscribe = onClearPopupsEvent('my-market', () => {
+ *   closeMyPopup();
+ * });
+ * // Later: unsubscribe();
+ */
+export function onClearPopupsEvent(sourceId: string, onClear: () => void): () => void {
+  if (typeof document === 'undefined') return () => {};
+
+  const handler = (event: Event) => {
+    const customEvent = event as CustomEvent;
+    const eventSourceId = customEvent.detail?.sourceId;
+
+    // Don't trigger for our own events
+    if (eventSourceId === sourceId) return;
+
+    onClear();
+  };
+
+  document.addEventListener(CLEAR_POPUPS_EVENT, handler);
+
+  // Return unsubscribe function
+  return () => {
+    document.removeEventListener(CLEAR_POPUPS_EVENT, handler);
+  };
 }
 
 // Register the custom element

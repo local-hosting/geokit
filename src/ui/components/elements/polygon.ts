@@ -10,6 +10,7 @@
 import { MapChildElement } from '../map-child-element';
 import { normalizeCoordinatesArray } from '../../../utils/coordinates';
 import { simplifyPolygonRingToMaxPoints } from '../../../utils/simplify';
+import { debug } from '../../utils/logger';
 import type { LatLon } from '../../../types';
 
 export interface PolygonOptions {
@@ -66,14 +67,14 @@ export class PolygonElement extends MapChildElement {
   }
 
   async connectedCallback(): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {
+      return;
+    }
 
     // Apply options from create() factory method as attributes
-    // This ensures attributes are set after element is connected (works in JSDOM/Happy-DOM)
     const createOptions = (this as any)._createOptions;
     if (createOptions) {
       this.applyCreateOptions(createOptions);
-      // Clear stored options
       (this as any)._createOptions = undefined;
     }
 
@@ -91,13 +92,29 @@ export class PolygonElement extends MapChildElement {
     }
   }
 
-  protected async onMapReady(): Promise<void> {
-    // Polygons don't need to wait for idle - just need map and style loaded
-    if (!this.map) return;
+  protected override async onMapReady(): Promise<void> {
+    // NOTE: We intentionally do NOT call super.onMapReady() here because:
+    // 1. The base class guard prevents re-processing the same map instance
+    // 2. But polygons NEED to re-render when maps unfreeze (new WebGL context)
+    // 3. We have our own duplicate detection via getLayer() check below
 
-    this.waitForStyleLoaded(() => {
+    if (!this.map) {
+      return;
+    }
+
+    // Style is already ready (waited in waitForMapStyleReady), so create immediately
+    // Create synchronously to avoid staggered rendering when many polygons are added
+    // The fragment batching in FWMap.vue already prevents blocking the main thread
+    // Check if polygon layer already exists (might have been created during wait)
+    if (this.map.getLayer?.(this.layerId)) {
+      return; // Already created
+    }
+
+    try {
       this.createPolygon();
-    });
+    } catch (error) {
+      console.error(`[Polygon ${this.layerId}] Error creating polygon:`, error);
+    }
   }
 
   /**
@@ -130,16 +147,11 @@ export class PolygonElement extends MapChildElement {
   }
 
   private createPolygon(): void {
-    if (!this.map) {
-      console.warn('[Polygon] Cannot create: no map');
-      return;
-    }
+    if (!this.map) return;
 
     // Check visible - read from property first
     const visible = this._propVisible ?? this.safeGetAttribute('visible');
-    if (visible === false || visible === 'false') {
-      return;
-    }
+    if (visible === false || visible === 'false') return;
 
     // Parse points - read from property first
     const pointsFromProp = this._propPoints;
@@ -147,7 +159,7 @@ export class PolygonElement extends MapChildElement {
       ? JSON.stringify(pointsFromProp)
       : this.safeGetAttribute('points');
     if (!pointsAttr) {
-      console.warn(`[Polygon] points attribute is required for ${this.sourceId}`);
+      debug.warn('[Polygon] points attribute is required');
       return;
     }
 
@@ -157,7 +169,7 @@ export class PolygonElement extends MapChildElement {
       // Normalize to [lat, lng] format first
       coordinates = normalizeCoordinatesArray(coordinates, 'latlon', 'auto');
     } catch (error) {
-      console.error('Polygon: Invalid points format', error);
+      debug.warn('[Polygon] Invalid points format', error);
       return;
     }
 
@@ -168,6 +180,15 @@ export class PolygonElement extends MapChildElement {
       if (first[0] !== last[0] || first[1] !== last[1]) {
         coordinates.push([...first]);
       }
+    }
+
+    // Simplify polygon if it has too many vertices to prevent 65535 vertex limit errors
+    // Use a conservative maxPoints of 50 to ensure we stay well below the limit
+    const MAX_POINTS = 50;
+    if (coordinates.length > MAX_POINTS) {
+      // Cast to LatLon[] since normalizeCoordinatesArray ensures [lat, lng] format
+      const simplified = simplifyPolygonRingToMaxPoints(MAX_POINTS)(coordinates as LatLon[]);
+      coordinates = simplified;
     }
 
     // Convert [lat, lng] to [lng, lat] for GeoJSON format
@@ -193,8 +214,8 @@ export class PolygonElement extends MapChildElement {
         data: geojson,
       });
 
-      // Find the first point layer to insert polygon layers before it
-      // This ensures polygons render below points
+      // Find insertion point: insert before points
+      // This ensures: polygons (below) < points (top)
       const beforeId = this.findFirstPointLayer();
 
       // Add fill layer - read from properties first
@@ -215,27 +236,32 @@ export class PolygonElement extends MapChildElement {
       );
 
       // Add stroke layer (after fill layer) - read from properties first
-      const strokeColor =
-        this._propStrokeColor ?? this.safeGetAttribute('stroke-color') ?? '#000000';
+      // Skip stroke layer entirely if strokeWidth is 0 to avoid hairline rendering artifacts
       const strokeWidth =
         this._propStrokeWidth ?? parseFloat(this.safeGetAttribute('stroke-width') || '2');
-      const strokeOpacity =
-        this._propStrokeOpacity ?? parseFloat(this.safeGetAttribute('stroke-opacity') || '1');
-      this.map.addLayer(
-        {
-          id: this.strokeLayerId,
-          type: 'line',
-          source: this.sourceId,
-          paint: {
-            'line-color': strokeColor,
-            'line-width': strokeWidth,
-            'line-opacity': strokeOpacity,
+
+      if (strokeWidth > 0) {
+        const strokeColor =
+          this._propStrokeColor ?? this.safeGetAttribute('stroke-color') ?? '#000000';
+        const strokeOpacity =
+          this._propStrokeOpacity ?? parseFloat(this.safeGetAttribute('stroke-opacity') || '1');
+        this.map.addLayer(
+          {
+            id: this.strokeLayerId,
+            type: 'line',
+            source: this.sourceId,
+            paint: {
+              'line-color': strokeColor,
+              'line-width': strokeWidth,
+              'line-opacity': strokeOpacity,
+            },
           },
-        },
-        beforeId
-      );
+          beforeId
+        );
+      }
     } catch (error) {
       console.error(`[Polygon] Error creating polygon ${this.sourceId}:`, error);
+      throw error; // Re-throw to help with debugging
     }
 
     // Set up interactivity - read from property first
@@ -286,7 +312,7 @@ export class PolygonElement extends MapChildElement {
     }
   }
 
-  private updateFillStyle(): void {
+  public updateFillStyle(): void {
     this.updatePaintProperties(this.layerId, {
       'fill-color': this._propFillColor ?? this.safeGetAttribute('fill-color') ?? '#3FB1CE',
       'fill-opacity':
@@ -304,9 +330,10 @@ export class PolygonElement extends MapChildElement {
     });
   }
 
-  protected onMapUnload(): void {
-    super.onMapUnload();
+  protected override onMapUnload(): void {
+    // Clean up layers BEFORE calling super (which sets this.map = null)
     this.cleanupMapLayers([this.layerId, this.strokeLayerId], [this.sourceId]);
+    super.onMapUnload();
   }
 
   disconnectedCallback(): void {
@@ -395,9 +422,8 @@ export class PolygonElement extends MapChildElement {
       strokeWidth = 2,
       strokeOpacity = 1,
       visible = true,
-      // TODO: implement simplification
-      simplify: _simplify = true,
-      maxPoints: _maxPoints = 100,
+      simplify: _simplify = true, // Always simplify large polygons, kept for API compatibility
+      maxPoints = 50, // Reduced default from 100 to prevent 65535 vertex limit errors
     } = options;
 
     const polygons: PolygonElement[] = [];
@@ -409,24 +435,19 @@ export class PolygonElement extends MapChildElement {
       // Only process the first ring (outer boundary)
       // Subsequent rings are holes, which gk-polygon doesn't support yet
       const outerRing = coordinates[0];
-      if (!outerRing) {
-        console.warn('Polygon has no outer ring');
-        return;
-      }
+      if (!outerRing) return;
 
       // Convert [lng, lat] to [lat, lng] format
       let points: LatLon[] = outerRing.map(([lng, lat]) => [lat, lng]);
 
-      // Simplify if requested
-      if (opts.simplify && points.length > (opts.maxPoints || 100)) {
-        points = simplifyPolygonRingToMaxPoints(opts.maxPoints || 100)(points);
+      // Always simplify if polygon has too many points to prevent 65535 vertex limit errors
+      const targetMaxPoints = opts.maxPoints ?? maxPoints;
+      if (points.length > targetMaxPoints) {
+        points = simplifyPolygonRingToMaxPoints(targetMaxPoints)(points);
       }
 
       // Skip if too few points
-      if (points.length < 3) {
-        console.warn('Skipping polygon ring with fewer than 3 points');
-        return;
-      }
+      if (points.length < 3) return;
 
       // Convert to array format for gk-polygon
       const pointArray = points.map(([lat, lng]) => [lat, lng]);
@@ -450,8 +471,6 @@ export class PolygonElement extends MapChildElement {
       geometry.coordinates.forEach((polygonCoords) => {
         addPolygonRings(polygonCoords, options);
       });
-    } else {
-      console.warn('Unsupported geometry type for polygon:', geometry.type);
     }
 
     return polygons;

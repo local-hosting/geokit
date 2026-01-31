@@ -79,7 +79,7 @@ export class H3Element extends MapChildElement {
 
       if (!isNaN(lat) && !isNaN(lng)) {
         try {
-          h3Index = coordinatesToH3([lng, lat], resolution);
+          h3Index = coordinatesToH3(resolution)([lng, lat]);
         } catch (error) {
           console.warn('Failed to create H3 index from coordinates:', error);
           return;

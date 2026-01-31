@@ -81,7 +81,7 @@ async function fixEsmImports(dir, baseDir = null) {
 }
 
 async function main() {
-  const distEsm = join(__dirname, '..', 'dist', 'esm');
+  const distEsm = join(__dirname, '..', '..', 'dist', 'esm');
 
   try {
     await fixEsmImports(distEsm);

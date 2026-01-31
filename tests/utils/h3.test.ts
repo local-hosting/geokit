@@ -33,13 +33,13 @@ describe('h3', () => {
 
   describe('coordinatesToH3', () => {
     it('should convert coordinates to H3 index', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       expect(typeof h3Index).toBe('string');
       expect(h3Index.length).toBeGreaterThan(0);
     });
 
     it('should use default resolution of 9', () => {
-      const h3Index = coordinatesToH3(nyc);
+      const h3Index = coordinatesToH3()(nyc);
       const resolution = h3GetResolution(h3Index);
       expect(resolution).toBe(9);
     });
@@ -47,23 +47,23 @@ describe('h3', () => {
 
   describe('h3ToCoordinates', () => {
     it('should convert H3 index to coordinates', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const coords = h3ToCoordinates(h3Index);
       expect(coords[0]).toBeCloseTo(nyc[0], 2);
       expect(coords[1]).toBeCloseTo(nyc[1], 2);
     });
 
     it('should roundtrip coordinates', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const coords = h3ToCoordinates(h3Index);
-      const h3Index2 = coordinatesToH3(coords, 9);
+      const h3Index2 = coordinatesToH3(9)(coords);
       expect(h3Index2).toBe(h3Index);
     });
   });
 
   describe('h3ToBoundary', () => {
     it('should return cell boundary as polygon', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const boundary = h3ToBoundary(h3Index);
       expect(Array.isArray(boundary)).toBe(true);
       expect(boundary.length).toBeGreaterThan(0);
@@ -73,7 +73,7 @@ describe('h3', () => {
 
   describe('h3ToPolygon', () => {
     it('should return GeoJSON Polygon', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const polygon = h3ToPolygon(h3Index);
       expect(polygon.type).toBe('Polygon');
       expect(Array.isArray(polygon.coordinates)).toBe(true);
@@ -84,7 +84,7 @@ describe('h3', () => {
     });
 
     it('should have valid polygon structure', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const polygon = h3ToPolygon(h3Index);
       const ring = polygon.coordinates[0];
       // H3 boundaries should have at least 6 points (hexagon)
@@ -98,7 +98,7 @@ describe('h3', () => {
     });
 
     it('should match boundary coordinates in GeoJSON format', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const boundary = h3ToBoundary(h3Index);
       const polygon = h3ToPolygon(h3Index);
       const ring = polygon.coordinates[0];
@@ -118,7 +118,7 @@ describe('h3', () => {
   describe('snapToH3Cell', () => {
     it('should snap coordinates to cell center', () => {
       const coords: [number, number] = [40.7128, -74.006];
-      const snapped = snapToH3Cell(coords, 9);
+      const snapped = snapToH3Cell(9)(coords);
       expect(snapped).toHaveLength(2);
       expect(typeof snapped[0]).toBe('number');
       expect(typeof snapped[1]).toBe('number');
@@ -126,16 +126,16 @@ describe('h3', () => {
 
     it('should use default resolution of 9', () => {
       const coords: [number, number] = [40.7128, -74.006];
-      const snapped1 = snapToH3Cell(coords, 9);
-      const snapped2 = snapToH3Cell(coords);
+      const snapped1 = snapToH3Cell(9)(coords);
+      const snapped2 = snapToH3Cell()(coords);
       expect(snapped1[0]).toBeCloseTo(snapped2[0], 5);
       expect(snapped1[1]).toBeCloseTo(snapped2[1], 5);
     });
 
     it('should return same result as h3ToCoordinates after coordinatesToH3', () => {
       const coords: [number, number] = [40.7128, -74.006];
-      const snapped = snapToH3Cell(coords, 9);
-      const h3Index = coordinatesToH3(coords, 9);
+      const snapped = snapToH3Cell(9)(coords);
+      const h3Index = coordinatesToH3(9)(coords);
       const cellCenter = h3ToCoordinates(h3Index);
       expect(snapped[0]).toBeCloseTo(cellCenter[0], 5);
       expect(snapped[1]).toBeCloseTo(cellCenter[1], 5);
@@ -143,8 +143,8 @@ describe('h3', () => {
 
     it('should snap to different centers at different resolutions', () => {
       const coords: [number, number] = [40.7128, -74.006];
-      const snapped9 = snapToH3Cell(coords, 9);
-      const snapped10 = snapToH3Cell(coords, 10);
+      const snapped9 = snapToH3Cell(9)(coords);
+      const snapped10 = snapToH3Cell(10)(coords);
       // Higher resolution should be closer to original (or same if already aligned)
       const dist9 = Math.abs(snapped9[0] - coords[0]) + Math.abs(snapped9[1] - coords[1]);
       const dist10 = Math.abs(snapped10[0] - coords[0]) + Math.abs(snapped10[1] - coords[1]);
@@ -155,7 +155,7 @@ describe('h3', () => {
 
   describe('h3Neighbors', () => {
     it('should return neighbors including center', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const neighbors = h3Neighbors(h3Index, 1);
       expect(Array.isArray(neighbors)).toBe(true);
       expect(neighbors.length).toBeGreaterThan(1);
@@ -163,7 +163,7 @@ describe('h3', () => {
     });
 
     it('should return more cells with larger k', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const neighbors1 = h3Neighbors(h3Index, 1);
       const neighbors2 = h3Neighbors(h3Index, 2);
       expect(neighbors2.length).toBeGreaterThan(neighbors1.length);
@@ -172,7 +172,7 @@ describe('h3', () => {
 
   describe('h3ToParent', () => {
     it('should return parent at coarser resolution', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const parent = h3ToParent(h3Index, 8);
       expect(h3GetResolution(parent)).toBe(8);
     });
@@ -180,7 +180,7 @@ describe('h3', () => {
 
   describe('h3ToChildren', () => {
     it('should return children at finer resolution', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const children = h3ToChildren(h3Index, 10);
       expect(Array.isArray(children)).toBe(true);
       expect(children.length).toBeGreaterThan(1);
@@ -190,14 +190,14 @@ describe('h3', () => {
 
   describe('h3GetResolution', () => {
     it('should return correct resolution', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       expect(h3GetResolution(h3Index)).toBe(9);
     });
   });
 
   describe('validateH3', () => {
     it('should return true for valid H3 index', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       expect(validateH3(h3Index)).toBe(true);
     });
 
@@ -209,7 +209,7 @@ describe('h3', () => {
 
   describe('h3AreNeighbors', () => {
     it('should detect neighboring cells', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const neighbors = h3Neighbors(h3Index, 1);
       const neighbor = neighbors.find((n) => n !== h3Index);
       if (neighbor) {
@@ -218,8 +218,8 @@ describe('h3', () => {
     });
 
     it('should return false for non-neighboring cells', () => {
-      const h3Index1 = coordinatesToH3([40.7128, -74.006], 9);
-      const h3Index2 = coordinatesToH3([34.0522, -118.2437], 9); // LA
+      const h3Index1 = coordinatesToH3(9)([40.7128, -74.006]);
+      const h3Index2 = coordinatesToH3(9)([34.0522, -118.2437]); // LA
       expect(h3AreNeighbors(h3Index1, h3Index2)).toBe(false);
     });
   });
@@ -277,13 +277,13 @@ describe('h3', () => {
 
   describe('coordinatesToH3Point (type-safe)', () => {
     it('should convert coordinates to H3Point', () => {
-      const h3Point = coordinatesToH3Point(nyc, 9);
+      const h3Point = coordinatesToH3Point(9)(nyc);
       expect(typeof h3Point).toBe('string');
       expect(h3Point.length).toBeGreaterThan(0);
     });
 
     it('should use default resolution of 9', () => {
-      const h3Point = coordinatesToH3Point(nyc);
+      const h3Point = coordinatesToH3Point()(nyc);
       const resolution = h3GetResolution(h3Point);
       expect(resolution).toBe(9);
     });
@@ -291,7 +291,7 @@ describe('h3', () => {
 
   describe('coordinatesToH3Area (type-safe)', () => {
     it('should convert coordinates to H3Area', () => {
-      const h3Area = coordinatesToH3Area(nyc, 7);
+      const h3Area = coordinatesToH3Area(7)(nyc);
       expect(typeof h3Area).toBe('string');
       expect(h3Area.length).toBeGreaterThan(0);
     });
@@ -299,23 +299,23 @@ describe('h3', () => {
 
   describe('h3PointToCoordinates (type-safe)', () => {
     it('should convert H3Point to coordinates', () => {
-      const h3Point = coordinatesToH3Point(nyc, 9);
+      const h3Point = coordinatesToH3Point(9)(nyc);
       const coords = h3PointToCoordinates(h3Point);
       expect(coords[0]).toBeCloseTo(nyc[0], 2);
       expect(coords[1]).toBeCloseTo(nyc[1], 2);
     });
 
     it('should roundtrip coordinates', () => {
-      const h3Point = coordinatesToH3Point(nyc, 9);
+      const h3Point = coordinatesToH3Point(9)(nyc);
       const coords = h3PointToCoordinates(h3Point);
-      const h3Point2 = coordinatesToH3Point(coords, 9);
+      const h3Point2 = coordinatesToH3Point(9)(coords);
       expect(h3Point2).toBe(h3Point);
     });
   });
 
   describe('h3AreaToCoordinates (type-safe)', () => {
     it('should convert H3Area to coordinates', () => {
-      const h3Area = coordinatesToH3Area(nyc, 7);
+      const h3Area = coordinatesToH3Area(7)(nyc);
       const coords = h3AreaToCoordinates(h3Area);
       expect(coords).toHaveLength(2);
       expect(typeof coords[0]).toBe('number');
@@ -325,7 +325,7 @@ describe('h3', () => {
 
   describe('h3PointToBoundary (type-safe)', () => {
     it('should return cell boundary as polygon', () => {
-      const h3Point = coordinatesToH3Point(nyc, 9);
+      const h3Point = coordinatesToH3Point(9)(nyc);
       const boundary = h3PointToBoundary(h3Point);
       expect(Array.isArray(boundary)).toBe(true);
       expect(boundary.length).toBeGreaterThan(0);
@@ -335,7 +335,7 @@ describe('h3', () => {
 
   describe('h3AreaToBoundary (type-safe)', () => {
     it('should return cell boundary as polygon', () => {
-      const h3Area = coordinatesToH3Area(nyc, 7);
+      const h3Area = coordinatesToH3Area(7)(nyc);
       const boundary = h3AreaToBoundary(h3Area);
       expect(Array.isArray(boundary)).toBe(true);
       expect(boundary.length).toBeGreaterThan(0);
@@ -345,7 +345,7 @@ describe('h3', () => {
 
   describe('h3PointToPolygon (type-safe)', () => {
     it('should return GeoJSON Polygon', () => {
-      const h3Point = coordinatesToH3Point(nyc, 9);
+      const h3Point = coordinatesToH3Point(9)(nyc);
       const polygon = h3PointToPolygon(h3Point);
       expect(polygon.type).toBe('Polygon');
       expect(Array.isArray(polygon.coordinates)).toBe(true);
@@ -354,7 +354,7 @@ describe('h3', () => {
     });
 
     it('should match h3ToPolygon result', () => {
-      const h3Point = coordinatesToH3Point(nyc, 9);
+      const h3Point = coordinatesToH3Point(9)(nyc);
       const polygon1 = h3PointToPolygon(h3Point);
       const polygon2 = h3ToPolygon(h3Point);
       expect(polygon1.type).toBe(polygon2.type);
@@ -364,7 +364,7 @@ describe('h3', () => {
 
   describe('h3AreaToPolygon (type-safe)', () => {
     it('should return GeoJSON Polygon', () => {
-      const h3Area = coordinatesToH3Area(nyc, 7);
+      const h3Area = coordinatesToH3Area(7)(nyc);
       const polygon = h3AreaToPolygon(h3Area);
       expect(polygon.type).toBe('Polygon');
       expect(Array.isArray(polygon.coordinates)).toBe(true);
@@ -373,7 +373,7 @@ describe('h3', () => {
     });
 
     it('should match h3ToPolygon result', () => {
-      const h3Area = coordinatesToH3Area(nyc, 7);
+      const h3Area = coordinatesToH3Area(7)(nyc);
       const polygon1 = h3AreaToPolygon(h3Area);
       const polygon2 = h3ToPolygon(h3Area);
       expect(polygon1.type).toBe(polygon2.type);
@@ -383,7 +383,7 @@ describe('h3', () => {
 
   describe('h3PointNeighbors (type-safe)', () => {
     it('should return neighbors including center', () => {
-      const h3Point = coordinatesToH3Point(nyc, 9);
+      const h3Point = coordinatesToH3Point(9)(nyc);
       const neighbors = h3PointNeighbors(h3Point, 1);
       expect(Array.isArray(neighbors)).toBe(true);
       expect(neighbors.length).toBeGreaterThan(1);
@@ -391,7 +391,7 @@ describe('h3', () => {
     });
 
     it('should return more cells with larger k', () => {
-      const h3Point = coordinatesToH3Point(nyc, 9);
+      const h3Point = coordinatesToH3Point(9)(nyc);
       const neighbors1 = h3PointNeighbors(h3Point, 1);
       const neighbors2 = h3PointNeighbors(h3Point, 2);
       expect(neighbors2.length).toBeGreaterThan(neighbors1.length);
@@ -400,7 +400,7 @@ describe('h3', () => {
 
   describe('h3AreaNeighbors (type-safe)', () => {
     it('should return neighbors including center', () => {
-      const h3Area = coordinatesToH3Area(nyc, 7);
+      const h3Area = coordinatesToH3Area(7)(nyc);
       const neighbors = h3AreaNeighbors(h3Area, 1);
       expect(Array.isArray(neighbors)).toBe(true);
       expect(neighbors.length).toBeGreaterThan(1);
@@ -410,8 +410,8 @@ describe('h3', () => {
 
   describe('h3SetToMultiPolygon', () => {
     it('should convert array of H3 indices to MultiPolygon', () => {
-      const h3Index1 = coordinatesToH3(nyc, 9);
-      const h3Index2 = coordinatesToH3([40.713, -74.007], 9);
+      const h3Index1 = coordinatesToH3(9)(nyc);
+      const h3Index2 = coordinatesToH3(9)([40.713, -74.007]);
       const multiPolygon = h3SetToMultiPolygon([h3Index1, h3Index2]);
 
       expect(multiPolygon.type).toBe('MultiPolygon');
@@ -420,7 +420,7 @@ describe('h3', () => {
     });
 
     it('should handle single H3 cell', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const multiPolygon = h3SetToMultiPolygon([h3Index]);
 
       expect(multiPolygon.type).toBe('MultiPolygon');
@@ -434,7 +434,7 @@ describe('h3', () => {
     });
 
     it('should handle multiple adjacent cells', () => {
-      const h3Index = coordinatesToH3(nyc, 9);
+      const h3Index = coordinatesToH3(9)(nyc);
       const neighbors = h3Neighbors(h3Index, 1);
       const multiPolygon = h3SetToMultiPolygon([h3Index, ...neighbors]);
 

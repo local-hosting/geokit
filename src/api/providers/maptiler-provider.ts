@@ -5,32 +5,31 @@
  * Provides geocoding capabilities
  *
  * Features:
- * - LRU cache with 10-minute TTL
+ * - LRU cache with 30-minute TTL
  * - Rate limiting support
  */
 
-import { LRUCache } from 'lru-cache';
 import {
   BaseAPIProvider,
   type MapProviderConfig,
   type APICapability,
   type GeocodeOptions,
+  type ReverseGeocodeOptions,
+  type ReverseGeocodeResult,
 } from './types';
+import { ProviderCache, coordinateCacheKey } from './cache';
 import type { FeatureCollection } from 'geojson';
-
-interface CacheEntry {
-  data: FeatureCollection;
-  timestamp: number;
-}
 
 export class MapTilerAPIProvider extends BaseAPIProvider {
   protected config: MapProviderConfig | null = null;
   private apiKey: string | null = null;
 
-  // LRU Cache: 100 entries, 10-minute TTL
-  private cache: LRUCache<string, CacheEntry>;
-  private cacheHits = 0;
-  private cacheMisses = 0;
+  // LRU Cache: 1000 entries, 30-minute TTL
+  private cache = new ProviderCache<FeatureCollection>({
+    maxEntries: 1000,
+    ttlMs: 30 * 60 * 1000,
+    name: 'MapTilerCache',
+  });
 
   // Rate limiting: queue requests and process with concurrency control
   private requestQueue: Array<{
@@ -46,12 +45,6 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
 
   constructor() {
     super();
-    this.cache = new LRUCache<string, CacheEntry>({
-      max: 1000,
-      ttl: 1000 * 60 * 30, // 30 minutes TTL
-      updateAgeOnGet: true,
-      updateAgeOnHas: false,
-    });
   }
 
   getName(): string {
@@ -92,10 +85,8 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
     // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached) {
-      this.cacheHits++;
-      return cached.data;
+      return cached;
     }
-    this.cacheMisses++;
 
     // Queue the actual API request with rate limiting
     return this.queueRequest(() => this.geocodeInternal(options, cacheKey));
@@ -215,10 +206,7 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
       const result = data as FeatureCollection;
 
       // Store in cache
-      this.cache.set(cacheKey, {
-        data: result,
-        timestamp: Date.now(),
-      });
+      this.cache.set(cacheKey, result);
 
       return result;
     } catch (error) {
@@ -230,18 +218,144 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
   }
 
   /**
+   * Reverse geocode coordinates to address information
+   * Returns postal code, address, city, state, etc.
+   */
+  async reverseGeocode(options: ReverseGeocodeOptions): Promise<ReverseGeocodeResult | null> {
+    if (!this.apiKey) {
+      throw new Error('MapTiler API Provider: No API key configured.');
+    }
+
+    const { lat, lng, types, limit = 1 } = options;
+
+    // Validate coordinates
+    if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+      throw new Error('MapTiler API Provider: Valid lat/lng coordinates are required');
+    }
+
+    // Generate cache key
+    const cacheKey = coordinateCacheKey(lat, lng, ['revgeo', types?.join(',') || ''], 5);
+
+    // Check cache first
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      return this.parseReverseGeocodeResponse(cached, lat, lng);
+    }
+
+    try {
+      // MapTiler reverse geocoding: pass coordinates as the query (lng,lat format)
+      const url = new URL(`https://api.maptiler.com/geocoding/${lng},${lat}.json`);
+      url.searchParams.set('key', this.apiKey);
+      url.searchParams.set('limit', limit.toString());
+
+      // Filter by types if specified (e.g., 'postal_code' for ZIP codes)
+      // MapTiler uses different type names than Mapbox
+      if (types && types.length > 0) {
+        // Map common type names to MapTiler equivalents
+        const mappedTypes = types.map((t) => {
+          if (t === 'postcode') return 'postal_code';
+          if (t === 'address') return 'street';
+          if (t === 'place') return 'municipality';
+          if (t === 'region') return 'county,region';
+          return t;
+        });
+        url.searchParams.set('types', mappedTypes.join(','));
+      }
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          Referer: 'http://localhost:5173/',
+        },
+      });
+
+      // Handle rate limiting
+      if (response.status === 429) {
+        console.warn('[MapTiler] Rate limited for reverse geocode');
+        throw new Error('MapTiler API error: 429 - Too Many Requests');
+      }
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(
+          `MapTiler API error: ${response.status} ${response.statusText}${
+            (error as any).message ? ` - ${(error as any).message}` : ''
+          }`
+        );
+      }
+
+      const data = await response.json();
+      const featureCollection = data as FeatureCollection;
+
+      // Cache the raw response
+      this.cache.set(cacheKey, featureCollection);
+
+      return this.parseReverseGeocodeResponse(featureCollection, lat, lng);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to reverse geocode: ${error.message}`);
+      }
+      throw new Error('Failed to reverse geocode');
+    }
+  }
+
+  /**
+   * Parse MapTiler reverse geocode response into structured result
+   */
+  private parseReverseGeocodeResponse(
+    data: FeatureCollection,
+    lat: number,
+    lng: number
+  ): ReverseGeocodeResult | null {
+    if (!data.features || data.features.length === 0) {
+      return null;
+    }
+
+    const feature = data.features[0] as any;
+    const context = feature.context || [];
+
+    // Helper to find context item by type
+    const findContext = (placeType: string): string | undefined => {
+      // Check if the main feature is of this type
+      if (feature.place_type?.includes(placeType)) {
+        return feature.text;
+      }
+      // Check context array
+      const item = context.find((c: any) => c.id?.startsWith(placeType + '.'));
+      return item?.text;
+    };
+
+    // Extract postal code - MapTiler uses 'postal_code' type
+    let postcode: string | undefined;
+    if (feature.place_type?.includes('postal_code')) {
+      postcode = feature.text;
+    } else {
+      postcode = findContext('postal_code');
+    }
+
+    // Build the result
+    const result: ReverseGeocodeResult = {
+      address: feature.place_name,
+      streetAddress: findContext('street') || findContext('address'),
+      city: findContext('municipality') || findContext('place') || findContext('locality'),
+      state: findContext('region'),
+      postcode,
+      country: findContext('country'),
+      countryCode: context
+        .find((c: any) => c.id?.startsWith('country.'))
+        ?.short_code?.toUpperCase(),
+      neighborhood: findContext('neighbourhood') || findContext('neighborhood'),
+      coordinates: [lng, lat],
+      raw: feature,
+    };
+
+    return result;
+  }
+
+  /**
    * Get cache statistics
    */
   getCacheStats() {
-    return {
-      size: this.cache.size,
-      hits: this.cacheHits,
-      misses: this.cacheMisses,
-      hitRate:
-        this.cacheHits + this.cacheMisses > 0
-          ? ((this.cacheHits / (this.cacheHits + this.cacheMisses)) * 100).toFixed(1) + '%'
-          : '0%',
-    };
+    return this.cache.getStats();
   }
 
   /**
@@ -249,8 +363,5 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
    */
   clearCache(): void {
     this.cache.clear();
-    this.cacheHits = 0;
-    this.cacheMisses = 0;
   }
 }
-

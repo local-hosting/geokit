@@ -7,9 +7,10 @@
  * Features:
  * - LRU cache with 30-minute TTL
  * - Rate limiting support with exponential backoff
+ *
+ * Note: Behavioral/ratings API was deprecated by Foursquare - use placeSearch only
  */
 
-import { LRUCache } from 'lru-cache';
 import {
   BaseAPIProvider,
   type MapProviderConfig,
@@ -17,20 +18,18 @@ import {
   type PlaceSearchOptions,
   type PlaceSearchResult,
 } from './types';
-
-interface CacheEntry {
-  data: PlaceSearchResult[];
-  timestamp: number;
-}
+import { ProviderCache, coordinateCacheKey } from './cache';
 
 export class FoursquareAPIProvider extends BaseAPIProvider {
   protected config: MapProviderConfig | null = null;
   private apiKey: string | null = null;
 
   // LRU Cache: 1000 entries, 30-minute TTL
-  private cache: LRUCache<string, CacheEntry>;
-  private cacheHits = 0;
-  private cacheMisses = 0;
+  private cache = new ProviderCache<PlaceSearchResult[]>({
+    maxEntries: 1000,
+    ttlMs: 30 * 60 * 1000,
+    name: 'FoursquareCache',
+  });
 
   // Rate limiting: queue requests and process with concurrency control
   private requestQueue: Array<{
@@ -46,12 +45,6 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
 
   constructor() {
     super();
-    this.cache = new LRUCache<string, CacheEntry>({
-      max: 1000,
-      ttl: 1000 * 60 * 30, // 30 minutes TTL
-      updateAgeOnGet: true,
-      updateAgeOnHas: false,
-    });
   }
 
   getName(): string {
@@ -69,6 +62,7 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
   }
 
   getCapabilities(): APICapability[] {
+    // Note: 'behavioral' capability removed - Foursquare deprecated their ratings/popularity API
     return ['placeSearch'];
   }
 
@@ -91,10 +85,8 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
     // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached) {
-      this.cacheHits++;
-      return cached.data;
+      return cached;
     }
-    this.cacheMisses++;
 
     // Queue the actual API request with rate limiting
     return this.queueRequest(() => this.placeSearchInternal(options, cacheKey));
@@ -161,7 +153,17 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
     cacheKey: string,
     retryCount = 0
   ): Promise<PlaceSearchResult[]> {
-    const { query, ll, radius, categories, limit = 10, sort, openNow, minPrice, maxPrice } = options;
+    const {
+      query,
+      ll,
+      radius,
+      categories,
+      limit = 10,
+      sort,
+      openNow,
+      minPrice,
+      maxPrice,
+    } = options;
 
     try {
       // Build API URL - Foursquare Places API v3
@@ -203,7 +205,10 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
       }
 
       // Add fields to get more details
-      url.searchParams.set('fields', 'fsq_id,name,geocodes,location,categories,distance,rating,price,hours,tel,website');
+      url.searchParams.set(
+        'fields',
+        'fsq_id,name,geocodes,location,categories,distance,rating,price,hours,tel,website'
+      );
 
       const response = await fetch(url.toString(), {
         headers: {
@@ -240,10 +245,7 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
       const results = this.transformResults(data.results || []);
 
       // Store in cache
-      this.cache.set(cacheKey, {
-        data: results,
-        timestamp: Date.now(),
-      });
+      this.cache.set(cacheKey, results);
 
       return results;
     } catch (error) {
@@ -321,9 +323,7 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
     }
     if (options.ll) {
       // Round to 3 decimals (~111m precision) for cache key
-      const roundedLat = Math.round(options.ll[1] * 1000) / 1000;
-      const roundedLng = Math.round(options.ll[0] * 1000) / 1000;
-      parts.push(`ll:${roundedLat},${roundedLng}`);
+      parts.push(`ll:${coordinateCacheKey(options.ll[1], options.ll[0], [], 3)}`);
     }
     if (options.radius) {
       parts.push(`r:${options.radius}`);
@@ -354,15 +354,7 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
    * Get cache statistics
    */
   getCacheStats() {
-    return {
-      size: this.cache.size,
-      hits: this.cacheHits,
-      misses: this.cacheMisses,
-      hitRate:
-        this.cacheHits + this.cacheMisses > 0
-          ? ((this.cacheHits / (this.cacheHits + this.cacheMisses)) * 100).toFixed(1) + '%'
-          : '0%',
-    };
+    return this.cache.getStats();
   }
 
   /**
@@ -370,8 +362,5 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
    */
   clearCache(): void {
     this.cache.clear();
-    this.cacheHits = 0;
-    this.cacheMisses = 0;
   }
 }
-

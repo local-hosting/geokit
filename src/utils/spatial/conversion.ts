@@ -17,7 +17,7 @@ import { h3ToCoordinates, coordinatesToH3 } from '../h3';
  */
 export function geohashPointToH3Point(geohash: GeohashPoint, resolution: number = 9): H3Point {
   const coords = decodeGeohash(geohash);
-  const h3Index = coordinatesToH3(coords, resolution);
+  const h3Index = coordinatesToH3(resolution)(coords);
   return h3Index as H3Point;
 }
 
@@ -36,7 +36,7 @@ export function geohashPointToH3Point(geohash: GeohashPoint, resolution: number 
  */
 export function geohashAreaToH3Area(geohash: GeohashArea, resolution: number = 9): H3Area {
   const coords = decodeGeohash(geohash);
-  const h3Index = coordinatesToH3(coords, resolution);
+  const h3Index = coordinatesToH3(resolution)(coords);
   return h3Index as H3Area;
 }
 
@@ -55,7 +55,7 @@ export function geohashAreaToH3Area(geohash: GeohashArea, resolution: number = 9
  */
 export function h3PointToGeohashPoint(h3: H3Point, precision: number = 10): GeohashPoint {
   const coords = h3ToCoordinates(h3);
-  const geohash = encodeGeohash(coords, precision);
+  const geohash = encodeGeohash(precision)(coords);
   return geohash as GeohashPoint;
 }
 
@@ -74,6 +74,6 @@ export function h3PointToGeohashPoint(h3: H3Point, precision: number = 10): Geoh
  */
 export function h3AreaToGeohashArea(h3: H3Area, precision: number = 10): GeohashArea {
   const coords = h3ToCoordinates(h3);
-  const geohash = encodeGeohash(coords, precision);
+  const geohash = encodeGeohash(precision)(coords);
   return geohash as GeohashArea;
 }

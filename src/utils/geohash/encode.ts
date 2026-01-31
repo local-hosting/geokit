@@ -2,19 +2,24 @@ import Geohash from 'latlon-geohash';
 import type { LatLon } from '../../types';
 
 /**
- * Encode coordinates to a geohash string
+ * Encode coordinates to a geohash string (curried)
  *
- * @param coordinates - Coordinate pair [lat, lon]
  * @param precision - Length of geohash (default: 10)
- * @returns Geohash string
+ * @returns Curried function that takes coordinates and returns geohash string
  *
  * @example
  * ```typescript
- * const hash = encodeGeohash([40.7128, -74.0060], 10);
+ * const encode10 = encodeGeohash(10);
+ * const hash = encode10([40.7128, -74.0060]);
  * // 'dr5regw3p9'
+ *
+ * // Or use with map
+ * const hashes = coordinates.map(encodeGeohash(7));
  * ```
  */
-export function encodeGeohash(coordinates: LatLon, precision: number = 10): string {
-  const [lat, lon] = coordinates;
-  return Geohash.encode(lat, lon, precision);
+export function encodeGeohash(precision: number = 10) {
+  return (coordinates: LatLon): string => {
+    const [lat, lon] = coordinates;
+    return Geohash.encode(lat, lon, precision);
+  };
 }

@@ -3,39 +3,49 @@ import type { LatLon, Polygon, H3Point, H3Area } from '../../types';
 import { h3ToPolygon } from './boundary';
 
 /**
- * Convert coordinates to H3 point (type-safe)
+ * Convert coordinates to H3 point (type-safe, curried)
  *
- * @param coordinates - Coordinate pair [lat, lon]
  * @param resolution - H3 resolution (0-15, default: 9)
- * @returns H3Point (branded type)
+ * @returns Curried function that takes coordinates and returns H3Point
  *
  * @example
  * ```typescript
- * const h3Point = coordinatesToH3Point([40.7128, -74.0060], 9);
+ * const toH3Point9 = coordinatesToH3Point(9);
+ * const h3Point = toH3Point9([40.7128, -74.0060]);
  * // This is now type-safe and can only be used with functions expecting H3Point
+ *
+ * // Or use with map
+ * const h3Points = coordinates.map(coordinatesToH3Point(9));
  * ```
  */
-export function coordinatesToH3Point(coordinates: LatLon, resolution: number = 9): H3Point {
-  const [lat, lon] = coordinates;
-  return latLngToCell(lat, lon, resolution) as H3Point;
+export function coordinatesToH3Point(resolution: number = 9) {
+  return (coordinates: LatLon): H3Point => {
+    const [lat, lon] = coordinates;
+    return latLngToCell(lat, lon, resolution) as H3Point;
+  };
 }
 
 /**
- * Convert coordinates to H3 area (type-safe)
+ * Convert coordinates to H3 area (type-safe, curried)
  *
- * @param coordinates - Coordinate pair [lat, lon]
  * @param resolution - H3 resolution (0-15, default: 9)
- * @returns H3Area (branded type)
+ * @returns Curried function that takes coordinates and returns H3Area
  *
  * @example
  * ```typescript
- * const h3Area = coordinatesToH3Area([40.7128, -74.0060], 7);
+ * const toH3Area7 = coordinatesToH3Area(7);
+ * const h3Area = toH3Area7([40.7128, -74.0060]);
  * // This is now type-safe and can only be used with functions expecting H3Area
+ *
+ * // Or use with map
+ * const h3Areas = coordinates.map(coordinatesToH3Area(7));
  * ```
  */
-export function coordinatesToH3Area(coordinates: LatLon, resolution: number = 9): H3Area {
-  const [lat, lon] = coordinates;
-  return latLngToCell(lat, lon, resolution) as H3Area;
+export function coordinatesToH3Area(resolution: number = 9) {
+  return (coordinates: LatLon): H3Area => {
+    const [lat, lon] = coordinates;
+    return latLngToCell(lat, lon, resolution) as H3Area;
+  };
 }
 
 /**

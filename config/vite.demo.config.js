@@ -29,8 +29,8 @@ export default defineConfig(({ mode }) => {
       preserveSymlinks: false,
     },
     define: {
-      'import.meta.env.MAPTILER_API_KEY': JSON.stringify(env.MAPTILER_API_KEY),
-      'import.meta.env.MAPBOX_ACCESS_TOKEN': JSON.stringify(env.MAPBOX_ACCESS_TOKEN),
+      'import.meta.env.MAPTILER_KEY': JSON.stringify(env.MAPTILER_KEY),
+      'import.meta.env.MAPBOX_TOKEN': JSON.stringify(env.MAPBOX_TOKEN),
     },
   };
 });
