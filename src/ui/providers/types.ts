@@ -117,6 +117,15 @@ export interface MapSource {
 }
 
 /**
+ * Feature returned by map.queryRenderedFeatures (Mapbox/MapLibre style)
+ */
+export interface MapRenderedFeature {
+  geometry?: { type: string; coordinates?: unknown };
+  properties?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+/**
  * Map instance interface - common methods across map providers
  * This provides type safety for map operations without requiring
  * provider-specific types. Uses index signature to allow provider-specific methods.
@@ -153,10 +162,7 @@ export interface MapInstance {
   queryRenderedFeatures?(
     point: { x: number; y: number },
     options?: { layers?: string[] }
-  ): Array<{
-    geometry?: { type: string; coordinates?: unknown };
-    properties?: Record<string, unknown>;
-  }>;
+  ): MapRenderedFeature[];
 
   // Canvas access (for cursor control)
   getCanvas?(): { style: { cursor: string } };
