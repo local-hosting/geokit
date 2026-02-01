@@ -25,6 +25,9 @@ interface SlotInfo {
 // Reduced to 50ms for faster initial loading while still debouncing rapid scrolls
 const SCROLL_DEBOUNCE_MS = 50;
 
+// Activate this many maps in parallel (higher = faster first load; stay under WebGL context limits, typically 8–16)
+const CONCURRENT_ACTIVATION_BATCH = 4;
+
 // Retry configuration for failed map loads
 const MAX_FAIL_COUNT = 3; // Max retries before giving up
 const RETRY_BACKOFF_MS = 2000; // Wait 2s between retries
@@ -42,6 +45,7 @@ export class MapCollectionElement extends BaseElement {
   private _apiKey: string | null = null;
   private _mapStyle: string | null = null;
   private scrollDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private handleNewMapsRafId: number | null = null;
   private isProcessing: boolean = false; // Lock to prevent concurrent processing
   private pendingReprocess: boolean = false; // Track if reprocess needed after current run
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
@@ -245,21 +249,17 @@ export class MapCollectionElement extends BaseElement {
         }
       }
 
-      // Activate maps SEQUENTIALLY to prevent WebGL context exhaustion
-      // Each activation waits for the previous one to complete
-      for (const slot of toActivate) {
-        // Re-check pool before each activation
-        if (this.activeCount >= this.poolSize) {
-          // Need to freeze more maps
+      // Activate maps in small parallel batches to speed load (batch size limits WebGL pressure)
+      for (let i = 0; i < toActivate.length; i += CONCURRENT_ACTIVATION_BATCH) {
+        const batch = toActivate.slice(i, i + CONCURRENT_ACTIVATION_BATCH);
+        // Re-check pool before batch
+        while (this.activeCount >= this.poolSize && batch.length > 0) {
           const frozen = await this.deactivateOneInvisible();
-          if (!frozen) break; // Can't make room, stop activating
+          if (!frozen) break;
           await new Promise((resolve) => setTimeout(resolve, 50));
         }
-        await this.activateSlot(slot);
-        // Small delay between activations to ensure WebGL contexts are stable
-        if (toActivate.indexOf(slot) < toActivate.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
+        await Promise.all(batch.map((slot) => this.activateSlot(slot)));
+        // No delay between batches – batch size already limits concurrent WebGL creation
       }
 
       // Check if there are more to activate after parallel batch
@@ -452,7 +452,16 @@ export class MapCollectionElement extends BaseElement {
       }
 
       if (hasNewMaps) {
-        setTimeout(() => this.handleNewMaps(), 100);
+        // Coalesce Vue's per-card gk-map appends: run after next frame so all are in DOM
+        if (this.handleNewMapsRafId !== null) cancelAnimationFrame(this.handleNewMapsRafId);
+        this.handleNewMapsRafId = requestAnimationFrame(() => {
+          this.handleNewMapsRafId = null;
+          if (typeof window !== 'undefined' && (window as any).__GEOVIEW_DEBUG__) {
+            const count = this.querySelectorAll('gk-map').length;
+            console.log('[map-collection] rAF handleNewMaps, gk-map count in DOM:', count);
+          }
+          this.handleNewMaps();
+        });
       }
       if (hasRemovedMaps) {
         setTimeout(() => this.handleRemovedMaps(), 100);
@@ -499,8 +508,17 @@ export class MapCollectionElement extends BaseElement {
 
     // If we added new visible maps, trigger processing immediately
     if (hasNewMaps) {
-      // Use short delay to allow IntersectionObserver to also fire
-      setTimeout(() => this.processVisibilityChanges(), 50);
+      if (typeof window !== 'undefined' && (window as any).__GEOVIEW_DEBUG__) {
+        const visible = this.slots.filter((s) => s.isVisible).length;
+        console.log(
+          '[map-collection] handleNewMaps done, slots:',
+          this.slots.length,
+          'visible:',
+          visible
+        );
+      }
+      // Minimal delay so first-load activation starts quickly (was 50ms)
+      setTimeout(() => this.processVisibilityChanges(), 0);
     }
   }
 
@@ -659,6 +677,10 @@ export class MapCollectionElement extends BaseElement {
     if (this.scrollDebounceTimer) {
       clearTimeout(this.scrollDebounceTimer);
       this.scrollDebounceTimer = null;
+    }
+    if (this.handleNewMapsRafId !== null) {
+      cancelAnimationFrame(this.handleNewMapsRafId);
+      this.handleNewMapsRafId = null;
     }
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
