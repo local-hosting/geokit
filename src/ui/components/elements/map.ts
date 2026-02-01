@@ -258,6 +258,21 @@ export class MapElement extends BaseElement {
 
       this.map = await provider.createMap(container, options);
 
+      // Wrap queryRenderedFeatures so MapLibre/MapTiler "unknown feature value" never throws
+      if (this.map?.queryRenderedFeatures) {
+        const original = this.map.queryRenderedFeatures.bind(this.map);
+        this.map.queryRenderedFeatures = (
+          point: { x: number; y: number },
+          options?: { layers?: string[] }
+        ) => {
+          try {
+            return original(point, options);
+          } catch {
+            return [];
+          }
+        };
+      }
+
       // Store reference to canvas for freeze/unfreeze
       if (this.map) {
         const mapContainer = (this.map as any).getContainer?.();
