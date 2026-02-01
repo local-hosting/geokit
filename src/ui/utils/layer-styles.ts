@@ -99,26 +99,27 @@ export const DEFAULT_GLOW_BLUR = 0.4;
  */
 export function getPointRadiusInterpolation(options: CircleStyleOptions = {}): unknown[] {
   const { scale = 1, exponent = 1.5 } = options;
+  // Point radius smaller than glow at low zoom but still visible; glow stays large (getGlowRadiusInterpolation)
   return [
     'interpolate',
     ['exponential', exponent],
     ['zoom'],
     0,
-    1.2 * scale, // Full zoom out - visible dots
+    0.85 * scale, // Full zoom out - visible dot, glow larger
     2,
-    1.5 * scale, // Hero minZoom 2 - visible when zoomed out
+    1 * scale, // Hero minZoom 2
     3,
-    2 * scale, // Min zoom
+    1.25 * scale, // Min zoom
     6,
-    2.5 * scale, // Country view
+    2 * scale, // Country view
     8,
-    3 * scale, // Regional view (medium zoom)
+    2.6 * scale, // Regional view (medium zoom)
     10,
-    3.5 * scale, // City view
+    3.1 * scale, // City view
     14,
-    4.5 * scale, // Neighborhood
+    4.25 * scale, // Neighborhood
     18,
-    6 * scale, // Max zoom - larger dots
+    6.5 * scale, // Max zoom
   ];
 }
 

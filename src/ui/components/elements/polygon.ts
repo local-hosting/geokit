@@ -118,8 +118,9 @@ export class PolygonElement extends MapChildElement {
   }
 
   /**
-   * Find the first point layer to insert polygon layers before it
-   * This ensures polygons render below points
+   * Find the first point/circle layer to insert polygon layers before it
+   * This ensures polygons render below points (venues, markers, etc.)
+   * Matches both geokit point-* ids and app layer ids (e.g. app-layer-points).
    */
   private findFirstPointLayer(): string | undefined {
     if (!this.map) return undefined;
@@ -133,9 +134,9 @@ export class PolygonElement extends MapChildElement {
       const style = getStyle();
       if (!style || !style.layers) return undefined;
 
-      // Look for the first point/circle layer
+      // Look for the first circle layer (points, venue dots, glow hit areas)
       for (const layer of style.layers) {
-        if (layer.type === 'circle' && layer.id?.startsWith('point-')) {
+        if (layer.type === 'circle') {
           return layer.id;
         }
       }
