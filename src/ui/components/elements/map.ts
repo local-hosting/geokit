@@ -1433,25 +1433,7 @@ export class MapElement extends BaseElement {
       if (this._isFrozen) {
         this.showPlaceholder('Restoring map...');
         await this._unfreeze();
-        // Wait for map to be fully ready after reinitialization
-        // Note: initializeMap() already hides placeholder in dispatchMapReady(),
-        // but we wait for ready state to ensure map is usable
-        if (this.map) {
-          try {
-            await this.waitForReady();
-          } catch {
-            // Timeout or error waiting for ready - but map might still be usable
-            // Check if map is actually initialized
-            if (this.isInitialized) {
-              // Map is initialized, just hide placeholder
-              this.hidePlaceholder();
-            } else {
-              // Map not initialized, keep placeholder visible
-              console.warn('[gk-map] Map ready timeout, but map not initialized');
-            }
-          }
-        }
-        // Ensure placeholder is hidden if map is initialized (in case waitForReady failed)
+        // Don't wait for 'idle' - it can delay by hundreds of ms; style load is enough for layers
         if (this.isInitialized) {
           this.hidePlaceholder();
         }
@@ -1488,28 +1470,11 @@ export class MapElement extends BaseElement {
       // Initialize the map
       await this.initializeMap();
 
-      // Wait for map to be fully ready
-      // Note: initializeMap() already hides placeholder in dispatchMapReady(),
-      // but we wait for ready state to ensure map is usable
+      // Don't wait for 'idle' (tiles, etc.) - style load is enough for adding layers; speeds first load
       if (this.map) {
-        try {
-          await this.waitForReady();
-        } catch {
-          // Timeout or error waiting for ready - but map might still be usable
-          // Check if map is actually initialized
-          if (this.isInitialized) {
-            // Map is initialized, just hide placeholder
-            this.hidePlaceholder();
-          } else {
-            // Map not initialized, keep placeholder visible
-            console.warn('[gk-map] Map ready timeout, but map not initialized');
-          }
-        }
-        // Ensure placeholder is hidden if map is initialized (in case waitForReady failed)
         if (this.isInitialized) {
           this.hidePlaceholder();
         }
-        // Dispatch unfreeze event after initialization completes
         this.dispatchEvent(
           new CustomEvent('gk-map-unfreeze', {
             detail: { map: this.map, element: this },
@@ -1645,14 +1610,17 @@ export class MapElement extends BaseElement {
         // This happens when event handlers weren't fully registered before removal or map was already destroyed
         // Suppress in production to avoid console spam - this is a harmless error from MapTiler SDK
         const errorMessage = error instanceof Error ? error.message : String(error);
-        const isHarmlessError = 
+        const isHarmlessError =
           errorMessage.includes("can't access property") ||
-          errorMessage.includes("Cannot read properties") ||
-          errorMessage.includes("this._map is undefined") ||
+          errorMessage.includes('Cannot read properties') ||
+          errorMessage.includes('this._map is undefined') ||
           errorMessage.includes("reading 'off'");
-        
+
         // Only log non-harmless errors or in development
-        if (!isHarmlessError || (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development')) {
+        if (
+          !isHarmlessError ||
+          (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development')
+        ) {
           console.debug('[gk-map] Ignoring error during map removal:', error);
         }
       } finally {
