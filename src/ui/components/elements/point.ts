@@ -9,7 +9,7 @@
 
 import { MapChildElement } from '../map-child-element';
 import { normalizeCoordinatesArray, isValidCoordinate } from '../../../utils/coordinates';
-import type { MapEvent } from '../../providers/types';
+import type { MapEvent, MapRenderedFeature } from '../../providers/types';
 import { PopupElement } from './popup';
 
 export interface PointOptions {
@@ -447,9 +447,16 @@ export class PointElement extends MapChildElement {
     this.mapClickHandler = (e: MapEvent) => {
       if (!this.map || !this.layerId) return;
       if (!this.map.getLayer?.(this.layerId)) return;
+      if (typeof this.map.isStyleLoaded === 'function' && !this.map.isStyleLoaded()) return;
       if (!e.point || !this.map.queryRenderedFeatures) return;
 
-      const features = this.map.queryRenderedFeatures(e.point, { layers: [this.layerId] });
+      let features: MapRenderedFeature[] = [];
+      try {
+        features = this.map.queryRenderedFeatures(e.point, { layers: [this.layerId] });
+      } catch {
+        // MapTiler/MapLibre can throw e.g. "unknown feature value" when parsing vector tiles
+        return;
+      }
       if (features.length === 0) {
         this.clearHighlight();
         if (this.popupInstance) {
