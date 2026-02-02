@@ -134,9 +134,10 @@ export class LayerElement extends MapChildElement {
 
   // Interaction state
   private _clickHandler: ((e: MapEvent) => void) | null = null;
-  private _mouseEnterHandler: ((e: MapEvent) => void) | null = null;
+  private _mouseMoveHandler: ((e: MapEvent) => void) | null = null;
   private _mouseLeaveHandler: (() => void) | null = null;
   private _hoveredFeatureId: string | number | null = null;
+  private _currentHoveredFeatureId: string | number | null = null;
 
   constructor() {
     super();
@@ -411,19 +412,21 @@ export class LayerElement extends MapChildElement {
     const sourceId = this.sourceId;
     const queryLayers = this.queryLayers;
 
+    // Helper to query features at a point
+    const queryFeaturesAtPoint = (point: { x: number; y: number }): any[] => {
+      try {
+        return map.queryRenderedFeatures(point, { layers: queryLayers }) || [];
+      } catch {
+        return [];
+      }
+    };
+
     // Click handler - uses queryRenderedFeatures for reliability on pooled maps
     this._clickHandler = (e: MapEvent) => {
       if (!e.point) return;
 
-      let features: any[] = [];
-      try {
-        features = map.queryRenderedFeatures(e.point, { layers: queryLayers });
-      } catch {
-        // queryRenderedFeatures can fail on some base map tiles
-        return;
-      }
-
-      if (!features || features.length === 0) return;
+      const features = queryFeaturesAtPoint(e.point);
+      if (features.length === 0) return;
 
       const feature = features[0];
       const lngLat = e.lngLat ?? { lng: 0, lat: 0 };
@@ -454,69 +457,92 @@ export class LayerElement extends MapChildElement {
       );
     };
 
-    // Mouse enter handler - for hover state and cursor
-    this._mouseEnterHandler = (e: MapEvent) => {
-      const features = e.features;
-      if (!features || features.length === 0) return;
+    // Mouse move handler - uses queryRenderedFeatures for reliable hover on pooled maps
+    this._mouseMoveHandler = (e: MapEvent) => {
+      if (!e.point) return;
 
-      const feature = features[0];
-      const lngLat = e.lngLat ?? { lng: 0, lat: 0 };
+      const features = queryFeaturesAtPoint(e.point);
+      const featureId =
+        features.length > 0 ? (features[0].id as string | number | undefined) : undefined;
 
-      // Set pointer cursor
+      // No change in hover state
+      if (featureId === this._currentHoveredFeatureId) return;
+
       const container = map.getCanvas?.();
-      if (container) {
-        container.style.cursor = this.cursor;
-      }
 
-      // Get feature ID (may be from promoteId or native id)
-      const featureId = (feature as Record<string, unknown>).id as string | number | undefined;
+      // Left a feature - emit mouseleave
+      if (this._currentHoveredFeatureId !== null && featureId !== this._currentHoveredFeatureId) {
+        // Reset cursor
+        if (container) {
+          container.style.cursor = '';
+        }
 
-      // Set hover state if enabled
-      if (this.hoverState && featureId !== undefined) {
-        // Clear previous hover state
-        if (this._hoveredFeatureId !== null) {
+        // Clear hover state
+        if (this.hoverState && this._hoveredFeatureId !== null) {
           try {
             map.setFeatureState({ source: sourceId, id: this._hoveredFeatureId }, { hover: false });
           } catch {
             // Ignore
           }
+          this._hoveredFeatureId = null;
         }
 
-        // Set new hover state
-        this._hoveredFeatureId = featureId;
-        try {
-          map.setFeatureState({ source: sourceId, id: this._hoveredFeatureId }, { hover: true });
-        } catch {
-          // Ignore
-        }
+        this.dispatchEvent(
+          new CustomEvent('gk-layer-mouseleave', {
+            detail: { layerId, sourceId } as LayerMouseLeaveEventDetail,
+            bubbles: true,
+          })
+        );
       }
 
-      // Convert to standard GeoJSON Feature
-      const geoJsonFeature: GeoJSON.Feature = {
-        type: 'Feature',
-        geometry: feature.geometry as GeoJSON.Geometry,
-        properties: (feature.properties as Record<string, unknown>) || {},
-        ...(featureId !== undefined && { id: featureId }),
-      };
+      // Entered a new feature - emit mouseenter
+      if (featureId !== undefined && features.length > 0) {
+        const feature = features[0];
+        const lngLat = e.lngLat ?? { lng: 0, lat: 0 };
 
-      const detail: LayerMouseEnterEventDetail = {
-        feature: geoJsonFeature,
-        lngLat: { lng: lngLat.lng, lat: lngLat.lat },
-        layerId,
-        sourceId,
-      };
+        // Set pointer cursor
+        if (container) {
+          container.style.cursor = this.cursor;
+        }
 
-      this.dispatchEvent(
-        new CustomEvent('gk-layer-mouseenter', {
-          detail,
-          bubbles: true,
-        })
-      );
+        // Set hover state if enabled
+        if (this.hoverState) {
+          this._hoveredFeatureId = featureId;
+          try {
+            map.setFeatureState({ source: sourceId, id: featureId }, { hover: true });
+          } catch {
+            // Ignore
+          }
+        }
+
+        // Convert to standard GeoJSON Feature
+        const geoJsonFeature: GeoJSON.Feature = {
+          type: 'Feature',
+          geometry: feature.geometry as GeoJSON.Geometry,
+          properties: (feature.properties as Record<string, unknown>) || {},
+          ...(featureId !== undefined && { id: featureId }),
+        };
+
+        this.dispatchEvent(
+          new CustomEvent('gk-layer-mouseenter', {
+            detail: {
+              feature: geoJsonFeature,
+              lngLat: { lng: lngLat.lng, lat: lngLat.lat },
+              layerId,
+              sourceId,
+            } as LayerMouseEnterEventDetail,
+            bubbles: true,
+          })
+        );
+      }
+
+      this._currentHoveredFeatureId = featureId ?? null;
     };
 
-    // Mouse leave handler
+    // Mouse leave handler - when mouse leaves map canvas entirely
     this._mouseLeaveHandler = () => {
-      // Reset cursor
+      if (this._currentHoveredFeatureId === null) return;
+
       const container = map.getCanvas?.();
       if (container) {
         container.style.cursor = '';
@@ -532,46 +558,38 @@ export class LayerElement extends MapChildElement {
         this._hoveredFeatureId = null;
       }
 
-      const detail: LayerMouseLeaveEventDetail = {
-        layerId,
-        sourceId,
-      };
-
       this.dispatchEvent(
         new CustomEvent('gk-layer-mouseleave', {
-          detail,
+          detail: { layerId, sourceId } as LayerMouseLeaveEventDetail,
           bubbles: true,
         })
       );
+
+      this._currentHoveredFeatureId = null;
     };
 
-    // Register handlers
-    // Use global click handler for reliability (queryRenderedFeatures at click time)
+    // Register global handlers for reliability on pooled maps
     map.on('click', this._clickHandler);
-
-    // Use layer-specific handlers for hover (these work fine for hover)
-    map.on('mouseenter', layerId, this._mouseEnterHandler);
-    map.on('mouseleave', layerId, this._mouseLeaveHandler);
+    map.on('mousemove', this._mouseMoveHandler);
+    map.on('mouseleave', this._mouseLeaveHandler);
   }
 
   private removeInteractions(): void {
     const map = this.map as any;
     if (!map) return;
 
-    const layerId = this.layerId;
-
     if (this._clickHandler) {
       map.off('click', this._clickHandler);
       this._clickHandler = null;
     }
 
-    if (this._mouseEnterHandler && layerId) {
-      map.off('mouseenter', layerId, this._mouseEnterHandler);
-      this._mouseEnterHandler = null;
+    if (this._mouseMoveHandler) {
+      map.off('mousemove', this._mouseMoveHandler);
+      this._mouseMoveHandler = null;
     }
 
-    if (this._mouseLeaveHandler && layerId) {
-      map.off('mouseleave', layerId, this._mouseLeaveHandler);
+    if (this._mouseLeaveHandler) {
+      map.off('mouseleave', this._mouseLeaveHandler);
       this._mouseLeaveHandler = null;
     }
 
@@ -587,6 +605,7 @@ export class LayerElement extends MapChildElement {
       }
       this._hoveredFeatureId = null;
     }
+    this._currentHoveredFeatureId = null;
   }
 
   // ==========================================================================
