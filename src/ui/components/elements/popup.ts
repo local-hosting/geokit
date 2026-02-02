@@ -1123,6 +1123,21 @@ export class PopupElement extends MapChildElement {
     try {
       newPopup.setLngLat(coordinates).setDOMContent(popupContentEl).addTo(map);
 
+      // Emit gk-popup-closed when this popup is closed (close button or remove); apps can listen and sync selection
+      if (typeof newPopup.on === 'function') {
+        newPopup.on('close', () => {
+          const container = map?.getContainer?.();
+          const gkMap = container?.closest?.('gk-map');
+          const target = (gkMap as HTMLElement) || document;
+          target.dispatchEvent(
+            new CustomEvent('gk-popup-closed', {
+              detail: { popup: newPopup, map },
+              bubbles: true,
+            })
+          );
+        });
+      }
+
       // Wait for map to finish rendering and styles to be applied
       // Use requestAnimationFrame to ensure we're after the render cycle
       // This fixes the issue where popup doesn't position correctly until map rotates

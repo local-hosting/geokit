@@ -1,7 +1,8 @@
 /**
  * Geokit Point Component
  *
- * Creates simple geometric points/dots on the map for marking coordinates
+ * Creates simple geometric points/dots on the map for marking coordinates.
+ * Two visual states: hover (glow, on mouseover) and selected (ring + shadow; attribute `selected` or focus()/blur()).
  *
  * Usage:
  * <gk-point lat="40.7128" lng="-74.0060" color="#ff0000" size="8"></gk-point>
@@ -57,27 +58,31 @@ export class PointElement extends MapChildElement {
     'glow-blur',
     'point-id',
     'point-name',
+    'selected',
   ];
 
   private sourceId: string | null = null;
   private layerId: string | null = null;
   private shadowLayerId: string | null = null;
   private glowLayerId: string | null = null;
-  private highlightSourceId: string | null = null;
-  private highlightLayerId: string | null = null;
+  private hoverSourceId: string | null = null;
+  private hoverLayerId: string | null = null;
+  /** Layer we attach mouseenter/mouseleave to (glow or main); for teardown only. */
+  private hoverEventLayerId: string | null = null;
   private popupInstance: { remove: () => void } | null = null;
   /** Last feature.properties shown in popup (for re-open after style change so tags/address persist). */
   private _lastPopupProperties: Record<string, unknown> | null = null;
-  private focusLayers: {
-    focusLayerId: string;
+  /** Selected state: ring + shadow. Synced with selected attribute and focus()/blur(). */
+  private selectedLayers: {
+    layerId: string;
     shadowLayerId: string;
-    focusSourceId: string;
+    sourceId: string;
   } | null = null;
   private clickHandler: ((e: MapEvent) => void) | null = null;
   private mapClickHandler: ((e: MapEvent) => void) | null = null;
   private clearHandler: ((event: Event) => void) | null = null;
   private clearPopupHandler: ((event: Event) => void) | null = null;
-  private focusCreatedTime: number | null = null;
+  private selectedCreatedTime: number | null = null;
   private popupCreatedTime: number | null = null;
 
   constructor() {
@@ -157,8 +162,8 @@ export class PointElement extends MapChildElement {
         this.layerId = `point-layer-${uuid}`;
         this.shadowLayerId = `point-shadow-${uuid}`;
         this.glowLayerId = `point-glow-${uuid}`;
-        this.highlightSourceId = `point-highlight-${uuid}`;
-        this.highlightLayerId = `point-highlight-layer-${uuid}`;
+        this.hoverSourceId = `point-hover-${uuid}`;
+        this.hoverLayerId = `point-hover-layer-${uuid}`;
         this.hasGeneratedIds = true;
       }
 
@@ -196,12 +201,12 @@ export class PointElement extends MapChildElement {
       layerId: this.layerId,
     });
     if (!this.map) return;
-    const hadFocus = !!this.focusLayers;
+    const hadSelected = !!this.selectedLayers;
     // Wait for new style to be ready so addSource/addLayer succeed (e.g. when switching to light, style may not be ready yet).
     this.waitForStyleLoaded(() => {
       if (!this.map) return;
       this.addPoint();
-      if (hadFocus) {
+      if (hadSelected) {
         const lat = this._propLat ?? parseFloat(this.safeGetAttribute('lat') || '');
         const lng = this._propLng ?? parseFloat(this.safeGetAttribute('lng') || '');
         if (!isNaN(lat) && !isNaN(lng)) {
@@ -217,7 +222,7 @@ export class PointElement extends MapChildElement {
             geometry: { type: 'Point', coordinates: [lng, lat] },
             properties,
           };
-          this.handlePointFocus(
+          this.handlePointSelect(
             feature,
             pointId != null ? String(pointId) : null,
             pointName != null ? String(pointName) : null,
@@ -247,7 +252,7 @@ export class PointElement extends MapChildElement {
       }
     };
 
-    // Clear all focus handler
+    // Clear selected state on other points
     this.clearHandler = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { pointElement, pointId: excludePointId } = customEvent.detail || {};
@@ -260,7 +265,7 @@ export class PointElement extends MapChildElement {
       }
 
       const now = Date.now();
-      if (this.focusCreatedTime && now - this.focusCreatedTime < 200) {
+      if (this.selectedCreatedTime && now - this.selectedCreatedTime < 200) {
         return;
       }
 
@@ -275,7 +280,7 @@ export class PointElement extends MapChildElement {
       }
     };
 
-    document.addEventListener('gk-clear-all-focus', this.clearHandler);
+    document.addEventListener('gk-clear-all-focus', this.clearHandler); // clears selected state
     document.addEventListener('gk-clear-all-popups', this.clearPopupHandler);
   }
 
@@ -375,15 +380,15 @@ export class PointElement extends MapChildElement {
       return;
     }
 
-    // Highlight source: single point driven by setData (hover/focus), no feature-state
-    const emptyHighlight: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+    // Hover source: single point driven by setData (hover only; selected state uses selectedLayers)
+    const emptyHover: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
     try {
-      this.map.addSource(this.highlightSourceId!, {
+      this.map.addSource(this.hoverSourceId!, {
         type: 'geojson',
-        data: emptyHighlight,
+        data: emptyHover,
       });
     } catch (error) {
-      console.error('[Point] Failed to add highlight source:', error);
+      console.error('[Point] Failed to add hover source:', error);
     }
 
     // Add glow layer if enabled (bottom layer - constant opacity, no feature-state)
@@ -438,32 +443,32 @@ export class PointElement extends MapChildElement {
       }
     }
 
-    // Highlight layer: shape above glow, below dot; shown via setData on hover/focus (no feature-state)
-    const highlightOpacity = getCSSVariableNumber(
+    // Hover layer: glow above main dot; shown only on hover (not when selected)
+    const hoverOpacity = getCSSVariableNumber(
       this.mapElement,
       '--gk-point-glow-hover-opacity',
       0.5
     );
-    const highlightColor =
+    const hoverColor =
       getCSSVariable(this.mapElement, '--gk-point-glow-color', this.glowColor) || this.glowColor;
-    if (this.highlightLayerId && this.highlightSourceId) {
+    if (this.hoverLayerId && this.hoverSourceId) {
       try {
         this.map.addLayer(
           {
-            id: this.highlightLayerId,
+            id: this.hoverLayerId,
             type: 'circle',
-            source: this.highlightSourceId,
+            source: this.hoverSourceId,
             paint: {
               'circle-radius': this.getZoomRadiusExpression(),
-              'circle-color': highlightColor,
-              'circle-opacity': highlightOpacity,
+              'circle-color': hoverColor,
+              'circle-opacity': hoverOpacity,
               'circle-blur': 0,
             },
           },
           this.layerId
         );
       } catch (error) {
-        console.error('[Point] Failed to add highlight layer:', error);
+        console.error('[Point] Failed to add hover layer:', error);
       }
     }
 
@@ -496,11 +501,9 @@ export class PointElement extends MapChildElement {
     }
   }
 
-  private hoverLayerId: string | null = null;
-
-  private setHighlightAt(coordinates: [number, number] | null): void {
-    if (!this.map || !this.highlightSourceId) return;
-    const source = this.map.getSource?.(this.highlightSourceId) as
+  private setHoverAt(coordinates: [number, number] | null): void {
+    if (!this.map || !this.hoverSourceId) return;
+    const source = this.map.getSource?.(this.hoverSourceId) as
       | { setData?: (d: GeoJSON.FeatureCollection) => void }
       | undefined;
     const setData = source?.setData;
@@ -530,10 +533,10 @@ export class PointElement extends MapChildElement {
     if (!this.map || !this.layerId) return;
 
     // Use glow layer for hover when present (larger hit area); otherwise point layer
-    this.hoverLayerId = this.glow && this.glowLayerId ? this.glowLayerId : this.layerId;
-    const hoverLayerId = this.hoverLayerId;
+    this.hoverEventLayerId = this.glow && this.glowLayerId ? this.glowLayerId : this.layerId;
+    const hoverLayerId = this.hoverEventLayerId;
 
-    // Hover: drive highlight layer via setData (no feature-state)
+    // Hover: drive hover glow layer via setData
     const onMouseEnter = (e: MapEvent): void => {
       const canvas = this.map?.getCanvas?.();
       if (canvas?.style) canvas.style.cursor = 'pointer';
@@ -543,13 +546,13 @@ export class PointElement extends MapChildElement {
         features[0].geometry?.type === 'Point' &&
         'coordinates' in features[0].geometry
       ) {
-        this.setHighlightAt(features[0].geometry.coordinates as [number, number]);
+        this.setHoverAt(features[0].geometry.coordinates as [number, number]);
       }
     };
     const onMouseLeave = (): void => {
       const canvas = this.map?.getCanvas?.();
       if (canvas?.style) canvas.style.cursor = '';
-      if (!this.focusLayers) this.setHighlightAt(null);
+      if (!this.selectedLayers) this.setHoverAt(null);
     };
     this.map.on('mouseenter', hoverLayerId, onMouseEnter);
     this.map.on('mouseleave', hoverLayerId, onMouseLeave);
@@ -584,7 +587,7 @@ export class PointElement extends MapChildElement {
           geometry: feature.geometry as GeoJSON.Geometry,
           properties: (feature.properties as Record<string, unknown>) || {},
         };
-        this.handlePointFocus(
+        this.handlePointSelect(
           geoJsonFeature,
           typeof pointId === 'string' ? pointId : null,
           typeof pointName === 'string' ? pointName : null,
@@ -631,26 +634,26 @@ export class PointElement extends MapChildElement {
     this.map.on('touchend', this.mapClickHandler);
   }
 
-  private handlePointFocus(
+  private handlePointSelect(
     feature: GeoJSON.Feature,
     pointId: string | null,
     pointName: string | null,
     lngLat: { lng: number; lat: number }
   ): void {
-    // Clear existing focus state
+    // Clear existing selected state
     if (this.popupInstance) {
       this.popupInstance.remove();
       this.popupInstance = null;
     }
     this.blur();
 
-    // Apply focus visual - use type guard to safely access coordinates
+    // Apply selected visual (ring + shadow) - use type guard to safely access coordinates
     if (
       feature.geometry &&
       feature.geometry.type === 'Point' &&
       'coordinates' in feature.geometry
     ) {
-      this.applyFocusVisual(feature);
+      this.applySelectedVisual(feature);
     }
 
     // Parse title from pointName
@@ -685,14 +688,27 @@ export class PointElement extends MapChildElement {
           provider
         );
 
-        // Listen for popup close to blur the point
+        const onPopupClose = (): void => {
+          this.blur();
+          this.popupInstance = null;
+        };
+
+        // Listen for popup close (MapLibre/Mapbox fire 'close' when popup is removed)
         const popup = this.popupInstance as { on?: (event: string, fn: () => void) => void } | null;
         if (popup?.on) {
-          popup.on('close', () => {
-            this.blur();
-            this.popupInstance = null;
-          });
+          popup.on('close', onPopupClose);
         }
+
+        // DOM fallback: close button may remove popup without firing 'close' in some SDK versions
+        requestAnimationFrame(() => {
+          const el = (this.popupInstance as { getElement?: () => HTMLElement })?.getElement?.();
+          const closeBtn = el?.querySelector?.(
+            '.maplibregl-popup-close-button, .mapboxgl-popup-close-button'
+          ) as HTMLElement | null;
+          if (closeBtn) {
+            closeBtn.addEventListener('click', onPopupClose, { once: true });
+          }
+        });
 
         this.popupCreatedTime = Date.now();
       } catch (error) {
@@ -700,7 +716,7 @@ export class PointElement extends MapChildElement {
       }
     }
 
-    // Dispatch focus event
+    // Dispatch selected/focus event (gk-point-focus for backward compatibility)
     requestAnimationFrame(() => {
       this.dispatchEvent(
         new CustomEvent('gk-point-focus', {
@@ -713,52 +729,50 @@ export class PointElement extends MapChildElement {
   }
 
   /**
-   * Apply focus visual state to the point (white stroke ring + shadow + glow highlight)
+   * Apply selected visual state (white stroke ring + shadow). Hover glow is separate (hover only).
    */
-  private applyFocusVisual(feature: GeoJSON.Feature): void {
+  private applySelectedVisual(feature: GeoJSON.Feature): void {
     if (!this.map || !this.layerId || !this.sourceId) return;
 
     this.blur();
 
-    const focusLayerId = `${this.layerId}-focus`;
-    const shadowLayerId = `${this.layerId}-focus-shadow`;
-    const focusSourceId = `${this.sourceId}-focus`;
+    const selectedLayerId = `${this.layerId}-selected`;
+    const selectedShadowLayerId = `${this.layerId}-selected-shadow`;
+    const selectedSourceId = `${this.sourceId}-selected`;
 
-    const focusData: GeoJSON.FeatureCollection = {
+    const selectedData: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
       features: [JSON.parse(JSON.stringify(feature))],
     };
 
     try {
-      if (this.map.getSource?.(focusSourceId)) {
-        this.map.removeSource(focusSourceId);
+      if (this.map.getSource?.(selectedSourceId)) {
+        this.map.removeSource(selectedSourceId);
       }
 
-      this.map.addSource(focusSourceId, {
+      this.map.addSource(selectedSourceId, {
         type: 'geojson',
-        data: focusData,
+        data: selectedData,
       });
 
-      if (this.map?.getLayer?.(shadowLayerId)) {
-        this.map.removeLayer(shadowLayerId);
+      if (this.map?.getLayer?.(selectedShadowLayerId)) {
+        this.map.removeLayer(selectedShadowLayerId);
       }
-      if (this.map?.getLayer?.(focusLayerId)) {
-        this.map.removeLayer(focusLayerId);
+      if (this.map?.getLayer?.(selectedLayerId)) {
+        this.map.removeLayer(selectedLayerId);
       }
 
-      // Read focus colors from CSS variables
-      const focusShadowColor = getCSSVariable(this.mapElement, '--gk-focus-shadow-color', '');
-      const focusRingColor = getCSSVariable(this.mapElement, '--gk-focus-ring-color', '');
+      const selectedShadowColor = getCSSVariable(this.mapElement, '--gk-focus-shadow-color', '');
+      const selectedRingColor = getCSSVariable(this.mapElement, '--gk-focus-ring-color', '');
 
-      // Add shadow
       this.map.addLayer(
         {
-          id: shadowLayerId,
+          id: selectedShadowLayerId,
           type: 'circle',
-          source: focusSourceId,
+          source: selectedSourceId,
           paint: {
             'circle-radius': this.getShadowRadiusExpression(),
-            'circle-color': focusShadowColor,
+            'circle-color': selectedShadowColor,
             'circle-opacity': getCSSVariableNumber(
               this.mapElement,
               '--gk-point-glow-focus-opacity',
@@ -771,55 +785,54 @@ export class PointElement extends MapChildElement {
         this.layerId
       );
 
-      // Add focus ring
       this.map.addLayer(
         {
-          id: focusLayerId,
+          id: selectedLayerId,
           type: 'circle',
-          source: focusSourceId,
+          source: selectedSourceId,
           paint: {
             'circle-radius': this.getZoomRadiusExpression(),
             'circle-color': 'transparent',
             'circle-opacity': 1,
             'circle-stroke-width': 2,
-            'circle-stroke-color': focusRingColor,
+            'circle-stroke-color': selectedRingColor,
             'circle-stroke-opacity': 1,
           },
         },
         this.layerId
       );
 
-      this.focusLayers = { focusLayerId, shadowLayerId, focusSourceId };
-      this.focusCreatedTime = Date.now();
-
-      // Show highlight layer at focus position (no feature-state)
-      if (feature.geometry?.type === 'Point' && 'coordinates' in feature.geometry) {
-        this.setHighlightAt(feature.geometry.coordinates as [number, number]);
-      }
+      this.selectedLayers = {
+        layerId: selectedLayerId,
+        shadowLayerId: selectedShadowLayerId,
+        sourceId: selectedSourceId,
+      };
+      this.selectedCreatedTime = Date.now();
+      this.safeSetAttribute('selected', 'true');
     } catch (error) {
-      console.error('[Point] Error applying focus:', error);
+      console.error('[Point] Error applying selected visual:', error);
       this.blur();
     }
   }
 
   /**
-   * Remove focus visual state (blur the point)
+   * Clear selected state (remove ring + shadow). Same as blur().
    */
   public blur(): void {
     if (!this.map) return;
 
-    this.setHighlightAt(null);
+    this.setHoverAt(null);
+    this.removeAttribute('selected');
 
-    // Remove focus layers
-    if (!this.focusLayers) return;
+    if (!this.selectedLayers) return;
 
-    const { focusLayerId, shadowLayerId, focusSourceId } = this.focusLayers;
+    const { layerId, shadowLayerId, sourceId } = this.selectedLayers;
 
-    if (this.map?.getLayer?.(focusLayerId)) this.map.removeLayer(focusLayerId);
+    if (this.map?.getLayer?.(layerId)) this.map.removeLayer(layerId);
     if (this.map?.getLayer?.(shadowLayerId)) this.map.removeLayer(shadowLayerId);
-    if (this.map?.getSource?.(focusSourceId)) this.map.removeSource(focusSourceId);
+    if (this.map?.getSource?.(sourceId)) this.map.removeSource(sourceId);
 
-    this.focusLayers = null;
+    this.selectedLayers = null;
   }
 
   private removePoint(): void {
@@ -852,7 +865,7 @@ export class PointElement extends MapChildElement {
     }
 
     // Remove hover listeners (attached to glow or point layer)
-    const hoverLayer = this.hoverLayerId ?? this.layerId;
+    const hoverLayer = this.hoverEventLayerId ?? this.layerId;
     if (hoverLayer) {
       try {
         this.map.off('mouseenter', hoverLayer);
@@ -860,10 +873,10 @@ export class PointElement extends MapChildElement {
       } catch {
         // Ignore
       }
-      this.hoverLayerId = null;
+      this.hoverEventLayerId = null;
     }
 
-    this.setHighlightAt(null);
+    this.setHoverAt(null);
 
     // Cleanup layers
     if (this.glowLayerId) {
@@ -874,10 +887,10 @@ export class PointElement extends MapChildElement {
       });
     }
     this.cleanupMapLayers(
-      [this.layerId, this.shadowLayerId, this.glowLayerId, this.highlightLayerId].filter(
+      [this.layerId, this.shadowLayerId, this.glowLayerId, this.hoverLayerId].filter(
         Boolean
       ) as string[],
-      [this.sourceId, this.highlightSourceId].filter(Boolean) as string[]
+      [this.sourceId, this.hoverSourceId].filter(Boolean) as string[]
     );
   }
 
@@ -987,6 +1000,14 @@ export class PointElement extends MapChildElement {
     newValue: string | null
   ): void {
     if (this.isInitialized && oldValue !== newValue) {
+      if (name === 'selected') {
+        if (newValue !== null && newValue !== 'false') {
+          if (!this.selectedLayers) this.focus();
+        } else {
+          this.blur();
+        }
+        return;
+      }
       if (
         ['size', 'color', 'opacity', 'stroke-color', 'stroke-width', 'stroke-opacity'].includes(
           name
@@ -1113,7 +1134,7 @@ export class PointElement extends MapChildElement {
   // Public API
 
   /**
-   * Programmatically focus the point (shows white stroke ring + shadow)
+   * Select the point (shows ring + shadow). Same as setting selected attribute. focus() name kept for API familiarity.
    */
   public focus(): void {
     if (!this.map || !this.sourceId) return;
@@ -1131,7 +1152,12 @@ export class PointElement extends MapChildElement {
       properties: {},
     };
 
-    this.applyFocusVisual(feature);
+    this.applySelectedVisual(feature);
+  }
+
+  /** Whether the point is selected (ring visible). */
+  get selected(): boolean {
+    return this.selectedLayers != null;
   }
 
   updatePosition(lat: number, lng: number): void {

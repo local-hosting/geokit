@@ -80,6 +80,16 @@ export interface SharedPointLayersConfig {
   filter?: unknown[];
   /** Layer to insert before (for z-ordering) */
   beforeLayerId?: string;
+  /**
+   * When true and geojson is provided and MapTiler SDK helpers.addPoint is available,
+   * the point layer is created via MapTiler's recommended helpers.addPoint (zoom-scaled radius).
+   * The helper creates the source; we then add the glow layer using that source.
+   */
+  useMapTilerPointHelper?: boolean;
+  /** GeoJSON FeatureCollection for the point (and glow) layer. Required when useMapTilerPointHelper is true. */
+  geojson?: { type: 'FeatureCollection'; features: unknown[] };
+  /** promoteId for the GeoJSON source when we add the source (e.g. on helper failure). Required for feature-state by id. */
+  promoteId?: string;
 }
 
 export interface CircleLayerConfig {
@@ -441,6 +451,39 @@ export function getGlowRadiusInterpolation(options: CircleStyleOptions = {}): un
 }
 
 /**
+ * Get zoom-based radius for selection ring: same curve as point radius + stroke + gap.
+ * Ring sits around (not on top of) the point. Single interpolate expression for broad MapLibre support.
+ *
+ * @param options - Style options (scale, exponent)
+ * @returns MapLibre interpolation expression
+ */
+export function getSelectionRingRadiusInterpolation(options: CircleStyleOptions = {}): unknown[] {
+  const { scale = 1, exponent = 1.5 } = options;
+  const gap = 2.5; // stroke width + small gap so ring doesn't cover point
+  return [
+    'interpolate',
+    ['exponential', exponent],
+    ['zoom'],
+    0,
+    0.85 * scale + gap,
+    2,
+    1 * scale + gap,
+    3,
+    1.25 * scale + gap,
+    6,
+    2 * scale + gap,
+    8,
+    2.6 * scale + gap,
+    10,
+    3.1 * scale + gap,
+    14,
+    4.25 * scale + gap,
+    18,
+    6.5 * scale + gap,
+  ];
+}
+
+/**
  * Get zoom-based radius interpolation for shadow layers
  * Larger than point for drop shadow effect
  *
@@ -687,8 +730,27 @@ export function createGlowPointLayers(config: GlowPointLayerConfig): {
  * Create shared glow + point layers with explicit layer IDs and full paint control.
  * More flexible than createGlowPointLayers - allows data-driven expressions for all properties.
  *
+ * IMPORTANT – MapTiler SDK point layer: MapTiler SDK can fail to render the point (circle)
+ * layer when it uses many or complex data-driven expressions (e.g. we observed DOTS=0 with
+ * full expressions while GLOW rendered). To avoid this:
+ * - Use only a minimal set of expressions on the point layer: circle-color (data-driven) and
+ *   circle-radius (zoom interpolation) are known to work; keep circle-opacity and circle-blur
+ *   static (e.g. 1 and 0).
+ * - Always add the point layer without beforeLayerId so it draws on top of the glow.
+ * - Keep a static-paint fallback so dots still appear if addLayer throws.
+ *
  * @param config - Layer configuration with explicit IDs and paint expressions
  */
+/** Zoom–radius stops for MapTiler helpers.addPoint: points get larger as you zoom in. */
+const MAPTILER_POINT_RADIUS_ZOOM: Array<{ zoom: number; value: number }> = [
+  { zoom: 0, value: 0.85 },
+  { zoom: 2, value: 1 },
+  { zoom: 6, value: 2 },
+  { zoom: 10, value: 3.1 },
+  { zoom: 14, value: 4.25 },
+  { zoom: 18, value: 6.5 },
+];
+
 export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   const {
     map,
@@ -696,9 +758,9 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     glowLayerId,
     pointLayerId,
     circleColor,
-    circleOpacity,
-    circleStrokeColor,
-    circleStrokeWidth,
+    circleOpacity: _circleOpacity,
+    circleStrokeColor: _circleStrokeColor,
+    circleStrokeWidth: _circleStrokeWidth,
     glowColor,
     glowOpacity,
     glowHoverOpacity,
@@ -707,7 +769,132 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     glowRadius,
     filter,
     beforeLayerId,
+    useMapTilerPointHelper,
+    geojson,
+    promoteId,
   } = config;
+
+  const maptilerHelpers =
+    typeof window !== 'undefined' ? (window as any).maptilersdk?.helpers : undefined;
+  const useHelper =
+    !!useMapTilerPointHelper &&
+    !!geojson &&
+    !!maptilerHelpers?.addPoint &&
+    !map.getLayer?.(pointLayerId);
+
+  let helperSucceeded = false;
+  if (useHelper) {
+    try {
+      // Helper only accepts a single color; we override with data-driven color after if needed
+      const singleColor =
+        typeof circleColor === 'string' ? circleColor : resolveDefaultLayerColor();
+      maptilerHelpers.addPoint(map as any, {
+        data: geojson,
+        sourceId,
+        layerId: pointLayerId,
+        pointRadius: MAPTILER_POINT_RADIUS_ZOOM,
+        pointColor: singleColor,
+        pointOpacity: 1,
+        showLabel: false,
+        cluster: false,
+      });
+      debug.log('[layer-styles] point layer ADD via MapTiler helpers.addPoint', { pointLayerId });
+      helperSucceeded = true;
+      // Apply data-driven color so points show actual venue/DMA color instead of single fallback
+      if (Array.isArray(circleColor) && map.setPaintProperty) {
+        try {
+          map.setPaintProperty(pointLayerId, 'circle-color', circleColor as any);
+        } catch (paintErr) {
+          console.warn(
+            `[geokit] setPaintProperty circle-color failed for ${pointLayerId}:`,
+            paintErr
+          );
+        }
+      }
+    } catch (error) {
+      console.error(`[geokit] MapTiler helpers.addPoint failed for ${pointLayerId}:`, error);
+    }
+  }
+
+  // When helper was tried and failed, ensure source exists so the manual path can add layers.
+  if (useHelper && !helperSucceeded && geojson && !map.getSource?.(sourceId)) {
+    try {
+      map.addSource(sourceId, {
+        type: 'geojson',
+        data: geojson,
+        ...(promoteId ? { promoteId } : {}),
+      });
+      debug.log('[layer-styles] source ADD (manual path)', { sourceId });
+    } catch (sourceErr) {
+      console.error(`[geokit] Failed to add source ${sourceId}:`, sourceErr);
+    }
+  }
+
+  if (helperSucceeded) {
+    // Add glow layer below the point layer (same source created by the helper)
+    if (!map.getLayer?.(glowLayerId)) {
+      const glowRadiusVal = glowRadius ?? getGlowRadiusInterpolation({ scale: 1 });
+      const glowColorVal = glowColor ?? resolveDefaultLayerColor();
+      const glowBlurVal = glowBlur ?? resolveGlowBlur();
+      let glowOpacityExpression: unknown[];
+      if (Array.isArray(glowOpacity)) {
+        glowOpacityExpression = glowOpacity;
+      } else {
+        const numOpacity = typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
+        const hoverOpacity = typeof glowHoverOpacity === 'number' ? glowHoverOpacity : 1;
+        const selectedOpacity = Math.min(hoverOpacity * 1.3, 1);
+        glowOpacityExpression = [
+          'case',
+          ['boolean', ['feature-state', 'selected'], false],
+          selectedOpacity,
+          ['boolean', ['feature-state', 'hover'], false],
+          hoverOpacity,
+          numOpacity,
+        ];
+      }
+      const glowPaint: Record<string, unknown> = {
+        'circle-radius': glowRadiusVal,
+        'circle-color': glowColorVal,
+        'circle-opacity': glowOpacityExpression,
+        'circle-blur': glowBlurVal,
+      };
+      const glowLayerSpec: Record<string, unknown> = {
+        id: glowLayerId,
+        type: 'circle',
+        source: sourceId,
+        layout: { visibility: 'visible' },
+        paint: omitNil(glowPaint),
+      };
+      if (filter != null) glowLayerSpec.filter = filter;
+      try {
+        map.addLayer(glowLayerSpec as any, pointLayerId);
+        debug.log('[layer-styles] glow layer ADD done (below MapTiler point)', { glowLayerId });
+      } catch (err) {
+        console.error(`[geokit] Failed to add glow layer ${glowLayerId}:`, err);
+      }
+    }
+    // Selection ring: zoom-based radius just outside point so ring is visible and doesn't cover the point
+    const ringLayerId = `${pointLayerId}-selection-ring`;
+    if (!map.getLayer?.(ringLayerId)) {
+      try {
+        map.addLayer({
+          id: ringLayerId,
+          type: 'circle',
+          source: sourceId,
+          filter: ['==', ['get', '__selected'], true],
+          paint: {
+            'circle-radius': getSelectionRingRadiusInterpolation(),
+            'circle-color': 'rgba(0,0,0,0)',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff',
+          },
+        } as any);
+      } catch (err) {
+        console.error(`[geokit] Failed to add selection ring ${ringLayerId}:`, err);
+      }
+    }
+    return;
+  }
 
   // Create glow layer (bottom) - serves as hit area and visual glow
   // Root cause: SDK coalesceChanges iterates over layout/paint; never pass null/undefined.
@@ -770,20 +957,16 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     }
   }
 
-  // Create point layer (top) - the actual visible point (defaults so SDK never sees null/undefined)
+  // Point layer (top): zoom-based radius so points get larger as you zoom in; data-driven circle-color.
+  // Dot stays original (venue) color. White ring is selection-ring layer (filter __selected).
   if (!map.getLayer?.(pointLayerId)) {
-    const pointRadiusVal = pointRadius ?? getPointRadiusInterpolation();
     const circleColorVal = circleColor ?? resolveDefaultLayerColor();
-    const circleOpacityVal = circleOpacity ?? 1;
-    const circleStrokeColorVal = circleStrokeColor ?? resolveDefaultStrokeColor();
-    const circleStrokeWidthVal = circleStrokeWidth ?? 0;
-
+    const radiusVal = pointRadius ?? getPointRadiusInterpolation();
     const pointPaint: Record<string, unknown> = {
-      'circle-radius': pointRadiusVal,
+      'circle-radius': radiusVal,
       'circle-color': circleColorVal,
-      'circle-opacity': circleOpacityVal,
-      'circle-stroke-color': circleStrokeColorVal,
-      'circle-stroke-width': circleStrokeWidthVal,
+      'circle-opacity': 1,
+      'circle-blur': 0,
     };
     const pointLayerSpec: Record<string, unknown> = {
       id: pointLayerId,
@@ -792,19 +975,52 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       layout: { visibility: 'visible' },
       paint: omitNil(pointPaint),
     };
-
-    if (filter != null) {
-      pointLayerSpec.filter = filter;
-    }
+    if (filter != null) pointLayerSpec.filter = filter;
 
     try {
-      if (beforeLayerId != null) {
-        map.addLayer(pointLayerSpec as any, beforeLayerId);
-      } else {
-        map.addLayer(pointLayerSpec as any);
-      }
+      map.addLayer(pointLayerSpec as any);
     } catch (error) {
-      console.error(`[geokit] Failed to add point layer ${pointLayerId}:`, error);
+      console.error(`[geokit] Failed to add point layer ${pointLayerId}:`, error, { sourceId });
+      // Fallback: static white dots so points remain visible (data-driven color may have failed)
+      try {
+        const fallbackSpec = {
+          id: pointLayerId,
+          type: 'circle',
+          source: sourceId,
+          layout: { visibility: 'visible' as const },
+          paint: {
+            'circle-radius': 3,
+            'circle-color': '#ffffff',
+            'circle-opacity': 1,
+            'circle-blur': 0,
+          },
+        } as Record<string, unknown>;
+        if (filter != null) fallbackSpec.filter = filter;
+        map.addLayer(fallbackSpec as any);
+      } catch (fallbackError) {
+        console.error(`[geokit] Fallback point layer also failed ${pointLayerId}:`, fallbackError);
+      }
+    }
+
+    // Selection ring: zoom-based radius just outside point so ring is visible and doesn't cover the point
+    const ringLayerId = `${pointLayerId}-selection-ring`;
+    if (!map.getLayer?.(ringLayerId)) {
+      try {
+        map.addLayer({
+          id: ringLayerId,
+          type: 'circle',
+          source: sourceId,
+          filter: ['==', ['get', '__selected'], true],
+          paint: {
+            'circle-radius': getSelectionRingRadiusInterpolation(),
+            'circle-color': 'rgba(0,0,0,0)',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff',
+          },
+        } as any);
+      } catch (err) {
+        console.error(`[geokit] Failed to add selection ring ${ringLayerId}:`, err);
+      }
     }
   }
 }
