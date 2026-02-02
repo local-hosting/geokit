@@ -75,8 +75,10 @@ export class MapElement extends BaseElement {
   }
 
   async connectedCallback(): Promise<void> {
-    // Show placeholder if map is not initialized
-    this.showPlaceholderIfNeeded();
+    // Only show placeholder here when not pool-managed; pool-managed maps are managed by gk-map-collection (avoids "Loading map..." flash when entering Browse)
+    if (!this.hasAttribute('data-pool-managed')) {
+      this.showPlaceholderIfNeeded();
+    }
 
     // Initialize child element tracking
     this._initializeChildTracking();
@@ -257,21 +259,6 @@ export class MapElement extends BaseElement {
       };
 
       this.map = await provider.createMap(container, options);
-
-      // Wrap queryRenderedFeatures so MapLibre/MapTiler "unknown feature value" never throws
-      if (this.map?.queryRenderedFeatures) {
-        const original = this.map.queryRenderedFeatures.bind(this.map);
-        this.map.queryRenderedFeatures = (
-          point: { x: number; y: number },
-          options?: { layers?: string[] }
-        ) => {
-          try {
-            return original(point, options);
-          } catch {
-            return [];
-          }
-        };
-      }
 
       // Store reference to canvas for freeze/unfreeze
       if (this.map) {
@@ -469,9 +456,11 @@ export class MapElement extends BaseElement {
   }
 
   /**
-   * Show placeholder (public method for map collection)
+   * Show placeholder (public method for map collection).
+   * Uses attribute `placeholder-message` when no message is passed (e.g. "Initializing..." when data was prefetched).
    */
-  public showPlaceholder(message: string = 'Loading map...'): void {
+  public showPlaceholder(message?: string): void {
+    const text = message ?? this.getAttribute('placeholder-message') ?? 'Loading map...';
     // Check if placeholder already exists
     const existingPlaceholder = this.querySelector(
       '.map-placeholder, [data-map-placeholder="true"]'
@@ -479,8 +468,8 @@ export class MapElement extends BaseElement {
 
     if (existingPlaceholder) {
       // Update message if different
-      if (existingPlaceholder.textContent !== message) {
-        existingPlaceholder.textContent = message;
+      if (existingPlaceholder.textContent !== text) {
+        existingPlaceholder.textContent = text;
       }
       return;
     }
@@ -491,7 +480,7 @@ export class MapElement extends BaseElement {
     placeholder.setAttribute('data-map-placeholder', 'true');
     placeholder.style.cssText =
       'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--gk-placeholder-color, #141414); display: flex; align-items: center; justify-content: center; color: #8b949e; font-size: 0.9rem; z-index: 1;';
-    placeholder.textContent = message;
+    placeholder.textContent = text;
     this.appendChild(placeholder);
   }
 
@@ -1437,16 +1426,28 @@ export class MapElement extends BaseElement {
 
     this._isUnfreezing = true;
 
-    // Show placeholder while loading
-    this.showPlaceholder('Loading map...');
-
     // Set pool state
     this.setPoolState(true, poolIndex);
 
     try {
+      // If map already exists and is initialized, no need to show placeholder (avoids flash when tabbing back to grid view)
+      if (this.map && this.isInitialized) {
+        this.hidePlaceholder();
+        this.resizeAndRepaintMap();
+        this.dispatchEvent(
+          new CustomEvent('gk-map-unfreeze', {
+            detail: { map: this.map, element: this },
+            bubbles: true,
+          })
+        );
+        return true;
+      }
+
+      // Show placeholder while loading (frozen restore or first init)
+      this.showPlaceholder(this._isFrozen ? 'Restoring map...' : undefined);
+
       // If map is frozen, unfreeze it (reinitialize since we destroyed it)
       if (this._isFrozen) {
-        this.showPlaceholder('Restoring map...');
         await this._unfreeze();
         // Don't wait for 'idle' - it can delay by hundreds of ms; style load is enough for layers
         if (this.isInitialized) {
@@ -1466,23 +1467,7 @@ export class MapElement extends BaseElement {
         return true;
       }
 
-      // If map already exists and is initialized, dispatch unfreeze event
-      // This allows components to react to maps becoming active even if already initialized
-      if (this.map && this.isInitialized) {
-        this.hidePlaceholder();
-        // Resize/repaint so map displays correctly when scrolled back into view
-        this.resizeAndRepaintMap();
-        // Dispatch unfreeze event so components can react (e.g., reload DMA polygons)
-        this.dispatchEvent(
-          new CustomEvent('gk-map-unfreeze', {
-            detail: { map: this.map, element: this },
-            bubbles: true,
-          })
-        );
-        return true;
-      }
-
-      // Initialize the map
+      // Initialize the map (first time or after frozen)
       await this.initializeMap();
 
       // Don't wait for 'idle' (tiles, etc.) - style load is enough for adding layers; speeds first load
