@@ -51,9 +51,6 @@ export class IsochroneElement extends MapChildElement {
   private currentCacheKey: string | null = null;
   private intersectionObserver: IntersectionObserver | null = null;
   private isElementVisible: boolean | null = true; // Default to true for immediate rendering
-  private layerOrderCheckInterval: number | null = null;
-  private layerOrderCheckAttempts: number = 0;
-  private readonly MAX_LAYER_ORDER_CHECKS = 10; // Stop checking after 10 attempts (~1 second, reduced for faster rendering)
   private hasUpgradedResolution: boolean = false; // Track if resolution has been upgraded
   private mapInteractionListeners: Array<() => void> = []; // Store cleanup functions for map event listeners
   private upgradeDebounceTimer: number | null = null; // Debounce timer for resolution upgrades
@@ -301,19 +298,21 @@ export class IsochroneElement extends MapChildElement {
 
     if (this.isInitialized) return;
 
-    // Generate unique IDs
-    this.sourceId = `isochrone-${crypto.randomUUID()}`;
-    this.lineLayerId = `isochrone-line-${crypto.randomUUID()}`;
-    this.fillLayerId = `isochrone-fill-${crypto.randomUUID()}`;
+    // Generate unique IDs using polygon naming convention for automatic z-ordering
+    // Polygon layers are rendered below points, which is the correct order for isochrones
+    const uuid = crypto.randomUUID();
+    this.sourceId = `isochrone-${uuid}`;
+    this.fillLayerId = `polygon-fill-isochrone-${uuid}`;
+    this.lineLayerId = `polygon-stroke-isochrone-${uuid}`;
 
     this.isInitialized = true;
   }
 
   /**
-   * Find the first layer to insert isochrone layers before it
-   * This ensures isochrones render: polygons (bottom) → isochrones (middle) → points (top)
+   * Find the first circle layer to insert isochrone layers before
+   * This ensures isochrone fill layers render below point (circle) layers
    */
-  private findFirstInsertionLayer(): string | undefined {
+  private findFirstCircleLayer(): string | undefined {
     if (!this.map) return undefined;
 
     try {
@@ -325,67 +324,13 @@ export class IsochroneElement extends MapChildElement {
       const style = getStyle();
       if (!style || !style.layers) return undefined;
 
-      // Strategy: Insert after the last polygon layer (DMA fill + stroke), before points
-      // This ensures: DMA fill → DMA stroke → isochrones (above DMA) → points (top)
-      let lastPolygonLayer: string | undefined;
-      let firstPointLayer: string | undefined;
-
+      // Find first circle layer
       for (const layer of style.layers) {
-        // Find the last polygon layer (DMA regions) - include both fill and stroke
-        // so isochrone renders above the DMA stroke layer
-        const isPolygonFill =
-          layer.type === 'fill' &&
-          (layer.id?.startsWith('polygon-fill-') || layer.id?.includes('-polygon-fill'));
-        const isPolygonStroke =
-          layer.type === 'line' &&
-          (layer.id?.startsWith('polygon-stroke-') || layer.id?.includes('-polygon-stroke'));
-        if (isPolygonFill || isPolygonStroke) {
-          lastPolygonLayer = layer.id; // Keep updating to get the last one (including stroke)
-        }
-
-        // Also track first point layer as target
-        // Support both 'point-*' and '*-points' patterns
-        if (
-          !firstPointLayer &&
-          layer.type === 'circle' &&
-          (layer.id?.startsWith('point-') ||
-            layer.id?.includes('-points') ||
-            layer.id?.includes('-glow'))
-        ) {
-          firstPointLayer = layer.id;
+        if (layer.type === 'circle') {
+          return layer.id;
         }
       }
 
-      // If we have polygons, find the layer after the last polygon to insert before
-      if (lastPolygonLayer) {
-        // Find the next layer after the last polygon
-        const layers = style.layers;
-        let foundLastPolygon = false;
-        for (const layer of layers) {
-          if (foundLastPolygon) {
-            // This is the first layer after the last polygon
-            // Insert before this layer (which will be after polygons)
-            return layer.id;
-          }
-          if (layer.id === lastPolygonLayer) {
-            foundLastPolygon = true;
-          }
-        }
-        // If last polygon is the last layer, insert before points (or at end)
-        if (firstPointLayer) {
-          return firstPointLayer;
-        }
-        // No layer after polygon, add at end (will be above polygons)
-        return undefined;
-      }
-
-      // If no polygons but we have points, insert before the first point
-      // This ensures isochrones are below points
-      if (firstPointLayer) {
-        return firstPointLayer;
-      }
-
-      // No polygon or point layers found, add at end
       return undefined;
     } catch {
       // Silently fail - layers will be added at top
@@ -394,172 +339,16 @@ export class IsochroneElement extends MapChildElement {
     return undefined;
   }
 
-  /**
-   * Ensure isochrone layers are in the correct order
-   * Order: polygons (bottom) → isochrones (middle) → points (top)
-   * Called after rendering to handle late-loading layers
-   * @returns true if ordering was successful, false if target layers not found yet
-   */
-  private ensureLayerOrder(): boolean {
-    if (!this.map) return false;
-
-    // Cast map to access provider-specific methods
-    const map = this.map as {
-      getStyle?: () => { layers?: Array<{ type: string; id?: string }> };
-      moveLayer?: (layerId: string, beforeId: string) => void;
-      getLayer?: (id: string) => unknown;
-    };
-
-    try {
-      const insertionLayer = this.findFirstInsertionLayer();
-      if (!insertionLayer) {
-        // No target layer found - check if polygons were added after isochrones
-        const style = map.getStyle?.();
-        if (style?.layers) {
-          // Find last polygon layer (fill or stroke so isochrone is above DMA stroke)
-          let lastPolygonLayer: string | undefined;
-          for (const layer of style.layers) {
-            const isPolygonFill =
-              layer.type === 'fill' &&
-              (layer.id?.startsWith('polygon-fill-') || layer.id?.includes('-polygon-fill'));
-            const isPolygonStroke =
-              layer.type === 'line' &&
-              (layer.id?.startsWith('polygon-stroke-') || layer.id?.includes('-polygon-stroke'));
-            if (isPolygonFill || isPolygonStroke) {
-              lastPolygonLayer = layer.id;
-            }
-          }
-
-          // If we found a polygon layer, find the layer after it to insert before
-          if (lastPolygonLayer && this.fillLayerId && map.getLayer?.(this.fillLayerId)) {
-            try {
-              // Find the next layer after the last polygon
-              const layers = style.layers;
-              let foundLastPolygon = false;
-              let nextLayerId: string | undefined;
-              for (const layer of layers) {
-                if (foundLastPolygon) {
-                  nextLayerId = layer.id;
-                  break;
-                }
-                if (layer.id === lastPolygonLayer) {
-                  foundLastPolygon = true;
-                }
-              }
-
-              // Move isochrone after the last polygon (before the next layer, or at end)
-              if (nextLayerId) {
-                map.moveLayer?.(this.fillLayerId, nextLayerId);
-                if (this.lineLayerId && map.getLayer?.(this.lineLayerId)) {
-                  map.moveLayer?.(this.lineLayerId, nextLayerId);
-                }
-              } else {
-                // No layer after polygon, isochrone is already in correct position (above polygons)
-                // Just ensure line layer is with fill layer
-                if (this.lineLayerId && map.getLayer?.(this.lineLayerId) && this.fillLayerId) {
-                  // Move line layer right after fill layer
-                  const layers = style.layers;
-                  let fillLayerIndex = -1;
-                  for (let i = 0; i < layers.length; i++) {
-                    if (layers[i].id === this.fillLayerId) {
-                      fillLayerIndex = i;
-                      break;
-                    }
-                  }
-                  if (fillLayerIndex >= 0 && fillLayerIndex < layers.length - 1) {
-                    map.moveLayer?.(this.lineLayerId, layers[fillLayerIndex + 1].id || '');
-                  }
-                }
-              }
-              return true;
-            } catch {
-              // Continue
-            }
-          }
-        }
-        return false; // No target layer found yet
-      }
-
-      let moved = false;
-
-      // Move fill layer to correct position (above polygons, below points)
-      if (this.fillLayerId && map.getLayer?.(this.fillLayerId)) {
-        try {
-          map.moveLayer?.(this.fillLayerId, insertionLayer);
-          moved = true;
-        } catch {
-          // Layer might not exist yet
-        }
-      }
-
-      // Move line layer to correct position (above polygons, below points)
-      if (this.lineLayerId && map.getLayer?.(this.lineLayerId)) {
-        try {
-          map.moveLayer?.(this.lineLayerId, insertionLayer);
-          moved = true;
-        } catch {
-          // Layer might not exist yet
-        }
-      }
-
-      return moved;
-    } catch {
-      // Silently fail - layer ordering is best effort
-      return false;
-    }
-  }
-
-  /**
-   * Start monitoring for target layers (polygons/points) and reorder when they appear
-   * Uses polling with a maximum number of attempts to avoid infinite loops
-   */
-  private startLayerOrderMonitoring(): void {
-    if (!this.map) return;
-
-    // Clear any existing interval
-    this.stopLayerOrderMonitoring();
-
-    // Try immediately first
-    if (this.ensureLayerOrder()) {
-      // Success - target layers already exist, no need to monitor
-      return;
-    }
-
-    // Target layers don't exist yet - start polling
-    this.layerOrderCheckAttempts = 0;
-    this.layerOrderCheckInterval = window.setInterval(() => {
-      this.layerOrderCheckAttempts++;
-
-      if (this.ensureLayerOrder()) {
-        // Success - stop monitoring
-        this.stopLayerOrderMonitoring();
-      } else if (this.layerOrderCheckAttempts >= this.MAX_LAYER_ORDER_CHECKS) {
-        // Max attempts reached - stop monitoring
-        this.stopLayerOrderMonitoring();
-      }
-    }, 100); // Check every 100ms (keep same interval but fewer attempts)
-  }
-
-  /**
-   * Stop monitoring for point layers
-   */
-  private stopLayerOrderMonitoring(): void {
-    if (this.layerOrderCheckInterval !== null) {
-      clearInterval(this.layerOrderCheckInterval);
-      this.layerOrderCheckInterval = null;
-    }
-    this.layerOrderCheckAttempts = 0;
-  }
-
   private async fetchAndRenderIsochrone(): Promise<void> {
     if (!this.map) return;
     if (!this.visible) return;
 
     // Ensure IDs are initialized (in case connectedCallback hasn't completed)
     if (!this.sourceId) {
-      this.sourceId = `isochrone-${crypto.randomUUID()}`;
-      this.lineLayerId = `isochrone-line-${crypto.randomUUID()}`;
-      this.fillLayerId = `isochrone-fill-${crypto.randomUUID()}`;
+      const uuid = crypto.randomUUID();
+      this.sourceId = `isochrone-${uuid}`;
+      this.fillLayerId = `polygon-fill-isochrone-${uuid}`;
+      this.lineLayerId = `polygon-stroke-isochrone-${uuid}`;
     }
 
     const lat = parseFloat(this.getAttribute('lat') || '');
@@ -681,14 +470,15 @@ export class IsochroneElement extends MapChildElement {
       // Remove existing layers (but preserve IDs for reuse)
       this.cleanupExistingLayers();
 
-      // Find where to insert layers (above polygons, below points)
-      const beforeLayerId = this.findFirstInsertionLayer();
+      // Find first circle layer to insert before (isochrones should be below points)
+      const beforeLayerId = this.findFirstCircleLayer();
 
       // Ensure IDs exist (regenerate if needed)
       if (!this.sourceId) {
-        this.sourceId = `isochrone-${crypto.randomUUID()}`;
-        this.lineLayerId = `isochrone-line-${crypto.randomUUID()}`;
-        this.fillLayerId = `isochrone-fill-${crypto.randomUUID()}`;
+        const uuid = crypto.randomUUID();
+        this.sourceId = `isochrone-${uuid}`;
+        this.fillLayerId = `polygon-fill-isochrone-${uuid}`;
+        this.lineLayerId = `polygon-stroke-isochrone-${uuid}`;
       }
 
       // Add source
@@ -748,10 +538,6 @@ export class IsochroneElement extends MapChildElement {
           beforeLayerId
         );
       }
-
-      // Ensure isochrones are above polygons and below points
-      // Use a polling approach with a maximum number of attempts
-      this.startLayerOrderMonitoring();
 
       // Dispatch event immediately after we have the data
       // This allows demographics to start calculating concurrently with map rendering
@@ -956,9 +742,6 @@ export class IsochroneElement extends MapChildElement {
       this.intersectionObserver.disconnect();
       this.intersectionObserver = null;
     }
-
-    // Clean up layer order monitoring
-    this.stopLayerOrderMonitoring();
 
     this.removeIsochrone();
     super.disconnectedCallback();

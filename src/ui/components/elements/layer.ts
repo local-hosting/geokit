@@ -7,17 +7,30 @@
  *
  * Multiple gk-layer elements can share the same source-id for efficiency.
  *
+ * Interactive features:
+ * - Set `interactive` to enable click/hover events
+ * - Set `hover-state` to auto-manage feature-state for hover effects
+ * - Set `cursor` to change cursor on hover (default: 'pointer' when interactive)
+ *
+ * Events emitted when interactive:
+ * - `gk-layer-click`: { feature, lngLat, layerId, sourceId, originalEvent }
+ * - `gk-layer-mouseenter`: { feature, lngLat, layerId, sourceId }
+ * - `gk-layer-mouseleave`: { layerId, sourceId }
+ *
  * Usage:
  * <gk-layer
  *   source-id="venues"
  *   layer-id="venue-points"
  *   type="circle"
+ *   interactive
+ *   hover-state
  *   :data="geojson"
  *   :paint="{ 'circle-color': ['get', 'color'], 'circle-radius': 6 }"
  * />
  */
 
 import { MapChildElement } from '../map-child-element';
+import type { MapEvent } from '../../providers/types';
 
 export type LayerType =
   | 'circle'
@@ -52,6 +65,37 @@ export interface LayerOptions {
   minzoom?: number;
   /** Maximum zoom level */
   maxzoom?: number;
+  /** Enable click/hover events (emits gk-layer-click, gk-layer-mouseenter, gk-layer-mouseleave) */
+  interactive?: boolean;
+  /** Auto-manage feature-state for hover effects (requires promoteId to work) */
+  hoverState?: boolean;
+  /** Cursor to show on hover when interactive (default: 'pointer') */
+  cursor?: string;
+  /** Additional layers to include when querying features on click (for hit areas) */
+  hitLayers?: string[];
+}
+
+/** Event detail for gk-layer-click */
+export interface LayerClickEventDetail {
+  feature: GeoJSON.Feature;
+  lngLat: { lng: number; lat: number };
+  layerId: string;
+  sourceId: string;
+  originalEvent: MouseEvent | TouchEvent;
+}
+
+/** Event detail for gk-layer-mouseenter */
+export interface LayerMouseEnterEventDetail {
+  feature: GeoJSON.Feature;
+  lngLat: { lng: number; lat: number };
+  layerId: string;
+  sourceId: string;
+}
+
+/** Event detail for gk-layer-mouseleave */
+export interface LayerMouseLeaveEventDetail {
+  layerId: string;
+  sourceId: string;
 }
 
 export class LayerElement extends MapChildElement {
@@ -63,6 +107,9 @@ export class LayerElement extends MapChildElement {
     'promote-id',
     'minzoom',
     'maxzoom',
+    'interactive',
+    'hover-state',
+    'cursor',
   ];
 
   // Properties set via create() or attributes
@@ -77,9 +124,19 @@ export class LayerElement extends MapChildElement {
   private _promoteId?: string;
   private _minzoom?: number;
   private _maxzoom?: number;
+  private _interactive?: boolean;
+  private _hoverState?: boolean;
+  private _cursor?: string;
+  private _hitLayers?: string[];
 
   // Track if we created the source (vs reusing existing)
   private _ownSource = false;
+
+  // Interaction state
+  private _clickHandler: ((e: MapEvent) => void) | null = null;
+  private _mouseEnterHandler: ((e: MapEvent) => void) | null = null;
+  private _mouseLeaveHandler: (() => void) | null = null;
+  private _hoveredFeatureId: string | number | null = null;
 
   constructor() {
     super();
@@ -98,6 +155,10 @@ export class LayerElement extends MapChildElement {
     if (options.promoteId) this._promoteId = options.promoteId;
     if (options.minzoom !== undefined) this._minzoom = options.minzoom;
     if (options.maxzoom !== undefined) this._maxzoom = options.maxzoom;
+    if (options.interactive !== undefined) this._interactive = options.interactive;
+    if (options.hoverState !== undefined) this._hoverState = options.hoverState;
+    if (options.cursor) this._cursor = options.cursor;
+    if (options.hitLayers) this._hitLayers = options.hitLayers;
   }
 
   override async connectedCallback() {
@@ -161,6 +222,31 @@ export class LayerElement extends MapChildElement {
     return attr ? parseFloat(attr) : undefined;
   }
 
+  get interactive(): boolean {
+    if (this._interactive !== undefined) return this._interactive;
+    const attr = this.safeGetAttribute('interactive');
+    return attr !== null && attr !== 'false';
+  }
+
+  get hoverState(): boolean {
+    if (this._hoverState !== undefined) return this._hoverState;
+    const attr = this.safeGetAttribute('hover-state');
+    return attr !== null && attr !== 'false';
+  }
+
+  get cursor(): string {
+    return this._cursor ?? this.safeGetAttribute('cursor') ?? 'pointer';
+  }
+
+  /** Get layers to query for features (includes hit layers if specified) */
+  private get queryLayers(): string[] {
+    const layers = [this.layerId];
+    if (this._hitLayers) {
+      layers.push(...this._hitLayers);
+    }
+    return layers.filter(Boolean);
+  }
+
   // ==========================================================================
   // Layer Management
   // ==========================================================================
@@ -222,6 +308,11 @@ export class LayerElement extends MapChildElement {
       } else {
         map.addLayer(layerConfig);
       }
+
+      // Setup interactions if enabled
+      if (this.interactive) {
+        this.setupInteractions();
+      }
     } catch (error) {
       console.error(`[gk-layer] Failed to add layer ${layerId}:`, error);
     }
@@ -229,11 +320,43 @@ export class LayerElement extends MapChildElement {
 
   private findBeforeLayerId(): string | undefined {
     const map = this.map as any;
-    if (!map || !this._beforeLayerId) return undefined;
+    if (!map) return undefined;
 
-    // Check if specified beforeLayerId exists
-    if (map.getLayer?.(this._beforeLayerId)) {
+    // If explicit beforeLayerId is specified and exists, use it
+    if (this._beforeLayerId && map.getLayer?.(this._beforeLayerId)) {
       return this._beforeLayerId;
+    }
+
+    // Auto z-ordering: fill/line layers should be below circle layers
+    // This ensures polygons (including isochrones) render under points
+    const type = this.layerType;
+    if (type === 'fill' || type === 'line') {
+      return this.findFirstCircleLayer();
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Find the first circle layer to insert fill/line layers before
+   * This ensures polygon layers render below point layers
+   */
+  private findFirstCircleLayer(): string | undefined {
+    const map = this.map as any;
+    if (!map) return undefined;
+
+    try {
+      const style = map.getStyle?.();
+      if (!style?.layers) return undefined;
+
+      // Find first circle layer (point layer)
+      for (const layer of style.layers as Array<{ id?: string; type?: string }>) {
+        if (layer.type === 'circle') {
+          return layer.id;
+        }
+      }
+    } catch {
+      // Silently fail
     }
 
     return undefined;
@@ -242,6 +365,9 @@ export class LayerElement extends MapChildElement {
   private removeLayer(): void {
     const map = this.map as any;
     if (!map) return;
+
+    // Remove interactions first
+    this.removeInteractions();
 
     const layerId = this.layerId;
     const sourceId = this.sourceId;
@@ -270,6 +396,196 @@ export class LayerElement extends MapChildElement {
         }
         this._ownSource = false;
       }
+    }
+  }
+
+  // ==========================================================================
+  // Interactions
+  // ==========================================================================
+
+  private setupInteractions(): void {
+    const map = this.map as any;
+    if (!map) return;
+
+    const layerId = this.layerId;
+    const sourceId = this.sourceId;
+    const queryLayers = this.queryLayers;
+
+    // Click handler - uses queryRenderedFeatures for reliability on pooled maps
+    this._clickHandler = (e: MapEvent) => {
+      if (!e.point) return;
+
+      let features: any[] = [];
+      try {
+        features = map.queryRenderedFeatures(e.point, { layers: queryLayers });
+      } catch {
+        // queryRenderedFeatures can fail on some base map tiles
+        return;
+      }
+
+      if (!features || features.length === 0) return;
+
+      const feature = features[0];
+      const lngLat = e.lngLat ?? { lng: 0, lat: 0 };
+      const featureId = feature.id as string | number | undefined;
+
+      // Convert to standard GeoJSON Feature
+      const geoJsonFeature: GeoJSON.Feature = {
+        type: 'Feature',
+        geometry: feature.geometry as GeoJSON.Geometry,
+        properties: (feature.properties as Record<string, unknown>) || {},
+        ...(featureId !== undefined && { id: featureId }),
+      };
+
+      const detail: LayerClickEventDetail = {
+        feature: geoJsonFeature,
+        lngLat: { lng: lngLat.lng, lat: lngLat.lat },
+        layerId,
+        sourceId,
+        originalEvent: e.originalEvent as MouseEvent | TouchEvent,
+      };
+
+      this.dispatchEvent(
+        new CustomEvent('gk-layer-click', {
+          detail,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    };
+
+    // Mouse enter handler - for hover state and cursor
+    this._mouseEnterHandler = (e: MapEvent) => {
+      const features = e.features;
+      if (!features || features.length === 0) return;
+
+      const feature = features[0];
+      const lngLat = e.lngLat ?? { lng: 0, lat: 0 };
+
+      // Set pointer cursor
+      const container = map.getCanvas?.();
+      if (container) {
+        container.style.cursor = this.cursor;
+      }
+
+      // Get feature ID (may be from promoteId or native id)
+      const featureId = (feature as Record<string, unknown>).id as string | number | undefined;
+
+      // Set hover state if enabled
+      if (this.hoverState && featureId !== undefined) {
+        // Clear previous hover state
+        if (this._hoveredFeatureId !== null) {
+          try {
+            map.setFeatureState({ source: sourceId, id: this._hoveredFeatureId }, { hover: false });
+          } catch {
+            // Ignore
+          }
+        }
+
+        // Set new hover state
+        this._hoveredFeatureId = featureId;
+        try {
+          map.setFeatureState({ source: sourceId, id: this._hoveredFeatureId }, { hover: true });
+        } catch {
+          // Ignore
+        }
+      }
+
+      // Convert to standard GeoJSON Feature
+      const geoJsonFeature: GeoJSON.Feature = {
+        type: 'Feature',
+        geometry: feature.geometry as GeoJSON.Geometry,
+        properties: (feature.properties as Record<string, unknown>) || {},
+        ...(featureId !== undefined && { id: featureId }),
+      };
+
+      const detail: LayerMouseEnterEventDetail = {
+        feature: geoJsonFeature,
+        lngLat: { lng: lngLat.lng, lat: lngLat.lat },
+        layerId,
+        sourceId,
+      };
+
+      this.dispatchEvent(
+        new CustomEvent('gk-layer-mouseenter', {
+          detail,
+          bubbles: true,
+        })
+      );
+    };
+
+    // Mouse leave handler
+    this._mouseLeaveHandler = () => {
+      // Reset cursor
+      const container = map.getCanvas?.();
+      if (container) {
+        container.style.cursor = '';
+      }
+
+      // Clear hover state
+      if (this.hoverState && this._hoveredFeatureId !== null) {
+        try {
+          map.setFeatureState({ source: sourceId, id: this._hoveredFeatureId }, { hover: false });
+        } catch {
+          // Ignore
+        }
+        this._hoveredFeatureId = null;
+      }
+
+      const detail: LayerMouseLeaveEventDetail = {
+        layerId,
+        sourceId,
+      };
+
+      this.dispatchEvent(
+        new CustomEvent('gk-layer-mouseleave', {
+          detail,
+          bubbles: true,
+        })
+      );
+    };
+
+    // Register handlers
+    // Use global click handler for reliability (queryRenderedFeatures at click time)
+    map.on('click', this._clickHandler);
+
+    // Use layer-specific handlers for hover (these work fine for hover)
+    map.on('mouseenter', layerId, this._mouseEnterHandler);
+    map.on('mouseleave', layerId, this._mouseLeaveHandler);
+  }
+
+  private removeInteractions(): void {
+    const map = this.map as any;
+    if (!map) return;
+
+    const layerId = this.layerId;
+
+    if (this._clickHandler) {
+      map.off('click', this._clickHandler);
+      this._clickHandler = null;
+    }
+
+    if (this._mouseEnterHandler && layerId) {
+      map.off('mouseenter', layerId, this._mouseEnterHandler);
+      this._mouseEnterHandler = null;
+    }
+
+    if (this._mouseLeaveHandler && layerId) {
+      map.off('mouseleave', layerId, this._mouseLeaveHandler);
+      this._mouseLeaveHandler = null;
+    }
+
+    // Clear any remaining hover state
+    if (this._hoveredFeatureId !== null) {
+      try {
+        map.setFeatureState(
+          { source: this.sourceId, id: this._hoveredFeatureId },
+          { hover: false }
+        );
+      } catch {
+        // Ignore
+      }
+      this._hoveredFeatureId = null;
     }
   }
 
