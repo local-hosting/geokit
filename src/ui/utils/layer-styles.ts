@@ -45,6 +45,41 @@ export interface GlowPointLayerConfig {
   strokeWidth?: number;
 }
 
+export interface SharedPointLayersConfig {
+  /** Map instance */
+  map: MapInstance;
+  /** GeoJSON source ID */
+  sourceId: string;
+  /** Explicit glow layer ID */
+  glowLayerId: string;
+  /** Explicit point layer ID */
+  pointLayerId: string;
+  /** Circle fill color (string or data-driven expression) */
+  circleColor: string | unknown[];
+  /** Circle opacity (number or data-driven expression) */
+  circleOpacity: number | unknown[];
+  /** Circle stroke color (string or data-driven expression) */
+  circleStrokeColor: string | unknown[];
+  /** Circle stroke width (number or data-driven expression) */
+  circleStrokeWidth: number | unknown[];
+  /** Glow color (string or data-driven expression) */
+  glowColor: string | unknown[];
+  /** Glow opacity */
+  glowOpacity: number;
+  /** Glow opacity on hover */
+  glowHoverOpacity: number;
+  /** Glow blur */
+  glowBlur: number;
+  /** Point radius expression */
+  pointRadius: unknown[];
+  /** Glow radius expression */
+  glowRadius: unknown[];
+  /** Optional filter expression */
+  filter?: unknown[];
+  /** Layer to insert before (for z-ordering) */
+  beforeLayerId?: string;
+}
+
 export interface CircleLayerConfig {
   /** Layer ID */
   id: string;
@@ -363,6 +398,99 @@ export function createGlowPointLayers(config: GlowPointLayerConfig): {
   }
 
   return { glowLayerId, pointLayerId };
+}
+
+/**
+ * Create shared glow + point layers with explicit layer IDs and full paint control.
+ * More flexible than createGlowPointLayers - allows data-driven expressions for all properties.
+ *
+ * @param config - Layer configuration with explicit IDs and paint expressions
+ */
+export function createSharedPointLayers(config: SharedPointLayersConfig): void {
+  const {
+    map,
+    sourceId,
+    glowLayerId,
+    pointLayerId,
+    circleColor,
+    circleOpacity,
+    circleStrokeColor,
+    circleStrokeWidth,
+    glowColor,
+    glowOpacity,
+    glowHoverOpacity,
+    glowBlur,
+    pointRadius,
+    glowRadius,
+    filter,
+    beforeLayerId,
+  } = config;
+
+  // Create glow layer (bottom) - serves as hit area and visual glow
+  if (!map.getLayer?.(glowLayerId)) {
+    const glowLayerSpec: Record<string, unknown> = {
+      id: glowLayerId,
+      type: 'circle',
+      source: sourceId,
+      layout: { visibility: 'visible' },
+      paint: {
+        'circle-radius': glowRadius,
+        'circle-color': glowColor,
+        'circle-opacity': [
+          'case',
+          ['boolean', ['feature-state', 'hover'], false],
+          glowHoverOpacity,
+          glowOpacity,
+        ],
+        'circle-blur': glowBlur,
+      },
+    };
+
+    if (filter) {
+      glowLayerSpec.filter = filter;
+    }
+
+    try {
+      if (beforeLayerId) {
+        map.addLayer(glowLayerSpec as any, beforeLayerId);
+      } else {
+        map.addLayer(glowLayerSpec as any);
+      }
+    } catch (error) {
+      console.error(`[geokit] Failed to add glow layer ${glowLayerId}:`, error);
+    }
+  }
+
+  // Create point layer (top) - the actual visible point
+  if (!map.getLayer?.(pointLayerId)) {
+    const pointLayerSpec: Record<string, unknown> = {
+      id: pointLayerId,
+      type: 'circle',
+      source: sourceId,
+      layout: { visibility: 'visible' },
+      paint: {
+        'circle-radius': pointRadius,
+        'circle-color': circleColor,
+        'circle-opacity': circleOpacity,
+        'circle-stroke-color': circleStrokeColor,
+        'circle-stroke-width': circleStrokeWidth,
+      },
+    };
+
+    if (filter) {
+      pointLayerSpec.filter = filter;
+    }
+
+    try {
+      if (beforeLayerId) {
+        map.addLayer(pointLayerSpec as any, beforeLayerId);
+      } else {
+        map.addLayer(pointLayerSpec as any);
+      }
+    } catch (error) {
+      console.error(`[geokit] Failed to add point layer ${pointLayerId}:`, error);
+    }
+  }
 }
 
 /**
