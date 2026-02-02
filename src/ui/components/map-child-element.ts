@@ -80,6 +80,7 @@ export class MapChildElement extends BaseElement {
   // Event handler references for cleanup
   private _mapReadyHandler: (() => void | Promise<void>) | null = null;
   private _mapUnloadHandler: (() => void) | null = null;
+  private _styleLoadHandler: (() => void) | null = null;
   private _contextLostHandler: (() => void) | null = null;
   private _mapReadyParent: HTMLElement | null = null;
   private _processedMapInstances: WeakSet<MapInstance> = new WeakSet();
@@ -259,6 +260,20 @@ export class MapChildElement extends BaseElement {
         this._mapUnloadHandler = handleMapUnload;
         parent.addEventListener('gk-map-unload', handleMapUnload);
 
+        // Listen for style load (e.g. after theme toggle) so children re-add their layers.
+        // Defer by one frame so we don't add layers in the same frame as the event (avoids
+        // MapTiler coalesceChanges "Cannot convert undefined or null to object" during render).
+        const handleStyleLoad = () => {
+          debug.log('[MapChildElement] gk-map-style-load received', { tagName: this.tagName });
+          requestAnimationFrame(() => {
+            debug.log('[MapChildElement] onStyleLoad running', { tagName: this.tagName });
+            this.onStyleLoad();
+          });
+        };
+
+        this._styleLoadHandler = handleStyleLoad;
+        parent.addEventListener('gk-map-style-load', handleStyleLoad);
+
         // Listen for WebGL context loss
         const handleContextLost = () => {
           this.onContextLost();
@@ -290,6 +305,11 @@ export class MapChildElement extends BaseElement {
       this._mapUnloadHandler = null;
     }
 
+    if (this._styleLoadHandler && this._mapReadyParent) {
+      this._mapReadyParent.removeEventListener('gk-map-style-load', this._styleLoadHandler);
+      this._styleLoadHandler = null;
+    }
+
     if (this._contextLostHandler && this._mapReadyParent) {
       this._mapReadyParent.removeEventListener('gk-map-context-lost', this._contextLostHandler);
       this._contextLostHandler = null;
@@ -305,6 +325,14 @@ export class MapChildElement extends BaseElement {
     // Clean up stored event listeners to prevent memory leaks
     this._cleanupMapListeners();
     super.disconnectedCallback();
+  }
+
+  /**
+   * Called when map style is replaced (e.g. theme toggle).
+   * Override in subclasses to re-add sources and layers.
+   */
+  protected onStyleLoad(): void {
+    // Default: no-op; PointElement, IsochroneElement, PopupElement override to re-add layers
   }
 
   /**

@@ -10,6 +10,7 @@
 
 import { MapChildElement } from '../map-child-element';
 import { coordinatesToH3, h3ToBoundary } from '../../../utils/h3';
+import { getCSSVariable } from '../../utils/theme';
 
 export interface H3Options {
   lat?: number;
@@ -47,6 +48,12 @@ export class H3Element extends MapChildElement {
 
   protected override async onMapReady(): Promise<void> {
     await super.onMapReady();
+    this.waitForStyleLoaded(() => this.renderH3());
+  }
+
+  /** Re-add H3 layers after map style change (e.g. theme toggle). */
+  protected override onStyleLoad(): void {
+    if (!this.map) return;
     this.waitForStyleLoaded(() => this.renderH3());
   }
 
@@ -226,7 +233,7 @@ export class H3Element extends MapChildElement {
   }
 
   get color(): string {
-    return this.getAttribute('color') || '#3FB1CE';
+    return this.getAttribute('color') || getCSSVariable(this.mapElement, '--gk-h3-color', '');
   }
 
   get opacity(): number {
@@ -234,7 +241,10 @@ export class H3Element extends MapChildElement {
   }
 
   get strokeColor(): string {
-    return this.getAttribute('stroke-color') || '#1B8AA8';
+    return (
+      this.getAttribute('stroke-color') ||
+      getCSSVariable(this.mapElement, '--gk-h3-stroke-color', '')
+    );
   }
 
   get strokeWidth(): number {

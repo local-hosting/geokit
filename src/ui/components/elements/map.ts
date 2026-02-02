@@ -8,12 +8,25 @@
  */
 
 import { BaseElement } from '../base-element';
-import { registerUIProvider, getProviderByName } from '../../providers/registry';
+import {
+  registerUIProvider,
+  getProviderByName,
+  getUIProviderByName,
+} from '../../providers/registry';
 import { MapTilerUIProvider } from '../../providers/maptiler-provider';
 import { PointElement } from './point';
 import { PolygonElement } from './polygon';
 import { type IsochroneElement } from './isochrone';
 import type { MapInstance } from '../../providers/types';
+import {
+  type ThemeName,
+  type Theme,
+  getTheme,
+  isValidTheme,
+  injectThemeStyles,
+  darkTheme,
+} from '../../utils/theme';
+import { debug } from '../../utils/logger';
 
 export class MapElement extends BaseElement {
   static observedAttributes = [
@@ -32,6 +45,7 @@ export class MapElement extends BaseElement {
     'show-attribution',
     'provider',
     'sync-url',
+    'theme',
   ];
 
   private _controlsVisible: boolean = true;
@@ -42,6 +56,7 @@ export class MapElement extends BaseElement {
   private _isInitializing: boolean = false; // Prevent concurrent initialization
   private _frozenContainerStyle: { display?: string; visibility?: string } | null = null;
   private _mapCanvas: HTMLCanvasElement | null = null;
+  private _currentTheme: Theme = darkTheme;
 
   // URL sync state
   private _urlSyncEnabled: boolean = false;
@@ -53,6 +68,11 @@ export class MapElement extends BaseElement {
   // Child element tracking
   private _childObserver: MutationObserver | null = null;
   private _trackedChildren: Map<string, Set<HTMLElement>> = new Map();
+
+  /** Restore timeout and original console methods after style-load (MapTiler SDK message suppression). */
+  private _styleLoadConsoleRestoreTimeout: ReturnType<typeof setTimeout> | null = null;
+  private _styleLoadOriginalWarn: typeof console.warn | null = null;
+  private _styleLoadOriginalError: typeof console.error | null = null;
 
   constructor() {
     super();
@@ -235,10 +255,18 @@ export class MapElement extends BaseElement {
         throw new Error('Map container not found');
       }
 
-      // Get map style from 'map-style' attribute only
+      // Get map style: theme takes precedence, then map-style attribute, then default
       // DO NOT use 'style' attribute - that's for CSS, not map tiles!
-      // Default to streets to avoid deprecated styles and API key requirements
-      const styleAttr = this.getAttribute('map-style') || 'streets';
+      const themeAttr = this.getAttribute('theme');
+      let styleAttr: string;
+      if (themeAttr && isValidTheme(themeAttr)) {
+        // Use theme's map style
+        this._currentTheme = getTheme(themeAttr);
+        styleAttr = this._currentTheme.mapStyle;
+      } else {
+        // Fall back to map-style attribute or default
+        styleAttr = this.getAttribute('map-style') || 'streets';
+      }
 
       // Parse max-pitch attribute (default 60 prevents disorienting "upside down" tilting)
       const maxPitchAttr = this.getAttribute('max-pitch');
@@ -474,12 +502,12 @@ export class MapElement extends BaseElement {
       return;
     }
 
-    // Create placeholder
+    // Create placeholder - layout only; background/color come from theme CSS (--gk-placeholder-background, --gk-placeholder-text)
     const placeholder = document.createElement('div');
     placeholder.className = 'map-placeholder';
     placeholder.setAttribute('data-map-placeholder', 'true');
     placeholder.style.cssText =
-      'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--gk-placeholder-color, #141414); display: flex; align-items: center; justify-content: center; color: #8b949e; font-size: 0.9rem; z-index: 1;';
+      'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--gk-placeholder-background, #141414); color: var(--gk-placeholder-text, #8b949e); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; z-index: 1;';
     placeholder.textContent = text;
     this.appendChild(placeholder);
   }
@@ -512,70 +540,29 @@ export class MapElement extends BaseElement {
   }
 
   /**
-   * Inject CSS for dark theme + liquid glass on MapLibre controls (once per document)
+   * Sync theme class to element: gk-theme-light or gk-theme-dark when theme attr set;
+   * otherwise none (default comes from injected :root + @media (prefers-color-scheme: dark)).
+   */
+  private syncThemeClass(): void {
+    this.classList.remove('gk-theme-light', 'gk-theme-dark');
+    const themeAttr = this.getAttribute('theme');
+    if (themeAttr && isValidTheme(themeAttr)) {
+      this.classList.add('gk-theme-' + themeAttr);
+    }
+  }
+
+  /**
+   * Inject CSS for theme-aware controls (once per document).
+   * Injected stylesheet includes :root + @media (prefers-color-scheme: dark) and
+   * gk-map.gk-theme-light / gk-map.gk-theme-dark; theme class syncs to element when theme attr set.
    */
   private injectControlThemeStyles(): void {
-    const styleId = 'gk-control-theme-style';
-    if (document.getElementById(styleId)) return;
-
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = `
-      /* Dark liquid glass: control groups and containers */
-      gk-map .maplibregl-ctrl-group,
-      gk-map .mapboxgl-ctrl-group {
-        background: rgba(18, 18, 22, 0.52) !important;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 10px !important;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
-      }
-      /* Individual control buttons (zoom, compass, fullscreen) */
-      gk-map .maplibregl-ctrl,
-      gk-map .mapboxgl-ctrl {
-        background: transparent !important;
-        border: none !important;
-      }
-      gk-map .maplibregl-ctrl button,
-      gk-map .mapboxgl-ctrl button {
-        background: transparent !important;
-        border: none !important;
-        width: 29px !important;
-        height: 29px !important;
-      }
-      gk-map .maplibregl-ctrl button:hover,
-      gk-map .mapboxgl-ctrl button:hover {
-        background: rgba(255, 255, 255, 0.08) !important;
-      }
-      gk-map .maplibregl-ctrl button:active,
-      gk-map .mapboxgl-ctrl button:active {
-        background: rgba(255, 255, 255, 0.12) !important;
-      }
-      /* Dark theme: light icons (invert MapLibre default dark icons) */
-      gk-map .maplibregl-ctrl-icon,
-      gk-map .mapboxgl-ctrl-icon {
-        filter: invert(1) brightness(1.1) contrast(0.9) !important;
-        opacity: 0.92;
-      }
-      /* Scale bar: same glass treatment */
-      gk-map .maplibregl-ctrl-scale,
-      gk-map .mapboxgl-ctrl-scale {
-        background: rgba(18, 18, 22, 0.52) !important;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 6px !important;
-        padding: 4px 8px !important;
-      }
-      gk-map .maplibregl-ctrl-scale-inner,
-      gk-map .mapboxgl-ctrl-scale-inner {
-        border-color: rgba(255, 255, 255, 0.35) !important;
-        color: rgba(255, 255, 255, 0.9) !important;
-        font-size: 10px !important;
-      }
-    `;
-    document.head.appendChild(style);
+    injectThemeStyles();
+    const themeAttr = this.getAttribute('theme');
+    if (themeAttr && isValidTheme(themeAttr)) {
+      this._currentTheme = getTheme(themeAttr);
+      this.syncThemeClass();
+    }
   }
 
   /**
@@ -915,6 +902,26 @@ export class MapElement extends BaseElement {
       return;
     }
 
+    // Handle theme change (class-based; CSS from injected stylesheet)
+    if (name === 'theme') {
+      if (newValue && isValidTheme(newValue)) {
+        this._currentTheme = getTheme(newValue);
+        this.syncThemeClass();
+        if (this.map && this.isInitialized) {
+          this.updateMapStyle(this._currentTheme.mapStyle);
+        }
+        this.dispatchEvent(
+          new CustomEvent('gk-theme-change', {
+            detail: { theme: this._currentTheme, themeName: newValue },
+            bubbles: true,
+          })
+        );
+      } else {
+        this.syncThemeClass();
+      }
+      return;
+    }
+
     if (!this.map) return;
 
     switch (name) {
@@ -989,6 +996,375 @@ export class MapElement extends BaseElement {
         zoom: targetZoom,
       });
     }
+  }
+
+  // ============================================================================
+  // Theme Management
+  // ============================================================================
+
+  /**
+   * Get the current theme
+   */
+  public getTheme(): Theme {
+    return this._currentTheme;
+  }
+
+  /**
+   * Get the current theme name
+   */
+  public getThemeName(): ThemeName {
+    return this._currentTheme.name;
+  }
+
+  /**
+   * Set the theme by name
+   * Updates both the map style and control styling
+   */
+  public setTheme(themeName: ThemeName): void {
+    this.setAttribute('theme', themeName);
+  }
+
+  /**
+   * Toggle between light and dark themes
+   */
+  public toggleTheme(): ThemeName {
+    const newTheme = this._currentTheme.name === 'dark' ? 'light' : 'dark';
+    this.setTheme(newTheme);
+    return newTheme;
+  }
+
+  /**
+   * Apply a theme to the map (class-based; map style and event updated)
+   */
+  private applyTheme(themeName: ThemeName): void {
+    const theme = getTheme(themeName);
+    this._currentTheme = theme;
+    this.setAttribute('theme', themeName);
+    this.syncThemeClass();
+    debug.log('[gk-map] applyTheme', {
+      themeName,
+      mapStyle: theme.mapStyle,
+      hasMap: !!this.map,
+      isInitialized: this.isInitialized,
+    });
+
+    if (this.map && this.isInitialized) {
+      this.updateMapStyle(theme.mapStyle);
+    }
+
+    this.dispatchEvent(
+      new CustomEvent('gk-theme-change', {
+        detail: { theme, themeName },
+        bubbles: true,
+      })
+    );
+  }
+
+  /**
+   * Temporarily filter the MapTiler SDK "distant style could not be loaded" message from console.
+   * The SDK logs this in its own error handler when a style URL fails to load; we cannot prevent it.
+   * Restore is scheduled after 1s and also runs on teardown (_freeze).
+   */
+  private _installStyleLoadConsoleFilter(): void {
+    if (this._styleLoadConsoleRestoreTimeout) {
+      clearTimeout(this._styleLoadConsoleRestoreTimeout);
+      this._styleLoadConsoleRestoreTimeout = null;
+      if (this._styleLoadOriginalWarn) {
+        console.warn = this._styleLoadOriginalWarn;
+        this._styleLoadOriginalWarn = null;
+      }
+      if (this._styleLoadOriginalError) {
+        console.error = this._styleLoadOriginalError;
+        this._styleLoadOriginalError = null;
+      }
+    }
+    const originalWarn = console.warn;
+    const originalError = console.error;
+    this._styleLoadOriginalWarn = originalWarn;
+    this._styleLoadOriginalError = originalError;
+    const filter = (msg: string): boolean =>
+      /distant\s+style\s+could\s+not\s+be\s+loaded/i.test(msg);
+    console.warn = (...args: unknown[]) => {
+      const msg = args.map((a) => String(a)).join(' ');
+      if (filter(msg)) return;
+      originalWarn.apply(console, args);
+    };
+    console.error = (...args: unknown[]) => {
+      const msg = args.map((a) => String(a)).join(' ');
+      if (filter(msg)) return;
+      originalError.apply(console, args);
+    };
+    this._styleLoadConsoleRestoreTimeout = setTimeout(() => {
+      if (this._styleLoadOriginalWarn) {
+        console.warn = this._styleLoadOriginalWarn;
+        this._styleLoadOriginalWarn = null;
+      }
+      if (this._styleLoadOriginalError) {
+        console.error = this._styleLoadOriginalError;
+        this._styleLoadOriginalError = null;
+      }
+      this._styleLoadConsoleRestoreTimeout = null;
+    }, 1000);
+  }
+
+  private _restoreStyleLoadConsole(): void {
+    if (this._styleLoadConsoleRestoreTimeout) {
+      clearTimeout(this._styleLoadConsoleRestoreTimeout);
+      this._styleLoadConsoleRestoreTimeout = null;
+    }
+    if (this._styleLoadOriginalWarn) {
+      console.warn = this._styleLoadOriginalWarn;
+      this._styleLoadOriginalWarn = null;
+    }
+    if (this._styleLoadOriginalError) {
+      console.error = this._styleLoadOriginalError;
+      this._styleLoadOriginalError = null;
+    }
+  }
+
+  /**
+   * Update the map's base style for theme switching.
+   * Uses the current UI provider's getStyleForTheme so both MapTiler and Mapbox support light/dark.
+   *
+   * If the style URL fails to load (e.g. invalid/missing API key, network error), the SDK logs
+   * "The distant style could not be loaded. Leaving the style as is." and the map keeps the
+   * previous style. Ensure MapTiler API key is set (e.g. gk-map api-key or provider config).
+   */
+  private updateMapStyle(styleName: string): void {
+    if (!this.map) return;
+
+    const map = this.map as any;
+    if (typeof map.setStyle !== 'function') return;
+    debug.log('[gk-map] updateMapStyle', { styleName });
+
+    // MapTiler SDK logs "The distant style could not be loaded" in its own error handler; we cannot prevent it.
+    // Temporarily filter that single message so the console stays clean when theme/style load fails.
+    this._installStyleLoadConsoleFilter();
+
+    const providerName = this.getAttribute('provider') || 'maptiler';
+    const provider = getUIProviderByName(providerName);
+
+    // Resolve style URL first. For MapTiler, getStyleForTheme returns null when no API key is configured;
+    // calling setStyle without a valid key triggers "The distant style could not be loaded". Skip theme switch.
+    if (provider?.getStyleForTheme) {
+      const styleForTheme = provider.getStyleForTheme(styleName);
+      if (styleForTheme == null) {
+        if (providerName === 'maptiler') {
+          debug.log(
+            '[gk-map] updateMapStyle skipped: no MapTiler API key (set via configure() or api-key attribute)'
+          );
+          return;
+        }
+        // Other providers: no style for this theme name, fall through to fallbacks
+      } else {
+        try {
+          debug.log('[gk-map] setStyle via provider getStyleForTheme', {
+            provider: providerName,
+            style: typeof styleForTheme === 'string' ? styleForTheme : '(object)',
+          });
+          // Register error/style.load handlers before setStyle so we catch load failures and do not dispatch re-add
+          this._onStyleLoadReaddLayers();
+          map.setStyle(styleForTheme);
+          return;
+        } catch (error) {
+          console.warn('[gk-map] Failed to update map style:', error);
+          return;
+        }
+      }
+    }
+
+    // Fallback: MapTiler-specific (e.g. when provider doesn't implement getStyleForTheme)
+    const sdk = (window as any).maptilersdk;
+    const apiKey = sdk?.config?.apiKey || this.getAttribute('api-key') || '';
+    const normalized = styleName.toLowerCase();
+    const themeStyleNames = ['dataviz', 'dataviz-dark', 'light', 'dark'];
+    if (themeStyleNames.includes(normalized) && apiKey) {
+      const mapName =
+        normalized === 'light' ? 'dataviz' : normalized === 'dark' ? 'dataviz-dark' : normalized;
+      const styleUrl = `https://api.maptiler.com/maps/${mapName}/style.json?key=${apiKey}`;
+      try {
+        this._onStyleLoadReaddLayers();
+        map.setStyle(styleUrl);
+        return;
+      } catch (error) {
+        console.warn('[gk-map] Failed to update map style:', error);
+        return;
+      }
+    }
+
+    if (sdk?.MapStyle) {
+      const styleMap: Record<string, unknown> = {
+        streets: sdk.MapStyle.STREETS?.DEFAULT,
+        'streets-dark': sdk.MapStyle.STREETS?.DARK,
+        satellite: sdk.MapStyle.SATELLITE?.DEFAULT,
+        hybrid: sdk.MapStyle.HYBRID?.DEFAULT,
+        outdoor: sdk.MapStyle.OUTDOOR?.DEFAULT,
+        basic: sdk.MapStyle.BASIC?.DEFAULT,
+      };
+      const sdkStyle = styleMap[normalized];
+      if (sdkStyle) {
+        try {
+          this._onStyleLoadReaddLayers();
+          map.setStyle(sdkStyle);
+          return;
+        } catch (error) {
+          console.warn('[gk-map] Failed to update map style via SDK:', error);
+        }
+      }
+    }
+
+    if (apiKey) {
+      try {
+        this._onStyleLoadReaddLayers();
+        const styleUrl = `https://api.maptiler.com/maps/${normalized}/style.json?key=${apiKey}`;
+        map.setStyle(styleUrl);
+      } catch (error) {
+        console.warn('[gk-map] Failed to update map style:', error);
+      }
+    }
+  }
+
+  /**
+   * When map style is replaced (e.g. theme toggle), custom layers/sources are removed.
+   * Listen for style.load only (not 'load' or 'idle') to avoid dispatching during initial load
+   * or transitional state. Defers dispatch with double rAF and only dispatches when style is
+   * ready to avoid "Cannot convert undefined or null to object" in MapTiler's coalesceChanges.
+   */
+  private _onStyleLoadReaddLayers(): void {
+    if (!this.map) return;
+    debug.log('[gk-map] _onStyleLoadReaddLayers: registering style.load + 500ms fallback');
+
+    const map = this.map as {
+      once?: (event: string, handler: (e?: { error?: { message?: string } }) => void) => void;
+      on?: (event: string, handler: (e?: { error?: { message?: string } }) => void) => void;
+      off?: (event: string, handler: (e?: { error?: { message?: string } }) => void) => void;
+      isStyleLoaded?: () => boolean;
+      getStyle?: () => { layers?: unknown[] } | null;
+    };
+    if (typeof map.on !== 'function') return;
+
+    let dispatched = false;
+    let scheduled = false;
+    let styleLoadFailed = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const styleLoadHandler = () => {
+      debug.log('[gk-map] style.load fired');
+      dispatchReadd(false);
+    };
+
+    const errorHandler = (e?: unknown) => {
+      const msg =
+        (e &&
+        typeof e === 'object' &&
+        'error' in e &&
+        e.error &&
+        typeof (e.error as any).message === 'string'
+          ? (e.error as { message: string }).message
+          : e instanceof Error
+            ? e.message
+            : typeof e === 'string'
+              ? e
+              : '') || String(e ?? '');
+      if (/style|could not be loaded|distant/i.test(msg)) {
+        styleLoadFailed = true;
+        debug.log('[gk-map] style load failed, will not dispatch gk-map-style-load', {
+          message: msg,
+        });
+        cleanup();
+      }
+    };
+
+    let cleanup = () => {
+      if (map.off) {
+        map.off('style.load', styleLoadHandler);
+        map.off('error', errorHandler);
+      }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    };
+
+    const isStyleReady = (): boolean => {
+      if (!this.map) return false;
+      const m = this.map as { isStyleLoaded?: () => boolean; getStyle?: () => unknown };
+      if (typeof m.isStyleLoaded === 'function' && !m.isStyleLoaded()) return false;
+      const style = typeof m.getStyle === 'function' ? m.getStyle() : null;
+      return style != null;
+    };
+
+    const dispatchReadd = (fromTimeout: boolean = false) => {
+      if (dispatched || scheduled || styleLoadFailed) {
+        debug.log('[gk-map] dispatchReadd skipped', {
+          fromTimeout,
+          dispatched,
+          scheduled,
+          styleLoadFailed,
+        });
+        return;
+      }
+      scheduled = true;
+      debug.log('[gk-map] dispatchReadd scheduled', { fromTimeout });
+      // Double rAF so MapTiler's internal state is settled.
+      // When fromTimeout: always dispatch so layers re-add even if style.load never fired (e.g. dark→light).
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scheduled = false;
+          if (dispatched || !this.map) return;
+          const ready = isStyleReady();
+          if (!fromTimeout && !ready) {
+            debug.log('[gk-map] dispatchReadd: style not ready, skipping dispatch', {
+              isStyleLoaded: (this.map as any)?.isStyleLoaded?.(),
+            });
+            return;
+          }
+          dispatched = true;
+          cleanup();
+          debug.log('[gk-map] dispatching gk-map-style-load', { fromTimeout, styleReady: ready });
+          this.dispatchEvent(
+            new CustomEvent('gk-map-style-load', {
+              detail: { map: this.map, element: this },
+              bubbles: true,
+            })
+          );
+        });
+      });
+    };
+
+    map.on('style.load', styleLoadHandler);
+    map.on('error', errorHandler);
+    // Fallback: if style.load never fires (e.g. some MapTiler style switches to light), poll until style is ready then dispatch.
+    // Use 500ms so a failed style load (e.g. "distant style could not be loaded") has time to emit 'error' before we dispatch.
+    const fallbackMs = 500;
+    const pollMs = 50;
+    const maxWaitMs = 2500;
+    timeoutId = setTimeout(() => {
+      if (dispatched) return;
+      if (isStyleReady()) {
+        dispatchReadd(true);
+        return;
+      }
+      let elapsed = fallbackMs;
+      const pollId = setInterval(() => {
+        if (dispatched) {
+          clearInterval(pollId);
+          return;
+        }
+        if (isStyleReady() || elapsed >= maxWaitMs) {
+          clearInterval(pollId);
+          dispatchReadd(true);
+          return;
+        }
+        elapsed += pollMs;
+      }, pollMs);
+      // Clear polling when style.load fires (cleanup clears timeoutId; interval remains until ready or max)
+      const origCleanup = cleanup;
+      cleanup = () => {
+        clearInterval(pollId);
+        origCleanup();
+      };
+    }, fallbackMs);
   }
 
   /**
@@ -1568,6 +1944,9 @@ export class MapElement extends BaseElement {
       })
     );
 
+    // Restore console if style-load filter was still active (e.g. theme toggle then immediate teardown)
+    this._restoreStyleLoadConsole();
+
     // Remove the map instance to free WebGL context
     // Suppress MapTiler SDK warnings during removal (deprecated style warnings, setStyle errors)
     const map = this.map as any;
@@ -2013,6 +2392,7 @@ export class MapElement extends BaseElement {
   public updateSourceData(sourceId: string, data: GeoJSON.FeatureCollection): boolean {
     const map = this.getMap();
     if (!map) return false;
+    if (data == null) return false;
 
     const source = map.getSource?.(sourceId);
     if (!source) {
@@ -2033,6 +2413,41 @@ export class MapElement extends BaseElement {
 
     console.warn(`[gk-map] Source ${sourceId} does not support setData() method`);
     return false;
+  }
+
+  /**
+   * Build a layer spec with undefined/null omitted.
+   * Root cause: MapTiler coalesceChanges does Object.keys/entries on layout/paint;
+   * null/undefined throws "Cannot convert undefined or null to object".
+   */
+  private _layerSpecWithoutUndefined(
+    layerConfig: Record<string, unknown>,
+    layerId: string,
+    sourceId: string
+  ): Record<string, unknown> {
+    const spec: Record<string, unknown> = {
+      ...layerConfig,
+      id: layerId,
+      source: sourceId,
+    };
+    for (const key of Object.keys(spec)) {
+      if (spec[key] == null) delete spec[key];
+    }
+    if (spec.layout != null && typeof spec.layout === 'object' && !Array.isArray(spec.layout)) {
+      const layout: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(spec.layout as Record<string, unknown>)) {
+        if (v != null) layout[k] = v;
+      }
+      spec.layout = layout;
+    }
+    if (spec.paint != null && typeof spec.paint === 'object' && !Array.isArray(spec.paint)) {
+      const paint: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(spec.paint as Record<string, unknown>)) {
+        if (v != null) paint[k] = v;
+      }
+      spec.paint = paint;
+    }
+    return spec;
   }
 
   /**
@@ -2078,7 +2493,12 @@ export class MapElement extends BaseElement {
       } else {
         // Source exists but layer doesn't - add layer
         try {
-          map.addLayer({ ...layerConfig, id: layerId, source: sourceId }, beforeId);
+          const spec = this._layerSpecWithoutUndefined(layerConfig, layerId, sourceId);
+          if (beforeId != null) {
+            map.addLayer(spec as any, beforeId);
+          } else {
+            map.addLayer(spec as any);
+          }
           return true;
         } catch (error) {
           console.error(`[gk-map] Failed to add layer ${layerId}:`, error);
@@ -2092,7 +2512,12 @@ export class MapElement extends BaseElement {
           type: 'geojson',
           data: sourceData,
         });
-        map.addLayer({ ...layerConfig, id: layerId, source: sourceId }, beforeId);
+        const spec = this._layerSpecWithoutUndefined(layerConfig, layerId, sourceId);
+        if (beforeId != null) {
+          map.addLayer(spec as any, beforeId);
+        } else {
+          map.addLayer(spec as any);
+        }
         return true;
       } catch (error) {
         console.error(`[gk-map] Failed to create source/layer ${sourceId}/${layerId}:`, error);

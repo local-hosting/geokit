@@ -1,8 +1,7 @@
 /**
  * Geokit Debug Logger
  *
- * Provides conditional logging that can be enabled/disabled.
- * Debug logs are disabled by default in production.
+ * Provides conditional logging; debug is off by default.
  *
  * To enable debug logging:
  * - Set window.__GEOKIT_DEBUG__ = true in the browser console
@@ -12,7 +11,7 @@
 // Check if we're in a browser environment
 const isBrowser = typeof window !== 'undefined';
 
-// Debug flag - can be set via window.__GEOKIT_DEBUG__ or setDebugEnabled()
+// Debug flag: off by default. Enable via window.__GEOKIT_DEBUG__ = true (e.g. in console) or setDebugEnabled(true).
 let debugEnabled =
   isBrowser && (window as unknown as { __GEOKIT_DEBUG__?: boolean }).__GEOKIT_DEBUG__ === true;
 

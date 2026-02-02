@@ -149,8 +149,10 @@ export class MapTilerUIProvider extends BaseUIProvider {
         this.sdk?.MapStyle?.DATAVIZ?.DARK ||
         `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${this.config?.apiKey || ''}`;
     } else if (typeof style === 'string' && !style.startsWith('http')) {
-      // Convert style name to SDK enum or URL
+      // Convert style name to SDK enum or URL (light/dark theme + named styles)
       const styleMap: Record<string, any> = {
+        light: this.sdk?.MapStyle?.DATAVIZ?.DEFAULT,
+        dark: this.sdk?.MapStyle?.DATAVIZ?.DARK,
         'dataviz-dark': this.sdk?.MapStyle?.DATAVIZ?.DARK,
         dataviz: this.sdk?.MapStyle?.DATAVIZ?.DEFAULT,
         streets: this.sdk?.MapStyle?.STREETS?.DEFAULT,
@@ -247,5 +249,20 @@ export class MapTilerUIProvider extends BaseUIProvider {
 
   getHelpers(): any {
     return this.sdk?.helpers || null;
+  }
+
+  getStyleForTheme(styleName: string): string | null {
+    if (!this.sdk || !this.config?.apiKey) return null;
+    const key = styleName.toLowerCase();
+    // Theme names and MapTiler style names
+    const themeToStyle: Record<string, string> = {
+      light: 'dataviz',
+      dark: 'dataviz-dark',
+      dataviz: 'dataviz',
+      'dataviz-dark': 'dataviz-dark',
+    };
+    const mapName = themeToStyle[key] ?? key;
+    const apiKey = this.config.apiKey;
+    return `https://api.maptiler.com/maps/${mapName}/style.json?key=${apiKey}`;
   }
 }

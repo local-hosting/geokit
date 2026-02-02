@@ -8,6 +8,7 @@
  */
 
 import { MapChildElement } from '../map-child-element';
+import { getCSSVariable } from '../../utils/theme';
 
 export class MarkerElement extends MapChildElement {
   static observedAttributes = ['lat', 'lng', 'title', 'popup', 'color', 'draggable', 'visible'];
@@ -44,7 +45,7 @@ export class MarkerElement extends MapChildElement {
     // Create marker
     const provider = this.getUIProvider();
     const options = {
-      color: this.getAttribute('color') || '#3FB1CE',
+      color: this.getAttribute('color') || getCSSVariable(this.mapElement, '--gk-marker-color', ''),
       draggable: this.getAttribute('draggable') === 'true',
     };
 

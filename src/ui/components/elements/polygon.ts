@@ -11,6 +11,7 @@ import { MapChildElement } from '../map-child-element';
 import { normalizeCoordinatesArray } from '../../../utils/coordinates';
 import { simplifyPolygonRingToMaxPoints } from '../../../utils/simplify';
 import { debug } from '../../utils/logger';
+import { getCSSVariable } from '../../utils/theme';
 import type { LatLon } from '../../../types';
 
 export interface PolygonOptions {
@@ -118,6 +119,16 @@ export class PolygonElement extends MapChildElement {
       this.createPolygon();
     } catch (error) {
       console.error(`[Polygon ${this.layerId}] Error creating polygon:`, error);
+    }
+  }
+
+  /** Re-add polygon layers after map style change (e.g. theme toggle). */
+  protected override onStyleLoad(): void {
+    if (!this.map) return;
+    try {
+      this.createPolygon();
+    } catch (error) {
+      console.error(`[Polygon ${this.layerId}] Error re-creating polygon after style load:`, error);
     }
   }
 
@@ -232,22 +243,27 @@ export class PolygonElement extends MapChildElement {
       // This ensures: polygons (below) < points (top)
       const beforeId = this.findFirstPointLayer();
 
-      // Add fill layer - read from properties first
-      const fillColor = this._propFillColor ?? this.safeGetAttribute('fill-color') ?? '#3FB1CE';
+      // Add fill layer - read from properties first, then CSS variables
+      const fillColor =
+        this._propFillColor ??
+        this.safeGetAttribute('fill-color') ??
+        getCSSVariable(this.mapElement, '--gk-polygon-fill-color', '');
       const fillOpacity =
         this._propFillOpacity ?? parseFloat(this.safeGetAttribute('fill-opacity') || '0.5');
-      this.map.addLayer(
-        {
-          id: this.layerId,
-          type: 'fill',
-          source: this.sourceId,
-          paint: {
-            'fill-color': fillColor,
-            'fill-opacity': fillOpacity,
-          },
+      const fillSpec = {
+        id: this.layerId,
+        type: 'fill',
+        source: this.sourceId,
+        paint: {
+          'fill-color': fillColor,
+          'fill-opacity': fillOpacity,
         },
-        beforeId
-      );
+      };
+      if (beforeId != null) {
+        this.map.addLayer(fillSpec, beforeId);
+      } else {
+        this.map.addLayer(fillSpec);
+      }
 
       // Add stroke layer (after fill layer) - read from properties first
       // Skip stroke layer entirely if strokeWidth is 0 to avoid hairline rendering artifacts
@@ -256,22 +272,26 @@ export class PolygonElement extends MapChildElement {
 
       if (strokeWidth > 0) {
         const strokeColor =
-          this._propStrokeColor ?? this.safeGetAttribute('stroke-color') ?? '#000000';
+          this._propStrokeColor ??
+          this.safeGetAttribute('stroke-color') ??
+          getCSSVariable(this.mapElement, '--gk-polygon-stroke-color', '');
         const strokeOpacity =
           this._propStrokeOpacity ?? parseFloat(this.safeGetAttribute('stroke-opacity') || '1');
-        this.map.addLayer(
-          {
-            id: this.strokeLayerId,
-            type: 'line',
-            source: this.sourceId,
-            paint: {
-              'line-color': strokeColor,
-              'line-width': strokeWidth,
-              'line-opacity': strokeOpacity,
-            },
+        const strokeSpec = {
+          id: this.strokeLayerId,
+          type: 'line',
+          source: this.sourceId,
+          paint: {
+            'line-color': strokeColor,
+            'line-width': strokeWidth,
+            'line-opacity': strokeOpacity,
           },
-          beforeId
-        );
+        };
+        if (beforeId != null) {
+          this.map.addLayer(strokeSpec, beforeId);
+        } else {
+          this.map.addLayer(strokeSpec);
+        }
       }
     } catch (error) {
       console.error(`[Polygon] Error creating polygon ${this.sourceId}:`, error);
@@ -328,7 +348,10 @@ export class PolygonElement extends MapChildElement {
 
   public updateFillStyle(): void {
     this.updatePaintProperties(this.layerId, {
-      'fill-color': this._propFillColor ?? this.safeGetAttribute('fill-color') ?? '#3FB1CE',
+      'fill-color':
+        this._propFillColor ??
+        this.safeGetAttribute('fill-color') ??
+        getCSSVariable(this.mapElement, '--gk-polygon-fill-color', ''),
       'fill-opacity':
         this._propFillOpacity ?? parseFloat(this.safeGetAttribute('fill-opacity') || '0.5'),
     });
@@ -336,7 +359,10 @@ export class PolygonElement extends MapChildElement {
 
   private updateStrokeStyle(): void {
     this.updatePaintProperties(this.strokeLayerId, {
-      'line-color': this._propStrokeColor ?? this.safeGetAttribute('stroke-color') ?? '#000000',
+      'line-color':
+        this._propStrokeColor ??
+        this.safeGetAttribute('stroke-color') ??
+        getCSSVariable(this.mapElement, '--gk-polygon-stroke-color', ''),
       'line-width':
         this._propStrokeWidth ?? parseFloat(this.safeGetAttribute('stroke-width') || '2'),
       'line-opacity':
@@ -429,10 +455,22 @@ export class PolygonElement extends MapChildElement {
       maxPoints?: number;
     } = {}
   ): PolygonElement[] {
+    // Read defaults from CSS variables (falls back to hardcoded if not set)
+    const defaultFillColor = getCSSVariable(
+      document.documentElement,
+      '--gk-polygon-fill-color',
+      ''
+    );
+    const defaultStrokeColor = getCSSVariable(
+      document.documentElement,
+      '--gk-polygon-stroke-color',
+      ''
+    );
+
     const {
-      fillColor = '#3b82f6',
+      fillColor = defaultFillColor,
       fillOpacity = 0.1,
-      strokeColor = '#3b82f6',
+      strokeColor = defaultStrokeColor,
       strokeWidth = 2,
       strokeOpacity = 1,
       visible = true,

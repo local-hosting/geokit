@@ -7,6 +7,12 @@ export default defineConfig(({ mode }) => {
   
   return {
     root: './demo',
+    resolve: {
+      alias: {
+        'maplibre-gl': resolve(__dirname, '../node_modules/maplibre-gl/dist/maplibre-gl-dev.js'),
+      },
+      preserveSymlinks: false,
+    },
     build: {
       outDir: '../dist-demo',
       emptyOutDir: true,
@@ -24,9 +30,6 @@ export default defineConfig(({ mode }) => {
         // Allow serving files from parent directory
         allow: ['..'],
       },
-    },
-    resolve: {
-      preserveSymlinks: false,
     },
     define: {
       'import.meta.env.MAPTILER_KEY': JSON.stringify(env.MAPTILER_KEY),

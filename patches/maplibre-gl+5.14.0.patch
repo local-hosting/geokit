@@ -1,0 +1,59 @@
+diff --git a/node_modules/maplibre-gl/dist/maplibre-gl-csp-dev.js b/node_modules/maplibre-gl/dist/maplibre-gl-csp-dev.js
+index c9d710f..430d215 100644
+--- a/node_modules/maplibre-gl/dist/maplibre-gl-csp-dev.js
++++ b/node_modules/maplibre-gl/dist/maplibre-gl-csp-dev.js
+@@ -43092,11 +43092,12 @@ class SourceFeatureState {
+             }
+             else {
+                 for (const feature in this.deletedStates[sourceLayer]) {
+-                    const deleteWholeFeatureState = this.deletedStates[sourceLayer][feature] === null;
++                    const featDel = this.deletedStates[sourceLayer][feature];
++                    const deleteWholeFeatureState = featDel === null || featDel === undefined;
+                     if (deleteWholeFeatureState)
+                         this.state[sourceLayer][feature] = {};
+-                    else {
+-                        for (const key of Object.keys(this.deletedStates[sourceLayer][feature])) {
++                    else if (typeof featDel === 'object') {
++                        for (const key of Object.keys(featDel)) {
+                             delete this.state[sourceLayer][feature][key];
+                         }
+                     }
+diff --git a/node_modules/maplibre-gl/dist/maplibre-gl-dev.js b/node_modules/maplibre-gl/dist/maplibre-gl-dev.js
+index 688da35..1d53777 100644
+--- a/node_modules/maplibre-gl/dist/maplibre-gl-dev.js
++++ b/node_modules/maplibre-gl/dist/maplibre-gl-dev.js
+@@ -47612,11 +47612,12 @@ class SourceFeatureState {
+             }
+             else {
+                 for (const feature in this.deletedStates[sourceLayer]) {
+-                    const deleteWholeFeatureState = this.deletedStates[sourceLayer][feature] === null;
++                    const featDel = this.deletedStates[sourceLayer][feature];
++                    const deleteWholeFeatureState = featDel === null || featDel === undefined;
+                     if (deleteWholeFeatureState)
+                         this.state[sourceLayer][feature] = {};
+-                    else {
+-                        for (const key of Object.keys(this.deletedStates[sourceLayer][feature])) {
++                    else if (typeof featDel === 'object') {
++                        for (const key of Object.keys(featDel)) {
+                             delete this.state[sourceLayer][feature][key];
+                         }
+                     }
+diff --git a/node_modules/maplibre-gl/src/source/source_state.ts b/node_modules/maplibre-gl/src/source/source_state.ts
+index 6a6ee1d..21b2b98 100644
+--- a/node_modules/maplibre-gl/src/source/source_state.ts
++++ b/node_modules/maplibre-gl/src/source/source_state.ts
+@@ -128,10 +128,11 @@ export class SourceFeatureState {
+                 }
+             } else {
+                 for (const feature in this.deletedStates[sourceLayer]) {
+-                    const deleteWholeFeatureState = this.deletedStates[sourceLayer][feature] === null;
++                    const featDel = this.deletedStates[sourceLayer][feature];
++                    const deleteWholeFeatureState = featDel === null || featDel === undefined;
+                     if (deleteWholeFeatureState) this.state[sourceLayer][feature] = {};
+-                    else {
+-                        for (const key of Object.keys(this.deletedStates[sourceLayer][feature])) {
++                    else if (typeof featDel === 'object') {
++                        for (const key of Object.keys(featDel)) {
+                             delete this.state[sourceLayer][feature][key];
+                         }
+                     }

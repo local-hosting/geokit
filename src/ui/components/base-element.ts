@@ -118,8 +118,8 @@ export class BaseElement extends HTMLElement {
     const styleLoaded = isStyleLoaded && isStyleLoaded.call(this.map);
 
     if (styleLoaded) {
-      // Style already loaded - execute immediately using microtask to ensure all callbacks run
-      Promise.resolve().then(() => {
+      // Defer by one frame to avoid MapTiler coalesceChanges during render
+      requestAnimationFrame(() => {
         if (this.map) {
           callback();
         }
@@ -147,16 +147,16 @@ export class BaseElement extends HTMLElement {
 
       cache.promise = new Promise<void>((resolve) => {
         const fireAllCallbacks = () => {
-          // Double-check style is loaded
-          const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
-          const styleLoaded = isStyleLoaded && isStyleLoaded.call(this.map);
+          // We're only invoked from load/style.load handlers, so style is ready (or will be).
+          // Don't require isStyleLoaded() - MapTiler SDK may not expose it or may return false briefly.
+          if (!cache || cache.callbacks.size === 0) return;
 
-          if (styleLoaded && cache) {
-            // Store callbacks before clearing (they might be added during iteration)
-            const callbacksToExecute = Array.from(cache.callbacks);
-            cache.callbacks.clear();
+          const callbacksToExecute = Array.from(cache.callbacks);
+          cache.callbacks.clear();
 
-            // Execute all queued callbacks
+          // Defer by one frame so we don't run addSource/addLayer in the same frame as
+          // load/style.load (avoids MapTiler coalesceChanges "Cannot convert undefined or null to object")
+          requestAnimationFrame(() => {
             callbacksToExecute.forEach((cb) => {
               try {
                 cb();
@@ -165,7 +165,7 @@ export class BaseElement extends HTMLElement {
               }
             });
             resolve();
-          }
+          });
         };
 
         const loadHandler = () => {

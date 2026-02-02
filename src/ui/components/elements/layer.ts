@@ -187,6 +187,12 @@ export class LayerElement extends MapChildElement {
     this.addLayer();
   }
 
+  /** Re-add layer after map style change (e.g. theme toggle). */
+  protected override onStyleLoad(): void {
+    if (!this.map) return;
+    this.addLayer();
+  }
+
   // ==========================================================================
   // Getters (property first, then attribute)
   // ==========================================================================
@@ -288,16 +294,20 @@ export class LayerElement extends MapChildElement {
       }
     }
 
-    // Build layer config
-    const layerConfig: any = {
+    // Build layer config (omit null/undefined so MapTiler coalesceChanges does not throw)
+    const layerConfig: Record<string, unknown> = {
       id: layerId,
       type,
       source: sourceId,
     };
 
-    if (this._paint) layerConfig.paint = this._paint;
-    if (this._layout) layerConfig.layout = this._layout;
-    if (this._filter) layerConfig.filter = this._filter;
+    if (this._paint != null && typeof this._paint === 'object') {
+      layerConfig.paint = this._sanitizeLayoutOrPaint(this._paint as Record<string, unknown>);
+    }
+    if (this._layout != null && typeof this._layout === 'object') {
+      layerConfig.layout = this._sanitizeLayoutOrPaint(this._layout as Record<string, unknown>);
+    }
+    if (this._filter != null) layerConfig.filter = this._filter;
     if (this.minzoom !== undefined) layerConfig.minzoom = this.minzoom;
     if (this.maxzoom !== undefined) layerConfig.maxzoom = this.maxzoom;
 
@@ -317,6 +327,17 @@ export class LayerElement extends MapChildElement {
     } catch (error) {
       console.error(`[gk-layer] Failed to add layer ${layerId}:`, error);
     }
+  }
+
+  /**
+   * Strip null/undefined from layout or paint so MapTiler coalesceChanges does not throw.
+   */
+  private _sanitizeLayoutOrPaint(o: Record<string, unknown>): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(o)) {
+      if (v != null) out[k] = v;
+    }
+    return out;
   }
 
   private findBeforeLayerId(): string | undefined {
@@ -384,6 +405,17 @@ export class LayerElement extends MapChildElement {
 
     // Remove source only if we created it and no other layers use it
     if (sourceId && this._ownSource && map.getSource?.(sourceId)) {
+      // Clear feature state for this source before remove (avoids MapLibre coalesceChanges
+      // seeing stale state when source is removed).
+      if (this._hoveredFeatureId != null && map.removeFeatureState) {
+        try {
+          map.removeFeatureState({ source: sourceId, id: this._hoveredFeatureId });
+        } catch {
+          // Ignore
+        }
+        this._hoveredFeatureId = null;
+      }
+
       // Check if any other layers use this source
       const style = map.getStyle?.();
       const layers = style?.layers as any[] | undefined;

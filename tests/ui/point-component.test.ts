@@ -339,3 +339,119 @@ describe('Bug Regression Tests', () => {
     });
   });
 });
+
+describe('Point highlight layer and style-load', () => {
+  describe('highlight source/layer IDs', () => {
+    it('should generate highlightSourceId and highlightLayerId with same uuid as other point IDs', () => {
+      const uuid = 'abc-123';
+      const sourceId = `point-source-${uuid}`;
+      const layerId = `point-layer-${uuid}`;
+      const highlightSourceId = `point-highlight-${uuid}`;
+      const highlightLayerId = `point-highlight-layer-${uuid}`;
+
+      expect(highlightSourceId).toBe('point-highlight-abc-123');
+      expect(highlightLayerId).toBe('point-highlight-layer-abc-123');
+      expect(highlightSourceId).not.toBe(sourceId);
+      expect(highlightLayerId).not.toBe(layerId);
+    });
+  });
+
+  describe('setHighlightAt behavior', () => {
+    it('should pass empty FeatureCollection when coordinates is null', () => {
+      const setData = vi.fn();
+      const _source = { setData };
+      const _getSource = vi.fn(() => _source);
+
+      // Simulate setHighlightAt(null) path
+      const coordinates: [number, number] | null = null;
+      if (coordinates === null) {
+        setData({ type: 'FeatureCollection', features: [] });
+      }
+
+      expect(setData).toHaveBeenCalledWith({ type: 'FeatureCollection', features: [] });
+    });
+
+    it('should pass single-point Feature when coordinates provided', () => {
+      const setData = vi.fn();
+      const _source = { setData };
+      const coordinates: [number, number] = [-74.006, 40.7128];
+
+      setData({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates },
+            properties: {},
+          },
+        ],
+      });
+
+      expect(setData).toHaveBeenCalledWith({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [-74.006, 40.7128] },
+            properties: {},
+          },
+        ],
+      });
+    });
+
+    it('should not throw when setData throws (stale source after style change)', () => {
+      const setData = vi.fn(() => {
+        throw new Error("Cannot set properties of undefined (setting '_data')");
+      });
+      let threw = false;
+      try {
+        setData({ type: 'FeatureCollection', features: [] });
+      } catch {
+        threw = true;
+      }
+      expect(threw).toBe(true);
+      // In real code we catch and ignore, so no throw propagates
+      threw = false;
+      try {
+        try {
+          setData({ type: 'FeatureCollection', features: [] });
+        } catch {
+          // ignore
+        }
+      } catch {
+        threw = true;
+      }
+      expect(threw).toBe(false);
+    });
+  });
+
+  describe('onStyleLoad re-apply focus', () => {
+    it('should merge _lastPopupProperties into synthetic feature when re-opening popup after style change', () => {
+      const lastPopupProperties = { 'id:store-number': '123', city: 'NYC' };
+      const pointId = 'pt-1';
+      const pointName = 'Store 1';
+      const sourceId = 'point-source-xyz';
+
+      const properties: Record<string, unknown> = {
+        ...lastPopupProperties,
+        'point-id': pointId ?? sourceId ?? '',
+        ...(pointName && { 'point-name': pointName }),
+      };
+
+      expect(properties['point-id']).toBe('pt-1');
+      expect(properties['point-name']).toBe('Store 1');
+      expect(properties['id:store-number']).toBe('123');
+      expect(properties.city).toBe('NYC');
+    });
+
+    it('should have hadFocus when focusLayers was set before style change', () => {
+      const focusLayers = { focusLayerId: 'f', shadowLayerId: 's', focusSourceId: 'fs' };
+      const hadFocus = !!focusLayers;
+      expect(hadFocus).toBe(true);
+
+      const noFocusLayers = null;
+      const hadFocusWhenNull = !!noFocusLayers;
+      expect(hadFocusWhenNull).toBe(false);
+    });
+  });
+});

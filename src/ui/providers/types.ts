@@ -232,6 +232,13 @@ export abstract class BaseUIProvider {
   abstract getCssUrl(): string | null;
 
   /**
+   * Resolve a theme/style name (e.g. 'light', 'dark', 'dataviz', 'dataviz-dark')
+   * to a provider-specific style URL or style object for setStyle().
+   * Used for theme switching so both MapTiler and Mapbox support light/dark.
+   */
+  getStyleForTheme?(styleName: string): string | Record<string, unknown> | null;
+
+  /**
    * Get helper methods (optional)
    */
   getHelpers(): any {
