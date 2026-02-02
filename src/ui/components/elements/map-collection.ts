@@ -50,6 +50,7 @@ export class MapCollectionElement extends BaseElement {
   private pendingReprocess: boolean = false; // Track if reprocess needed after current run
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
   private wasHidden: boolean = false; // Track if collection was previously hidden
+  private _unfreezeHandler: ((e: Event) => void) | null = null;
 
   constructor() {
     super();
@@ -149,6 +150,15 @@ export class MapCollectionElement extends BaseElement {
     // Start health check for stuck maps
     this.startHealthCheck();
 
+    // When a map in the collection finishes loading, reprocess so other visible slots get maps
+    this._unfreezeHandler = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (target && this.slots.some((s) => s.mapElement === target)) {
+        setTimeout(() => this.processVisibilityChanges(), 0);
+      }
+    };
+    this.addEventListener('gk-map-unfreeze', this._unfreezeHandler);
+
     this.initialized = true;
     this.dispatchEvent(new CustomEvent('map-collection-ready', { bubbles: true }));
   }
@@ -160,7 +170,6 @@ export class MapCollectionElement extends BaseElement {
   private setupIntersectionObserver(): void {
     this.intersectionObserver = new IntersectionObserver(
       (entries) => {
-        // Update visibility state immediately
         for (const entry of entries) {
           const slotInfo = this.slots.find((s) => s.slotElement === entry.target);
           if (slotInfo) {
@@ -203,13 +212,14 @@ export class MapCollectionElement extends BaseElement {
 
     // Check if the collection itself is hidden (e.g., parent view is hidden)
     // If so, skip processing - maps should stay in their current state
+    // Note: display:contents has no box so getBoundingClientRect() is 0; don't treat as hidden
     const collectionRect = this.getBoundingClientRect();
     const collectionStyle = window.getComputedStyle(this);
+    const isDisplayContents = collectionStyle.display === 'contents';
     const isCollectionHidden =
       collectionStyle.visibility === 'hidden' ||
       collectionStyle.display === 'none' ||
-      collectionRect.width === 0 ||
-      collectionRect.height === 0;
+      (!isDisplayContents && (collectionRect.width === 0 || collectionRect.height === 0));
 
     if (isCollectionHidden) {
       // Collection is hidden (likely view switch), don't process visibility changes
@@ -237,9 +247,21 @@ export class MapCollectionElement extends BaseElement {
 
       if (visibleInactive.length === 0) return;
 
+      // Prefer slots closest to viewport center so the map the user is looking at loads first
+      const viewportCenterY = window.innerHeight / 2;
+      const sortedVisibleInactive = [...visibleInactive].sort((a, b) => {
+        const rectA = a.slotElement.getBoundingClientRect();
+        const rectB = b.slotElement.getBoundingClientRect();
+        const centerA = rectA.top + rectA.height / 2;
+        const centerB = rectB.top + rectB.height / 2;
+        const distA = Math.abs(centerA - viewportCenterY);
+        const distB = Math.abs(centerB - viewportCenterY);
+        return distA - distB;
+      });
+
       // Calculate how many we can activate (up to pool size)
       const availableSlots = this.poolSize - this.activeCount;
-      const toActivate = visibleInactive.slice(0, Math.max(availableSlots, 0));
+      const toActivate = sortedVisibleInactive.slice(0, Math.max(availableSlots, 0));
 
       // If we need more room, freeze invisible maps first
       if (visibleInactive.length > availableSlots) {
@@ -376,13 +398,14 @@ export class MapCollectionElement extends BaseElement {
   private async deactivateOneInvisible(): Promise<boolean> {
     // Check if the collection itself is hidden (e.g., parent view is hidden)
     // If so, don't freeze maps - they should stay active for when view returns
+    // display:contents has no box so rect is 0; don't treat as hidden
     const collectionRect = this.getBoundingClientRect();
     const collectionStyle = window.getComputedStyle(this);
+    const isDisplayContents = collectionStyle.display === 'contents';
     const isCollectionHidden =
       collectionStyle.visibility === 'hidden' ||
       collectionStyle.display === 'none' ||
-      collectionRect.width === 0 ||
-      collectionRect.height === 0;
+      (!isDisplayContents && (collectionRect.width === 0 || collectionRect.height === 0));
 
     if (isCollectionHidden) {
       // Collection is hidden (likely view switch), don't freeze maps
@@ -573,13 +596,14 @@ export class MapCollectionElement extends BaseElement {
     const now = Date.now();
 
     // Check if collection visibility changed (hidden -> visible)
+    // display:contents has no box so rect is 0; don't treat as hidden
     const collectionRect = this.getBoundingClientRect();
     const collectionStyle = window.getComputedStyle(this);
+    const isDisplayContents = collectionStyle.display === 'contents';
     const isCurrentlyHidden =
       collectionStyle.visibility === 'hidden' ||
       collectionStyle.display === 'none' ||
-      collectionRect.width === 0 ||
-      collectionRect.height === 0;
+      (!isDisplayContents && (collectionRect.width === 0 || collectionRect.height === 0));
 
     if (this.wasHidden && !isCurrentlyHidden) {
       // Collection just became visible - trigger immediate reprocessing
@@ -650,9 +674,9 @@ export class MapCollectionElement extends BaseElement {
             // Check if this slot has been stuck for a while
             const mapInstance = (slot.mapElement as any).getMap?.();
             if (!mapInstance) {
-              // Only attempt activation if we haven't tried recently (cooldown: 10 seconds)
+              // Only attempt activation if we haven't tried recently (cooldown: 3 seconds)
               const timeSinceLastAttempt = now - (slot.lastHealthCheckAttempt || 0);
-              if (timeSinceLastAttempt > 10000) {
+              if (timeSinceLastAttempt > 3000) {
                 // Check if there's room in the pool OR if there are invisible active maps we can freeze
                 const hasRoomInPool = this.activeCount < this.poolSize;
                 const hasInvisibleActiveToFreeze = this.slots.some(
@@ -679,6 +703,10 @@ export class MapCollectionElement extends BaseElement {
   }
 
   private cleanup(): void {
+    if (this._unfreezeHandler) {
+      this.removeEventListener('gk-map-unfreeze', this._unfreezeHandler);
+      this._unfreezeHandler = null;
+    }
     if (this.scrollDebounceTimer) {
       clearTimeout(this.scrollDebounceTimer);
       this.scrollDebounceTimer = null;

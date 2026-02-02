@@ -104,6 +104,27 @@ export class MapTilerUIProvider extends BaseUIProvider {
           console.warn = originalWarn;
         }
 
+        // One-time: suppress MapTiler version banner for the rest of the session (SDK logs it on load and on each map)
+        if (typeof window !== 'undefined' && !(window as any).__geokitMaptilerBannerSuppressed) {
+          (window as any).__geokitMaptilerBannerSuppressed = true;
+          const bannerPattern = /maptiler\s+sdk\s+js|v\d+\.\d+\.\d+/i;
+          const wrap = (original: typeof console.log, _method: 'log' | 'warn') => {
+            return function (this: typeof console, ...args: unknown[]) {
+              try {
+                const msg = Array.isArray(args)
+                  ? args.map((x) => String(x)).join(' ')
+                  : String(args?.[0] ?? '');
+                if (typeof msg === 'string' && bannerPattern.test(msg)) return;
+              } catch {
+                /* ignore */
+              }
+              original.apply(this, args);
+            };
+          };
+          console.log = wrap(console.log.bind(console), 'log');
+          console.warn = wrap(console.warn.bind(console), 'warn');
+        }
+
         // Set API key if provided
         if (config?.apiKey && maptilerModule.config) {
           maptilerModule.config.apiKey = config.apiKey;

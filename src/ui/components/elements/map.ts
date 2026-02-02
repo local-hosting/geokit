@@ -296,6 +296,9 @@ export class MapElement extends BaseElement {
         }
       }
 
+      // Provide placeholder for missing style images (e.g. empty/whitespace IDs from MapTiler styles) to avoid console noise
+      this.setupStyleImageMissingHandler();
+
       // Ensure map has a valid, non-deprecated style after creation
       // This handles cases where the SDK might default to deprecated styles
       // Wait for style to load before trying to set it
@@ -348,18 +351,14 @@ export class MapElement extends BaseElement {
       };
 
       if (styleAlreadyLoaded) {
-        // Style already loaded - dispatch immediately (no idle wait)
         dispatchMapReady();
       } else {
-        // Wait for style to load, then dispatch immediately (no idle wait)
         if (this.map) {
-          this.map.once('load', () => {
-            dispatchMapReady();
-          });
+          this.map.once('load', () => dispatchMapReady());
         }
       }
     } catch (error) {
-      console.error('Failed to initialize map:', error);
+      console.error('[gk-map] Failed to initialize map:', error);
       // Keep placeholder visible on error, but ensure it shows an error message
       this.showPlaceholder('Map failed to initialize');
       // Reset initialization flag so it can be retried
@@ -469,6 +468,32 @@ export class MapElement extends BaseElement {
       // Style check/set failed - continue anyway
       // This is non-critical, map will still work
     }
+  }
+
+  /**
+   * Listen for missing style images (e.g. empty/whitespace IDs from MapTiler) and provide a 1x1 transparent
+   * placeholder so the map does not log "Image could not be loaded" repeatedly.
+   */
+  private setupStyleImageMissingHandler(): void {
+    const map = this.map as any;
+    if (!map?.on || typeof map.addImage !== 'function') return;
+
+    // 1x1 transparent pixel (RGBA)
+    const size = 1;
+    const data = new Uint8ClampedArray(size * size * 4);
+    const placeholder = { width: size, height: size, data };
+
+    map.on('styleimagemissing', (e: { id: string }) => {
+      const id = e?.id;
+      if (id == null) return;
+      try {
+        if (!map.hasImage(id)) {
+          map.addImage(id, placeholder);
+        }
+      } catch {
+        // Ignore if addImage fails (e.g. invalid id)
+      }
+    });
   }
 
   /**
@@ -1956,8 +1981,15 @@ export class MapElement extends BaseElement {
       const originalWarn = console.warn;
       const originalLog = console.log;
 
-      // Suppress specific MapTiler SDK warnings
-      const suppressedPatterns = ['deprecated', 'Invalid style', 'setStyle', 'webglcontextlost'];
+      // Suppress MapTiler SDK messages during/after removal (they fire sync and async)
+      const suppressedPatterns = [
+        'deprecated',
+        'Invalid style',
+        'setStyle',
+        'webglcontextlost',
+        'webgl context lost',
+        'harmless',
+      ];
 
       const shouldSuppress = (args: unknown[]): boolean => {
         const message = args
@@ -1985,9 +2017,6 @@ export class MapElement extends BaseElement {
         map.remove();
       } catch (error) {
         // Ignore errors during removal - the map may have been partially initialized
-        // Common error: "Cannot read properties of undefined (reading 'off')" or "can't access property 'off', this._map is undefined"
-        // This happens when event handlers weren't fully registered before removal or map was already destroyed
-        // Suppress in production to avoid console spam - this is a harmless error from MapTiler SDK
         const errorMessage = error instanceof Error ? error.message : String(error);
         const isHarmlessError =
           errorMessage.includes("can't access property") ||
@@ -1995,7 +2024,6 @@ export class MapElement extends BaseElement {
           errorMessage.includes('this._map is undefined') ||
           errorMessage.includes("reading 'off'");
 
-        // Only log non-harmless errors or in development
         if (
           !isHarmlessError ||
           (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development')
@@ -2003,9 +2031,12 @@ export class MapElement extends BaseElement {
           console.debug('[gk-map] Ignoring error during map removal:', error);
         }
       } finally {
-        // Restore console methods
-        console.warn = originalWarn;
-        console.log = originalLog;
+        // Restore console after a short delay so async SDK logs (e.g. "WebGL context lost") are still suppressed
+        const restoreDelay = 200;
+        setTimeout(() => {
+          console.warn = originalWarn;
+          console.log = originalLog;
+        }, restoreDelay);
       }
     }
 
