@@ -22,6 +22,8 @@ export interface PolygonOptions {
   strokeOpacity?: number;
   visible?: boolean;
   interactive?: boolean;
+  /** Layer ID to insert polygon before (ensures z-ordering). If not provided, auto-detects first circle layer. */
+  beforeLayerId?: string;
 }
 
 export class PolygonElement extends MapChildElement {
@@ -49,6 +51,7 @@ export class PolygonElement extends MapChildElement {
   private _propStrokeOpacity?: number;
   private _propVisible?: boolean;
   private _propInteractive?: boolean;
+  private _propBeforeLayerId?: string;
 
   /**
    * Apply stored create options as properties (not attributes)
@@ -64,6 +67,7 @@ export class PolygonElement extends MapChildElement {
     if (options.strokeOpacity !== undefined) this._propStrokeOpacity = options.strokeOpacity;
     if (options.visible !== undefined) this._propVisible = options.visible;
     if (options.interactive !== undefined) this._propInteractive = options.interactive;
+    if (options.beforeLayerId) this._propBeforeLayerId = options.beforeLayerId;
   }
 
   async connectedCallback(): Promise<void> {
@@ -118,11 +122,19 @@ export class PolygonElement extends MapChildElement {
   }
 
   /**
-   * Find the first point/circle layer to insert polygon layers before it
-   * This ensures polygons render below points (venues, markers, etc.)
-   * Matches both geokit point-* ids and app layer ids (e.g. app-layer-points).
+   * Find the layer ID to insert polygon layers before.
+   * Priority: 1) explicit beforeLayerId option, 2) first circle layer found.
+   * This ensures polygons render below points (venues, markers, etc.).
    */
   private findFirstPointLayer(): string | undefined {
+    // If explicit beforeLayerId was provided, verify it exists and use it
+    if (this._propBeforeLayerId && this.map) {
+      const mapWithGetLayer = this.map as { getLayer?: (id: string) => unknown };
+      if (mapWithGetLayer.getLayer?.(this._propBeforeLayerId)) {
+        return this._propBeforeLayerId;
+      }
+    }
+
     if (!this.map) return undefined;
 
     try {
@@ -135,6 +147,7 @@ export class PolygonElement extends MapChildElement {
       if (!style || !style.layers) return undefined;
 
       // Look for the first circle layer (points, venue dots, glow hit areas)
+      // Circle layers are used for venue points and their glow/hitarea
       for (const layer of style.layers) {
         if (layer.type === 'circle') {
           return layer.id;
