@@ -8,14 +8,20 @@
 </head>
 <body>
   <div id="map-container">
+    <!-- Theme toggle button -->
+    <button id="theme-toggle" class="theme-toggle" title="Toggle theme">
+      <span class="theme-icon">🌙</span>
+    </button>
     <gk-map 
+      id="demo-map"
       provider="maptiler"
       lat="40.7128" 
       lng="-74.006" 
       zoom="12"
-      style="streets">
+      theme="dark"
+      sync-url>
       <!-- Demo isochrone: 15-minute driving time from NYC center (H3 hexagon version) -->
-      <!-- Isochrone is transparent white and renders below the point -->
+      <!-- Color works on both light and dark themes so it stays visible after theme toggle -->
       <gk-isochrone 
         lat="40.7128" 
         lng="-74.006" 
@@ -23,8 +29,8 @@
         mode="driving"
         render="h3"
         h3-resolution="10"
-        color="#FFFFFF"
-        opacity="0.3"
+        color="#3388ff"
+        opacity="0.25"
         stroke-width="0">
       </gk-isochrone>
       

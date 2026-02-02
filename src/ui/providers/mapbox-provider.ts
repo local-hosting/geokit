@@ -102,11 +102,21 @@ export class MapboxUIProvider extends BaseUIProvider {
       throw new Error('Mapbox access token is required. Call initialize() with accessToken first.');
     }
 
-    // Build style
+    // Build style: support theme names (light/dark) and MapTiler-style names for consistency
     let style = options.style;
     if (!style || (typeof style === 'string' && !style.startsWith('mapbox://'))) {
-      // Default to streets style
-      style = 'mapbox://styles/mapbox/streets-v12';
+      const key = (style || 'streets').toLowerCase();
+      const styleMap: Record<string, string> = {
+        light: 'mapbox://styles/mapbox/light-v11',
+        dark: 'mapbox://styles/mapbox/dark-v11',
+        dataviz: 'mapbox://styles/mapbox/light-v11',
+        'dataviz-dark': 'mapbox://styles/mapbox/dark-v11',
+        streets: 'mapbox://styles/mapbox/streets-v12',
+        satellite: 'mapbox://styles/mapbox/satellite-v9',
+        'satellite-streets': 'mapbox://styles/mapbox/satellite-streets-v12',
+        outdoors: 'mapbox://styles/mapbox/outdoors-v12',
+      };
+      style = styleMap[key] ?? 'mapbox://styles/mapbox/streets-v12';
     }
 
     const mapOptions = {
@@ -204,5 +214,16 @@ export class MapboxUIProvider extends BaseUIProvider {
   getHelpers(): any {
     // Mapbox GL JS doesn't have helpers like MapTiler
     return null;
+  }
+
+  getStyleForTheme(styleName: string): string | null {
+    const key = styleName.toLowerCase();
+    const themeToStyle: Record<string, string> = {
+      light: 'mapbox://styles/mapbox/light-v11',
+      dark: 'mapbox://styles/mapbox/dark-v11',
+      dataviz: 'mapbox://styles/mapbox/light-v11',
+      'dataviz-dark': 'mapbox://styles/mapbox/dark-v11',
+    };
+    return themeToStyle[key] ?? null;
   }
 }

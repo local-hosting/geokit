@@ -11,6 +11,7 @@ import { MapChildElement } from '../map-child-element';
 import { normalizeCoordinatesArray } from '../../../utils/coordinates';
 import { lineLengthMeters } from '../../../utils/length';
 import { getBounds } from '../../../utils/bounds';
+import { getCSSVariable } from '../../utils/theme';
 import type { Bounds } from '../../../types';
 import type { MapEvent } from '../../providers/types';
 
@@ -45,6 +46,12 @@ export class PolylineElement extends MapChildElement {
 
   protected override async onMapReady(): Promise<void> {
     await super.onMapReady();
+    this.waitForStyleLoaded(() => this.createPolyline());
+  }
+
+  /** Re-add polyline layers after map style change (e.g. theme toggle). */
+  protected override onStyleLoad(): void {
+    if (!this.map) return;
     this.waitForStyleLoaded(() => this.createPolyline());
   }
 
@@ -334,7 +341,7 @@ export class PolylineElement extends MapChildElement {
   }
 
   get color(): string {
-    return this.getAttribute('color') || '#3FB1CE';
+    return this.getAttribute('color') || getCSSVariable(this.mapElement, '--gk-polyline-color', '');
   }
 
   set color(value: string) {

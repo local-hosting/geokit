@@ -1,0 +1,237 @@
+/**
+ * geokit theme – all styles in CSS.
+ * Import this file in your app: import '@twinfile/geokit/ui/theme.css'
+ * Default: light. Dark: @media (prefers-color-scheme: dark) or gk-map[theme="dark"].
+ */
+
+/* Light (default) */
+:root {
+  --gk-control-background: rgba(255, 255, 255, 0.72);
+  --gk-control-border: rgba(0, 0, 0, 0.08);
+  --gk-control-text: rgba(0, 0, 0, 0.85);
+  --gk-control-icon-filter: none;
+  --gk-control-hover-background: rgba(0, 0, 0, 0.05);
+  --gk-control-active-background: rgba(0, 0, 0, 0.1);
+  --gk-control-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --gk-control-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --gk-placeholder-background: #f5f5f5;
+  --gk-placeholder-text: #6b7280;
+  --gk-popup-background: #ffffff;
+  --gk-popup-text: #1f2328;
+  --gk-popup-text-muted: #656d76;
+  --gk-popup-close-button: #656d76;
+  --gk-popup-tag-background: rgba(175, 184, 193, 0.2);
+  --gk-popup-tag-text: #1f2328;
+  --gk-popup-link-color: #0969da;
+  --gk-popup-border: rgba(208, 215, 222, 0.5);
+  --gk-primary-color: #0891b2;
+  --gk-primary-stroke: #0e7490;
+  --gk-focus-ring-color: #1f2937;
+  --gk-focus-shadow-color: rgba(0, 0, 0, 0.2);
+  --gk-point-color: #2563eb;
+  --gk-point-stroke-color: #1f2937;
+  --gk-point-shadow-color: rgba(0, 0, 0, 0.3);
+  --gk-point-opacity: 1;
+  --gk-point-glow-opacity: 0.35;
+  --gk-point-glow-hover-opacity: 0.5;
+  --gk-point-glow-focus-opacity: 0.65;
+  --gk-glow-blur: 0.8;
+  --gk-polygon-fill-color: #0891b2;
+  --gk-polygon-stroke-color: #ffffff;
+  --gk-polyline-color: #0891b2;
+  --gk-h3-color: #0891b2;
+  --gk-h3-stroke-color: #0e7490;
+  --gk-isochrone-color: #0891b2;
+  --gk-isochrone-stroke-color: #0e7490;
+  --gk-marker-color: #0891b2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --gk-control-background: rgba(18, 18, 22, 0.52);
+    --gk-control-border: rgba(255, 255, 255, 0.08);
+    --gk-control-text: rgba(255, 255, 255, 0.9);
+    --gk-control-icon-filter: invert(1) brightness(1.1) contrast(0.9);
+    --gk-control-hover-background: rgba(255, 255, 255, 0.08);
+    --gk-control-active-background: rgba(255, 255, 255, 0.12);
+    --gk-control-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    --gk-control-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    --gk-placeholder-background: #141414;
+    --gk-placeholder-text: #8b949e;
+    --gk-popup-background: rgb(22, 27, 34);
+    --gk-popup-text: #c9d1d9;
+    --gk-popup-text-muted: #8b949e;
+    --gk-popup-close-button: #8b949e;
+    --gk-popup-tag-background: rgba(139, 148, 158, 0.15);
+    --gk-popup-tag-text: #c9d1d9;
+    --gk-popup-link-color: #58a6ff;
+    --gk-popup-border: rgba(139, 148, 158, 0.2);
+    --gk-primary-color: #3FB1CE;
+    --gk-primary-stroke: #1B8AA8;
+    --gk-focus-ring-color: #ffffff;
+    --gk-focus-shadow-color: rgba(0, 0, 0, 0.4);
+    --gk-point-color: #3b82f6;
+    --gk-point-stroke-color: #ffffff;
+    --gk-point-shadow-color: #000000;
+    --gk-point-opacity: 1;
+    --gk-point-glow-opacity: 0.4;
+    --gk-point-glow-hover-opacity: 0.75;
+    --gk-point-glow-focus-opacity: 0.9;
+    --gk-glow-blur: 0.8;
+    --gk-polygon-fill-color: #3FB1CE;
+    --gk-polygon-stroke-color: #000000;
+    --gk-polyline-color: #3FB1CE;
+    --gk-h3-color: #3FB1CE;
+    --gk-h3-stroke-color: #1B8AA8;
+    --gk-isochrone-color: #3FB1CE;
+    --gk-isochrone-stroke-color: #1B8AA8;
+    --gk-marker-color: #3FB1CE;
+  }
+}
+
+/* Explicit theme overrides (theme="light" | theme="dark" on gk-map) */
+gk-map.gk-theme-light {
+  --gk-control-background: rgba(255, 255, 255, 0.72);
+  --gk-control-border: rgba(0, 0, 0, 0.08);
+  --gk-control-text: rgba(0, 0, 0, 0.85);
+  --gk-control-icon-filter: none;
+  --gk-control-hover-background: rgba(0, 0, 0, 0.05);
+  --gk-control-active-background: rgba(0, 0, 0, 0.1);
+  --gk-control-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --gk-control-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --gk-placeholder-background: #f5f5f5;
+  --gk-placeholder-text: #6b7280;
+  --gk-popup-background: #ffffff;
+  --gk-popup-text: #1f2328;
+  --gk-popup-text-muted: #656d76;
+  --gk-popup-close-button: #656d76;
+  --gk-popup-tag-background: rgba(175, 184, 193, 0.2);
+  --gk-popup-tag-text: #1f2328;
+  --gk-popup-link-color: #0969da;
+  --gk-popup-border: rgba(208, 215, 222, 0.5);
+  --gk-primary-color: #0891b2;
+  --gk-primary-stroke: #0e7490;
+  --gk-focus-ring-color: #1f2937;
+  --gk-focus-shadow-color: rgba(0, 0, 0, 0.2);
+  --gk-point-color: #2563eb;
+  --gk-point-stroke-color: #1f2937;
+  --gk-point-shadow-color: rgba(0, 0, 0, 0.3);
+  --gk-point-opacity: 1;
+  --gk-point-glow-opacity: 0.35;
+  --gk-point-glow-hover-opacity: 0.5;
+  --gk-point-glow-focus-opacity: 0.65;
+  --gk-glow-blur: 0.8;
+  --gk-polygon-fill-color: #0891b2;
+  --gk-polygon-stroke-color: #ffffff;
+  --gk-polyline-color: #0891b2;
+  --gk-h3-color: #0891b2;
+  --gk-h3-stroke-color: #0e7490;
+  --gk-isochrone-color: #0891b2;
+  --gk-isochrone-stroke-color: #0e7490;
+  --gk-marker-color: #0891b2;
+}
+
+gk-map.gk-theme-dark {
+  --gk-control-background: rgba(18, 18, 22, 0.52);
+  --gk-control-border: rgba(255, 255, 255, 0.08);
+  --gk-control-text: rgba(255, 255, 255, 0.9);
+  --gk-control-icon-filter: invert(1) brightness(1.1) contrast(0.9);
+  --gk-control-hover-background: rgba(255, 255, 255, 0.08);
+  --gk-control-active-background: rgba(255, 255, 255, 0.12);
+  --gk-control-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  --gk-control-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --gk-placeholder-background: #141414;
+  --gk-placeholder-text: #8b949e;
+  --gk-popup-background: rgb(22, 27, 34);
+  --gk-popup-text: #c9d1d9;
+  --gk-popup-text-muted: #8b949e;
+  --gk-popup-close-button: #8b949e;
+  --gk-popup-tag-background: rgba(139, 148, 158, 0.15);
+  --gk-popup-tag-text: #c9d1d9;
+  --gk-popup-link-color: #58a6ff;
+  --gk-popup-border: rgba(139, 148, 158, 0.2);
+  --gk-primary-color: #3FB1CE;
+  --gk-primary-stroke: #1B8AA8;
+  --gk-focus-ring-color: #ffffff;
+  --gk-focus-shadow-color: rgba(0, 0, 0, 0.4);
+  --gk-point-color: #3b82f6;
+  --gk-point-stroke-color: #ffffff;
+  --gk-point-shadow-color: #000000;
+  --gk-point-opacity: 1;
+  --gk-point-glow-opacity: 0.4;
+  --gk-point-glow-hover-opacity: 0.75;
+  --gk-point-glow-focus-opacity: 0.9;
+  --gk-glow-blur: 0.8;
+  --gk-polygon-fill-color: #3FB1CE;
+  --gk-polygon-stroke-color: #000000;
+  --gk-polyline-color: #3FB1CE;
+  --gk-h3-color: #3FB1CE;
+  --gk-h3-stroke-color: #1B8AA8;
+  --gk-isochrone-color: #3FB1CE;
+  --gk-isochrone-stroke-color: #1B8AA8;
+  --gk-marker-color: #3FB1CE;
+}
+
+/* Control rules – use var(--gk-*) from above */
+gk-map .maplibregl-ctrl-group,
+gk-map .mapboxgl-ctrl-group {
+  background: var(--gk-control-background) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--gk-control-border) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--gk-control-shadow), var(--gk-control-inset-highlight) !important;
+}
+
+gk-map .maplibregl-ctrl,
+gk-map .mapboxgl-ctrl {
+  background: transparent !important;
+  border: none !important;
+}
+
+gk-map .maplibregl-ctrl button,
+gk-map .mapboxgl-ctrl button {
+  background: transparent !important;
+  border: none !important;
+  width: 29px !important;
+  height: 29px !important;
+}
+
+gk-map .maplibregl-ctrl button:hover,
+gk-map .mapboxgl-ctrl button:hover {
+  background: var(--gk-control-hover-background) !important;
+}
+
+gk-map .maplibregl-ctrl button:active,
+gk-map .mapboxgl-ctrl button:active {
+  background: var(--gk-control-active-background) !important;
+}
+
+gk-map .maplibregl-ctrl-icon,
+gk-map .mapboxgl-ctrl-icon {
+  filter: var(--gk-control-icon-filter) !important;
+  opacity: 0.92;
+}
+
+gk-map .maplibregl-ctrl-scale,
+gk-map .mapboxgl-ctrl-scale {
+  background: var(--gk-control-background) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--gk-control-border) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+}
+
+gk-map .maplibregl-ctrl-scale-inner,
+gk-map .mapboxgl-ctrl-scale-inner {
+  border-color: var(--gk-control-border) !important;
+  color: var(--gk-control-text) !important;
+  font-size: 10px !important;
+}
+
+gk-map .map-placeholder,
+gk-map [data-map-placeholder="true"] {
+  background: var(--gk-placeholder-background) !important;
+  color: var(--gk-placeholder-text) !important;
+}

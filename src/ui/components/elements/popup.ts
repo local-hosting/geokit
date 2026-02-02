@@ -123,8 +123,8 @@ export class PopupElement extends MapChildElement {
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
-      /* Geokit Popup Styles */
-      /* Essential positioning fix + dark theme colors */
+      /* Geokit Popup Styles - Theme-aware via CSS variables */
+      /* Variables are set by gk-map theme system, with dark theme defaults */
       
       /* CRITICAL: Fix canvas container position (MapLibre sometimes offsets it) */
       .maplibregl-canvas-container {
@@ -147,40 +147,56 @@ export class PopupElement extends MapChildElement {
         opacity: 0;
       }
 
-      /* Dark theme background and text color */
-      .maplibregl-popup-content {
-        background: rgb(22, 27, 34) !important;
-        color: #c9d1d9 !important;
+      /* Popup background and text - uses CSS variables with dark theme defaults */
+      .maplibregl-popup-content,
+      .mapboxgl-popup-content {
+        background: var(--gk-popup-background, rgb(22, 27, 34)) !important;
+        color: var(--gk-popup-text, #c9d1d9) !important;
+        position: relative;
+        padding: 12px 14px;
+        border-radius: 6px;
+        min-width: 280px;
+        max-width: 400px;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
       }
 
-      /* Dark theme tip color - match background for all anchor positions */
-      .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-        border-top-color: rgb(22, 27, 34) !important;
+      /* Popup tip color - match background for all anchor positions */
+      .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+      .mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+        border-top-color: var(--gk-popup-background, rgb(22, 27, 34)) !important;
       }
 
-      .maplibregl-popup-anchor-top .maplibregl-popup-tip {
-        border-bottom-color: rgb(22, 27, 34) !important;
+      .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+      .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+        border-bottom-color: var(--gk-popup-background, rgb(22, 27, 34)) !important;
       }
 
-      .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-        border-right-color: rgb(22, 27, 34) !important;
+      .maplibregl-popup-anchor-left .maplibregl-popup-tip,
+      .mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+        border-right-color: var(--gk-popup-background, rgb(22, 27, 34)) !important;
       }
 
-      .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-        border-left-color: rgb(22, 27, 34) !important;
+      .maplibregl-popup-anchor-right .maplibregl-popup-tip,
+      .mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+        border-left-color: var(--gk-popup-background, rgb(22, 27, 34)) !important;
       }
 
       .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
-      .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
-        border-top-color: rgb(22, 27, 34) !important;
+      .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip,
+      .mapboxgl-popup-anchor-bottom-left .mapboxgl-popup-tip,
+      .mapboxgl-popup-anchor-bottom-right .mapboxgl-popup-tip {
+        border-top-color: var(--gk-popup-background, rgb(22, 27, 34)) !important;
       }
 
       .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
-      .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
-        border-bottom-color: rgb(22, 27, 34) !important;
+      .maplibregl-popup-anchor-top-right .maplibregl-popup-tip,
+      .mapboxgl-popup-anchor-top-left .mapboxgl-popup-tip,
+      .mapboxgl-popup-anchor-top-right .mapboxgl-popup-tip {
+        border-bottom-color: var(--gk-popup-background, rgb(22, 27, 34)) !important;
       }
 
-      /* Close button styling - ensure proper positioning and visibility */
+      /* Close button styling */
       .maplibregl-popup-close-button,
       .mapboxgl-popup-close-button {
         position: absolute;
@@ -189,7 +205,7 @@ export class PopupElement extends MapChildElement {
         padding: 4px 8px;
         font-size: 18px;
         line-height: 1;
-        color: #8b949e;
+        color: var(--gk-popup-close-button, #8b949e);
         background: transparent;
         border: none;
         cursor: pointer;
@@ -198,21 +214,9 @@ export class PopupElement extends MapChildElement {
 
       .maplibregl-popup-close-button:hover,
       .mapboxgl-popup-close-button:hover {
-        color: #c9d1d9;
-        background: rgba(255, 255, 255, 0.1);
+        color: var(--gk-popup-text, #c9d1d9);
+        background: var(--gk-popup-tag-background, rgba(139, 148, 158, 0.15));
         border-radius: 4px;
-      }
-      
-      /* Ensure popup content has padding for close button */
-      .maplibregl-popup-content,
-      .mapboxgl-popup-content {
-        position: relative;
-        padding: 12px 14px;
-        border-radius: 6px;
-        min-width: 280px;
-        max-width: 400px;
-        overflow-wrap: break-word;
-        word-wrap: break-word;
       }
 
       /* Utility classes for structured content */
@@ -231,7 +235,7 @@ export class PopupElement extends MapChildElement {
         margin: 0 0 2px 0;
         padding-right: 24px;
         font-weight: 700;
-        color: #c9d1d9;
+        color: var(--gk-popup-text, #c9d1d9);
         font-size: 12px;
         line-height: 1.4;
         display: flex;
@@ -258,7 +262,7 @@ export class PopupElement extends MapChildElement {
       .geokit-popup-badge {
         display: inline;
         margin-left: 6px;
-        background: #58a6ff;
+        background: var(--gk-popup-link-color, #58a6ff);
         color: #fff;
         font-size: 10px;
         font-weight: 600;
@@ -271,7 +275,7 @@ export class PopupElement extends MapChildElement {
         margin: 0 0 8px 0;
         font-size: 10px;
         font-weight: 400;
-        color: #8b949e !important;
+        color: var(--gk-popup-text-muted, #8b949e) !important;
         line-height: 1.4;
         display: block;
       }
@@ -287,8 +291,8 @@ export class PopupElement extends MapChildElement {
       .geokit-popup-tag {
         display: inline-flex;
         align-items: center;
-        background: rgba(139, 148, 158, 0.15);
-        color: #c9d1d9;
+        background: var(--gk-popup-tag-background, rgba(139, 148, 158, 0.15));
+        color: var(--gk-popup-tag-text, #c9d1d9);
         font-size: 11px;
         border-radius: 4px;
         padding: 3px 8px;
@@ -296,14 +300,14 @@ export class PopupElement extends MapChildElement {
       }
 
       .geokit-popup-tag-label {
-        color: #6e7681;
+        color: var(--gk-popup-text-muted, #6e7681);
         font-weight: 500;
       }
 
       .geokit-popup-actions {
         margin-top: 10px;
         padding-top: 10px;
-        border-top: 1px solid rgba(139, 148, 158, 0.2);
+        border-top: 1px solid var(--gk-popup-border, rgba(139, 148, 158, 0.2));
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -321,7 +325,7 @@ export class PopupElement extends MapChildElement {
         border-radius: 6px;
         text-decoration: none;
         transition: all 0.15s ease;
-        color: #8b949e;
+        color: var(--gk-popup-text-muted, #8b949e);
       }
 
       /* Icon button style (when SVG is provided) */
@@ -332,7 +336,7 @@ export class PopupElement extends MapChildElement {
       }
 
       .geokit-popup-action--icon:hover {
-        background-color: rgba(139, 148, 158, 0.15);
+        background-color: var(--gk-popup-tag-background, rgba(139, 148, 158, 0.15));
       }
 
       .geokit-popup-action svg {
@@ -342,20 +346,20 @@ export class PopupElement extends MapChildElement {
 
       /* Text link style (fallback when no SVG) */
       .geokit-popup-action--text {
-        color: #58a6ff;
+        color: var(--gk-popup-link-color, #58a6ff);
         font-size: 12px;
         padding: 4px 8px;
       }
 
       .geokit-popup-action--text:hover {
-        color: #79c0ff;
+        filter: brightness(1.2);
         text-decoration: underline;
       }
 
       .geokit-popup-footer-label {
         font-size: 10px;
         font-weight: 600;
-        color: #6e7681;
+        color: var(--gk-popup-text-muted, #6e7681);
         text-transform: uppercase;
         letter-spacing: 0.5px;
         display: inline-flex;
@@ -376,6 +380,12 @@ export class PopupElement extends MapChildElement {
 
   protected override async onMapReady(): Promise<void> {
     await super.onMapReady();
+    this.showPopup();
+  }
+
+  /** Re-show popup after map style change (e.g. theme toggle). */
+  protected override onStyleLoad(): void {
+    if (!this.map) return;
     this.showPopup();
   }
 

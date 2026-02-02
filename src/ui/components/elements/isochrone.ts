@@ -14,6 +14,7 @@ import { getProviderForCapability } from '../../../api/providers/registry';
 import { polygonToH3, h3SetToMultiPolygon } from '../../../utils/h3';
 import { smoothFeatureCollection } from '../../../utils/smoothing';
 import { debug } from '../../utils/logger';
+import { getCSSVariable } from '../../utils/theme';
 import type { Polygon } from '../../../types';
 
 export interface IsochroneOptions {
@@ -79,6 +80,25 @@ export class IsochroneElement extends MapChildElement {
 
     // Setup map interaction listeners to upgrade resolution on zoom/interaction
     this.setupMapInteractionListeners();
+  }
+
+  /** Re-add isochrone layers after map style change (e.g. theme toggle). */
+  protected override onStyleLoad(): void {
+    debug.log('[Isochrone] onStyleLoad', {
+      hasMap: !!this.map,
+      visible: this.visible,
+      currentCacheKey: this.currentCacheKey,
+    });
+    if (!this.map) return;
+    // Clear cache so we re-add layers even though data is unchanged (style replace removed them)
+    this.currentCacheKey = null;
+    // We're only called after gk-map-style-load (style already replaced). Use double rAF to avoid
+    // MapTiler coalesceChanges; don't use waitForStyleLoaded (style.load may have already fired).
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        this.fetchAndRenderIsochrone();
+      });
+    });
   }
 
   /**
@@ -340,8 +360,19 @@ export class IsochroneElement extends MapChildElement {
   }
 
   private async fetchAndRenderIsochrone(): Promise<void> {
-    if (!this.map) return;
-    if (!this.visible) return;
+    debug.log('[Isochrone] fetchAndRenderIsochrone entry', {
+      hasMap: !!this.map,
+      visible: this.visible,
+      sourceId: this.sourceId ?? null,
+    });
+    if (!this.map) {
+      debug.log('[Isochrone] fetchAndRenderIsochrone early return: no map');
+      return;
+    }
+    if (!this.visible) {
+      debug.log('[Isochrone] fetchAndRenderIsochrone early return: not visible');
+      return;
+    }
 
     // Ensure IDs are initialized (in case connectedCallback hasn't completed)
     if (!this.sourceId) {
@@ -349,6 +380,7 @@ export class IsochroneElement extends MapChildElement {
       this.sourceId = `isochrone-${uuid}`;
       this.fillLayerId = `polygon-fill-isochrone-${uuid}`;
       this.lineLayerId = `polygon-stroke-isochrone-${uuid}`;
+      debug.log('[Isochrone] fetchAndRenderIsochrone initialized IDs', { sourceId: this.sourceId });
     }
 
     const lat = parseFloat(this.getAttribute('lat') || '');
@@ -372,8 +404,22 @@ export class IsochroneElement extends MapChildElement {
 
     // Create cache key (include 'stored' suffix when using pre-computed data)
     const cacheKey = `${lat},${lng},${time},${mode}${canUseStoredData ? ':stored' : ''}`;
-    if (cacheKey === this.currentCacheKey) return;
+    if (cacheKey === this.currentCacheKey) {
+      debug.log('[Isochrone] fetchAndRenderIsochrone early return: cache hit', {
+        cacheKey,
+        currentCacheKey: this.currentCacheKey,
+      });
+      return;
+    }
 
+    debug.log('[Isochrone] fetchAndRenderIsochrone proceeding', {
+      lat,
+      lng,
+      time,
+      mode,
+      cacheKey,
+      canUseStoredData,
+    });
     this.currentCacheKey = cacheKey;
 
     let result: GeoJSON.FeatureCollection | null = null;
@@ -484,61 +530,62 @@ export class IsochroneElement extends MapChildElement {
       // Add source
       if (!this.map) return;
 
+      debug.log('[Isochrone] fetchAndRenderIsochrone adding source + layers', {
+        sourceId: this.sourceId,
+        fillLayerId: this.fillLayerId,
+        lineLayerId: this.lineLayerId,
+        beforeLayerId,
+      });
       this.map.addSource(this.sourceId, {
         type: 'geojson',
         data: processedData,
       });
 
-      // Add fill layer (above polygons, below points)
+      // Add fill layer (above polygons, below points). Do not pass undefined as second arg (MapTiler coalesceChanges).
       if (this.fillLayerId) {
-        // Ensure fill-antialias is explicitly boolean (not ternary result that could be coerced)
-        const isH3Render = this.render === 'h3';
-        const fillAntialias: boolean = isH3Render ? false : true;
-        const hideOutline = isH3Render || this.strokeWidth === 0;
-
-        const paintProperties: Record<string, unknown> = {
-          'fill-color': this.color,
-          'fill-opacity': this.opacity,
-          'fill-antialias': fillAntialias, // Disable antialiasing for H3 to avoid visible borders
-        };
-
-        // Hide fill outline when H3 or when stroke width is 0
-        if (hideOutline) {
-          paintProperties['fill-outline-color'] = this.color;
-        }
-
-        this.map.addLayer(
-          {
-            id: this.fillLayerId,
-            type: 'fill',
-            source: this.sourceId,
-            paint: paintProperties,
+        const fillSpec = {
+          id: this.fillLayerId,
+          type: 'fill',
+          source: this.sourceId,
+          paint: {
+            'fill-color': this.color,
+            'fill-opacity': this.opacity,
+            'fill-antialias': false,
           },
-          beforeLayerId
-        );
+        };
+        if (beforeLayerId != null) {
+          this.map.addLayer(fillSpec, beforeLayerId);
+        } else {
+          this.map.addLayer(fillSpec);
+        }
       }
 
       // Add line layer (above polygons, below points) - skip for H3 rendering to avoid stroke on hexagons
       if (this.lineLayerId && this.strokeWidth > 0 && this.render !== 'h3') {
-        this.map.addLayer(
-          {
-            id: this.lineLayerId,
-            type: 'line',
-            source: this.sourceId,
-            paint: {
-              'line-color': this.strokeColor,
-              'line-width': this.strokeWidth,
-              'line-blur': 1, // Soften edges
-            },
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round',
-            },
+        const lineSpec = {
+          id: this.lineLayerId,
+          type: 'line',
+          source: this.sourceId,
+          paint: {
+            'line-color': this.strokeColor,
+            'line-width': this.strokeWidth,
+            'line-blur': 1, // Soften edges
           },
-          beforeLayerId
-        );
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+          },
+        };
+        if (beforeLayerId != null) {
+          this.map.addLayer(lineSpec, beforeLayerId);
+        } else {
+          this.map.addLayer(lineSpec);
+        }
       }
 
+      debug.log(
+        '[Isochrone] fetchAndRenderIsochrone done (source + layers added, restore complete)'
+      );
       // Dispatch event immediately after we have the data
       // This allows demographics to start calculating concurrently with map rendering
       // Demographics only need the polygon geometry, not the visual rendering
@@ -618,6 +665,34 @@ export class IsochroneElement extends MapChildElement {
   }
 
   /**
+   * Apply upgraded GeoJSON to the source and dispatch event in the next frame.
+   * Deferring avoids mutating the map during requestIdleCallback (MapTiler coalesceChanges).
+   */
+  private applyUpgradedDataAndDispatch(
+    source: unknown,
+    upgradedData: GeoJSON.FeatureCollection,
+    targetResolution: number
+  ): void {
+    const sourceWithSetData = source as { setData?: (data: unknown) => void };
+    requestAnimationFrame(() => {
+      if (source && typeof sourceWithSetData.setData === 'function') {
+        sourceWithSetData.setData(upgradedData);
+      }
+      this.dispatchEvent(
+        new CustomEvent('isochrone-upgraded', {
+          detail: {
+            lat: parseFloat(this.getAttribute('lat') || '0'),
+            lng: parseFloat(this.getAttribute('lng') || '0'),
+            resolution: targetResolution,
+            element: this,
+          },
+          bubbles: true,
+        })
+      );
+    });
+  }
+
+  /**
    * Convert raw polygon to H3 hexagons when user interacts with the map
    * Initial render uses raw polygon for instant visibility
    * This conversion happens on zoom/interaction for better visual quality
@@ -644,15 +719,18 @@ export class IsochroneElement extends MapChildElement {
           this.hasUpgradedResolution = false;
           return;
         }
-        const source = this.map.getSource(this.sourceId) as { _data?: GeoJSON.FeatureCollection };
+        const source = this.map.getSource(this.sourceId) as {
+          _data?: GeoJSON.FeatureCollection;
+          setData?: (data: unknown) => void;
+        };
         if (!source || !source._data) {
           this.hasUpgradedResolution = false; // Reset so we can try again
           return;
         }
 
-        // Try to convert from current source data
+        // Try to convert from current source data (guard: source may have been removed by setStyle)
         const upgradedData = this.convertToH3(source._data);
-        (source as any).setData(upgradedData);
+        this.applyUpgradedDataAndDispatch(source, upgradedData, targetResolution);
         return;
       }
 
@@ -667,25 +745,10 @@ export class IsochroneElement extends MapChildElement {
         return;
       }
 
-      // Update the source data with H3 hexagons
+      // Defer setData to next frame so we don't run during requestIdleCallback (avoids MapTiler coalesceChanges)
       if (!this.sourceId || !this.map?.getSource) return;
-      const source = this.map.getSource(this.sourceId);
-      if (source) {
-        (source as any).setData(upgradedData);
-      }
-
-      // Dispatch upgrade event
-      this.dispatchEvent(
-        new CustomEvent('isochrone-upgraded', {
-          detail: {
-            lat: parseFloat(this.getAttribute('lat') || '0'),
-            lng: parseFloat(this.getAttribute('lng') || '0'),
-            resolution: targetResolution,
-            element: this,
-          },
-          bubbles: true,
-        })
-      );
+      const source = this.map.getSource(this.sourceId) as unknown;
+      this.applyUpgradedDataAndDispatch(source, upgradedData, targetResolution);
     } catch (error) {
       debug.warn(`[Isochrone] Failed to convert to H3 hexagons:`, error);
       // Reset on error so we can try again
@@ -759,7 +822,9 @@ export class IsochroneElement extends MapChildElement {
   }
 
   get color(): string {
-    return this.getAttribute('color') || '#3FB1CE';
+    return (
+      this.getAttribute('color') || getCSSVariable(this.mapElement, '--gk-isochrone-color', '')
+    );
   }
 
   get opacity(): number {
@@ -767,7 +832,10 @@ export class IsochroneElement extends MapChildElement {
   }
 
   get strokeColor(): string {
-    return this.getAttribute('stroke-color') || '#1B8AA8';
+    return (
+      this.getAttribute('stroke-color') ||
+      getCSSVariable(this.mapElement, '--gk-isochrone-stroke-color', '')
+    );
   }
 
   get strokeWidth(): number {
