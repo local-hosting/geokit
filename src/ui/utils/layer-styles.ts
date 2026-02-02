@@ -428,6 +428,17 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
 
   // Create glow layer (bottom) - serves as hit area and visual glow
   if (!map.getLayer?.(glowLayerId)) {
+    // Glow opacity: selected > hover > default
+    const glowSelectedOpacity = Math.min(glowHoverOpacity * 1.3, 1); // 30% brighter than hover
+    const glowOpacityExpression = [
+      'case',
+      ['boolean', ['feature-state', 'selected'], false],
+      glowSelectedOpacity,
+      ['boolean', ['feature-state', 'hover'], false],
+      glowHoverOpacity,
+      glowOpacity,
+    ];
+
     const glowLayerSpec: Record<string, unknown> = {
       id: glowLayerId,
       type: 'circle',
@@ -436,12 +447,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       paint: {
         'circle-radius': glowRadius,
         'circle-color': glowColor,
-        'circle-opacity': [
-          'case',
-          ['boolean', ['feature-state', 'hover'], false],
-          glowHoverOpacity,
-          glowOpacity,
-        ],
+        'circle-opacity': glowOpacityExpression,
         'circle-blur': glowBlur,
       },
     };
