@@ -124,10 +124,12 @@ export class MapCollectionElement extends BaseElement {
       return;
     }
 
-    // Build slots array FIRST - all start with placeholders
+    // Build slots array FIRST - all start with placeholders (skip if map already initialized, e.g. preloaded)
     this.slots = mapElements.map((mapElement) => {
       mapElement.setPoolManaged(true);
-      mapElement.showPlaceholder();
+      if (!(mapElement as any).isInitialized) {
+        mapElement.showPlaceholder();
+      }
       return {
         slotElement: mapElement,
         mapElement,
@@ -479,7 +481,10 @@ export class MapCollectionElement extends BaseElement {
     for (const mapElement of mapElements) {
       if (!existingElements.has(mapElement)) {
         mapElement.setPoolManaged(true);
-        mapElement.showPlaceholder();
+        // Only show placeholder if map isn't already initialized (e.g. preloaded maps)
+        if (!(mapElement as any).isInitialized) {
+          mapElement.showPlaceholder();
+        }
 
         // Check if element is currently visible in viewport
         const rect = mapElement.getBoundingClientRect();

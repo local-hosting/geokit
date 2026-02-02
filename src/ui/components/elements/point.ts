@@ -10,6 +10,12 @@
 import { MapChildElement } from '../map-child-element';
 import { normalizeCoordinatesArray, isValidCoordinate } from '../../../utils/coordinates';
 import type { MapEvent, MapRenderedFeature } from '../../providers/types';
+import {
+  buildOpacityWithHoverExpression,
+  createHoverStateHandlers,
+  HOVER_GLOW_OPACITY,
+  HOVER_POINT_OPACITY,
+} from '../../utils/feature-state-hover';
 import { PopupElement } from './popup';
 
 export interface PointOptions {
@@ -259,7 +265,8 @@ export class PointElement extends MapChildElement {
     const pointId = this._propPointId ?? this.safeGetAttribute('point-id');
     const pointName = this._propPointName ?? this.safeGetAttribute('point-name');
 
-    // Create GeoJSON point data
+    // Create GeoJSON point data. Always set point-id for feature-state (hover) and promoteId.
+    const featureId = pointId ?? this.sourceId ?? `point-${crypto.randomUUID()}`;
     const pointData: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
       features: [
@@ -272,19 +279,18 @@ export class PointElement extends MapChildElement {
           properties: {
             color: this.color,
             size: this.size,
-            ...(pointId && { id: pointId, 'point-id': pointId }),
+            'point-id': featureId,
+            ...(pointId && { id: pointId }),
             ...(pointName && { 'point-name': pointName }),
           },
         },
       ],
     };
 
-    this.createPointLayers(pointData);
+    this.createPointLayers(pointData, featureId);
 
-    // Setup interactions if metadata available
-    if (pointId || pointName) {
-      this.setupInteractions();
-    }
+    // Setup both hover and click handlers (hover always; click when pointId or pointName)
+    this.setupInteractions(featureId);
 
     // Dispatch event
     this.dispatchEvent(
@@ -295,9 +301,7 @@ export class PointElement extends MapChildElement {
     );
   }
 
-  private createPointLayers(pointData: GeoJSON.FeatureCollection): void {
-    // createPointLayers called
-
+  private createPointLayers(pointData: GeoJSON.FeatureCollection, _featureId: string): void {
     if (!this.map || !this.sourceId || !this.layerId) {
       console.warn('[Point] Cannot create layers: map or IDs missing', {
         hasMap: !!this.map,
@@ -311,11 +315,18 @@ export class PointElement extends MapChildElement {
       this.map.addSource(this.sourceId, {
         type: 'geojson',
         data: pointData,
+        promoteId: 'point-id',
       });
     } catch (error) {
       console.error('[Point] Failed to add source:', error);
       return;
     }
+
+    // Data-driven opacity: highlight glow on hover (feature-state set in setupInteractions)
+    const glowOpacityExpression = buildOpacityWithHoverExpression(
+      this.glowOpacity,
+      HOVER_GLOW_OPACITY
+    );
 
     // Add glow layer if enabled (bottom layer - provides visual effect + larger hit area)
     if (this.glow && this.glowLayerId) {
@@ -327,7 +338,7 @@ export class PointElement extends MapChildElement {
           paint: {
             'circle-radius': this.getGlowRadiusExpression(),
             'circle-color': this.glowColor,
-            'circle-opacity': this.glowOpacity,
+            'circle-opacity': glowOpacityExpression as any,
             'circle-blur': this.glowBlur,
           },
         });
@@ -355,11 +366,17 @@ export class PointElement extends MapChildElement {
       }
     }
 
+    // Data-driven opacity: full opacity on hover
+    const pointOpacityExpression = buildOpacityWithHoverExpression(
+      this.opacity,
+      HOVER_POINT_OPACITY
+    );
+
     // Add main point layer
     const paint: Record<string, unknown> = {
       'circle-radius': this.getZoomRadiusExpression(),
       'circle-color': this.color,
-      'circle-opacity': this.opacity,
+      'circle-opacity': pointOpacityExpression,
       'circle-blur': this.pointBlur,
     };
 
@@ -383,23 +400,23 @@ export class PointElement extends MapChildElement {
     }
   }
 
-  private setupInteractions(): void {
+  private hoverLayerId: string | null = null;
+
+  private setupInteractions(featureId: string): void {
     if (!this.map || !this.layerId) return;
 
-    // Cursor handling
-    this.map.on('mouseenter', this.layerId, () => {
-      const canvas = this.map?.getCanvas?.();
-      if (canvas) {
-        canvas.style.cursor = 'pointer';
-      }
-    });
+    // Use glow layer for hover when present (larger hit area); otherwise point layer
+    this.hoverLayerId = this.glow && this.glowLayerId ? this.glowLayerId : this.layerId;
+    const hoverLayerId = this.hoverLayerId;
 
-    this.map.on('mouseleave', this.layerId, () => {
-      const canvas = this.map?.getCanvas?.();
-      if (canvas) {
-        canvas.style.cursor = '';
-      }
+    // Hover: shared feature-state logic from geokit utils
+    const { onMouseEnter, onMouseLeave } = createHoverStateHandlers({
+      map: this.map,
+      getSourceId: () => this.sourceId!,
+      getFeatureId: () => featureId,
     });
+    this.map.on('mouseenter', hoverLayerId, onMouseEnter);
+    this.map.on('mouseleave', hoverLayerId, onMouseLeave);
 
     // Click handling
     this.clickHandler = (e: MapEvent) => {
@@ -664,13 +681,16 @@ export class PointElement extends MapChildElement {
       this.mapClickHandler = null;
     }
 
-    if (this.layerId) {
+    // Remove hover listeners (attached to glow or point layer)
+    const hoverLayer = this.hoverLayerId ?? this.layerId;
+    if (hoverLayer) {
       try {
-        this.map.off('mouseenter', this.layerId);
-        this.map.off('mouseleave', this.layerId);
+        this.map.off('mouseenter', hoverLayer);
+        this.map.off('mouseleave', hoverLayer);
       } catch {
         // Ignore
       }
+      this.hoverLayerId = null;
     }
 
     // Cleanup layers

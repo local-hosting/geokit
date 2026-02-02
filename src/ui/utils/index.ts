@@ -6,5 +6,6 @@
 
 export * from './map-utils';
 export * from './layer-styles';
+export * from './feature-state-hover';
 export * from './logger';
 export { getFeatureId } from '../../utils/geojson';
