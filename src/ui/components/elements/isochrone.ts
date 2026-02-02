@@ -329,8 +329,11 @@ export class IsochroneElement extends MapChildElement {
   }
 
   /**
-   * Find the first circle layer to insert isochrone layers before
-   * This ensures isochrone fill layers render below point (circle) layers
+   * Find the layer to insert isochrone layers before so isochrones render below venue/point layers.
+   * 1) First circle layer (venue glow/points are usually circle type).
+   * 2) Fallback: first layer whose id looks like a venue layer (e.g. *-venue-glow, *-venue-points)
+   *    so we don't add isochrone on top when the base style has no circle layers (e.g. MapTiler dataviz).
+   * 3) Last resort: first layer in the style so we insert at bottom and never cover points.
    */
   private findFirstCircleLayer(): string | undefined {
     if (!this.map) return undefined;
@@ -342,18 +345,27 @@ export class IsochroneElement extends MapChildElement {
       if (!getStyle) return undefined;
 
       const style = getStyle();
-      if (!style || !style.layers) return undefined;
+      if (!style || !style.layers || style.layers.length === 0) return undefined;
 
-      // Find first circle layer
       for (const layer of style.layers) {
         if (layer.type === 'circle') {
           return layer.id;
         }
       }
 
-      return undefined;
+      // No circle layer (e.g. MapTiler base style): insert before first venue-like layer so isochrone stays below points
+      for (const layer of style.layers) {
+        const id = layer.id ?? '';
+        if (/venue/.test(id) || id.endsWith('-glow') || id.endsWith('-points')) {
+          return layer.id;
+        }
+      }
+
+      // Never add isochrone on top: insert before the bottommost layer so isochrones stay below points
+      const firstLayer = style.layers[0];
+      return firstLayer?.id;
     } catch {
-      // Silently fail - layers will be added at top
+      // Silently fail - caller will add at top if undefined
     }
 
     return undefined;

@@ -2742,6 +2742,19 @@ export class MapElement extends BaseElement {
     if (!data) return false;
 
     try {
+      // Capture previous selected id for event (before we mutate)
+      let previousSelectedId: string | null = null;
+      for (const f of data.features) {
+        const props = (f as GeoJSON.Feature).properties;
+        if (props?.[selectionProperty]) {
+          const id = idProperties.map((p) => props[p]).find((v) => v != null);
+          if (id != null) {
+            previousSelectedId = String(id);
+            break;
+          }
+        }
+      }
+
       let foundSelected = false;
       const newFeatures = data.features.map((f: GeoJSON.Feature) => {
         // Create a new feature object to trigger reactivity
@@ -2785,6 +2798,12 @@ export class MapElement extends BaseElement {
         } else if (map && typeof (map as any).repaint === 'function') {
           (map as any).repaint();
         }
+        this.dispatchEvent(
+          new CustomEvent('gk-feature-selection-changed', {
+            detail: { sourceId, selectedId, previousSelectedId },
+            bubbles: true,
+          })
+        );
       }
 
       return success;
