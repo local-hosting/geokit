@@ -9,6 +9,7 @@ export { MarkerElement } from './marker';
 export { PolygonElement } from './polygon';
 export { PointElement } from './point';
 export { PolylineElement } from './polyline';
+export { LayerElement, type LayerOptions, type LayerType } from './layer';
 export {
   PopupElement,
   dispatchClearPopupsEvent,
