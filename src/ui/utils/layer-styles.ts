@@ -394,17 +394,17 @@ export function multiplyRadiusExpression(
  */
 export function getPointRadiusInterpolation(options: CircleStyleOptions = {}): unknown[] {
   const { scale = 1, exponent = 1.5 } = options;
-  // Point radius smaller than glow at low zoom but still visible; glow stays large (getGlowRadiusInterpolation)
+  // Point radius smaller than glow at low zoom; app uses minZoom 2 so radius 1 at zoom 2 is visible
   return [
     'interpolate',
     ['exponential', exponent],
     ['zoom'],
     0,
-    0.85 * scale, // Full zoom out - visible dot, glow larger
+    0.85 * scale, // Full zoom out (below app minZoom 2)
     2,
-    1 * scale, // Hero minZoom 2
+    1 * scale, // App minZoom 2
     3,
-    1.25 * scale, // Min zoom
+    1.25 * scale,
     6,
     2 * scale, // Country view
     8,
@@ -432,9 +432,9 @@ export function getGlowRadiusInterpolation(options: CircleStyleOptions = {}): un
     ['exponential', exponent],
     ['zoom'],
     0,
-    2.5 * scale, // Full zoom out - visible glow
+    2.5 * scale, // Full zoom out (below app minZoom 2)
     2,
-    3 * scale, // Hero minZoom 2 - visible when zoomed out
+    3 * scale, // App minZoom 2 - visible when zoomed out
     3,
     4 * scale, // Min zoom
     6,
