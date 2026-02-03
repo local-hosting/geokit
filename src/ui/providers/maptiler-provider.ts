@@ -35,6 +35,22 @@ import type {
   PopupOptions,
 } from './types';
 
+/**
+ * True if the value is valid for MapTiler/MapLibre setStyle (URL, StyleSpec object, or JSON string).
+ * Used to no-op setStyle when the SDK passes an invalid value (e.g. style name during remove()).
+ */
+function isValidStyleForSetStyle(style: unknown): boolean {
+  if (style == null) return false;
+  if (typeof style === 'string') {
+    if (style.trim() === '') return false;
+    if (style.startsWith('http://') || style.startsWith('https://')) return true;
+    if (style.trimStart().startsWith('{')) return true; // JSON StyleSpec string
+    return false; // style name (e.g. "Streets Default v2") is invalid for setStyle
+  }
+  if (typeof style === 'object' && 'version' in style) return true; // StyleSpec object
+  return false;
+}
+
 export class MapTilerUIProvider extends BaseUIProvider {
   protected sdk: any = null;
   private sdkLoadPromise: Promise<any> | null = null;
@@ -161,31 +177,28 @@ export class MapTilerUIProvider extends BaseUIProvider {
       this.sdk.config.apiKey = this.config.apiKey;
     }
 
-    // Build style - use SDK's MapStyle enum when possible
-    // Using the enum instead of raw URLs may help avoid deprecated style warnings
+    const apiKey = this.config?.apiKey || '';
+    const styleBase = (name: string) =>
+      `https://api.maptiler.com/maps/${name}/style.json?key=${apiKey}`;
+
+    // Build style: use explicit URLs to avoid SDK deprecated enums (e.g. "Streets Default v2")
     let style: any = options.style;
     if (!style) {
-      // Default to DATAVIZ_DARK style using SDK enum if available
-      style =
-        this.sdk?.MapStyle?.DATAVIZ?.DARK ||
-        `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${this.config?.apiKey || ''}`;
+      style = styleBase('dataviz-dark');
     } else if (typeof style === 'string' && !style.startsWith('http')) {
-      // Convert style name to SDK enum or URL (light/dark theme + named styles)
-      const styleMap: Record<string, any> = {
-        light: this.sdk?.MapStyle?.DATAVIZ?.DEFAULT,
-        dark: this.sdk?.MapStyle?.DATAVIZ?.DARK,
-        'dataviz-dark': this.sdk?.MapStyle?.DATAVIZ?.DARK,
-        dataviz: this.sdk?.MapStyle?.DATAVIZ?.DEFAULT,
-        streets: this.sdk?.MapStyle?.STREETS?.DEFAULT,
-        'streets-dark': this.sdk?.MapStyle?.STREETS?.DARK,
-        satellite: this.sdk?.MapStyle?.SATELLITE?.DEFAULT,
-        hybrid: this.sdk?.MapStyle?.HYBRID?.DEFAULT,
-        outdoor: this.sdk?.MapStyle?.OUTDOOR?.DEFAULT,
-        basic: this.sdk?.MapStyle?.BASIC?.DEFAULT,
+      const styleMap: Record<string, string> = {
+        light: styleBase('dataviz'),
+        dark: styleBase('dataviz-dark'),
+        'dataviz-dark': styleBase('dataviz-dark'),
+        dataviz: styleBase('dataviz'),
+        streets: styleBase('streets'),
+        'streets-dark': styleBase('streets-dark'),
+        satellite: styleBase('satellite'),
+        hybrid: styleBase('hybrid'),
+        outdoor: styleBase('outdoor'),
+        basic: styleBase('basic'),
       };
-      style =
-        styleMap[style.toLowerCase()] ||
-        `https://api.maptiler.com/maps/${style}/style.json?key=${this.config?.apiKey || ''}`;
+      style = styleMap[style.toLowerCase()] ?? styleBase(style);
     }
 
     const mapOptions = {
@@ -211,7 +224,21 @@ export class MapTilerUIProvider extends BaseUIProvider {
       ...(options.extra || {}),
     };
 
-    return new this.sdk.Map(mapOptions);
+    const map = new this.sdk.Map(mapOptions);
+
+    // Wrap setStyle so invalid values are no-oped. MapTiler SDK's remove() calls setStyle()
+    // with its default variant ("Streets Default v2"), which is deprecated and invalid for
+    // setStyle (expects URL or StyleSpec). No-oping avoids deprecation and "Invalid style" logs.
+    const originalSetStyle = map.setStyle?.bind(map);
+    if (typeof originalSetStyle === 'function') {
+      map.setStyle = (s: unknown) => {
+        if (isValidStyleForSetStyle(s)) {
+          return originalSetStyle(s);
+        }
+      };
+    }
+
+    return map;
   }
 
   createControl(type: string, options: ControlOptions): any {
