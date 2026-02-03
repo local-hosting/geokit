@@ -46,6 +46,10 @@ export class MapElement extends BaseElement {
     'provider',
     'sync-url',
     'theme',
+    'terrain-min-zoom',
+    'terrain-source-url',
+    'terrain-exaggeration',
+    'terrain-enabled',
   ];
 
   private _controlsVisible: boolean = true;
@@ -76,6 +80,12 @@ export class MapElement extends BaseElement {
 
   /** Handler for styleimagemissing so we can remove it before map.remove() */
   private _styleImageMissingHandler: ((e: { id: string }) => void) | null = null;
+
+  /** Window error handler to suppress MapTiler "unknown feature value" (thrown async during coalesceChanges/render) */
+  private _maptilerErrorHandler: ((event: ErrorEvent) => void) | null = null;
+
+  /** Terrain: zoom handler for toggling 3D terrain; removed in removeAllMapListeners */
+  private _terrainZoomHandler: (() => void) | null = null;
 
   constructor() {
     super();
@@ -305,6 +315,67 @@ export class MapElement extends BaseElement {
 
       this.map = await provider.createMap(container, options);
 
+      // Wrap queryRenderedFeatures so MapTiler SDK internal calls (e.g. mousemove) don't throw
+      // "unknown feature value" when parsing vector tiles in Safari
+      if (this.map?.queryRenderedFeatures) {
+        const original = this.map.queryRenderedFeatures.bind(this.map);
+        this.map.queryRenderedFeatures = (
+          point: { x: number; y: number },
+          options?: { layers?: string[] }
+        ) => {
+          try {
+            return original(point, options);
+          } catch {
+            return [];
+          }
+        };
+      }
+
+      // Wrap setFeatureState/removeFeatureState so MapTiler SDK "unknown feature value" during
+      // coalesceChanges/render (sync or async) doesn't surface as uncaught
+      const mapAny = this.map as {
+        setFeatureState?: (
+          state: { source: string; id: string | number },
+          props: Record<string, unknown>
+        ) => void;
+        removeFeatureState?: (state: { source: string; id: string | number }) => void;
+      };
+      if (mapAny.setFeatureState) {
+        const originalSet = mapAny.setFeatureState.bind(this.map);
+        mapAny.setFeatureState = (state, props) => {
+          try {
+            originalSet(state, props);
+          } catch {
+            // MapTiler can throw "unknown feature value" when touching feature-state
+          }
+        };
+      }
+      if (mapAny.removeFeatureState) {
+        const originalRemove = mapAny.removeFeatureState.bind(this.map);
+        mapAny.removeFeatureState = (state) => {
+          try {
+            originalRemove(state);
+          } catch {
+            // MapTiler can throw "unknown feature value" when touching feature-state
+          }
+        };
+      }
+
+      // Suppress MapTiler "unknown feature value" when thrown asynchronously (e.g. during coalesceChanges/render)
+      // Use capture phase so we run before other handlers; match message only (stack may be minified/absent)
+      this._maptilerErrorHandler = (event: ErrorEvent) => {
+        const msg =
+          event.message ??
+          (event.error && typeof event.error === 'object' && 'message' in event.error
+            ? String((event.error as Error).message)
+            : '');
+        if (typeof msg === 'string' && msg.includes('unknown feature value')) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+      };
+      window.addEventListener('error', this._maptilerErrorHandler, true);
+
       // Store reference to canvas for freeze/unfreeze
       if (this.map) {
         const mapContainer = (this.map as any).getContainer?.();
@@ -357,6 +428,9 @@ export class MapElement extends BaseElement {
             bubbles: true,
           })
         );
+
+        // 3D terrain: enable when zoom >= terrain-min-zoom (if set)
+        this.setupTerrain();
 
         // Defer non-critical setup to avoid blocking first paint
         const deferredSetup = () => {
@@ -936,6 +1010,7 @@ export class MapElement extends BaseElement {
    */
   private removeAllMapListeners(): void {
     this.cleanupUrlSync();
+    this.cleanupTerrain();
     const map = this.map as any;
     if (!map?.off) return;
     if (this._styleImageMissingHandler) {
@@ -944,6 +1019,76 @@ export class MapElement extends BaseElement {
     }
     map.off('style.load');
     map.off('error');
+  }
+
+  /**
+   * Set up 3D terrain when terrain-min-zoom is set (enables terrain feature).
+   * Terrain on/off is controlled only by the terrain-enabled attribute (Layers toggle).
+   */
+  private setupTerrain(): void {
+    const minZoomAttr = this.getAttribute('terrain-min-zoom');
+    if (minZoomAttr === null || minZoomAttr === '') return;
+
+    const map = this.map as any;
+    if (!map?.addSource || !map?.setTerrain) return;
+
+    const explicitUrl = this.getAttribute('terrain-source-url')?.trim();
+    const sourceUrl =
+      explicitUrl ||
+      (this.getAttribute('provider') === 'maptiler' && this.getAttribute('api-key')
+        ? `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${this.getAttribute('api-key')}`
+        : 'https://demotiles.maplibre.org/terrain-tiles/tiles.json');
+    const exaggerationAttr = this.getAttribute('terrain-exaggeration');
+    const exaggeration = Number.isFinite(parseFloat(String(exaggerationAttr)))
+      ? parseFloat(String(exaggerationAttr))
+      : 1;
+
+    const SOURCE_ID = 'gk-terrain-dem';
+    if (map.getSource?.(SOURCE_ID)) return;
+
+    try {
+      map.addSource(SOURCE_ID, {
+        type: 'raster-dem',
+        url: sourceUrl,
+        tileSize: 256,
+      });
+    } catch (err) {
+      debug.warn('[gk-map] Failed to add terrain source', err);
+      return;
+    }
+
+    const updateTerrain = (): void => {
+      try {
+        const enabled =
+          this.getAttribute('terrain-enabled') !== null &&
+          this.getAttribute('terrain-enabled') !== 'false';
+        if (enabled) {
+          map.setTerrain?.({ source: SOURCE_ID, exaggeration });
+        } else {
+          map.setTerrain?.(null);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    this._terrainZoomHandler = updateTerrain;
+    updateTerrain();
+  }
+
+  /**
+   * Remove terrain update handler and disable terrain.
+   */
+  private cleanupTerrain(): void {
+    this._terrainZoomHandler = null;
+    const map = this.map as any;
+    if (map?.setTerrain) {
+      try {
+        map.setTerrain(null);
+      } catch {
+        // ignore
+      }
+    }
   }
 
   /**
@@ -1017,6 +1162,12 @@ export class MapElement extends BaseElement {
         this.cleanupAutoHideControls();
         this.setControlsVisible(true);
       }
+      return;
+    }
+
+    // Terrain toggle from Layers sidebar: re-run terrain logic when terrain-enabled changes
+    if (name === 'terrain-enabled' && this._terrainZoomHandler) {
+      this._terrainZoomHandler();
       return;
     }
 
@@ -2092,6 +2243,11 @@ export class MapElement extends BaseElement {
 
     // Restore console if style-load filter was still active (e.g. theme toggle then immediate teardown)
     this._restoreStyleLoadConsole();
+
+    if (this._maptilerErrorHandler) {
+      window.removeEventListener('error', this._maptilerErrorHandler, true);
+      this._maptilerErrorHandler = null;
+    }
 
     const map = this.map as any;
     if (typeof map.remove === 'function') {
