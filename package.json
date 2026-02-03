@@ -1,6 +1,6 @@
 {
   "name": "@twinfile/geokit",
-  "version": "0.2.16",
+  "version": "0.2.17",
   "description": "A functional, curried geospatial utility toolkit for browser and Node.js",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
