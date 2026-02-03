@@ -50,6 +50,8 @@ export class MapElement extends BaseElement {
     'terrain-source-url',
     'terrain-exaggeration',
     'terrain-enabled',
+    'buildings-min-zoom',
+    'buildings-enabled',
   ];
 
   private _controlsVisible: boolean = true;
@@ -86,6 +88,9 @@ export class MapElement extends BaseElement {
 
   /** Terrain: zoom handler for toggling 3D terrain; removed in removeAllMapListeners */
   private _terrainZoomHandler: (() => void) | null = null;
+
+  /** Buildings: zoom handler for toggling 3D buildings; removed in removeAllMapListeners */
+  private _buildingsZoomHandler: (() => void) | null = null;
 
   constructor() {
     super();
@@ -458,6 +463,9 @@ export class MapElement extends BaseElement {
 
         // 3D terrain: enable when zoom >= terrain-min-zoom (if set)
         this.setupTerrain();
+
+        // 3D buildings: enable when zoom >= buildings-min-zoom (if set)
+        this.setup3DBuildings();
 
         // Defer non-critical setup to avoid blocking first paint
         const deferredSetup = () => {
@@ -1038,6 +1046,7 @@ export class MapElement extends BaseElement {
   private removeAllMapListeners(): void {
     this.cleanupUrlSync();
     this.cleanupTerrain();
+    this.cleanup3DBuildings();
     const map = this.map as any;
     if (!map?.off) return;
     if (this._styleImageMissingHandler) {
@@ -1049,12 +1058,15 @@ export class MapElement extends BaseElement {
   }
 
   /**
-   * Set up 3D terrain when terrain-min-zoom is set (enables terrain feature).
-   * Terrain on/off is controlled only by the terrain-enabled attribute (Layers toggle).
+   * Set up 3D terrain when terrain-min-zoom is set.
+   * Terrain shows when: zoom >= terrain-min-zoom AND terrain-enabled is set.
    */
   private setupTerrain(): void {
     const minZoomAttr = this.getAttribute('terrain-min-zoom');
     if (minZoomAttr === null || minZoomAttr === '') return;
+
+    const minZoom = parseFloat(minZoomAttr);
+    if (!Number.isFinite(minZoom)) return;
 
     const map = this.map as any;
     if (!map?.addSource || !map?.setTerrain) return;
@@ -1086,10 +1098,13 @@ export class MapElement extends BaseElement {
 
     const updateTerrain = (): void => {
       try {
-        const enabled =
+        const toggleEnabled =
           this.getAttribute('terrain-enabled') !== null &&
           this.getAttribute('terrain-enabled') !== 'false';
-        if (enabled) {
+        const currentZoom = map.getZoom?.() ?? 0;
+        const zoomOk = currentZoom >= minZoom;
+
+        if (toggleEnabled && zoomOk) {
           map.setTerrain?.({ source: SOURCE_ID, exaggeration });
         } else {
           map.setTerrain?.(null);
@@ -1100,6 +1115,7 @@ export class MapElement extends BaseElement {
     };
 
     this._terrainZoomHandler = updateTerrain;
+    map.on('zoom', updateTerrain);
     updateTerrain();
   }
 
@@ -1107,11 +1123,160 @@ export class MapElement extends BaseElement {
    * Remove terrain update handler and disable terrain.
    */
   private cleanupTerrain(): void {
-    this._terrainZoomHandler = null;
     const map = this.map as any;
+    if (this._terrainZoomHandler && map?.off) {
+      try {
+        map.off('zoom', this._terrainZoomHandler);
+      } catch {
+        // ignore
+      }
+    }
+    this._terrainZoomHandler = null;
     if (map?.setTerrain) {
       try {
         map.setTerrain(null);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  /**
+   * Set up 3D buildings when buildings-min-zoom is set.
+   * Buildings show when: zoom >= buildings-min-zoom AND buildings-enabled is set.
+   */
+  private setup3DBuildings(): void {
+    const minZoomAttr = this.getAttribute('buildings-min-zoom');
+    if (minZoomAttr === null || minZoomAttr === '') return;
+
+    const minZoom = parseFloat(minZoomAttr);
+    if (!Number.isFinite(minZoom)) return;
+
+    const map = this.map as any;
+    if (!map?.getStyle || !map?.setLayoutProperty) return;
+
+    const BUILDINGS_LAYER_ID = 'gk-3d-buildings';
+
+    const updateBuildings = (): void => {
+      try {
+        const toggleEnabled =
+          this.getAttribute('buildings-enabled') !== null &&
+          this.getAttribute('buildings-enabled') !== 'false';
+        const currentZoom = map.getZoom?.() ?? 0;
+        const zoomOk = currentZoom >= minZoom;
+        const shouldShow = toggleEnabled && zoomOk;
+
+        // Check if we already have a 3D buildings layer
+        const existingLayer = map.getLayer?.(BUILDINGS_LAYER_ID);
+
+        if (shouldShow && !existingLayer) {
+          // Try to find a building source in the style
+          const style = map.getStyle?.();
+          const sources = style?.sources ?? {};
+          let buildingSource: string | null = null;
+          let buildingSourceLayer: string | null = null;
+
+          // Look for common building source names
+          for (const [sourceId, source] of Object.entries(sources)) {
+            if (
+              sourceId.includes('building') ||
+              sourceId === 'openmaptiles' ||
+              sourceId === 'maptiler_planet'
+            ) {
+              buildingSource = sourceId;
+              // For vector sources, we need the source-layer name
+              if ((source as { type?: string }).type === 'vector') {
+                buildingSourceLayer = 'building';
+              }
+              break;
+            }
+          }
+
+          // If no dedicated building source, try the composite/main source
+          if (!buildingSource) {
+            for (const sourceId of Object.keys(sources)) {
+              if (
+                sourceId === 'composite' ||
+                sourceId === 'openmaptiles' ||
+                sourceId.includes('maptiler')
+              ) {
+                buildingSource = sourceId;
+                buildingSourceLayer = 'building';
+                break;
+              }
+            }
+          }
+
+          if (buildingSource) {
+            try {
+              map.addLayer({
+                id: BUILDINGS_LAYER_ID,
+                type: 'fill-extrusion',
+                source: buildingSource,
+                ...(buildingSourceLayer && { 'source-layer': buildingSourceLayer }),
+                minzoom: minZoom,
+                paint: {
+                  'fill-extrusion-color': [
+                    'interpolate',
+                    ['linear'],
+                    ['get', 'height'],
+                    0,
+                    '#d4d4d4',
+                    50,
+                    '#a3a3a3',
+                    100,
+                    '#737373',
+                  ],
+                  'fill-extrusion-height': [
+                    'coalesce',
+                    ['get', 'height'],
+                    ['get', 'render_height'],
+                    10,
+                  ],
+                  'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
+                  'fill-extrusion-opacity': 0.7,
+                },
+              });
+            } catch {
+              // Layer add failed (source-layer might not exist)
+            }
+          }
+        } else if (!shouldShow && existingLayer) {
+          // Hide the layer
+          try {
+            map.removeLayer(BUILDINGS_LAYER_ID);
+          } catch {
+            // ignore
+          }
+        }
+      } catch {
+        // ignore errors
+      }
+    };
+
+    this._buildingsZoomHandler = updateBuildings;
+    map.on('zoom', updateBuildings);
+    updateBuildings();
+  }
+
+  /**
+   * Remove 3D buildings handler and layer.
+   */
+  private cleanup3DBuildings(): void {
+    const map = this.map as any;
+    if (this._buildingsZoomHandler && map?.off) {
+      try {
+        map.off('zoom', this._buildingsZoomHandler);
+      } catch {
+        // ignore
+      }
+    }
+    this._buildingsZoomHandler = null;
+
+    const BUILDINGS_LAYER_ID = 'gk-3d-buildings';
+    if (map?.getLayer?.(BUILDINGS_LAYER_ID)) {
+      try {
+        map.removeLayer(BUILDINGS_LAYER_ID);
       } catch {
         // ignore
       }
@@ -1195,6 +1360,12 @@ export class MapElement extends BaseElement {
     // Terrain toggle from Layers sidebar: re-run terrain logic when terrain-enabled changes
     if (name === 'terrain-enabled' && this._terrainZoomHandler) {
       this._terrainZoomHandler();
+      return;
+    }
+
+    // Buildings toggle from Layers sidebar: re-run buildings logic when buildings-enabled changes
+    if (name === 'buildings-enabled' && this._buildingsZoomHandler) {
+      this._buildingsZoomHandler();
       return;
     }
 
