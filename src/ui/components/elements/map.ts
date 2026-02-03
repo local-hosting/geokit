@@ -361,7 +361,30 @@ export class MapElement extends BaseElement {
         };
       }
 
-      // Suppress MapTiler "unknown feature value" when thrown asynchronously (e.g. during coalesceChanges/render)
+      // Wrap project() to catch DEM elevation errors when terrain is enabled
+      // MapTiler SDK throws "out of range source coordinates for DEM data" when projecting
+      // coordinates outside the terrain tile coverage (e.g. oceans, polar regions)
+      const mapForProject = this.map as {
+        project?: (lngLat: { lng: number; lat: number }) => { x: number; y: number };
+      };
+      if (mapForProject.project) {
+        const originalProject = mapForProject.project.bind(this.map);
+        mapForProject.project = (lngLat: { lng: number; lat: number }) => {
+          try {
+            return originalProject(lngLat);
+          } catch {
+            // Fallback: return center of viewport when DEM lookup fails
+            const canvas = (
+              this.map as { getCanvas?: () => HTMLCanvasElement | null }
+            )?.getCanvas?.();
+            return { x: (canvas?.width ?? 0) / 2, y: (canvas?.height ?? 0) / 2 };
+          }
+        };
+      }
+
+      // Suppress MapTiler errors thrown asynchronously (e.g. during coalesceChanges/render)
+      // - "unknown feature value" when parsing vector tiles in Safari
+      // - "out of range source coordinates for DEM data" when terrain elevation lookup fails
       // Use capture phase so we run before other handlers; match message only (stack may be minified/absent)
       this._maptilerErrorHandler = (event: ErrorEvent) => {
         const msg =
@@ -369,7 +392,11 @@ export class MapElement extends BaseElement {
           (event.error && typeof event.error === 'object' && 'message' in event.error
             ? String((event.error as Error).message)
             : '');
-        if (typeof msg === 'string' && msg.includes('unknown feature value')) {
+        if (
+          typeof msg === 'string' &&
+          (msg.includes('unknown feature value') ||
+            msg.includes('out of range source coordinates for DEM'))
+        ) {
           event.preventDefault();
           event.stopImmediatePropagation();
         }
