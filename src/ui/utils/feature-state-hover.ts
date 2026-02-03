@@ -4,7 +4,41 @@
  * Single place for hover highlight logic: set/clear feature-state and
  * build data-driven opacity expressions. Used by PointElement and by
  * apps (e.g. venue layers) that render many points from one source.
+ *
+ * This is the SOURCE OF TRUTH for all hover visual behavior in GeoKit.
  */
+
+// ============================================================================
+// Hover Visual Configuration (SOURCE OF TRUTH)
+// ============================================================================
+
+/**
+ * Hover visual configuration - centralized settings for consistent hover behavior.
+ * Used by both individual gk-point elements and shared point layers.
+ */
+export const HOVER_CONFIG = {
+  /** Scale factor for hover glow radius (2.0 = 100% larger than base glow) */
+  glowRadiusScale: 2.0,
+
+  /** Default glow opacity on hover */
+  glowOpacity: 0.25,
+
+  /** Blur for hover glow (higher = softer, more glow-like) */
+  glowBlur: 1,
+
+  /** Point stroke width on hover for brightness effect */
+  pointStrokeWidth: 3,
+
+  /** Point stroke color on hover (bright white for maximum visibility) */
+  pointStrokeColor: '#FFFFFF',
+
+  /** Point opacity on hover */
+  pointOpacity: 1,
+} as const;
+
+// ============================================================================
+// Types
+// ============================================================================
 
 // Minimal map interface for feature-state and cursor (avoids pulling full MapInstance).
 // getCanvas may return a canvas-like object (some providers return a wrapper).
@@ -37,17 +71,53 @@ export interface HoverStateHandlers {
   onMouseLeave: () => void;
 }
 
+// ============================================================================
+// Legacy Constants (kept for backward compatibility)
+// ============================================================================
+
 /** Default opacity when hovered (highlight glow) */
-export const HOVER_GLOW_OPACITY = 0.75;
+export const HOVER_GLOW_OPACITY = HOVER_CONFIG.glowOpacity;
 
 /** Default opacity for point circle when hovered */
-export const HOVER_POINT_OPACITY = 1;
+export const HOVER_POINT_OPACITY = HOVER_CONFIG.pointOpacity;
 
 /** Default opacity when focused (more prominent than hover) */
 export const FOCUS_GLOW_OPACITY = 0.9;
 
 /** Default opacity for point circle when focused */
 export const FOCUS_POINT_OPACITY = 1;
+
+// ============================================================================
+// Hover Radius Utilities
+// ============================================================================
+
+/**
+ * Scale a radius expression by the hover glow scale factor.
+ * Use this to create hover glow radius from base glow radius.
+ *
+ * @param baseRadius - Base radius expression (MapLibre interpolation or number)
+ * @returns Scaled radius expression for hover state
+ */
+export function scaleRadiusForHover(baseRadius: unknown[] | number): unknown[] | number {
+  if (typeof baseRadius === 'number') {
+    return baseRadius * HOVER_CONFIG.glowRadiusScale;
+  }
+  return ['*', baseRadius, HOVER_CONFIG.glowRadiusScale];
+}
+
+/**
+ * Get hover point paint properties for brightness effect.
+ * Apply these to a hover point layer.
+ */
+export function getHoverPointPaint(baseColor: string | unknown[]): Record<string, unknown> {
+  return {
+    'circle-color': baseColor,
+    'circle-opacity': HOVER_CONFIG.pointOpacity,
+    'circle-blur': 0,
+    'circle-stroke-width': HOVER_CONFIG.pointStrokeWidth,
+    'circle-stroke-color': HOVER_CONFIG.pointStrokeColor,
+  };
+}
 
 /**
  * Build MapLibre circle-opacity expression: hover => hoverOpacity, else defaultOpacity.

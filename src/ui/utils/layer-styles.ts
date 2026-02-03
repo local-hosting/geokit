@@ -8,7 +8,7 @@
 import type { MapInstance } from '../providers/types';
 import { getCSSVariable, getCSSVariableNumber } from './theme';
 import { debug } from './logger';
-import type { HoverStateHandlers } from './feature-state-hover';
+import { HOVER_CONFIG, type HoverStateHandlers } from './feature-state-hover';
 
 // ============================================================================
 // Types
@@ -922,6 +922,16 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         console.error(`[geokit] Failed to add selection ring ${ringLayerId}:`, err);
       }
     }
+
+    // Setup automatic hover layers (same pattern as non-helper path)
+    setupHoverLayers(map, sourceId, glowLayerId, pointLayerId, {
+      glowRadius: glowRadius ?? getGlowRadiusInterpolation({ scale: 1 }),
+      glowColor: glowColor ?? resolveDefaultLayerColor(),
+      glowBlur: glowBlur ?? resolveGlowBlur(),
+      glowHoverOpacity,
+      circleColor,
+      pointRadius: pointRadius ?? getPointRadiusInterpolation(),
+    });
     return;
   }
 
@@ -1056,6 +1066,29 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       }
     }
   }
+
+  // Setup automatic hover layers using dedicated source (avoids feature-state issues)
+  setupHoverLayers(map, sourceId, glowLayerId, pointLayerId, {
+    glowRadius: glowRadius ?? getGlowRadiusInterpolation({ scale: 1 }),
+    glowColor: glowColor ?? resolveDefaultLayerColor(),
+    glowBlur: glowBlur ?? resolveGlowBlur(),
+    glowHoverOpacity,
+    circleColor,
+    pointRadius: pointRadius ?? getPointRadiusInterpolation(),
+  });
+}
+
+// ============================================================================
+// Hover Layer Setup (used by createSharedPointLayers)
+// ============================================================================
+
+interface HoverLayerOptions {
+  glowRadius: unknown[];
+  glowColor: string | unknown[];
+  glowBlur: number;
+  glowHoverOpacity?: number | unknown[];
+  circleColor: string | unknown[];
+  pointRadius: unknown[];
 }
 
 const EMPTY_GEOJSON: GeoJSON.FeatureCollection = {
@@ -1066,6 +1099,217 @@ const EMPTY_GEOJSON: GeoJSON.FeatureCollection = {
 /** GeoJSON source with setData (MapLibre/MapTiler) */
 interface GeoJSONSourceWithSetData {
   setData?(data: GeoJSON.FeatureCollection | GeoJSON.Feature): void;
+}
+
+/**
+ * Setup hover layers for shared point layers.
+ * Creates a dedicated hover source + glow layer + point layer that respond to mouse events.
+ * Uses HOVER_CONFIG from feature-state-hover.ts as source of truth.
+ */
+function setupHoverLayers(
+  map: MapInstance,
+  sourceId: string,
+  glowLayerId: string,
+  pointLayerId: string,
+  options: HoverLayerOptions
+): void {
+  const { glowHoverOpacity, circleColor } = options;
+  const hoverSourceId = `${sourceId}-hover`;
+  const hoverGlowLayerId = `${glowLayerId}-hover`;
+
+  // Create hover source
+  if (!map.getSource?.(hoverSourceId)) {
+    try {
+      map.addSource(hoverSourceId, {
+        type: 'geojson',
+        data: EMPTY_GEOJSON,
+      });
+      debug.log('[layer-styles] hover source ADD', { hoverSourceId });
+    } catch (err) {
+      console.error(`[geokit] Failed to add hover source ${hoverSourceId}:`, err);
+      return;
+    }
+  }
+
+  // Create hover glow layer BELOW the point layer so original point stays on top
+  // Use the same color expression as the point (DMA color) for the glow
+  const hoverGlowRadiusVal = getGlowRadiusInterpolation({ scale: HOVER_CONFIG.glowRadiusScale });
+  const hoverOpacity =
+    typeof glowHoverOpacity === 'number' ? glowHoverOpacity : HOVER_CONFIG.glowOpacity;
+
+  // Add BELOW the base glow layer so hover glow is at the very bottom
+  const addBeforeLayer = map.getLayer?.(glowLayerId) ? glowLayerId : undefined;
+
+  if (map.getSource?.(hoverSourceId) && !map.getLayer?.(hoverGlowLayerId)) {
+    try {
+      map.addLayer(
+        {
+          id: hoverGlowLayerId,
+          type: 'circle',
+          source: hoverSourceId,
+          paint: {
+            'circle-radius': hoverGlowRadiusVal,
+            'circle-color': circleColor, // Use DMA color expression
+            'circle-opacity': hoverOpacity,
+            'circle-blur': HOVER_CONFIG.glowBlur,
+          },
+        } as any,
+        addBeforeLayer // Add BELOW the point/glow layer
+      );
+    } catch (err) {
+      console.error(`[geokit] Failed to add hover glow layer ${hoverGlowLayerId}:`, err);
+    }
+  }
+
+  // Attach mouse handlers to glow and point layers
+  const hitLayers = [glowLayerId, pointLayerId].filter((id) => map.getLayer?.(id));
+  debug.log('[layer-styles] setupHoverLayers', {
+    hitLayers,
+    hoverSourceId,
+    hoverGlowLayerId,
+    hasHoverSource: !!map.getSource?.(hoverSourceId),
+    hasHoverGlowLayer: !!map.getLayer?.(hoverGlowLayerId),
+  });
+  if (hitLayers.length === 0) {
+    debug.log('[layer-styles] setupHoverLayers: no hit layers found, skipping');
+    return;
+  }
+
+  // Store the current hover feature for re-rendering
+  let currentHoverFeature: GeoJSON.Feature | null = null;
+
+  function renderHoverFeature(): void {
+    if (!currentHoverFeature || !map) return;
+
+    const source = map.getSource?.(hoverSourceId) as GeoJSONSourceWithSetData | undefined;
+    if (!source?.setData) return;
+
+    try {
+      source.setData({ type: 'FeatureCollection', features: [currentHoverFeature] });
+    } catch {
+      return;
+    }
+
+    // Create glow layer BELOW the point layer so original point stays on top
+    const hoverGlowRadiusVal = getGlowRadiusInterpolation({ scale: HOVER_CONFIG.glowRadiusScale });
+
+    // Add BELOW the base glow layer so hover glow is at the very bottom
+    const beforeLayer = map.getLayer?.(glowLayerId) ? glowLayerId : undefined;
+
+    if (!map.getLayer?.(hoverGlowLayerId)) {
+      try {
+        map.addLayer(
+          {
+            id: hoverGlowLayerId,
+            type: 'circle',
+            source: hoverSourceId,
+            paint: {
+              'circle-radius': hoverGlowRadiusVal,
+              'circle-color': circleColor, // Use DMA color expression
+              'circle-opacity': HOVER_CONFIG.glowOpacity,
+              'circle-blur': HOVER_CONFIG.glowBlur,
+            },
+          } as any,
+          beforeLayer // Add BELOW the point/glow layer
+        );
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  function clearHoverFeature(): void {
+    currentHoverFeature = null;
+    const source = map?.getSource?.(hoverSourceId) as GeoJSONSourceWithSetData | undefined;
+    if (source?.setData) {
+      try {
+        source.setData(EMPTY_GEOJSON);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  // Re-render on each frame while hovering (ensures layers stay visible)
+  let hoverAnimationId: number | null = null;
+
+  function startHoverAnimation(): void {
+    if (hoverAnimationId !== null) return;
+
+    function animate(): void {
+      if (currentHoverFeature) {
+        renderHoverFeature();
+        hoverAnimationId = requestAnimationFrame(animate);
+      } else {
+        hoverAnimationId = null;
+      }
+    }
+    hoverAnimationId = requestAnimationFrame(animate);
+  }
+
+  function stopHoverAnimation(): void {
+    if (hoverAnimationId !== null) {
+      cancelAnimationFrame(hoverAnimationId);
+      hoverAnimationId = null;
+    }
+  }
+
+  function setCursor(cursor: string): void {
+    const canvas = map?.getCanvas?.();
+    const style = canvas?.style as
+      | { setProperty?(property: string, value: string, priority?: string): void; cursor?: string }
+      | undefined;
+    if (style?.setProperty) {
+      style.setProperty('cursor', cursor, 'important');
+    } else if (style) {
+      style.cursor = cursor;
+    }
+  }
+
+  function onMouseEnter(e: {
+    features?: Array<{ geometry?: unknown; properties?: Record<string, unknown> }>;
+  }): void {
+    const features = e?.features;
+    if (!features?.length) {
+      clearHoverFeature();
+      stopHoverAnimation();
+      setCursor('');
+      return;
+    }
+    setCursor('pointer');
+    const f = features[0];
+    const geometry = f?.geometry;
+    if (!geometry) {
+      clearHoverFeature();
+      stopHoverAnimation();
+      return;
+    }
+
+    // Store the hover feature and start animation loop to keep layers alive
+    currentHoverFeature = {
+      type: 'Feature',
+      geometry: geometry as GeoJSON.Geometry,
+      properties: { ...(f.properties || {}) },
+    };
+    startHoverAnimation();
+  }
+
+  function onMouseLeave(): void {
+    stopHoverAnimation();
+    clearHoverFeature();
+    setCursor('');
+  }
+
+  // Attach handlers to all hit layers
+  for (const layerId of hitLayers) {
+    try {
+      map.on('mouseenter', layerId, onMouseEnter as any);
+      map.on('mouseleave', layerId, onMouseLeave as any);
+      debug.log('[layer-styles] attached hover handlers to layer', layerId);
+    } catch (err) {
+      debug.log('[layer-styles] FAILED to attach hover handlers', layerId, err);
+    }
+  }
 }
 
 /**
@@ -1087,6 +1331,7 @@ export function createSharedPointLayersWithHover(
     promoteId: _promoteId,
     glowLayerId,
     pointLayerId,
+    circleColor,
     glowColor,
     glowRadius,
     glowBlur,
@@ -1108,11 +1353,17 @@ export function createSharedPointLayersWithHover(
     }
   }
 
+  // Add hover glow layer with larger radius for visual feedback
+  // Uses HOVER_CONFIG from feature-state-hover.ts as source of truth
   if (map.getSource?.(hoverSourceId) && !map.getLayer?.(hoverLayerId)) {
-    const glowRadiusVal = glowRadius ?? getGlowRadiusInterpolation({ scale: 1 });
+    // If custom glowRadius provided, scale it; otherwise use default with hover scale
+    const glowRadiusVal = glowRadius
+      ? ['*', glowRadius, HOVER_CONFIG.glowRadiusScale]
+      : getGlowRadiusInterpolation({ scale: HOVER_CONFIG.glowRadiusScale });
     const glowColorVal = glowColor ?? resolveDefaultLayerColor();
     const glowBlurVal = glowBlur ?? resolveGlowBlur();
-    const hoverOpacity = typeof glowHoverOpacity === 'number' ? glowHoverOpacity : 1;
+    const hoverOpacity =
+      typeof glowHoverOpacity === 'number' ? glowHoverOpacity : HOVER_CONFIG.glowOpacity;
     try {
       map.addLayer(
         {
@@ -1132,6 +1383,33 @@ export function createSharedPointLayersWithHover(
       debug.log('[layer-styles] hover glow layer ADD', { hoverLayerId });
     } catch (err) {
       console.error(`[geokit] Failed to add hover layer ${hoverLayerId}:`, err);
+    }
+  }
+
+  // Add hover point layer on top for brighter point effect
+  // Uses HOVER_CONFIG from feature-state-hover.ts as source of truth
+  const hoverPointLayerId = `${pointLayerId}-hover`;
+  if (map.getSource?.(hoverSourceId) && !map.getLayer?.(hoverPointLayerId)) {
+    const pointRadiusVal = getPointRadiusInterpolation({ scale: 1 });
+    const pointColorVal = circleColor ?? resolveDefaultLayerColor();
+    try {
+      map.addLayer({
+        id: hoverPointLayerId,
+        type: 'circle',
+        source: hoverSourceId,
+        layout: { visibility: 'visible' },
+        paint: {
+          'circle-radius': pointRadiusVal,
+          'circle-color': pointColorVal,
+          'circle-opacity': HOVER_CONFIG.pointOpacity,
+          'circle-blur': 0,
+          'circle-stroke-width': HOVER_CONFIG.pointStrokeWidth,
+          'circle-stroke-color': HOVER_CONFIG.pointStrokeColor,
+        },
+      } as any);
+      debug.log('[layer-styles] hover point layer ADD', { hoverPointLayerId });
+    } catch (err) {
+      console.error(`[geokit] Failed to add hover point layer ${hoverPointLayerId}:`, err);
     }
   }
 
