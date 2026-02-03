@@ -125,6 +125,7 @@ export class PolygonElement extends MapChildElement {
   /** Re-add polygon layers after map style change (e.g. theme toggle). */
   protected override onStyleLoad(): void {
     if (!this.map) return;
+    debug.log('[Polygon] onStyleLoad', { layerId: this.layerId, sourceId: this.sourceId });
     try {
       this.createPolygon();
     } catch (error) {
@@ -176,7 +177,10 @@ export class PolygonElement extends MapChildElement {
 
     // Check visible - read from property first
     const visible = this._propVisible ?? this.safeGetAttribute('visible');
-    if (visible === false || visible === 'false') return;
+    if (visible === false || visible === 'false') {
+      debug.log('[Polygon] createPolygon skipped: not visible', { layerId: this.layerId });
+      return;
+    }
 
     // Parse points - read from property first
     const pointsFromProp = this._propPoints;
@@ -187,6 +191,7 @@ export class PolygonElement extends MapChildElement {
       debug.warn('[Polygon] points attribute is required');
       return;
     }
+    debug.log('[Polygon] createPolygon', { layerId: this.layerId, sourceId: this.sourceId });
 
     let coordinates: number[][];
     try {
@@ -238,6 +243,7 @@ export class PolygonElement extends MapChildElement {
         type: 'geojson',
         data: geojson,
       });
+      debug.log('[Polygon] source ADD', { sourceId: this.sourceId });
 
       // Find insertion point: insert before points
       // This ensures: polygons (below) < points (top)
@@ -264,6 +270,10 @@ export class PolygonElement extends MapChildElement {
       } else {
         this.map.addLayer(fillSpec);
       }
+      debug.log('[Polygon] fill layer ADD', {
+        layerId: this.layerId,
+        beforeLayerId: beforeId ?? undefined,
+      });
 
       // Add stroke layer (after fill layer) - read from properties first
       // Skip stroke layer entirely if strokeWidth is 0 to avoid hairline rendering artifacts
@@ -292,6 +302,14 @@ export class PolygonElement extends MapChildElement {
         } else {
           this.map.addLayer(strokeSpec);
         }
+        debug.log('[Polygon] stroke layer ADD', {
+          strokeLayerId: this.strokeLayerId,
+          beforeLayerId: beforeId ?? undefined,
+        });
+      } else {
+        debug.log('[Polygon] stroke layer SKIP (strokeWidth 0)', {
+          strokeLayerId: this.strokeLayerId,
+        });
       }
     } catch (error) {
       console.error(`[Polygon] Error creating polygon ${this.sourceId}:`, error);
@@ -371,6 +389,11 @@ export class PolygonElement extends MapChildElement {
   }
 
   protected override onMapUnload(): void {
+    debug.log('[Polygon] onMapUnload (removing layers)', {
+      layerId: this.layerId,
+      strokeLayerId: this.strokeLayerId,
+      sourceId: this.sourceId,
+    });
     // Clean up layers BEFORE calling super (which sets this.map = null)
     this.cleanupMapLayers([this.layerId, this.strokeLayerId], [this.sourceId]);
     super.onMapUnload();
@@ -378,6 +401,11 @@ export class PolygonElement extends MapChildElement {
 
   disconnectedCallback(): void {
     if (this.map) {
+      debug.log('[Polygon] disconnectedCallback (removing layers)', {
+        layerId: this.layerId,
+        strokeLayerId: this.strokeLayerId,
+        sourceId: this.sourceId,
+      });
       this.removeLayerInteractivity(this.layerId);
       this.cleanupMapLayers([this.layerId, this.strokeLayerId], [this.sourceId]);
     }
