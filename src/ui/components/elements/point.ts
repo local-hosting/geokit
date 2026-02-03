@@ -2,10 +2,12 @@
  * Geokit Point Component
  *
  * Creates simple geometric points/dots on the map for marking coordinates.
- * Two visual states: hover (glow, on mouseover) and selected (ring + shadow; attribute `selected` or focus()/blur()).
+ * Optional glow: set glow or glow="true" for a halo behind the point (off by default). Use glow-color or leave unset to match the point color.
+ * Visual states: hover (on mouseover), selected (ring + shadow; attribute `selected` or focus()/blur()).
  *
  * Usage:
  * <gk-point lat="40.7128" lng="-74.0060" color="#ff0000" size="8"></gk-point>
+ * <gk-point lat="40.7128" lng="-74.0060" color="#ff0000" size="8" glow></gk-point>
  */
 
 import { MapChildElement } from '../map-child-element';
@@ -29,7 +31,9 @@ export interface PointOptions {
   shadowColor?: string;
   shadowBlur?: number;
   shadowOpacity?: number;
+  /** When true, show a halo/glow behind the point (default: false). */
   glow?: boolean;
+  /** Glow color; defaults to the point color when not set. */
   glowColor?: string;
   glowOpacity?: number;
   glowBlur?: number;
@@ -284,8 +288,21 @@ export class PointElement extends MapChildElement {
     document.addEventListener('gk-clear-all-popups', this.clearPopupHandler);
   }
 
+  /**
+   * When inside a gk-point-layer, the parent owns the shared layers; this point only contributes data.
+   */
+  private get isInsidePointLayer(): boolean {
+    return this.parentElement?.tagName?.toLowerCase() === 'gk-point-layer';
+  }
+
   private addPoint(): void {
     if (!this.map) return;
+
+    // When inside gk-point-layer, don't create own source/layers; parent gathers from children
+    if (this.isInsidePointLayer) {
+      this.dispatchEvent(new CustomEvent('gk-point-data-changed', { bubbles: true }));
+      return;
+    }
 
     // Read from properties first (set by create()), then fall back to attributes
     const lat = this._propLat ?? parseFloat(this.safeGetAttribute('lat') || '');
@@ -443,12 +460,13 @@ export class PointElement extends MapChildElement {
       }
     }
 
-    // Hover layer: glow above main dot; shown only on hover (not when selected)
+    // Hover layer: bigger glow behind the point (like main glow radius + blur) for clearer highlight
     const hoverOpacity = getCSSVariableNumber(
       this.mapElement,
       '--gk-point-glow-hover-opacity',
       0.5
     );
+    const hoverBlur = getCSSVariableNumber(this.mapElement, '--gk-glow-blur', 0.8);
     const hoverColor =
       getCSSVariable(this.mapElement, '--gk-point-glow-color', this.glowColor) || this.glowColor;
     if (this.hoverLayerId && this.hoverSourceId) {
@@ -459,10 +477,10 @@ export class PointElement extends MapChildElement {
             type: 'circle',
             source: this.hoverSourceId,
             paint: {
-              'circle-radius': this.getZoomRadiusExpression(),
+              'circle-radius': this.getGlowRadiusExpression(),
               'circle-color': hoverColor,
               'circle-opacity': hoverOpacity,
-              'circle-blur': 0,
+              'circle-blur': hoverBlur,
             },
           },
           this.layerId
@@ -1123,12 +1141,13 @@ export class PointElement extends MapChildElement {
   get glow(): boolean {
     if (this._propGlow !== undefined) return this._propGlow;
     const glowAttr = this.safeGetAttribute('glow');
-    // Default true (glow on); only off when explicitly glow="false"
+    // Optional: off by default; on when glow, glow="true", or glow=""
+    if (glowAttr === null) return false;
     return glowAttr !== 'false';
   }
 
+  /** Glow halo color; defaults to the point color when not set. */
   get glowColor(): string {
-    // Default to point color if not specified
     return this._propGlowColor ?? this.safeGetAttribute('glow-color') ?? this.color;
   }
 
@@ -1174,6 +1193,32 @@ export class PointElement extends MapChildElement {
   /** Whether the point is selected (ring visible). */
   get selected(): boolean {
     return this.selectedLayers != null;
+  }
+
+  /**
+   * Return this point as a GeoJSON Feature for parent gk-point-layer to aggregate.
+   * Used when this gk-point is a child of gk-point-layer (shared layers).
+   */
+  getFeatureData(): GeoJSON.Feature | null {
+    const lat = this._propLat ?? parseFloat(this.safeGetAttribute('lat') || '');
+    const lng = this._propLng ?? parseFloat(this.safeGetAttribute('lng') || '');
+    if (isNaN(lat) || isNaN(lng) || !isValidCoordinate([lat, lng])) return null;
+    const normalized = normalizeCoordinatesArray([[lng, lat]], 'lonlat', 'auto');
+    const [normLng, normLat] = normalized[0];
+    const pointId = this._propPointId ?? this.safeGetAttribute('point-id');
+    const pointName = this._propPointName ?? this.safeGetAttribute('point-name');
+    const featureId = pointId ?? `point-${this.sourceId ?? crypto.randomUUID()}`;
+    return {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [normLng, normLat] },
+      properties: {
+        color: this.color,
+        size: this.size,
+        'point-id': featureId,
+        ...(pointId && { id: pointId }),
+        ...(pointName && { 'point-name': pointName }),
+      },
+    };
   }
 
   updatePosition(lat: number, lng: number): void {
