@@ -8,6 +8,7 @@
 import type { MapInstance } from '../providers/types';
 import { getCSSVariable, getCSSVariableNumber } from './theme';
 import { debug } from './logger';
+import type { HoverStateHandlers } from './feature-state-hover';
 
 // ============================================================================
 // Types
@@ -47,6 +48,11 @@ export interface GlowPointLayerConfig {
   strokeWidth?: number;
 }
 
+/**
+ * GK point shared layer: one source + glow + point layers for many features.
+ * Uses feature-state for hover/selected so the same layer behaves like many GK points.
+ * Wire hover via createHoverStateHandlers (feature-state-hover) or createSharedPointLayersWithHover.
+ */
 export interface SharedPointLayersConfig {
   /** Map instance */
   map: MapInstance;
@@ -90,6 +96,8 @@ export interface SharedPointLayersConfig {
   geojson?: { type: 'FeatureCollection'; features: unknown[] };
   /** promoteId for the GeoJSON source when we add the source (e.g. on helper failure). Required for feature-state by id. */
   promoteId?: string;
+  /** When false, glow opacity does not use feature-state hover (use with hover-via-layer in createSharedPointLayersWithHover to avoid setFeatureState). */
+  useFeatureStateHover?: boolean;
 }
 
 export interface CircleLayerConfig {
@@ -762,6 +770,11 @@ const MAPTILER_POINT_RADIUS_ZOOM: Array<{ zoom: number; value: number }> = [
   { zoom: 18, value: 6.5 },
 ];
 
+/**
+ * Create GK point shared layers: one source, glow layer, and point layer for many features.
+ * Layers use feature-state (hover/selected) so apps can wire hover via createHoverStateHandlers
+ * or createSharedPointLayersWithHover. This is the GK point pattern for many points (e.g. venues).
+ */
 export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   const {
     map,
@@ -783,6 +796,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     useMapTilerPointHelper,
     geojson,
     promoteId,
+    useFeatureStateHover = true,
   } = config;
 
   const maptilerHelpers =
@@ -847,21 +861,25 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       const glowRadiusVal = glowRadius ?? getGlowRadiusInterpolation({ scale: 1 });
       const glowColorVal = glowColor ?? resolveDefaultLayerColor();
       const glowBlurVal = glowBlur ?? resolveGlowBlur();
-      let glowOpacityExpression: unknown[];
+      let glowOpacityExpression: unknown[] | number;
       if (Array.isArray(glowOpacity)) {
         glowOpacityExpression = glowOpacity;
       } else {
         const numOpacity = typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
-        const hoverOpacity = typeof glowHoverOpacity === 'number' ? glowHoverOpacity : 1;
-        const selectedOpacity = Math.min(hoverOpacity * 1.3, 1);
-        glowOpacityExpression = [
-          'case',
-          ['boolean', ['feature-state', 'selected'], false],
-          selectedOpacity,
-          ['boolean', ['feature-state', 'hover'], false],
-          hoverOpacity,
-          numOpacity,
-        ];
+        if (!useFeatureStateHover) {
+          glowOpacityExpression = numOpacity;
+        } else {
+          const hoverOpacity = typeof glowHoverOpacity === 'number' ? glowHoverOpacity : 1;
+          const selectedOpacity = Math.min(hoverOpacity * 1.3, 1);
+          glowOpacityExpression = [
+            'case',
+            ['boolean', ['feature-state', 'selected'], false],
+            selectedOpacity,
+            ['boolean', ['feature-state', 'hover'], false],
+            hoverOpacity,
+            numOpacity,
+          ];
+        }
       }
       const glowPaint: Record<string, unknown> = {
         'circle-radius': glowRadiusVal,
@@ -921,21 +939,25 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     const glowColorVal = glowColor ?? resolveDefaultLayerColor();
     const glowBlurVal = glowBlur ?? resolveGlowBlur();
 
-    let glowOpacityExpression: unknown[];
+    let glowOpacityExpression: unknown[] | number;
     if (Array.isArray(glowOpacity)) {
       glowOpacityExpression = glowOpacity;
     } else {
       const numOpacity = typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
-      const hoverOpacity = typeof glowHoverOpacity === 'number' ? glowHoverOpacity : 1;
-      const selectedOpacity = Math.min(hoverOpacity * 1.3, 1);
-      glowOpacityExpression = [
-        'case',
-        ['boolean', ['feature-state', 'selected'], false],
-        selectedOpacity,
-        ['boolean', ['feature-state', 'hover'], false],
-        hoverOpacity,
-        numOpacity,
-      ];
+      if (!useFeatureStateHover) {
+        glowOpacityExpression = numOpacity;
+      } else {
+        const hoverOpacity = typeof glowHoverOpacity === 'number' ? glowHoverOpacity : 1;
+        const selectedOpacity = Math.min(hoverOpacity * 1.3, 1);
+        glowOpacityExpression = [
+          'case',
+          ['boolean', ['feature-state', 'selected'], false],
+          selectedOpacity,
+          ['boolean', ['feature-state', 'hover'], false],
+          hoverOpacity,
+          numOpacity,
+        ];
+      }
     }
 
     const glowPaint: Record<string, unknown> = {
@@ -1034,6 +1056,138 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       }
     }
   }
+}
+
+const EMPTY_GEOJSON: GeoJSON.FeatureCollection = {
+  type: 'FeatureCollection',
+  features: [],
+};
+
+/** GeoJSON source with setData (MapLibre/MapTiler) */
+interface GeoJSONSourceWithSetData {
+  setData?(data: GeoJSON.FeatureCollection | GeoJSON.Feature): void;
+}
+
+/**
+ * Create GK point shared layers and return hover handlers that use a dedicated hover source+layer
+ * (setData) instead of feature-state, avoiding MapTiler SDK "unknown feature value" errors on
+ * vector tile sources. Attach the returned onMouseEnter/onMouseLeave to your glow and point
+ * layer IDs (e.g. map.on('mouseenter', layerId, hover.onMouseEnter)).
+ *
+ * @param config - Same as SharedPointLayersConfig; promoteId is used to identify the hovered feature.
+ * @returns Hover handlers to attach to the shared point layers (glowLayerId, pointLayerId).
+ */
+export function createSharedPointLayersWithHover(
+  config: SharedPointLayersConfig & { promoteId: string }
+): HoverStateHandlers {
+  createSharedPointLayers({ ...config, useFeatureStateHover: false });
+  const {
+    map,
+    sourceId,
+    promoteId: _promoteId,
+    glowLayerId,
+    pointLayerId,
+    glowColor,
+    glowRadius,
+    glowBlur,
+    glowHoverOpacity,
+  } = config;
+
+  const hoverSourceId = `${sourceId}-hover`;
+  const hoverLayerId = `${glowLayerId}-hover`;
+
+  if (!map.getSource?.(hoverSourceId)) {
+    try {
+      map.addSource(hoverSourceId, {
+        type: 'geojson',
+        data: EMPTY_GEOJSON,
+      });
+      debug.log('[layer-styles] hover source ADD', { hoverSourceId });
+    } catch (err) {
+      console.error(`[geokit] Failed to add hover source ${hoverSourceId}:`, err);
+    }
+  }
+
+  if (map.getSource?.(hoverSourceId) && !map.getLayer?.(hoverLayerId)) {
+    const glowRadiusVal = glowRadius ?? getGlowRadiusInterpolation({ scale: 1 });
+    const glowColorVal = glowColor ?? resolveDefaultLayerColor();
+    const glowBlurVal = glowBlur ?? resolveGlowBlur();
+    const hoverOpacity = typeof glowHoverOpacity === 'number' ? glowHoverOpacity : 1;
+    try {
+      map.addLayer(
+        {
+          id: hoverLayerId,
+          type: 'circle',
+          source: hoverSourceId,
+          layout: { visibility: 'visible' },
+          paint: {
+            'circle-radius': glowRadiusVal,
+            'circle-color': glowColorVal,
+            'circle-opacity': hoverOpacity,
+            'circle-blur': glowBlurVal,
+          },
+        } as any,
+        pointLayerId
+      );
+      debug.log('[layer-styles] hover glow layer ADD', { hoverLayerId });
+    } catch (err) {
+      console.error(`[geokit] Failed to add hover layer ${hoverLayerId}:`, err);
+    }
+  }
+
+  function setCursor(cursor: string): void {
+    const canvas = map?.getCanvas?.();
+    const style = canvas?.style as
+      | { setProperty?(property: string, value: string, priority?: string): void; cursor?: string }
+      | undefined;
+    if (style?.setProperty) {
+      style.setProperty('cursor', cursor, 'important');
+    } else if (style) {
+      style.cursor = cursor;
+    }
+  }
+
+  function setHoverData(data: GeoJSON.FeatureCollection | GeoJSON.Feature): void {
+    const source = map?.getSource?.(hoverSourceId) as GeoJSONSourceWithSetData | undefined;
+    if (source?.setData) {
+      try {
+        source.setData(data);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  function onMouseEnter(e: {
+    features?: Array<{ geometry?: unknown; properties?: Record<string, unknown> }>;
+  }): void {
+    const features = e?.features;
+    if (!features?.length) {
+      setHoverData(EMPTY_GEOJSON);
+      setCursor('');
+      return;
+    }
+    setCursor('pointer');
+    const f = features[0];
+    const geometry = f?.geometry;
+    if (!geometry) {
+      setHoverData(EMPTY_GEOJSON);
+      return;
+    }
+    const feature: GeoJSON.Feature = {
+      type: 'Feature',
+      geometry: geometry as GeoJSON.Geometry,
+      properties: { ...(f.properties || {}) },
+    };
+    setHoverData({ type: 'FeatureCollection', features: [feature] });
+  }
+
+  function onMouseLeave(): void {
+    setHoverData(EMPTY_GEOJSON);
+    setCursor('');
+  }
+
+  return { onMouseEnter, onMouseLeave };
 }
 
 /**

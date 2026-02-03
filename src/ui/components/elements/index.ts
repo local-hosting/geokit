@@ -17,6 +17,7 @@ export {
   type LayerMouseEnterEventDetail,
   type LayerMouseLeaveEventDetail,
 } from './layer';
+export { PointLayerElement, type PointLayerOptions } from './point-layer';
 export {
   PopupElement,
   dispatchClearPopupsEvent,
