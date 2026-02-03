@@ -30,6 +30,7 @@ import './components/controls/geolocate-control';
 import './components/elements/map';
 import './components/elements/marker';
 import './components/elements/point';
+import './components/elements/point-layer';
 import './components/elements/polygon';
 import './components/elements/polyline';
 import './components/elements/popup';

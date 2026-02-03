@@ -28,6 +28,12 @@ export interface MapOptions {
   bearing?: number;
   style?: string;
   interactive?: boolean;
+  /** When set, enable 3D terrain when zoom is at or above this level. */
+  terrainMinZoom?: number;
+  /** Optional raster-dem source URL for terrain (default: MapLibre demotiles). */
+  terrainSourceUrl?: string;
+  /** Terrain elevation exaggeration (default: 1). */
+  terrainExaggeration?: number;
   extra?: Record<string, unknown>;
 }
 
