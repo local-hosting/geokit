@@ -16,6 +16,7 @@ import type { MapEvent, MapRenderedFeature } from '../../providers/types';
 import { getCSSVariable, getCSSVariableNumber } from '../../utils/theme';
 import { debug } from '../../utils/logger';
 import { PopupElement } from './popup';
+import { HOVER_CONFIG } from '../../utils/feature-state-hover';
 
 export interface PointOptions {
   lat: number;
@@ -460,11 +461,11 @@ export class PointElement extends MapChildElement {
       }
     }
 
-    // Hover layer: bigger glow behind the point (like main glow radius + blur) for clearer highlight
+    // Hover glow layer: uses HOVER_CONFIG from feature-state-hover.ts as source of truth
     const hoverOpacity = getCSSVariableNumber(
       this.mapElement,
       '--gk-point-glow-hover-opacity',
-      0.5
+      HOVER_CONFIG.glowOpacity
     );
     const hoverBlur = getCSSVariableNumber(this.mapElement, '--gk-glow-blur', 0.8);
     const hoverColor =
@@ -477,7 +478,7 @@ export class PointElement extends MapChildElement {
             type: 'circle',
             source: this.hoverSourceId,
             paint: {
-              'circle-radius': this.getGlowRadiusExpression(),
+              'circle-radius': this.getHoverGlowRadiusExpression(),
               'circle-color': hoverColor,
               'circle-opacity': hoverOpacity,
               'circle-blur': hoverBlur,
@@ -487,6 +488,28 @@ export class PointElement extends MapChildElement {
         );
       } catch (error) {
         console.error('[Point] Failed to add hover layer:', error);
+      }
+    }
+
+    // Hover point layer: uses HOVER_CONFIG from feature-state-hover.ts as source of truth
+    const hoverPointLayerId = `${this.hoverLayerId}-point`;
+    if (this.hoverSourceId) {
+      try {
+        this.map.addLayer({
+          id: hoverPointLayerId,
+          type: 'circle',
+          source: this.hoverSourceId,
+          paint: {
+            'circle-radius': this.getZoomRadiusExpression(),
+            'circle-color': this.color,
+            'circle-opacity': HOVER_CONFIG.pointOpacity,
+            'circle-blur': 0,
+            'circle-stroke-width': HOVER_CONFIG.pointStrokeWidth,
+            'circle-stroke-color': HOVER_CONFIG.pointStrokeColor,
+          },
+        });
+      } catch (error) {
+        console.error('[Point] Failed to add hover point layer:', error);
       }
     }
 
@@ -920,10 +943,15 @@ export class PointElement extends MapChildElement {
         glowLayerId: this.glowLayerId,
       });
     }
+    const hoverPointLayerId = this.hoverLayerId ? `${this.hoverLayerId}-point` : null;
     this.cleanupMapLayers(
-      [this.layerId, this.shadowLayerId, this.glowLayerId, this.hoverLayerId].filter(
-        Boolean
-      ) as string[],
+      [
+        this.layerId,
+        this.shadowLayerId,
+        this.glowLayerId,
+        this.hoverLayerId,
+        hoverPointLayerId,
+      ].filter(Boolean) as string[],
       [this.sourceId, this.hoverSourceId].filter(Boolean) as string[]
     );
   }
@@ -1004,6 +1032,31 @@ export class PointElement extends MapChildElement {
       Math.max(10, 14 * scale),
       18,
       Math.max(14, 18 * scale),
+    ];
+  }
+
+  /**
+   * Get hover glow radius expression - uses HOVER_CONFIG.glowRadiusScale from feature-state-hover.ts
+   */
+  private getHoverGlowRadiusExpression(): unknown[] {
+    const scale = this.size / 6;
+    const hoverScale = HOVER_CONFIG.glowRadiusScale;
+    return [
+      'interpolate',
+      ['exponential', 1.5],
+      ['zoom'],
+      3,
+      Math.max(2, 3.5 * scale * hoverScale),
+      6,
+      Math.max(3, 5 * scale * hoverScale),
+      8,
+      Math.max(5, 8 * scale * hoverScale),
+      10,
+      Math.max(7, 11 * scale * hoverScale),
+      14,
+      Math.max(10, 14 * scale * hoverScale),
+      18,
+      Math.max(14, 18 * scale * hoverScale),
     ];
   }
 
