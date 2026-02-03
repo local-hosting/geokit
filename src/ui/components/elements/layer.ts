@@ -604,24 +604,44 @@ export class LayerElement extends MapChildElement {
     map.on('click', this._clickHandler);
     map.on('mousemove', this._mouseMoveHandler);
     map.on('mouseleave', this._mouseLeaveHandler);
+
+    // Remove map listeners when map is about to be destroyed (freeze) so no handler runs on destroyed map
+    this._mapUnloadHandler = () => this.removeInteractions();
+    this.addEventListener('gk-map-unload', this._mapUnloadHandler);
   }
 
   private removeInteractions(): void {
+    if (this._mapUnloadHandler) {
+      this.removeEventListener('gk-map-unload', this._mapUnloadHandler);
+      this._mapUnloadHandler = null;
+    }
     const map = this.map as any;
-    if (!map) return;
+    if (!map?.off) return;
 
     if (this._clickHandler) {
-      map.off('click', this._clickHandler);
+      try {
+        map.off('click', this._clickHandler);
+      } catch {
+        // Map may already be destroyed
+      }
       this._clickHandler = null;
     }
 
     if (this._mouseMoveHandler) {
-      map.off('mousemove', this._mouseMoveHandler);
+      try {
+        map.off('mousemove', this._mouseMoveHandler);
+      } catch {
+        // Map may already be destroyed
+      }
       this._mouseMoveHandler = null;
     }
 
     if (this._mouseLeaveHandler) {
-      map.off('mouseleave', this._mouseLeaveHandler);
+      try {
+        map.off('mouseleave', this._mouseLeaveHandler);
+      } catch {
+        // Map may already be destroyed
+      }
       this._mouseLeaveHandler = null;
     }
 

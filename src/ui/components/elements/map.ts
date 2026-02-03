@@ -74,6 +74,9 @@ export class MapElement extends BaseElement {
   private _styleLoadOriginalWarn: typeof console.warn | null = null;
   private _styleLoadOriginalError: typeof console.error | null = null;
 
+  /** Handler for styleimagemissing so we can remove it before map.remove() */
+  private _styleImageMissingHandler: ((e: { id: string }) => void) | null = null;
+
   constructor() {
     super();
     this.map = null;
@@ -165,6 +168,11 @@ export class MapElement extends BaseElement {
     }
 
     this._isInitializing = true;
+    debug.log('[gk-map] initializeMap start', {
+      _isFrozen: this._isFrozen,
+      hasMap: !!this.map,
+      isInitialized: this.isInitialized,
+    });
 
     try {
       // Get provider name from attribute or try auto-detection
@@ -286,6 +294,15 @@ export class MapElement extends BaseElement {
         interactive: this.getAttribute('interactive') !== 'false',
       };
 
+      // Probe for WebGL context before creating map to avoid "context already lost" when at limit
+      if (!this.canAcquireWebGLContext()) {
+        debug.warn('[gk-map] WebGL context unavailable (e.g. too many maps), skipping createMap');
+        this.showPlaceholder('Map unavailable');
+        this.isInitialized = false;
+        this._isInitializing = false;
+        return;
+      }
+
       this.map = await provider.createMap(container, options);
 
       // Store reference to canvas for freeze/unfreeze
@@ -325,6 +342,11 @@ export class MapElement extends BaseElement {
       // Don't wait for 'idle' - it can delay by hundreds of ms
       // Non-critical setup (controls, URL sync) is deferred to avoid blocking
       const dispatchMapReady = () => {
+        if (this.isInitialized) return;
+        debug.log('[gk-map] dispatchMapReady (hiding placeholder)', {
+          _isFrozen: this._isFrozen,
+          source: styleAlreadyLoaded ? 'styleAlreadyLoaded' : 'load-or-fallback',
+        });
         this.isInitialized = true;
         this.hidePlaceholder();
 
@@ -351,16 +373,51 @@ export class MapElement extends BaseElement {
       };
 
       if (styleAlreadyLoaded) {
+        debug.log('[gk-map] style already loaded, dispatching map-ready immediately');
         dispatchMapReady();
       } else {
         if (this.map) {
+          debug.log('[gk-map] waiting for map load event (and 5s fallback)');
           this.map.once('load', () => dispatchMapReady());
+          // Fallback: if 'load' never fires but style has loaded (e.g. pool/managed timing), unblock placeholder
+          const fallbackMs = 500;
+          const fallbackMax = 10; // 5s total (style load or show "Map unavailable")
+          let fallbackCount = 0;
+          const fallbackId = window.setInterval(() => {
+            fallbackCount += 1;
+            const map = this.map as { isStyleLoaded?: () => boolean } | undefined;
+            if (typeof map?.isStyleLoaded === 'function' && map.isStyleLoaded()) {
+              window.clearInterval(fallbackId);
+              debug.log('[gk-map] fallback: style loaded, dispatching map-ready', {
+                check: fallbackCount,
+              });
+              dispatchMapReady();
+              return;
+            }
+            if (fallbackCount >= fallbackMax) {
+              window.clearInterval(fallbackId);
+              debug.log('[gk-map] fallback: style never loaded after 5s, showing Map unavailable', {
+                _isFrozen: this._isFrozen,
+              });
+              // Style never loaded - stop showing "Initializing..." so user isn't stuck
+              this.showPlaceholder('Map unavailable');
+              return;
+            }
+          }, fallbackMs);
         }
       }
     } catch (error) {
-      console.error('[gk-map] Failed to initialize map:', error);
-      // Keep placeholder visible on error, but ensure it shows an error message
-      this.showPlaceholder('Map failed to initialize');
+      const message = error instanceof Error ? error.message : String(error);
+      const isWebGLContextLost = /losecontext|context already lost|invalid_operation/i.test(
+        message
+      );
+      if (isWebGLContextLost) {
+        debug.warn('[gk-map] WebGL context unavailable (e.g. too many maps):', message);
+        this.showPlaceholder('Map unavailable');
+      } else {
+        console.error('[gk-map] Failed to initialize map:', error);
+        this.showPlaceholder('Map failed to initialize');
+      }
       // Reset initialization flag so it can be retried
       this.isInitialized = false;
     } finally {
@@ -483,7 +540,7 @@ export class MapElement extends BaseElement {
     const data = new Uint8ClampedArray(size * size * 4);
     const placeholder = { width: size, height: size, data };
 
-    map.on('styleimagemissing', (e: { id: string }) => {
+    this._styleImageMissingHandler = (e: { id: string }) => {
       const id = e?.id;
       if (id == null) return;
       try {
@@ -493,7 +550,28 @@ export class MapElement extends BaseElement {
       } catch {
         // Ignore if addImage fails (e.g. invalid id)
       }
-    });
+    };
+    map.on('styleimagemissing', this._styleImageMissingHandler);
+  }
+
+  /**
+   * Probe for WebGL context availability before creating a map.
+   * Avoids "INVALID_OPERATION: loseContext: context already lost" when the browser limit is reached.
+   */
+  private canAcquireWebGLContext(): boolean {
+    if (typeof document === 'undefined') return true;
+    try {
+      const canvas = document.createElement('canvas');
+      const gl =
+        canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) ||
+        canvas.getContext('webgl', { failIfMajorPerformanceCaveat: false });
+      if (!gl) return false;
+      const ext = gl.getExtension('WEBGL_lose_context');
+      if (ext) ext.loseContext();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -514,6 +592,11 @@ export class MapElement extends BaseElement {
    */
   public showPlaceholder(message?: string): void {
     const text = message ?? this.getAttribute('placeholder-message') ?? 'Loading map...';
+    debug.log('[gk-map] showPlaceholder', {
+      message: text,
+      _isFrozen: this._isFrozen,
+      isInitialized: this.isInitialized,
+    });
     // Check if placeholder already exists
     const existingPlaceholder = this.querySelector(
       '.map-placeholder, [data-map-placeholder="true"]'
@@ -541,6 +624,10 @@ export class MapElement extends BaseElement {
    * Hide placeholder when map is ready (public method for map collection)
    */
   public hidePlaceholder(): void {
+    const hadPlaceholder = this.hasPlaceholder();
+    if (hadPlaceholder) {
+      debug.log('[gk-map] hidePlaceholder', { isInitialized: this.isInitialized });
+    }
     const placeholders = this.querySelectorAll('.map-placeholder, [data-map-placeholder="true"]');
     placeholders.forEach((placeholder) => placeholder.remove());
   }
@@ -841,6 +928,22 @@ export class MapElement extends BaseElement {
       this.applyUrlHashState();
     };
     window.addEventListener('hashchange', this._hashChangeHandler);
+  }
+
+  /**
+   * Remove all listeners from the map instance so no handler runs after map.remove().
+   * Call before map.remove() in _freeze to avoid getLayer/queryRenderedFeatures on a destroyed map.
+   */
+  private removeAllMapListeners(): void {
+    this.cleanupUrlSync();
+    const map = this.map as any;
+    if (!map?.off) return;
+    if (this._styleImageMissingHandler) {
+      map.off('styleimagemissing', this._styleImageMissingHandler);
+      this._styleImageMissingHandler = null;
+    }
+    map.off('style.load');
+    map.off('error');
   }
 
   /**
@@ -1845,11 +1948,21 @@ export class MapElement extends BaseElement {
       }
 
       // Show placeholder while loading (frozen restore or first init)
-      this.showPlaceholder(this._isFrozen ? 'Restoring map...' : undefined);
+      const placeholderMsg = this._isFrozen ? 'Restoring map...' : undefined;
+      debug.log('[gk-map] unfreeze: showing placeholder', {
+        message: placeholderMsg ?? 'default',
+        _isFrozen: this._isFrozen,
+      });
+      this.showPlaceholder(placeholderMsg);
 
       // If map is frozen, unfreeze it (reinitialize since we destroyed it)
       if (this._isFrozen) {
+        debug.log('[gk-map] unfreeze: calling _unfreeze (restore path)');
         await this._unfreeze();
+        debug.log('[gk-map] unfreeze: _unfreeze returned', {
+          isInitialized: this.isInitialized,
+          hasMap: !!this.map,
+        });
         // Don't wait for 'idle' - it can delay by hundreds of ms; style load is enough for layers
         if (this.isInitialized) {
           this.hidePlaceholder();
@@ -1869,9 +1982,14 @@ export class MapElement extends BaseElement {
       }
 
       // Initialize the map (first time or after frozen)
+      debug.log('[gk-map] unfreeze: calling initializeMap (first-time init path)');
       await this.initializeMap();
 
       // Don't wait for 'idle' (tiles, etc.) - style load is enough for adding layers; speeds first load
+      debug.log('[gk-map] unfreeze: initializeMap returned', {
+        hasMap: !!this.map,
+        isInitialized: this.isInitialized,
+      });
       if (this.map) {
         if (this.isInitialized) {
           this.hidePlaceholder();
@@ -1961,7 +2079,7 @@ export class MapElement extends BaseElement {
       }
     }
 
-    // Dispatch unload event before destroying
+    // Dispatch unload so children (gk-layer, gk-point) remove their map listeners before we destroy the map
     this.dispatchEvent(
       new CustomEvent('gk-map-unload', {
         detail: { map: this.map, element: this },
@@ -1969,74 +2087,21 @@ export class MapElement extends BaseElement {
       })
     );
 
+    // Remove all map listeners so no handler runs after we call map.remove() (avoids getLayer/queryRenderedFeatures on destroyed map)
+    this.removeAllMapListeners();
+
     // Restore console if style-load filter was still active (e.g. theme toggle then immediate teardown)
     this._restoreStyleLoadConsole();
 
-    // Remove the map instance to free WebGL context
-    // Suppress MapTiler SDK warnings during removal (deprecated style warnings, setStyle errors)
     const map = this.map as any;
     if (typeof map.remove === 'function') {
-      // Temporarily suppress console.warn during map removal
-      // The SDK logs "deprecated style" and "invalid style" warnings that are harmless
-      const originalWarn = console.warn;
-      const originalLog = console.log;
-
-      // Suppress MapTiler SDK messages during/after removal (they fire sync and async)
-      const suppressedPatterns = [
-        'deprecated',
-        'Invalid style',
-        'setStyle',
-        'webglcontextlost',
-        'webgl context lost',
-        'harmless',
-      ];
-
-      const shouldSuppress = (args: unknown[]): boolean => {
-        const message = args
-          .map((a) => String(a))
-          .join(' ')
-          .toLowerCase();
-        return suppressedPatterns.some((pattern) =>
-          message.toLowerCase().includes(pattern.toLowerCase())
-        );
-      };
-
-      console.warn = (...args: unknown[]) => {
-        if (!shouldSuppress(args)) {
-          originalWarn.apply(console, args);
-        }
-      };
-
-      console.log = (...args: unknown[]) => {
-        if (!shouldSuppress(args)) {
-          originalLog.apply(console, args);
-        }
-      };
-
       try {
         map.remove();
       } catch (error) {
-        // Ignore errors during removal - the map may have been partially initialized
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const isHarmlessError =
-          errorMessage.includes("can't access property") ||
-          errorMessage.includes('Cannot read properties') ||
-          errorMessage.includes('this._map is undefined') ||
-          errorMessage.includes("reading 'off'");
-
-        if (
-          !isHarmlessError ||
-          (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development')
-        ) {
-          console.debug('[gk-map] Ignoring error during map removal:', error);
-        }
-      } finally {
-        // Restore console after a short delay so async SDK logs (e.g. "WebGL context lost") are still suppressed
-        const restoreDelay = 200;
-        setTimeout(() => {
-          console.warn = originalWarn;
-          console.log = originalLog;
-        }, restoreDelay);
+        debug.warn(
+          '[gk-map] Error during map removal (map may have been partially initialized):',
+          error
+        );
       }
     }
 
@@ -2068,12 +2133,17 @@ export class MapElement extends BaseElement {
       return;
     }
 
+    debug.log('[gk-map] _unfreeze start');
     // Map was destroyed, so we need to reinitialize it
     this._isFrozen = false;
 
     // Wait for container to have dimensions (e.g. after scroll-back, layout may not be done yet)
     const rect = this.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) {
+      debug.log('[gk-map] _unfreeze: waiting for container dimensions', {
+        width: rect.width,
+        height: rect.height,
+      });
       await new Promise<void>((resolve) => {
         const check = () => {
           const r = this.getBoundingClientRect();
@@ -2090,7 +2160,9 @@ export class MapElement extends BaseElement {
     // Set flag to indicate map was just unfrozen - this helps isochrones restore
     this.dataset.wasJustUnfrozen = 'true';
 
+    debug.log('[gk-map] _unfreeze: calling initializeMap');
     await this.initializeMap();
+    debug.log('[gk-map] _unfreeze: initializeMap returned', { isInitialized: this.isInitialized });
 
     // Clear flag after a short delay to allow isochrones to restore
     setTimeout(() => {

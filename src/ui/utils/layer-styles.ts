@@ -190,8 +190,19 @@ export interface FeatureStateOpacityConfig {
 // ============================================================================
 
 /**
+ * Safe property get for MapLibre expressions.
+ * Wraps get in coalesce so null/undefined/unknown feature values don't throw "unknown feature value".
+ */
+function safeGet(property: string, fallback: string): unknown[];
+function safeGet(property: string, fallback: number): unknown[];
+function safeGet(property: string, fallback: string | number): unknown[] {
+  return ['coalesce', ['get', property], fallback];
+}
+
+/**
  * Build a category-based color expression.
  * Creates a 'case' expression that matches property values to colors.
+ * Uses coalesce so unknown/missing property values use the default (avoids MapLibre "unknown feature value").
  *
  * @param config - Category style configuration
  * @returns MapLibre expression for circle-color
@@ -214,7 +225,7 @@ export function buildCategoryColorExpression(config: CategoryStyleConfig): unkno
 
   for (const [category, style] of Object.entries(categories)) {
     if (style.color) {
-      expr.push(['==', ['get', property], category]);
+      expr.push(['==', safeGet(property, ''), category]);
       expr.push(style.color);
     }
   }
@@ -237,8 +248,8 @@ export function buildCategoryGlowOpacityExpression(
 ): unknown[] {
   const { property, categories, defaults } = config;
 
-  // Build the base opacity match expression
-  const baseOpacity: unknown[] = ['match', ['get', property]];
+  // Build the base opacity match expression (coalesce avoids "unknown feature value")
+  const baseOpacity: unknown[] = ['match', safeGet(property, '')];
   for (const [category, style] of Object.entries(categories)) {
     if (style.glowOpacity !== undefined) {
       baseOpacity.push(category, style.glowOpacity);
@@ -269,7 +280,7 @@ export function buildCategoryStrokeWidthExpression(config: CategoryStyleConfig):
 
   for (const [category, style] of Object.entries(categories)) {
     if (style.strokeWidth !== undefined) {
-      expr.push(['==', ['get', property], category]);
+      expr.push(['==', safeGet(property, ''), category]);
       expr.push(style.strokeWidth);
     }
   }
@@ -287,7 +298,7 @@ export function buildCategoryStrokeWidthExpression(config: CategoryStyleConfig):
  */
 export function buildCategoryRadiusScaleExpression(config: CategoryStyleConfig): unknown[] {
   const { property, categories, defaults } = config;
-  const expr: unknown[] = ['match', ['get', property]];
+  const expr: unknown[] = ['match', safeGet(property, '')];
 
   for (const [category, style] of Object.entries(categories)) {
     if (style.radiusScale !== undefined) {
@@ -881,7 +892,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
           id: ringLayerId,
           type: 'circle',
           source: sourceId,
-          filter: ['==', ['get', '__selected'], true],
+          filter: ['==', ['coalesce', ['get', '__selected'], false], true],
           paint: {
             'circle-radius': getSelectionRingRadiusInterpolation(),
             'circle-color': 'rgba(0,0,0,0)',
@@ -1010,7 +1021,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
           id: ringLayerId,
           type: 'circle',
           source: sourceId,
-          filter: ['==', ['get', '__selected'], true],
+          filter: ['==', ['coalesce', ['get', '__selected'], false], true],
           paint: {
             'circle-radius': getSelectionRingRadiusInterpolation(),
             'circle-color': 'rgba(0,0,0,0)',

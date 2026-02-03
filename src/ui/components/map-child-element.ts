@@ -79,7 +79,7 @@ export class MapChildElement extends BaseElement {
   }
   // Event handler references for cleanup
   private _mapReadyHandler: (() => void | Promise<void>) | null = null;
-  private _mapUnloadHandler: (() => void) | null = null;
+  protected _mapUnloadHandler: (() => void) | null = null;
   private _styleLoadHandler: (() => void) | null = null;
   private _contextLostHandler: (() => void) | null = null;
   private _mapReadyParent: HTMLElement | null = null;

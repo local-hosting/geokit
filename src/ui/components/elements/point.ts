@@ -632,6 +632,55 @@ export class PointElement extends MapChildElement {
 
     this.map.on('click', this.mapClickHandler);
     this.map.on('touchend', this.mapClickHandler);
+
+    // Remove map listeners when map is about to be destroyed (freeze) so no handler runs on destroyed map
+    this._mapUnloadHandler = () => this.removeMapListeners();
+    this.addEventListener('gk-map-unload', this._mapUnloadHandler);
+  }
+
+  /**
+   * Remove only map event listeners (used on gk-map-unload before map.remove()).
+   * Does not remove layers; map.remove() destroys the map.
+   */
+  private removeMapListeners(): void {
+    if (this._mapUnloadHandler) {
+      this.removeEventListener('gk-map-unload', this._mapUnloadHandler);
+      this._mapUnloadHandler = null;
+    }
+    if (!this.map?.off) return;
+
+    if (this.clickHandler && this.layerId) {
+      try {
+        this.map.off('click', this.layerId, this.clickHandler);
+        this.map.off('touchend', this.layerId, this.clickHandler);
+      } catch {
+        // Map may already be destroyed
+      }
+      this.clickHandler = null;
+    }
+
+    if (this.mapClickHandler) {
+      try {
+        this.map.off('click', this.mapClickHandler);
+        this.map.off('touchend', this.mapClickHandler);
+      } catch {
+        // Map may already be destroyed
+      }
+      this.mapClickHandler = null;
+    }
+
+    const hoverLayer = this.hoverEventLayerId ?? this.layerId;
+    if (hoverLayer) {
+      try {
+        this.map.off('mouseenter', hoverLayer);
+        this.map.off('mouseleave', hoverLayer);
+      } catch {
+        // Map may already be destroyed
+      }
+      this.hoverEventLayerId = null;
+    }
+
+    this.setHoverAt(null);
   }
 
   private handlePointSelect(
@@ -843,40 +892,7 @@ export class PointElement extends MapChildElement {
       this.popupInstance = null;
     }
 
-    // Remove event listeners
-    if (this.clickHandler && this.layerId) {
-      try {
-        this.map.off('click', this.layerId, this.clickHandler);
-        this.map.off('touchend', this.layerId, this.clickHandler);
-      } catch {
-        // Ignore
-      }
-      this.clickHandler = null;
-    }
-
-    if (this.mapClickHandler) {
-      try {
-        this.map.off('click', this.mapClickHandler);
-        this.map.off('touchend', this.mapClickHandler);
-      } catch {
-        // Ignore
-      }
-      this.mapClickHandler = null;
-    }
-
-    // Remove hover listeners (attached to glow or point layer)
-    const hoverLayer = this.hoverEventLayerId ?? this.layerId;
-    if (hoverLayer) {
-      try {
-        this.map.off('mouseenter', hoverLayer);
-        this.map.off('mouseleave', hoverLayer);
-      } catch {
-        // Ignore
-      }
-      this.hoverEventLayerId = null;
-    }
-
-    this.setHoverAt(null);
+    this.removeMapListeners();
 
     // Cleanup layers
     if (this.glowLayerId) {

@@ -19,6 +19,10 @@ interface SlotInfo {
   lastFailTime: number; // Timestamp of last failure
   activationStartTime: number; // Timestamp when activation started
   lastHealthCheckAttempt: number; // Timestamp of last health check activation attempt
+  /** When we first saw placeholder with no map instance (avoid resetting during createMap()) */
+  firstSeenNoMapInstanceAt: number;
+  /** When we first saw "Restoring map..." with map instance but !isInitialized (force "Map unavailable" after 5s) */
+  firstSeenRestoringAt: number;
 }
 
 // Debounce delay - wait for scrolling to stop before activating
@@ -31,6 +35,19 @@ const CONCURRENT_ACTIVATION_BATCH = 4;
 // Retry configuration for failed map loads
 const MAX_FAIL_COUNT = 3; // Max retries before giving up
 const RETRY_BACKOFF_MS = 2000; // Wait 2s between retries
+
+function mapCollectionDebug(msg: string, data?: Record<string, unknown>): void {
+  if (
+    typeof window !== 'undefined' &&
+    (window as unknown as { __GEOKIT_DEBUG__?: boolean }).__GEOKIT_DEBUG__
+  ) {
+    if (data !== undefined) {
+      console.warn('[map-collection]', msg, data);
+    } else {
+      console.warn('[map-collection]', msg);
+    }
+  }
+}
 
 export class MapCollectionElement extends BaseElement {
   static observedAttributes = ['pool-size', 'api-key', 'map-style', 'viewport-padding'];
@@ -141,6 +158,8 @@ export class MapCollectionElement extends BaseElement {
         lastFailTime: 0,
         activationStartTime: 0,
         lastHealthCheckAttempt: 0,
+        firstSeenNoMapInstanceAt: 0,
+        firstSeenRestoringAt: 0,
       };
     });
 
@@ -332,6 +351,11 @@ export class MapCollectionElement extends BaseElement {
 
         const frozen = await this.deactivateOneInvisible();
         if (!frozen) {
+          mapCollectionDebug('activateSlot: pool full, cannot make room', {
+            activeCount: this.activeCount,
+            poolSize: this.poolSize,
+            visibleCount: this.slots.filter((s) => s.isVisible).length,
+          });
           // Pool full with all visible maps - this is normal
           return;
         }
@@ -358,18 +382,36 @@ export class MapCollectionElement extends BaseElement {
       }
 
       // Unfreeze
+      const slotIndex = this.slots.indexOf(slotInfo);
+      const placeholderBefore = slotInfo.mapElement.querySelector('[data-map-placeholder="true"]');
+      mapCollectionDebug('activateSlot: calling unfreeze', {
+        slotIndex,
+        activeCount: this.activeCount,
+        poolSize: this.poolSize,
+        placeholderText: placeholderBefore?.textContent?.slice(0, 30) ?? null,
+      });
       slotInfo.mapElement.ensureAttributes({
         apiKey: this.apiKey,
         provider: 'maptiler',
         mapStyle: this.mapStyle,
       });
       const success = await slotInfo.mapElement.unfreeze(this.activeCount - 1);
+      mapCollectionDebug('activateSlot: unfreeze returned', {
+        slotIndex,
+        success,
+        hasMap: !!(slotInfo.mapElement as any).getMap?.(),
+        isInitialized: (slotInfo.mapElement as any).isInitialized,
+      });
       if (!success) {
         // Rollback on failure
         slotInfo.isActive = false;
         this.activeCount--;
         slotInfo.failCount++;
         slotInfo.lastFailTime = Date.now();
+        mapCollectionDebug('activateSlot: rollback (unfreeze failed)', {
+          slotIndex,
+          failCount: slotInfo.failCount,
+        });
 
         // Schedule retry if still visible and under max retries
         if (slotInfo.isVisible && slotInfo.failCount < MAX_FAIL_COUNT) {
@@ -527,6 +569,8 @@ export class MapCollectionElement extends BaseElement {
           lastFailTime: 0,
           activationStartTime: 0,
           lastHealthCheckAttempt: 0,
+          firstSeenNoMapInstanceAt: 0,
+          firstSeenRestoringAt: 0,
         };
         this.slots.push(slotInfo);
         this.intersectionObserver?.observe(mapElement);
@@ -582,10 +626,10 @@ export class MapCollectionElement extends BaseElement {
       clearInterval(this.healthCheckInterval);
     }
 
-    // Check every 5 seconds for stuck maps
+    // Check every 2 seconds for stuck maps (faster recovery from "Initializing...")
     this.healthCheckInterval = setInterval(() => {
       this.checkStuckMaps();
-    }, 5000);
+    }, 2000);
   }
 
   /**
@@ -650,16 +694,80 @@ export class MapCollectionElement extends BaseElement {
           const mapInstance = (slot.mapElement as any).getMap?.();
           const isInitialized = (slot.mapElement as any).isInitialized;
           if (!mapInstance) {
-            // Map instance missing but marked active - reset
-            slot.isActive = false;
-            this.activeCount--;
-            slot.failCount = 0;
-            slot.lastFailTime = 0;
-            setTimeout(() => this.activateSlot(slot), 1000);
-          } else if (isInitialized) {
-            // Map is initialized but placeholder still visible - hide it
-            // This can happen due to timing issues or if waitForReady() timed out
-            slot.mapElement.hidePlaceholder();
+            // Map instance missing - may still be in createMap(); only reset after grace period
+            const firstSeen = slot.firstSeenNoMapInstanceAt ?? now;
+            if (!slot.firstSeenNoMapInstanceAt) slot.firstSeenNoMapInstanceAt = firstSeen;
+            const stuckMs = now - firstSeen;
+            mapCollectionDebug('healthCheck: active slot with placeholder, no mapInstance', {
+              placeholderText: placeholder.textContent?.slice(0, 30),
+              stuckMs,
+              firstSeenNoMapInstanceAt: slot.firstSeenNoMapInstanceAt,
+            });
+            if (stuckMs > 10000) {
+              mapCollectionDebug('healthCheck: resetting slot (no mapInstance after 10s)', {
+                slotIndex: this.slots.indexOf(slot),
+              });
+              slot.firstSeenNoMapInstanceAt = 0;
+              slot.firstSeenRestoringAt = 0;
+              slot.isActive = false;
+              this.activeCount--;
+              slot.failCount = 0;
+              slot.lastFailTime = 0;
+              setTimeout(() => this.activateSlot(slot), 1000);
+            }
+          } else {
+            slot.firstSeenNoMapInstanceAt = 0;
+          }
+          if (mapInstance) {
+            if (isInitialized) {
+              slot.firstSeenRestoringAt = 0;
+              slot.mapElement.hidePlaceholder();
+            } else {
+              const placeholderText = placeholder.textContent || '';
+              if (placeholderText.includes('Restoring')) {
+                // Stuck on "Restoring map..." - style may never load; force "Map unavailable" after 5s so we can reset
+                const firstRestoring = slot.firstSeenRestoringAt ?? now;
+                if (!slot.firstSeenRestoringAt) slot.firstSeenRestoringAt = firstRestoring;
+                const restoringStuckMs = now - firstRestoring;
+                mapCollectionDebug(
+                  'healthCheck: active slot Restoring, mapInstance but !isInitialized',
+                  {
+                    slotIndex: this.slots.indexOf(slot),
+                    restoringStuckMs,
+                    firstSeenRestoringAt: slot.firstSeenRestoringAt,
+                  }
+                );
+                if (restoringStuckMs > 5000) {
+                  mapCollectionDebug('healthCheck: forcing Map unavailable (Restoring stuck >5s)', {
+                    slotIndex: this.slots.indexOf(slot),
+                  });
+                  slot.firstSeenRestoringAt = 0;
+                  slot.mapElement.showPlaceholder('Map unavailable');
+                }
+              } else if (placeholderText.includes('Map unavailable')) {
+                mapCollectionDebug('healthCheck: resetting slot (Map unavailable)', {
+                  slotIndex: this.slots.indexOf(slot),
+                });
+                // Style never loaded; reset slot so collection can retry
+                slot.firstSeenNoMapInstanceAt = 0;
+                slot.firstSeenRestoringAt = 0;
+                slot.isActive = false;
+                this.activeCount--;
+                slot.failCount = 0;
+                slot.lastFailTime = 0;
+                setTimeout(() => this.activateSlot(slot), 1500);
+              } else {
+                // Map instance exists but isInitialized is false - 'load' may never have fired
+                const styleLoaded =
+                  typeof (mapInstance as { isStyleLoaded?: () => boolean }).isStyleLoaded ===
+                    'function' && (mapInstance as { isStyleLoaded: () => boolean }).isStyleLoaded();
+                if (styleLoaded) {
+                  slot.firstSeenRestoringAt = 0;
+                  (slot.mapElement as unknown as { isInitialized: boolean }).isInitialized = true;
+                  slot.mapElement.hidePlaceholder();
+                }
+              }
+            }
           }
         }
       }
@@ -669,8 +777,13 @@ export class MapCollectionElement extends BaseElement {
         const placeholder = slot.mapElement.querySelector('[data-map-placeholder="true"]');
         if (placeholder) {
           const placeholderText = placeholder.textContent || '';
-          // If showing "Restoring map..." or "Loading map..." for too long, try to activate
-          if (placeholderText.includes('Restoring') || placeholderText.includes('Loading')) {
+          // If showing "Restoring...", "Loading...", "Initializing...", or "Map unavailable" for too long, try to activate
+          if (
+            placeholderText.includes('Restoring') ||
+            placeholderText.includes('Loading') ||
+            placeholderText.includes('Initializing') ||
+            placeholderText.includes('Map unavailable')
+          ) {
             // Check if this slot has been stuck for a while
             const mapInstance = (slot.mapElement as any).getMap?.();
             if (!mapInstance) {
@@ -685,15 +798,32 @@ export class MapCollectionElement extends BaseElement {
 
                 // Only attempt activation if we can actually make progress
                 if (hasRoomInPool || hasInvisibleActiveToFreeze) {
+                  mapCollectionDebug(
+                    'healthCheck: retrying activation (visible slot with placeholder)',
+                    {
+                      slotIndex: this.slots.indexOf(slot),
+                      placeholderText: placeholderText.slice(0, 30),
+                      hasRoomInPool,
+                      hasInvisibleActiveToFreeze,
+                    }
+                  );
                   // Map is frozen but should be active - try to activate it
-                  // Mark that we attempted activation from health check
                   slot.lastHealthCheckAttempt = now;
-                  // Reset fail count to give it a fresh chance
                   slot.failCount = 0;
                   slot.lastFailTime = 0;
                   setTimeout(() => this.activateSlot(slot), 500);
+                } else {
+                  mapCollectionDebug('healthCheck: pool full, slot waiting for room', {
+                    slotIndex: this.slots.indexOf(slot),
+                    placeholderText: placeholderText.slice(0, 30),
+                    activeCount: this.activeCount,
+                    poolSize: this.poolSize,
+                  });
+                  // Pool is full and all active maps are visible - this slot is waiting for room.
+                  if (placeholderText.includes('Initializing')) {
+                    slot.mapElement.showPlaceholder('Loading...');
+                  }
                 }
-                // If pool is full and all active maps are visible, this is expected behavior - don't warn
               }
             }
           }
