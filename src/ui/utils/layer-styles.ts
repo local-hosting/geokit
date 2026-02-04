@@ -930,20 +930,30 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         console.error(`[geokit] Failed to add glow layer ${glowLayerId}:`, err);
       }
     }
-    // Selection ring: zoom-based radius just outside point so ring is visible and doesn't cover the point
+    // Selection ring: driven by feature-state 'selected' so it can appear instantly on click (no source setData)
     const ringLayerId = `${pointLayerId}-selection-ring`;
     if (!map.getLayer?.(ringLayerId)) {
       try {
+        const ringRadiusExpr = getSelectionRingRadiusInterpolation();
         map.addLayer({
           id: ringLayerId,
           type: 'circle',
           source: sourceId,
           minzoom: 0, // Ensure visibility at all zoom levels
-          filter: ['==', ['coalesce', ['get', '__selected'], false], true],
           paint: {
-            'circle-radius': getSelectionRingRadiusInterpolation(),
+            'circle-radius': [
+              'case',
+              ['boolean', ['feature-state', 'selected'], false],
+              ringRadiusExpr,
+              0,
+            ],
             'circle-color': 'rgba(0,0,0,0)',
-            'circle-stroke-width': 2,
+            'circle-stroke-width': [
+              'case',
+              ['boolean', ['feature-state', 'selected'], false],
+              2,
+              0,
+            ],
             'circle-stroke-color': '#ffffff',
           },
         } as any);
@@ -1031,7 +1041,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   }
 
   // Point layer (top): zoom-based radius so points get larger as you zoom in; data-driven circle-color.
-  // Dot stays original (venue) color. White ring is selection-ring layer (filter __selected).
+  // Dot stays original (venue) color. White ring is selection-ring layer (feature-state 'selected').
   if (!map.getLayer?.(pointLayerId)) {
     const circleColorVal = circleColor ?? resolveDefaultLayerColor();
     const radiusVal = pointRadius ?? getPointRadiusInterpolation();
@@ -1082,20 +1092,30 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       }
     }
 
-    // Selection ring: zoom-based radius just outside point so ring is visible and doesn't cover the point
+    // Selection ring: driven by feature-state 'selected' so it can appear instantly on click (no source setData)
     const ringLayerId = `${pointLayerId}-selection-ring`;
     if (!map.getLayer?.(ringLayerId)) {
       try {
+        const ringRadiusExpr = getSelectionRingRadiusInterpolation();
         map.addLayer({
           id: ringLayerId,
           type: 'circle',
           source: sourceId,
           minzoom: 0, // Ensure visibility at all zoom levels
-          filter: ['==', ['coalesce', ['get', '__selected'], false], true],
           paint: {
-            'circle-radius': getSelectionRingRadiusInterpolation(),
+            'circle-radius': [
+              'case',
+              ['boolean', ['feature-state', 'selected'], false],
+              ringRadiusExpr,
+              0,
+            ],
             'circle-color': 'rgba(0,0,0,0)',
-            'circle-stroke-width': 2,
+            'circle-stroke-width': [
+              'case',
+              ['boolean', ['feature-state', 'selected'], false],
+              2,
+              0,
+            ],
             'circle-stroke-color': '#ffffff',
           },
         } as any);
