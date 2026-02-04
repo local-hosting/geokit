@@ -14,7 +14,7 @@ import { getProviderForCapability } from '../../../api/providers/registry';
 import { polygonToH3, h3SetToMultiPolygon } from '../../../utils/h3';
 import { smoothFeatureCollection } from '../../../utils/smoothing';
 import { debug } from '../../utils/logger';
-import { getCSSVariable } from '../../utils/theme';
+import { getCSSVariable, getCSSVariableNumber } from '../../utils/theme';
 import type { Polygon } from '../../../types';
 
 export interface IsochroneOptions {
@@ -329,45 +329,63 @@ export class IsochroneElement extends MapChildElement {
   }
 
   /**
-   * Find the layer to insert isochrone layers before so isochrones render below venue/point layers.
-   * 1) First circle layer (venue glow/points are usually circle type).
-   * 2) Fallback: first layer whose id looks like a venue layer (e.g. *-venue-glow, *-venue-points)
-   *    so we don't add isochrone on top when the base style has no circle layers (e.g. MapTiler dataviz).
-   * 3) Last resort: first layer in the style so we insert at bottom and never cover points.
+   * Find the first (bottommost) venue layer id (glow or points). Used so isochrone can be moved below it.
+   * Order: selected polygon (DMA) < isochrone < glow < point.
    */
-  private findFirstCircleLayer(): string | undefined {
+  private _findFirstVenueLayerId(): string | undefined {
     if (!this.map) return undefined;
-
     try {
-      const getStyle = (
-        this.map as { getStyle?: () => { layers?: Array<{ id?: string; type?: string }> } }
-      ).getStyle;
-      if (!getStyle) return undefined;
-
-      const style = getStyle();
-      if (!style || !style.layers || style.layers.length === 0) return undefined;
-
-      for (const layer of style.layers) {
-        if (layer.type === 'circle') {
-          return layer.id;
-        }
-      }
-
-      // No circle layer (e.g. MapTiler base style): insert before first venue-like layer so isochrone stays below points
+      const style = (
+        this.map as { getStyle?: () => { layers?: Array<{ id?: string }> } }
+      ).getStyle?.();
+      if (!style?.layers?.length) return undefined;
       for (const layer of style.layers) {
         const id = layer.id ?? '';
-        if (/venue/.test(id) || id.endsWith('-glow') || id.endsWith('-points')) {
+        if (id.endsWith('-glow') || id.endsWith('-points') || /-venue-/.test(id)) {
           return layer.id;
         }
       }
-
-      // Never add isochrone on top: insert before the bottommost layer so isochrones stay below points
-      const firstLayer = style.layers[0];
-      return firstLayer?.id;
     } catch {
-      // Silently fail - caller will add at top if undefined
+      // ignore
     }
+    return undefined;
+  }
 
+  /**
+   * Find the layer to insert isochrone layers before: above selected polygon (DMA), below point/glow.
+   * 1) First venue-like layer (glow or points) so isochrone is below both.
+   * 2) First circle layer.
+   * 3) Layer after last DMA so isochrone is above selected polygon.
+   * 4) Last resort: first layer in the style.
+   */
+  private findFirstCircleLayer(): string | undefined {
+    const firstVenue = this._findFirstVenueLayerId();
+    if (firstVenue) return firstVenue;
+
+    if (!this.map) return undefined;
+    try {
+      const style = (
+        this.map as { getStyle?: () => { layers?: Array<{ id?: string; type?: string }> } }
+      ).getStyle?.();
+      if (!style?.layers?.length) return undefined;
+
+      for (const layer of style.layers) {
+        if (layer.type === 'circle') return layer.id;
+      }
+
+      const dmaLayerIds = ['dma-fill', 'dma-highlight-fill', 'dma-highlight-outline'];
+      let lastDmaIndex = -1;
+      for (let i = 0; i < style.layers.length; i++) {
+        if (dmaLayerIds.includes(style.layers[i].id ?? '')) lastDmaIndex = i;
+      }
+      if (lastDmaIndex >= 0 && lastDmaIndex < style.layers.length - 1) {
+        return style.layers[lastDmaIndex + 1].id;
+      }
+
+      return style.layers[0]?.id;
+    } catch {
+      // ignore
+    }
     return undefined;
   }
 
@@ -592,6 +610,21 @@ export class IsochroneElement extends MapChildElement {
           this.map.addLayer(lineSpec, beforeLayerId);
         } else {
           this.map.addLayer(lineSpec);
+        }
+      }
+
+      // Ensure isochrone is above selected polygon (DMA) but below point/glow: move both layers before first venue layer
+      const firstVenueLayerId = this._findFirstVenueLayerId();
+      if (firstVenueLayerId && this.map.moveLayer && this.map.getLayer?.(firstVenueLayerId)) {
+        try {
+          if (this.lineLayerId && this.map.getLayer?.(this.lineLayerId)) {
+            this.map.moveLayer(this.lineLayerId, firstVenueLayerId);
+          }
+          if (this.fillLayerId && this.map.getLayer?.(this.fillLayerId)) {
+            this.map.moveLayer(this.fillLayerId, firstVenueLayerId);
+          }
+        } catch (err) {
+          debug.warn('[Isochrone] moveLayer failed', { firstVenueLayerId, err });
         }
       }
 
@@ -840,7 +873,12 @@ export class IsochroneElement extends MapChildElement {
   }
 
   get opacity(): number {
-    return parseFloat(this.getAttribute('opacity') || '0.3') || 0.3;
+    const attr = this.getAttribute('opacity');
+    if (attr !== null && attr !== '') {
+      const parsed = parseFloat(attr);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+    return getCSSVariableNumber(this.mapElement, '--gk-isochrone-opacity', 0.3);
   }
 
   get strokeColor(): string {
