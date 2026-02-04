@@ -152,6 +152,7 @@ export interface MapInstance {
   // Layer management
   addLayer(layer: MapLayer, beforeId?: string): void;
   removeLayer(id: string): void;
+  moveLayer?(id: string, beforeId: string): void;
   getLayer?(id: string): MapLayer | undefined;
 
   // Style properties
