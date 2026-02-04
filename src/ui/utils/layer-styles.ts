@@ -411,19 +411,22 @@ export function multiplyRadiusExpression(
  * });
  * ```
  */
+/** Minimum circle radius in pixels so points stay visible when zoomed out (avoids hide/show flicker). */
+const MIN_POINT_RADIUS_PX = 1;
+
 export function getPointRadiusInterpolation(options: CircleStyleOptions = {}): unknown[] {
   const { scale = 1, exponent = 1.5 } = options;
-  // Point radius smaller than glow at low zoom; app uses minZoom 2 so radius 1 at zoom 2 is visible
+  // Point radius never below 1px so venues don't disappear/flicker when zooming out
   return [
     'interpolate',
     ['exponential', exponent],
     ['zoom'],
     0,
-    0.85 * scale, // Full zoom out (below app minZoom 2)
+    Math.max(MIN_POINT_RADIUS_PX, 0.85 * scale),
     2,
-    1 * scale, // App minZoom 2
+    Math.max(MIN_POINT_RADIUS_PX, 1 * scale),
     3,
-    1.25 * scale,
+    Math.max(MIN_POINT_RADIUS_PX, 1.25 * scale),
     6,
     2 * scale, // Country view
     8,
@@ -825,6 +828,16 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       });
       debug.log('[layer-styles] point layer ADD via MapTiler helpers.addPoint', { pointLayerId });
       helperSucceeded = true;
+
+      // Override minzoom - MapTiler helper may set a default that hides points at low zoom
+      if (typeof (map as any).setLayerZoomRange === 'function') {
+        try {
+          (map as any).setLayerZoomRange(pointLayerId, 0, 24);
+        } catch {
+          // Ignore - some map implementations may not support this
+        }
+      }
+
       // Apply data-driven color so points show actual venue/DMA color instead of single fallback
       if (Array.isArray(circleColor) && map.setPaintProperty) {
         try {
@@ -833,6 +846,20 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
           console.warn(
             `[geokit] setPaintProperty circle-color failed for ${pointLayerId}:`,
             paintErr
+          );
+        }
+      }
+      // Apply stroke so Cox/IKEA (and any layer with stroke) get white border, not theme default
+      if (map.setPaintProperty && _circleStrokeWidth != null && _circleStrokeWidth !== 0) {
+        try {
+          map.setPaintProperty(pointLayerId, 'circle-stroke-width', _circleStrokeWidth as any);
+          if (_circleStrokeColor != null) {
+            map.setPaintProperty(pointLayerId, 'circle-stroke-color', _circleStrokeColor as any);
+          }
+        } catch (strokeErr) {
+          console.warn(
+            `[geokit] setPaintProperty circle-stroke failed for ${pointLayerId}:`,
+            strokeErr
           );
         }
       }
@@ -891,6 +918,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         id: glowLayerId,
         type: 'circle',
         source: sourceId,
+        minzoom: 0, // Ensure visibility at all zoom levels
         layout: { visibility: 'visible' },
         paint: omitNil(glowPaint),
       };
@@ -910,6 +938,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
           id: ringLayerId,
           type: 'circle',
           source: sourceId,
+          minzoom: 0, // Ensure visibility at all zoom levels
           filter: ['==', ['coalesce', ['get', '__selected'], false], true],
           paint: {
             'circle-radius': getSelectionRingRadiusInterpolation(),
@@ -980,6 +1009,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       id: glowLayerId,
       type: 'circle',
       source: sourceId,
+      minzoom: 0, // Ensure visibility at all zoom levels
       layout: { visibility: 'visible' },
       paint: omitNil(glowPaint),
     };
@@ -1011,10 +1041,16 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       'circle-opacity': 1,
       'circle-blur': 0,
     };
+    if (_circleStrokeWidth != null && _circleStrokeWidth !== 0) {
+      pointPaint['circle-stroke-width'] = _circleStrokeWidth;
+      pointPaint['circle-stroke-color'] =
+        _circleStrokeColor ?? resolveDefaultStrokeColor(document.documentElement);
+    }
     const pointLayerSpec: Record<string, unknown> = {
       id: pointLayerId,
       type: 'circle',
       source: sourceId,
+      minzoom: 0, // Ensure visibility at all zoom levels
       layout: { visibility: 'visible' },
       paint: omitNil(pointPaint),
     };
@@ -1030,6 +1066,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
           id: pointLayerId,
           type: 'circle',
           source: sourceId,
+          minzoom: 0, // Ensure visibility at all zoom levels
           layout: { visibility: 'visible' as const },
           paint: {
             'circle-radius': 3,
@@ -1053,6 +1090,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
           id: ringLayerId,
           type: 'circle',
           source: sourceId,
+          minzoom: 0, // Ensure visibility at all zoom levels
           filter: ['==', ['coalesce', ['get', '__selected'], false], true],
           paint: {
             'circle-radius': getSelectionRingRadiusInterpolation(),
