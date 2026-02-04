@@ -39,6 +39,7 @@ export class MapElement extends BaseElement {
     'pitch',
     'max-pitch',
     'bearing',
+    'max-bearing',
     'interactive',
     'hide-controls',
     'auto-hide-controls',
@@ -91,6 +92,9 @@ export class MapElement extends BaseElement {
 
   /** Buildings: zoom handler for toggling 3D buildings; removed in removeAllMapListeners */
   private _buildingsZoomHandler: (() => void) | null = null;
+
+  /** Bearing clamp: moveend handler to keep map mostly upright; removed in removeAllMapListeners */
+  private _bearingClampHandler: (() => void) | null = null;
 
   constructor() {
     super();
@@ -470,6 +474,7 @@ export class MapElement extends BaseElement {
         // Defer non-critical setup to avoid blocking first paint
         const deferredSetup = () => {
           this.setupAutoHideControls();
+          this.setupBearingClamp();
           this.setupUrlSync();
         };
 
@@ -1011,6 +1016,39 @@ export class MapElement extends BaseElement {
   }
 
   /**
+   * Clamp bearing on moveend so the map stays mostly upright (e.g. ±30°).
+   * Parses max-bearing attribute (default 30); set to 0 to disable.
+   */
+  private setupBearingClamp(): void {
+    const maxBearingAttr = this.getAttribute('max-bearing');
+    // Default 30° keeps map mostly upright; set to "0" to disable clamping
+    const maxBearing =
+      maxBearingAttr === null || maxBearingAttr === '' ? 30 : parseFloat(maxBearingAttr);
+    if (!Number.isFinite(maxBearing) || maxBearing <= 0) return;
+
+    const map = this.map as { getBearing?: () => number; setBearing?: (b: number) => void };
+    if (!map?.getBearing || !map?.setBearing) return;
+
+    this._bearingClampHandler = () => {
+      const b = map.getBearing!();
+      // Normalize to -180..180 so we clamp to the "closest to north" range
+      const normalized = ((b + 180) % 360) - 180;
+      if (Math.abs(normalized) <= maxBearing) return;
+      const clamped = normalized > 0 ? maxBearing : -maxBearing;
+      map.setBearing!(clamped);
+    };
+
+    this.map!.on('moveend', this._bearingClampHandler);
+  }
+
+  private cleanupBearingClamp(): void {
+    if (this._bearingClampHandler && this.map) {
+      this.map.off('moveend', this._bearingClampHandler);
+      this._bearingClampHandler = null;
+    }
+  }
+
+  /**
    * Set up URL hash synchronization
    * Called when map is ready and sync-url attribute is present
    */
@@ -1044,6 +1082,7 @@ export class MapElement extends BaseElement {
    * Call before map.remove() in _freeze to avoid getLayer/queryRenderedFeatures on a destroyed map.
    */
   private removeAllMapListeners(): void {
+    this.cleanupBearingClamp();
     this.cleanupUrlSync();
     this.cleanupTerrain();
     this.cleanup3DBuildings();
