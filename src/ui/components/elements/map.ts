@@ -1300,25 +1300,30 @@ export class MapElement extends BaseElement {
 
   /**
    * Remove 3D buildings handler and layer.
+   * Safe to call when map is null or partially torn down (e.g. during freeze).
    */
   private cleanup3DBuildings(): void {
     const map = this.map as any;
-    if (this._buildingsZoomHandler && map?.off) {
+    if (!map) return;
+
+    const handler = this._buildingsZoomHandler;
+    this._buildingsZoomHandler = null;
+
+    if (map.off && handler) {
       try {
-        map.off('zoom', this._buildingsZoomHandler);
+        map.off('zoom', handler);
       } catch {
         // ignore
       }
     }
-    this._buildingsZoomHandler = null;
 
     const BUILDINGS_LAYER_ID = 'gk-3d-buildings';
-    if (map?.getLayer?.(BUILDINGS_LAYER_ID)) {
-      try {
+    try {
+      if (typeof map.getLayer === 'function' && map.getLayer(BUILDINGS_LAYER_ID)) {
         map.removeLayer(BUILDINGS_LAYER_ID);
-      } catch {
-        // ignore
       }
+    } catch {
+      // ignore (map may be destroyed or style unloaded)
     }
   }
 
