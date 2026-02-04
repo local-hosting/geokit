@@ -1248,7 +1248,18 @@ export class MapElement extends BaseElement {
 
           if (buildingSource) {
             try {
-              map.addLayer({
+              // Insert buildings below the first point layer (circle/symbol) so points render on top
+              const style = map.getStyle?.();
+              const layers = (style?.layers ?? []) as Array<{ id: string; type?: string }>;
+              let beforeLayerId: string | undefined;
+              for (const layer of layers) {
+                const t = layer.type ?? '';
+                if (t === 'circle' || t === 'symbol') {
+                  beforeLayerId = layer.id;
+                  break;
+                }
+              }
+              const layerSpec = {
                 id: BUILDINGS_LAYER_ID,
                 type: 'fill-extrusion',
                 source: buildingSource,
@@ -1275,7 +1286,12 @@ export class MapElement extends BaseElement {
                   'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
                   'fill-extrusion-opacity': 0.7,
                 },
-              });
+              };
+              if (beforeLayerId) {
+                map.addLayer(layerSpec as any, beforeLayerId);
+              } else {
+                map.addLayer(layerSpec as any);
+              }
             } catch {
               // Layer add failed (source-layer might not exist)
             }
