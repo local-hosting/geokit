@@ -40,6 +40,7 @@ export class MapElement extends BaseElement {
     'max-pitch',
     'bearing',
     'max-bearing',
+    'bearing-clamp-max-zoom',
     'interactive',
     'hide-controls',
     'auto-hide-controls',
@@ -1018,6 +1019,8 @@ export class MapElement extends BaseElement {
   /**
    * Clamp bearing on moveend so the map stays mostly upright (e.g. ±30°).
    * Parses max-bearing attribute (default 30); set to 0 to disable.
+   * Parses bearing-clamp-max-zoom attribute; above this zoom, clamping is disabled
+   * (allowing free rotation at street level).
    */
   private setupBearingClamp(): void {
     const maxBearingAttr = this.getAttribute('max-bearing');
@@ -1026,10 +1029,21 @@ export class MapElement extends BaseElement {
       maxBearingAttr === null || maxBearingAttr === '' ? 30 : parseFloat(maxBearingAttr);
     if (!Number.isFinite(maxBearing) || maxBearing <= 0) return;
 
-    const map = this.map as { getBearing?: () => number; setBearing?: (b: number) => void };
+    const map = this.map as {
+      getBearing?: () => number;
+      setBearing?: (b: number) => void;
+      getZoom?: () => number;
+    };
     if (!map?.getBearing || !map?.setBearing) return;
 
+    // Parse bearing-clamp-max-zoom: above this zoom, allow free rotation (street level)
+    const maxZoomAttr = this.getAttribute('bearing-clamp-max-zoom');
+    const bearingClampMaxZoom = maxZoomAttr ? parseFloat(maxZoomAttr) : Infinity;
+
     this._bearingClampHandler = () => {
+      // Skip clamping at street level (high zoom)
+      if (map.getZoom && map.getZoom() >= bearingClampMaxZoom) return;
+
       const b = map.getBearing!();
       // Normalize to -180..180 so we clamp to the "closest to north" range
       const normalized = ((b + 180) % 360) - 180;
