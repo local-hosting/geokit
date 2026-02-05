@@ -25,6 +25,8 @@ import {
   isValidTheme,
   injectThemeStyles,
   darkTheme,
+  getSystemTheme,
+  getSystemThemeMediaQuery,
 } from '../../utils/theme';
 import { debug } from '../../utils/logger';
 
@@ -65,6 +67,11 @@ export class MapElement extends BaseElement {
   private _frozenContainerStyle: { display?: string; visibility?: string } | null = null;
   private _mapCanvas: HTMLCanvasElement | null = null;
   private _currentTheme: Theme = darkTheme;
+
+  // System theme detection
+  private _systemThemeMediaQuery: MediaQueryList | null = null;
+  private _systemThemeHandler: ((e: MediaQueryListEvent) => void) | null = null;
+  private _usingSystemTheme: boolean = false;
 
   // URL sync state
   private _urlSyncEnabled: boolean = false;
@@ -168,6 +175,9 @@ export class MapElement extends BaseElement {
 
     // Clean up URL sync listeners
     this.cleanupUrlSync();
+
+    // Clean up system theme listener
+    this.cleanupSystemThemeListener();
 
     // Clean up child tracking observer
     this._cleanupChildTracking();
@@ -283,17 +293,28 @@ export class MapElement extends BaseElement {
         throw new Error('Map container not found');
       }
 
-      // Get map style: theme takes precedence, then map-style attribute, then default
+      // Get map style: explicit theme > map-style attribute > system theme
       // DO NOT use 'style' attribute - that's for CSS, not map tiles!
       const themeAttr = this.getAttribute('theme');
+      const mapStyleAttr = this.getAttribute('map-style');
       let styleAttr: string;
+
       if (themeAttr && isValidTheme(themeAttr)) {
-        // Use theme's map style
+        // Use explicit theme's map style
         this._currentTheme = getTheme(themeAttr);
         styleAttr = this._currentTheme.mapStyle;
+        this._usingSystemTheme = false;
+      } else if (mapStyleAttr) {
+        // Use explicit map-style attribute
+        styleAttr = mapStyleAttr;
+        this._usingSystemTheme = false;
       } else {
-        // Fall back to map-style attribute or default
-        styleAttr = this.getAttribute('map-style') || 'streets';
+        // No explicit theme or style - use system theme and listen for changes
+        const systemThemeName = getSystemTheme();
+        this._currentTheme = getTheme(systemThemeName);
+        styleAttr = this._currentTheme.mapStyle;
+        this._usingSystemTheme = true;
+        this.setupSystemThemeListener();
       }
 
       // Parse max-pitch attribute (default 60 prevents disorienting "upside down" tilting)
@@ -775,7 +796,58 @@ export class MapElement extends BaseElement {
     const themeAttr = this.getAttribute('theme');
     if (themeAttr && isValidTheme(themeAttr)) {
       this.classList.add('gk-theme-' + themeAttr);
+    } else if (this._usingSystemTheme) {
+      // When using system theme, also sync the class for CSS variables
+      this.classList.add('gk-theme-' + this._currentTheme.name);
     }
+  }
+
+  /**
+   * Set up listener for system theme changes (prefers-color-scheme).
+   * Only active when no explicit theme attribute is set.
+   */
+  private setupSystemThemeListener(): void {
+    this.cleanupSystemThemeListener();
+
+    this._systemThemeMediaQuery = getSystemThemeMediaQuery();
+    if (!this._systemThemeMediaQuery) return;
+
+    this._systemThemeHandler = (e: MediaQueryListEvent) => {
+      // Only respond if we're still using system theme (no explicit theme attribute)
+      if (!this._usingSystemTheme) return;
+
+      const newThemeName: ThemeName = e.matches ? 'dark' : 'light';
+      debug.log('[gk-map] System theme changed to', newThemeName);
+
+      this._currentTheme = getTheme(newThemeName);
+      this.syncThemeClass();
+
+      // Update map tiles if map is initialized
+      if (this.map) {
+        this.updateMapStyle(this._currentTheme.mapStyle);
+      }
+
+      // Dispatch theme change event
+      this.dispatchEvent(
+        new CustomEvent('themechange', {
+          detail: { theme: this._currentTheme, themeName: newThemeName, source: 'system' },
+          bubbles: true,
+        })
+      );
+    };
+
+    this._systemThemeMediaQuery.addEventListener('change', this._systemThemeHandler);
+  }
+
+  /**
+   * Clean up system theme listener.
+   */
+  private cleanupSystemThemeListener(): void {
+    if (this._systemThemeMediaQuery && this._systemThemeHandler) {
+      this._systemThemeMediaQuery.removeEventListener('change', this._systemThemeHandler);
+    }
+    this._systemThemeMediaQuery = null;
+    this._systemThemeHandler = null;
   }
 
   /**
@@ -1456,6 +1528,9 @@ export class MapElement extends BaseElement {
     // Handle theme change (class-based; CSS from injected stylesheet)
     if (name === 'theme') {
       if (newValue && isValidTheme(newValue)) {
+        // Explicit theme set - stop listening to system theme
+        this._usingSystemTheme = false;
+        this.cleanupSystemThemeListener();
         this._currentTheme = getTheme(newValue);
         this.syncThemeClass();
         if (this.map && this.isInitialized) {
@@ -1467,6 +1542,16 @@ export class MapElement extends BaseElement {
             bubbles: true,
           })
         );
+      } else if (!newValue && !this.getAttribute('map-style')) {
+        // Theme attribute removed and no explicit map-style - revert to system theme
+        this._usingSystemTheme = true;
+        const systemThemeName = getSystemTheme();
+        this._currentTheme = getTheme(systemThemeName);
+        this.syncThemeClass();
+        this.setupSystemThemeListener();
+        if (this.map && this.isInitialized) {
+          this.updateMapStyle(this._currentTheme.mapStyle);
+        }
       } else {
         this.syncThemeClass();
       }

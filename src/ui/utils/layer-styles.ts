@@ -98,6 +98,8 @@ export interface SharedPointLayersConfig {
   promoteId?: string;
   /** When false, glow opacity does not use feature-state hover (use with hover-via-layer in createSharedPointLayersWithHover to avoid setFeatureState). */
   useFeatureStateHover?: boolean;
+  /** Selection ring stroke color (default #ffffff). Use dark color for light-themed maps. */
+  selectionRingColor?: string;
 }
 
 export interface CircleLayerConfig {
@@ -800,6 +802,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     geojson,
     promoteId,
     useFeatureStateHover = true,
+    selectionRingColor = '#ffffff',
   } = config;
 
   const maptilerHelpers =
@@ -813,6 +816,21 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   let helperSucceeded = false;
   if (useHelper) {
     try {
+      // Create source ourselves FIRST with promoteId so feature-state works (selection ring).
+      // MapTiler's addPoint helper doesn't pass promoteId to the source it creates.
+      // By creating the source before the helper runs, the helper will use our source.
+      if (promoteId && geojson && !map.getSource?.(sourceId)) {
+        map.addSource(sourceId, {
+          type: 'geojson',
+          data: geojson,
+          promoteId,
+        });
+        debug.log('[layer-styles] source ADD with promoteId before helper', {
+          sourceId,
+          promoteId,
+        });
+      }
+
       // Helper only accepts a single color; we override with data-driven color after if needed
       const singleColor =
         typeof circleColor === 'string' ? circleColor : resolveDefaultLayerColor();
@@ -849,13 +867,34 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
           );
         }
       }
-      // Apply stroke so Cox/IKEA (and any layer with stroke) get white border, not theme default
-      if (map.setPaintProperty && _circleStrokeWidth != null && _circleStrokeWidth !== 0) {
+      // Apply custom point radius (data-driven or scaled) to override MapTiler helper's fixed radius
+      if (pointRadius && map.setPaintProperty) {
         try {
-          map.setPaintProperty(pointLayerId, 'circle-stroke-width', _circleStrokeWidth as any);
-          if (_circleStrokeColor != null) {
-            map.setPaintProperty(pointLayerId, 'circle-stroke-color', _circleStrokeColor as any);
-          }
+          map.setPaintProperty(pointLayerId, 'circle-radius', pointRadius as any);
+        } catch (radiusErr) {
+          console.warn(
+            `[geokit] setPaintProperty circle-radius failed for ${pointLayerId}:`,
+            radiusErr
+          );
+        }
+      }
+      // Apply selection-aware stroke: 3px when __selected, otherwise use provided stroke.
+      // This works with MapTiler helper (which doesn't support promoteId for feature-state).
+      if (map.setPaintProperty) {
+        try {
+          const baseStrokeWidth = _circleStrokeWidth ?? 0;
+          const selectionStrokeWidth = [
+            'case',
+            ['==', ['get', '__selected'], true],
+            3,
+            baseStrokeWidth,
+          ];
+          map.setPaintProperty(pointLayerId, 'circle-stroke-width', selectionStrokeWidth as any);
+          const strokeColorVal =
+            _circleStrokeColor ??
+            selectionRingColor ??
+            resolveDefaultStrokeColor(document.documentElement);
+          map.setPaintProperty(pointLayerId, 'circle-stroke-color', strokeColorVal as any);
         } catch (strokeErr) {
           console.warn(
             `[geokit] setPaintProperty circle-stroke failed for ${pointLayerId}:`,
@@ -954,7 +993,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
               2,
               0,
             ],
-            'circle-stroke-color': '#ffffff',
+            'circle-stroke-color': selectionRingColor,
           },
         } as any);
       } catch (err) {
@@ -1041,7 +1080,8 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   }
 
   // Point layer (top): zoom-based radius so points get larger as you zoom in; data-driven circle-color.
-  // Dot stays original (venue) color. White ring is selection-ring layer (feature-state 'selected').
+  // Selection stroke uses __selected property (works without promoteId, unlike feature-state).
+  // The selection-ring layer below uses feature-state as a secondary indicator when promoteId works.
   if (!map.getLayer?.(pointLayerId)) {
     const circleColorVal = circleColor ?? resolveDefaultLayerColor();
     const radiusVal = pointRadius ?? getPointRadiusInterpolation();
@@ -1051,11 +1091,15 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       'circle-opacity': 1,
       'circle-blur': 0,
     };
-    if (_circleStrokeWidth != null && _circleStrokeWidth !== 0) {
-      pointPaint['circle-stroke-width'] = _circleStrokeWidth;
-      pointPaint['circle-stroke-color'] =
-        _circleStrokeColor ?? resolveDefaultStrokeColor(document.documentElement);
-    }
+    // Selection stroke: show 3px when __selected, otherwise use provided stroke width.
+    // This works with MapTiler helper (which doesn't support promoteId for feature-state).
+    const baseStrokeWidth = _circleStrokeWidth ?? 0;
+    const selectionStrokeWidth = ['case', ['==', ['get', '__selected'], true], 3, baseStrokeWidth];
+    pointPaint['circle-stroke-width'] = selectionStrokeWidth;
+    pointPaint['circle-stroke-color'] =
+      _circleStrokeColor ??
+      selectionRingColor ??
+      resolveDefaultStrokeColor(document.documentElement);
     const pointLayerSpec: Record<string, unknown> = {
       id: pointLayerId,
       type: 'circle',
@@ -1116,7 +1160,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
               2,
               0,
             ],
-            'circle-stroke-color': '#ffffff',
+            'circle-stroke-color': selectionRingColor,
           },
         } as any);
       } catch (err) {
