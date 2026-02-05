@@ -125,13 +125,17 @@ export class MapElement extends BaseElement {
   }
 
   async connectedCallback(): Promise<void> {
-    // Only show placeholder here when not pool-managed; pool-managed maps are managed by gk-map-collection (avoids "Loading..." flash when entering Browse)
-    if (!this.hasAttribute('data-pool-managed')) {
-      this.showPlaceholderIfNeeded();
-    }
-
     // Initialize child element tracking
     this._initializeChildTracking();
+
+    // Check if inside a gk-map-collection FIRST - collection manages placeholder timing
+    // to avoid showing "Loading..." during scroll
+    const parentCollection = this.closest('gk-map-collection');
+    if (parentCollection) {
+      // Mark as pool-managed so we don't try again
+      this.setAttribute('data-pool-managed', 'true');
+      return;
+    }
 
     // If map is pool-managed (has data-pool-managed attribute), don't auto-initialize
     // It will be initialized explicitly via activateMap()
@@ -139,14 +143,8 @@ export class MapElement extends BaseElement {
       return;
     }
 
-    // If inside a gk-map-collection, defer initialization to the collection
-    // The collection will manage pool and set proper attributes before initializing
-    const parentCollection = this.closest('gk-map-collection');
-    if (parentCollection) {
-      // Mark as pool-managed so we don't try again
-      this.setAttribute('data-pool-managed', 'true');
-      return;
-    }
+    // Only show placeholder for standalone maps (not pool-managed)
+    this.showPlaceholderIfNeeded();
 
     // Prevent re-initialization if map already exists (important for map pool reuse)
     // When maps are moved between cards, connectedCallback can be called again,
