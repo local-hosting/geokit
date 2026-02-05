@@ -23,6 +23,10 @@ export interface MapOptions {
   lat?: number;
   lng?: number;
   zoom?: number;
+  /** Minimum zoom level (prevents zooming out too far). */
+  minZoom?: number;
+  /** Maximum zoom level (prevents zooming in too far). */
+  maxZoom?: number;
   pitch?: number;
   maxPitch?: number;
   bearing?: number;

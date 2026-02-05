@@ -124,6 +124,9 @@ export class MapboxUIProvider extends BaseUIProvider {
       style,
       center: [options.lng || 0, options.lat || 0] as [number, number],
       zoom: options.zoom || 2,
+      // Zoom limits (prevent zooming out/in too far)
+      ...(options.minZoom !== undefined && { minZoom: options.minZoom }),
+      ...(options.maxZoom !== undefined && { maxZoom: options.maxZoom }),
       pitch: options.pitch || 0,
       // Limit max pitch to prevent disorienting "upside down" tilting (SDK default is 85)
       maxPitch: options.maxPitch ?? 60,
