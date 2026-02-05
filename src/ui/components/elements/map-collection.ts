@@ -54,7 +54,14 @@ function mapCollectionDebug(msg: string, data?: Record<string, unknown>): void {
 }
 
 export class MapCollectionElement extends BaseElement {
-  static observedAttributes = ['pool-size', 'api-key', 'map-style', 'viewport-padding'];
+  static observedAttributes = [
+    'pool-size',
+    'api-key',
+    'map-style',
+    'viewport-padding',
+    'min-zoom',
+    'max-zoom',
+  ];
 
   private slots: SlotInfo[] = [];
   private poolSize: number = 6;
@@ -65,6 +72,8 @@ export class MapCollectionElement extends BaseElement {
   private viewportPadding: number = 300;
   private _apiKey: string | null = null;
   private _mapStyle: string | null = null;
+  private _minZoom: number | null = null;
+  private _maxZoom: number | null = null;
   private scrollDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private handleNewMapsRafId: number | null = null;
   private isProcessing: boolean = false; // Lock to prevent concurrent processing
@@ -118,6 +127,10 @@ export class MapCollectionElement extends BaseElement {
       this._apiKey = newValue;
     } else if (name === 'map-style' && newValue) {
       this._mapStyle = newValue;
+    } else if (name === 'min-zoom' && newValue) {
+      this._minZoom = parseFloat(newValue);
+    } else if (name === 'max-zoom' && newValue) {
+      this._maxZoom = parseFloat(newValue);
     }
   }
 
@@ -132,6 +145,18 @@ export class MapCollectionElement extends BaseElement {
 
   get mapStyle(): string | null {
     return this._mapStyle || this.getAttribute('map-style');
+  }
+
+  get minZoom(): number | null {
+    if (this._minZoom !== null) return this._minZoom;
+    const attr = this.getAttribute('min-zoom');
+    return attr ? parseFloat(attr) : null;
+  }
+
+  get maxZoom(): number | null {
+    if (this._maxZoom !== null) return this._maxZoom;
+    const attr = this.getAttribute('max-zoom');
+    return attr ? parseFloat(attr) : null;
   }
 
   private async initialize(): Promise<void> {
@@ -436,6 +461,8 @@ export class MapCollectionElement extends BaseElement {
         apiKey: this.apiKey,
         provider: 'maptiler',
         mapStyle: this.mapStyle,
+        minZoom: this.minZoom,
+        maxZoom: this.maxZoom,
       });
       const success = await slotInfo.mapElement.unfreeze(this.activeCount - 1);
       mapCollectionDebug('activateSlot: unfreeze returned', {

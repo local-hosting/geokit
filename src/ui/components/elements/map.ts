@@ -319,6 +319,12 @@ export class MapElement extends BaseElement {
       const maxPitchAttr = this.getAttribute('max-pitch');
       const maxPitch = maxPitchAttr ? parseFloat(maxPitchAttr) : undefined;
 
+      // Parse min-zoom and max-zoom attributes (prevent zooming out/in too far)
+      const minZoomAttr = this.getAttribute('min-zoom');
+      const minZoom = minZoomAttr ? parseFloat(minZoomAttr) : undefined;
+      const maxZoomAttr = this.getAttribute('max-zoom');
+      const maxZoom = maxZoomAttr ? parseFloat(maxZoomAttr) : undefined;
+
       // Check for URL hash state if sync-url is enabled
       const urlState = this.hasAttribute('sync-url') ? this.parseUrlHashState() : null;
 
@@ -326,6 +332,8 @@ export class MapElement extends BaseElement {
         lat: urlState?.lat ?? parseFloat(this.getAttribute('lat') || '0'),
         lng: urlState?.lng ?? parseFloat(this.getAttribute('lng') || '0'),
         zoom: urlState?.zoom ?? parseFloat(this.getAttribute('zoom') || '2'),
+        minZoom,
+        maxZoom,
         pitch: urlState?.pitch ?? parseFloat(this.getAttribute('pitch') || '0'),
         maxPitch,
         bearing: urlState?.bearing ?? parseFloat(this.getAttribute('bearing') || '0'),
@@ -2401,6 +2409,8 @@ export class MapElement extends BaseElement {
     apiKey?: string | null;
     provider?: string;
     mapStyle?: string | null;
+    minZoom?: number | null;
+    maxZoom?: number | null;
   }): void {
     if (options.apiKey && !this.getAttribute('api-key')) {
       this.setAttribute('api-key', options.apiKey);
@@ -2410,6 +2420,20 @@ export class MapElement extends BaseElement {
     }
     if (options.mapStyle && !this.getAttribute('map-style') && !this.getAttribute('style')) {
       this.setAttribute('map-style', options.mapStyle);
+    }
+    if (
+      options.minZoom !== null &&
+      options.minZoom !== undefined &&
+      !this.getAttribute('min-zoom')
+    ) {
+      this.setAttribute('min-zoom', String(options.minZoom));
+    }
+    if (
+      options.maxZoom !== null &&
+      options.maxZoom !== undefined &&
+      !this.getAttribute('max-zoom')
+    ) {
+      this.setAttribute('max-zoom', String(options.maxZoom));
     }
   }
 
