@@ -823,14 +823,27 @@ export class IsochroneElement extends MapChildElement {
   private toggleVisibility(): void {
     if (!this.map) return;
 
-    const visibility = this.visible ? 'visible' : 'none';
-
-    if (this.fillLayerId && this.map?.getLayer?.(this.fillLayerId)) {
-      this.map?.setLayoutProperty?.(this.fillLayerId, 'visibility', visibility);
+    // Guard against map with no style (WebGL context lost or map being destroyed)
+    try {
+      const style = (this.map as { getStyle?: () => unknown })?.getStyle?.();
+      if (!style) return;
+    } catch {
+      // Map may be in invalid state during destruction
+      return;
     }
 
-    if (this.lineLayerId && this.map?.getLayer?.(this.lineLayerId)) {
-      this.map?.setLayoutProperty?.(this.lineLayerId, 'visibility', visibility);
+    const visibility = this.visible ? 'visible' : 'none';
+
+    try {
+      if (this.fillLayerId && this.map?.getLayer?.(this.fillLayerId)) {
+        this.map?.setLayoutProperty?.(this.fillLayerId, 'visibility', visibility);
+      }
+
+      if (this.lineLayerId && this.map?.getLayer?.(this.lineLayerId)) {
+        this.map?.setLayoutProperty?.(this.lineLayerId, 'visibility', visibility);
+      }
+    } catch {
+      // Silently ignore - map may be in invalid state during context loss
     }
   }
 

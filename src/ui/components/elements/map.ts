@@ -125,7 +125,7 @@ export class MapElement extends BaseElement {
   }
 
   async connectedCallback(): Promise<void> {
-    // Only show placeholder here when not pool-managed; pool-managed maps are managed by gk-map-collection (avoids "Loading map..." flash when entering Browse)
+    // Only show placeholder here when not pool-managed; pool-managed maps are managed by gk-map-collection (avoids "Loading..." flash when entering Browse)
     if (!this.hasAttribute('data-pool-managed')) {
       this.showPlaceholderIfNeeded();
     }
@@ -338,7 +338,7 @@ export class MapElement extends BaseElement {
       // Probe for WebGL context before creating map to avoid "context already lost" when at limit
       if (!this.canAcquireWebGLContext()) {
         debug.warn('[gk-map] WebGL context unavailable (e.g. too many maps), skipping createMap');
-        this.showPlaceholder('Map unavailable');
+        this.showPlaceholder('Loading...');
         this.isInitialized = false;
         this._isInitializing = false;
         return;
@@ -532,11 +532,12 @@ export class MapElement extends BaseElement {
             }
             if (fallbackCount >= fallbackMax) {
               window.clearInterval(fallbackId);
-              debug.log('[gk-map] fallback: style never loaded after 5s, showing Map unavailable', {
+              debug.log('[gk-map] fallback: style never loaded after 5s, will retry', {
                 _isFrozen: this._isFrozen,
               });
-              // Style never loaded - stop showing "Initializing..." so user isn't stuck
-              this.showPlaceholder('Map unavailable');
+              // Style never loaded - keep showing "Loading..." and let pool retry
+              this.showPlaceholder('Loading...');
+              this.isInitialized = false;
               return;
             }
           }, fallbackMs);
@@ -549,11 +550,11 @@ export class MapElement extends BaseElement {
       );
       if (isWebGLContextLost) {
         debug.warn('[gk-map] WebGL context unavailable (e.g. too many maps):', message);
-        this.showPlaceholder('Map unavailable');
       } else {
         console.error('[gk-map] Failed to initialize map:', error);
-        this.showPlaceholder('Map failed to initialize');
       }
+      // Keep showing "Loading..." and let pool retry
+      this.showPlaceholder('Loading...');
       // Reset initialization flag so it can be retried
       this.isInitialized = false;
     } finally {
@@ -724,24 +725,30 @@ export class MapElement extends BaseElement {
 
   /**
    * Show placeholder (public method for map collection).
-   * Uses attribute `placeholder-message` when no message is passed (e.g. "Initializing..." when data was prefetched).
+   * Uses attribute `placeholder-message` when no message is passed (e.g. "Loading..." when data was prefetched).
    */
   public showPlaceholder(message?: string): void {
-    const text = message ?? this.getAttribute('placeholder-message') ?? 'Loading map...';
+    const text = message ?? this.getAttribute('placeholder-message') ?? 'Loading...';
     debug.log('[gk-map] showPlaceholder', {
       message: text,
       _isFrozen: this._isFrozen,
       isInitialized: this.isInitialized,
     });
+
+    // Show spinner for loading/restoring states
+    const showSpinner = text === 'Loading...' || text === 'Restoring...';
+
     // Check if placeholder already exists
     const existingPlaceholder = this.querySelector(
       '.map-placeholder, [data-map-placeholder="true"]'
     ) as HTMLElement | null;
 
     if (existingPlaceholder) {
-      // Update message if different
-      if (existingPlaceholder.textContent !== text) {
-        existingPlaceholder.textContent = text;
+      // Update content if different
+      const existingText = existingPlaceholder.getAttribute('data-message');
+      if (existingText !== text) {
+        existingPlaceholder.setAttribute('data-message', text);
+        existingPlaceholder.innerHTML = this.createPlaceholderContent(text, showSpinner);
       }
       return;
     }
@@ -750,10 +757,43 @@ export class MapElement extends BaseElement {
     const placeholder = document.createElement('div');
     placeholder.className = 'map-placeholder';
     placeholder.setAttribute('data-map-placeholder', 'true');
+    placeholder.setAttribute('data-message', text);
     placeholder.style.cssText =
       'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--gk-placeholder-background, #141414); color: var(--gk-placeholder-text, #8b949e); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; z-index: 1;';
-    placeholder.textContent = text;
+    placeholder.innerHTML = this.createPlaceholderContent(text, showSpinner);
     this.appendChild(placeholder);
+  }
+
+  /**
+   * Create placeholder content with optional spinner
+   */
+  private createPlaceholderContent(text: string, showSpinner: boolean): string {
+    if (!showSpinner) {
+      return text;
+    }
+    // CSS spinner using border animation
+    const spinnerStyle = `
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+      border: 2px solid var(--gk-placeholder-text, #8b949e);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: gk-spin 0.8s linear infinite;
+    `
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Inject keyframes if not already present
+    if (!document.getElementById('gk-spinner-keyframes')) {
+      const style = document.createElement('style');
+      style.id = 'gk-spinner-keyframes';
+      style.textContent = '@keyframes gk-spin { to { transform: rotate(360deg); } }';
+      document.head.appendChild(style);
+    }
+
+    return `<span style="${spinnerStyle}"></span><span>${text}</span>`;
   }
 
   /**
@@ -2456,7 +2496,7 @@ export class MapElement extends BaseElement {
       }
 
       // Show placeholder while loading (frozen restore or first init)
-      const placeholderMsg = this._isFrozen ? 'Restoring map...' : undefined;
+      const placeholderMsg = this._isFrozen ? 'Restoring...' : undefined;
       debug.log('[gk-map] unfreeze: showing placeholder', {
         message: placeholderMsg ?? 'default',
         _isFrozen: this._isFrozen,
@@ -2550,8 +2590,8 @@ export class MapElement extends BaseElement {
       })
     );
 
-    // Show placeholder with "Restoring map..." message
-    this.showPlaceholder('Restoring map...');
+    // Show placeholder with "Restoring..." message
+    this.showPlaceholder('Restoring...');
 
     // Destroy the map to free WebGL context
     // Browsers can only handle a few WebGL contexts, so we must destroy when frozen
