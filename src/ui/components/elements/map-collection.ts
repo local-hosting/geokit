@@ -687,10 +687,10 @@ export class MapCollectionElement extends BaseElement {
       clearInterval(this.healthCheckInterval);
     }
 
-    // Check every 2 seconds for stuck maps (faster recovery from "Preparing map...")
+    // Check every 3 seconds for stuck maps (balances recovery speed vs CPU usage)
     this.healthCheckInterval = setInterval(() => {
       this.checkStuckMaps();
-    }, 2000);
+    }, 3000);
   }
 
   /**

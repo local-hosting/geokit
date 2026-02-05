@@ -1277,7 +1277,7 @@ function setupHoverLayers(
     return;
   }
 
-  // Store the current hover feature for re-rendering
+  // Store the current hover feature
   let currentHoverFeature: GeoJSON.Feature | null = null;
 
   function renderHoverFeature(): void {
@@ -1292,13 +1292,12 @@ function setupHoverLayers(
       return;
     }
 
-    // Create glow layer BELOW the point layer so original point stays on top
-    const hoverGlowRadiusVal = getGlowRadiusInterpolation({ scale: HOVER_CONFIG.glowRadiusScale });
-
-    // Add BELOW the base glow layer so hover glow is at the very bottom
-    const beforeLayer = map.getLayer?.(glowLayerId) ? glowLayerId : undefined;
-
+    // Create glow layer BELOW the point layer so original point stays on top (if not already created)
     if (!map.getLayer?.(hoverGlowLayerId)) {
+      const hoverGlowRadiusVal = getGlowRadiusInterpolation({
+        scale: HOVER_CONFIG.glowRadiusScale,
+      });
+      const beforeLayer = map.getLayer?.(glowLayerId) ? glowLayerId : undefined;
       try {
         map.addLayer(
           {
@@ -1332,30 +1331,6 @@ function setupHoverLayers(
     }
   }
 
-  // Re-render on each frame while hovering (ensures layers stay visible)
-  let hoverAnimationId: number | null = null;
-
-  function startHoverAnimation(): void {
-    if (hoverAnimationId !== null) return;
-
-    function animate(): void {
-      if (currentHoverFeature) {
-        renderHoverFeature();
-        hoverAnimationId = requestAnimationFrame(animate);
-      } else {
-        hoverAnimationId = null;
-      }
-    }
-    hoverAnimationId = requestAnimationFrame(animate);
-  }
-
-  function stopHoverAnimation(): void {
-    if (hoverAnimationId !== null) {
-      cancelAnimationFrame(hoverAnimationId);
-      hoverAnimationId = null;
-    }
-  }
-
   function setCursor(cursor: string): void {
     const canvas = map?.getCanvas?.();
     const style = canvas?.style as
@@ -1374,7 +1349,6 @@ function setupHoverLayers(
     const features = e?.features;
     if (!features?.length) {
       clearHoverFeature();
-      stopHoverAnimation();
       setCursor('');
       return;
     }
@@ -1383,21 +1357,19 @@ function setupHoverLayers(
     const geometry = f?.geometry;
     if (!geometry) {
       clearHoverFeature();
-      stopHoverAnimation();
       return;
     }
 
-    // Store the hover feature and start animation loop to keep layers alive
+    // Store and render the hover feature once (no continuous animation needed)
     currentHoverFeature = {
       type: 'Feature',
       geometry: geometry as GeoJSON.Geometry,
       properties: { ...(f.properties || {}) },
     };
-    startHoverAnimation();
+    renderHoverFeature();
   }
 
   function onMouseLeave(): void {
-    stopHoverAnimation();
     clearHoverFeature();
     setCursor('');
   }
