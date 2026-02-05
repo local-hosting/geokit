@@ -591,19 +591,14 @@ export class MapCollectionElement extends BaseElement {
         // Don't show placeholder here - wait until processVisibilityChanges decides to load
         // This prevents "Loading..." flash during scroll
 
-        // Check if element is currently visible in viewport
-        const rect = mapElement.getBoundingClientRect();
-        const isInViewport =
-          rect.top < window.innerHeight + this.viewportPadding &&
-          rect.bottom > -this.viewportPadding &&
-          rect.width > 0 &&
-          rect.height > 0;
-
+        // IMPORTANT: Do NOT manually check visibility here with getBoundingClientRect()
+        // During Vue's batch render, elements may report incorrect positions before layout.
+        // Let IntersectionObserver handle visibility detection (it's debounced and accurate).
         const slotInfo: SlotInfo = {
           slotElement: mapElement,
           mapElement,
           isActive: false,
-          isVisible: isInViewport, // Set initial visibility based on actual position
+          isVisible: false, // Let IntersectionObserver set this after layout
           isActivating: false,
           failCount: 0,
           lastFailTime: 0,
@@ -618,19 +613,18 @@ export class MapCollectionElement extends BaseElement {
       }
     }
 
-    // If we added new visible maps, trigger processing immediately
+    // If we added new maps, let IntersectionObserver handle visibility detection
+    // Don't call processVisibilityChanges() immediately - the observer callback will do it
+    // after proper layout, which prevents WebGL context exhaustion from premature activation
     if (hasNewMaps) {
       if (typeof window !== 'undefined' && (window as any).__GEOVIEW_DEBUG__) {
-        const visible = this.slots.filter((s) => s.isVisible).length;
         console.log(
           '[map-collection] handleNewMaps done, slots:',
           this.slots.length,
-          'visible:',
-          visible
+          '(waiting for IntersectionObserver)'
         );
       }
-      // Minimal delay so first-load activation starts quickly (was 50ms)
-      setTimeout(() => this.processVisibilityChanges(), 0);
+      // Note: IntersectionObserver will fire async after layout and call processVisibilityChanges
     }
   }
 
