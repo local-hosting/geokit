@@ -26,12 +26,11 @@ interface SlotInfo {
 }
 
 // Debounce delay - wait for scrolling to stop before activating
-// 200ms provides good balance: fast enough to feel responsive, slow enough to avoid
-// creating maps during rapid scroll which exhausts WebGL contexts
-const SCROLL_DEBOUNCE_MS = 200;
+// 100ms is responsive while still debouncing rapid scroll
+const SCROLL_DEBOUNCE_MS = 100;
 
 // Extended debounce when user is actively scrolling (detected via rapid intersection changes)
-const SCROLL_ACTIVE_DEBOUNCE_MS = 350;
+const SCROLL_ACTIVE_DEBOUNCE_MS = 150;
 
 // Activate this many maps in parallel (higher = faster first load; stay under WebGL context limits, typically 8–16)
 // Reduced from 4 to 2 to be more conservative with WebGL context creation
@@ -150,12 +149,11 @@ export class MapCollectionElement extends BaseElement {
       return;
     }
 
-    // Build slots array FIRST - all start with placeholders (skip if map already initialized, e.g. preloaded)
+    // Build slots array FIRST - no placeholders during initial setup (they'll show when we actually load)
+    // This prevents "Loading..." flash during scroll
     this.slots = mapElements.map((mapElement) => {
       mapElement.setPoolManaged(true);
-      if (!(mapElement as any).isInitialized) {
-        mapElement.showPlaceholder();
-      }
+      // Don't show placeholder here - wait until processVisibilityChanges decides to load
       return {
         slotElement: mapElement,
         mapElement,
@@ -297,6 +295,14 @@ export class MapCollectionElement extends BaseElement {
       });
 
       if (visibleInactive.length === 0) return;
+
+      // Show placeholders immediately for all visible maps that will load
+      // This gives instant feedback that maps are about to load
+      for (const slot of visibleInactive) {
+        if (!slot.mapElement.hasPlaceholder() && !(slot.mapElement as any).isInitialized) {
+          slot.mapElement.showPlaceholder();
+        }
+      }
 
       // Prefer slots closest to viewport center so the map the user is looking at loads first
       const viewportCenterY = window.innerHeight / 2;
@@ -582,10 +588,8 @@ export class MapCollectionElement extends BaseElement {
     for (const mapElement of mapElements) {
       if (!existingElements.has(mapElement)) {
         mapElement.setPoolManaged(true);
-        // Only show placeholder if map isn't already initialized (e.g. preloaded maps)
-        if (!(mapElement as any).isInitialized) {
-          mapElement.showPlaceholder();
-        }
+        // Don't show placeholder here - wait until processVisibilityChanges decides to load
+        // This prevents "Loading..." flash during scroll
 
         // Check if element is currently visible in viewport
         const rect = mapElement.getBoundingClientRect();

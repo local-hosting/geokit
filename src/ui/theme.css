@@ -239,3 +239,15 @@ gk-map [data-map-placeholder="true"] {
   background: var(--gk-placeholder-background) !important;
   color: var(--gk-placeholder-text) !important;
 }
+
+/* Prevent white flash when map loads - background matches placeholder until tiles render */
+gk-map {
+  background: var(--gk-placeholder-background);
+}
+
+gk-map .maplibregl-map,
+gk-map .mapboxgl-map,
+gk-map .maplibregl-canvas-container,
+gk-map .mapboxgl-canvas-container {
+  background: var(--gk-placeholder-background) !important;
+}
