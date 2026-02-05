@@ -51,6 +51,33 @@ function isValidStyleForSetStyle(style: unknown): boolean {
   return false;
 }
 
+/**
+ * Suppress MapTiler SDK version banner ("❖❖❖ MapTiler SDK JS vX.X.X ❖❖❖") from console.
+ * Call once per session; idempotent.
+ */
+function suppressMaptilerBanner(): void {
+  if (typeof window === 'undefined') return;
+  if ((window as any).__geokitMaptilerBannerSuppressed) return;
+  (window as any).__geokitMaptilerBannerSuppressed = true;
+
+  const bannerPattern = /maptiler\s+sdk\s+js|v\d+\.\d+\.\d+/i;
+  const wrap = (original: typeof console.log, _method: 'log' | 'warn') => {
+    return function (this: typeof console, ...args: unknown[]) {
+      try {
+        const msg = Array.isArray(args)
+          ? args.map((x) => String(x)).join(' ')
+          : String(args?.[0] ?? '');
+        if (typeof msg === 'string' && bannerPattern.test(msg)) return;
+      } catch {
+        /* ignore */
+      }
+      original.apply(this, args);
+    };
+  };
+  console.log = wrap(console.log.bind(console), 'log');
+  console.warn = wrap(console.warn.bind(console), 'warn');
+}
+
 export class MapTilerUIProvider extends BaseUIProvider {
   protected sdk: any = null;
   private sdkLoadPromise: Promise<any> | null = null;
@@ -67,6 +94,9 @@ export class MapTilerUIProvider extends BaseUIProvider {
 
   async initialize(config: MapProviderConfig): Promise<void> {
     this.config = config;
+
+    // Suppress banner early - before any SDK method might log it
+    suppressMaptilerBanner();
 
     // Return existing promise if already loading
     if (this.sdkLoadPromise) {
@@ -118,27 +148,6 @@ export class MapTilerUIProvider extends BaseUIProvider {
         // Restore console.warn
         if (warningSuppressed) {
           console.warn = originalWarn;
-        }
-
-        // One-time: suppress MapTiler version banner for the rest of the session (SDK logs it on load and on each map)
-        if (typeof window !== 'undefined' && !(window as any).__geokitMaptilerBannerSuppressed) {
-          (window as any).__geokitMaptilerBannerSuppressed = true;
-          const bannerPattern = /maptiler\s+sdk\s+js|v\d+\.\d+\.\d+/i;
-          const wrap = (original: typeof console.log, _method: 'log' | 'warn') => {
-            return function (this: typeof console, ...args: unknown[]) {
-              try {
-                const msg = Array.isArray(args)
-                  ? args.map((x) => String(x)).join(' ')
-                  : String(args?.[0] ?? '');
-                if (typeof msg === 'string' && bannerPattern.test(msg)) return;
-              } catch {
-                /* ignore */
-              }
-              original.apply(this, args);
-            };
-          };
-          console.log = wrap(console.log.bind(console), 'log');
-          console.warn = wrap(console.warn.bind(console), 'warn');
         }
 
         // Set API key if provided
