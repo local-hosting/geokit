@@ -62,6 +62,24 @@ export function isValidTheme(name: string): name is ThemeName {
   return themes.has(name as ThemeName);
 }
 
+/**
+ * Detect system color scheme preference.
+ * Returns 'dark' if prefers-color-scheme: dark, otherwise 'light'.
+ */
+export function getSystemTheme(): ThemeName {
+  if (typeof window === 'undefined' || !window.matchMedia) return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+/**
+ * Get the MediaQueryList for system color scheme.
+ * Useful for listening to system theme changes.
+ */
+export function getSystemThemeMediaQuery(): MediaQueryList | null {
+  if (typeof window === 'undefined' || !window.matchMedia) return null;
+  return window.matchMedia('(prefers-color-scheme: dark)');
+}
+
 // ============================================================================
 // Class-based theming (styles from theme.css)
 // ============================================================================

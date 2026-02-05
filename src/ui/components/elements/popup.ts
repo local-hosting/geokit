@@ -246,6 +246,7 @@ export class PopupElement extends MapChildElement {
 
       .geokit-popup-title-text {
         min-width: 0;
+        max-width: 280px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
