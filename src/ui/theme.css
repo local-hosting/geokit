@@ -21,6 +21,7 @@
   --gk-popup-text-muted: #656d76;
   --gk-popup-close-button: #656d76;
   --gk-popup-tag-background: rgba(175, 184, 193, 0.2);
+  --gk-popup-tag-label-background: rgba(175, 184, 193, 0.1);
   --gk-popup-tag-text: #1f2328;
   --gk-popup-link-color: #0969da;
   --gk-popup-border: rgba(208, 215, 222, 0.5);
@@ -63,6 +64,7 @@
     --gk-popup-text-muted: #8b949e;
     --gk-popup-close-button: #8b949e;
     --gk-popup-tag-background: rgba(139, 148, 158, 0.15);
+    --gk-popup-tag-label-background: rgba(139, 148, 158, 0.08);
     --gk-popup-tag-text: #c9d1d9;
     --gk-popup-link-color: #58a6ff;
     --gk-popup-border: rgba(139, 148, 158, 0.2);
@@ -106,6 +108,7 @@ gk-map.gk-theme-light {
   --gk-popup-text-muted: #656d76;
   --gk-popup-close-button: #656d76;
   --gk-popup-tag-background: rgba(175, 184, 193, 0.2);
+  --gk-popup-tag-label-background: rgba(175, 184, 193, 0.1);
   --gk-popup-tag-text: #1f2328;
   --gk-popup-link-color: #0969da;
   --gk-popup-border: rgba(208, 215, 222, 0.5);
@@ -147,6 +150,7 @@ gk-map.gk-theme-dark {
   --gk-popup-text-muted: #8b949e;
   --gk-popup-close-button: #8b949e;
   --gk-popup-tag-background: rgba(139, 148, 158, 0.15);
+  --gk-popup-tag-label-background: rgba(139, 148, 158, 0.08);
   --gk-popup-tag-text: #c9d1d9;
   --gk-popup-link-color: #58a6ff;
   --gk-popup-border: rgba(139, 148, 158, 0.2);

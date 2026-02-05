@@ -39,6 +39,7 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
   let weightedHouseholdSize = 0;
   let weightedOwnerPct = 0;
   let weightedRenterPct = 0;
+  let weightedWfhPct = 0;
   let totalPopWithIncome = 0;
   let totalPopWithAge = 0;
   let totalPopWithHomeValue = 0;
@@ -46,6 +47,7 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
   let totalPopWithHouseholdSize = 0;
   let totalPopWithOwnerPct = 0;
   let totalPopWithRenterPct = 0;
+  let totalPopWithWfhPct = 0;
 
   for (const result of validResults) {
     const pop = result.totalPopulation || 0;
@@ -66,8 +68,10 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
       weightedRent += result.medianRent * pop;
       totalPopWithRent += pop;
     }
-    if (result.averageHouseholdSize !== undefined) {
-      weightedHouseholdSize += result.averageHouseholdSize * pop;
+    // Check both field names: avgHouseholdSize (local cache) and averageHouseholdSize (Census API)
+    const hhSize = (result as any).avgHouseholdSize ?? result.averageHouseholdSize;
+    if (hhSize !== undefined) {
+      weightedHouseholdSize += hhSize * pop;
       totalPopWithHouseholdSize += pop;
     }
     if (result.ownerOccupiedPct !== undefined) {
@@ -77,6 +81,12 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
     if (result.renterOccupiedPct !== undefined) {
       weightedRenterPct += result.renterOccupiedPct * pop;
       totalPopWithRenterPct += pop;
+    }
+    // Check both field names: workFromHomePct (local cache) and workedFromHomePct (Census API)
+    const wfhPct = (result as any).workFromHomePct ?? result.workedFromHomePct;
+    if (wfhPct !== undefined) {
+      weightedWfhPct += wfhPct * pop;
+      totalPopWithWfhPct += pop;
     }
   }
 
@@ -194,6 +204,8 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
       totalPopWithOwnerPct > 0 ? Math.round(weightedOwnerPct / totalPopWithOwnerPct) : undefined,
     renterOccupiedPct:
       totalPopWithRenterPct > 0 ? Math.round(weightedRenterPct / totalPopWithRenterPct) : undefined,
+    workedFromHomePct:
+      totalPopWithWfhPct > 0 ? Math.round(weightedWfhPct / totalPopWithWfhPct) : undefined,
     topGeneration,
     topGenerationPct,
     secondGeneration,
@@ -225,15 +237,21 @@ function aggregateByAverage(results: DemographicsResult[]): DemographicsResult {
   const householdSizes: number[] = [];
   const ownerPcts: number[] = [];
   const renterPcts: number[] = [];
+  const wfhPcts: number[] = [];
 
   for (const r of results) {
     if (r.medianHouseholdIncome !== undefined) incomes.push(r.medianHouseholdIncome);
     if (r.medianAge !== undefined) ages.push(r.medianAge);
     if (r.medianHomeValue !== undefined) homeValues.push(r.medianHomeValue);
     if (r.medianRent !== undefined) rents.push(r.medianRent);
-    if (r.averageHouseholdSize !== undefined) householdSizes.push(r.averageHouseholdSize);
+    // Check both field names: avgHouseholdSize (local cache) and averageHouseholdSize (Census API)
+    const hhSize = (r as any).avgHouseholdSize ?? r.averageHouseholdSize;
+    if (hhSize !== undefined) householdSizes.push(hhSize);
     if (r.ownerOccupiedPct !== undefined) ownerPcts.push(r.ownerOccupiedPct);
     if (r.renterOccupiedPct !== undefined) renterPcts.push(r.renterOccupiedPct);
+    // Check both field names: workFromHomePct (local cache) and workedFromHomePct (Census API)
+    const wfhPct = (r as any).workFromHomePct ?? r.workedFromHomePct;
+    if (wfhPct !== undefined) wfhPcts.push(wfhPct);
   }
 
   // Find top two generations by counting occurrences
@@ -389,6 +407,10 @@ function aggregateByAverage(results: DemographicsResult[]): DemographicsResult {
     renterOccupiedPct:
       renterPcts.length > 0
         ? Math.round(renterPcts.reduce((a, b) => a + b, 0) / renterPcts.length)
+        : undefined,
+    workedFromHomePct:
+      wfhPcts.length > 0
+        ? Math.round(wfhPcts.reduce((a, b) => a + b, 0) / wfhPcts.length)
         : undefined,
     topGeneration,
     topGenerationPct,

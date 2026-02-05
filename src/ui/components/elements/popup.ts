@@ -296,12 +296,28 @@ export class PopupElement extends MapChildElement {
         font-size: 11px;
         border-radius: 4px;
         padding: 3px 8px;
-        gap: 4px;
+        gap: 0;
+        overflow: hidden;
+      }
+
+      /* Two-part pill: label has lighter bg, value has normal bg */
+      .geokit-popup-tag:has(.geokit-popup-tag-label) {
+        padding: 0;
+        gap: 0;
       }
 
       .geokit-popup-tag-label {
         color: var(--gk-popup-text-muted, #6e7681);
         font-weight: 500;
+        background: var(--gk-popup-tag-label-background, rgba(139, 148, 158, 0.08));
+        padding: 3px 6px;
+        border-radius: 4px 0 0 4px;
+      }
+
+      .geokit-popup-tag-value {
+        background: var(--gk-popup-tag-background, rgba(139, 148, 158, 0.15));
+        padding: 3px 6px;
+        border-radius: 0 4px 4px 0;
       }
 
       .geokit-popup-actions {
