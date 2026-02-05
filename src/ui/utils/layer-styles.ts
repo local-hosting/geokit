@@ -847,13 +847,24 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       debug.log('[layer-styles] point layer ADD via MapTiler helpers.addPoint', { pointLayerId });
       helperSucceeded = true;
 
-      // Override minzoom - MapTiler helper may set a default that hides points at low zoom
-      if (typeof (map as any).setLayerZoomRange === 'function') {
+      // Override minzoom - MapTiler helper may set a default that hides points when zoomed out
+      const setPointLayerZoomRange = () => {
+        if (typeof (map as any).setLayerZoomRange !== 'function') return;
+        if (!(map as any).getLayer?.(pointLayerId)) return;
         try {
           (map as any).setLayerZoomRange(pointLayerId, 0, 24);
         } catch {
           // Ignore - some map implementations may not support this
         }
+      };
+      setPointLayerZoomRange();
+      // Helper may add the layer asynchronously; retry on idle so venues stay visible when zooming out
+      if (!(map as any).getLayer?.(pointLayerId)) {
+        const onIdle = () => {
+          setPointLayerZoomRange();
+          map.off?.('idle', onIdle);
+        };
+        map.once?.('idle', onIdle);
       }
 
       // Apply data-driven color so points show actual venue/DMA color instead of single fallback
