@@ -44,6 +44,7 @@ export class IsochroneElement extends MapChildElement {
     'render', // 'polygon' or 'h3'
     'h3-resolution', // H3 resolution (0-15, default 7)
     'data', // Pre-computed isochrone data (JSON string of GeoJSON FeatureCollection)
+    'before-layer', // Layer ID to insert isochrone layers before (consumer controls ordering)
   ];
 
   private sourceId: string | null = null;
@@ -339,38 +340,14 @@ export class IsochroneElement extends MapChildElement {
   }
 
   /**
-   * Find the first (bottommost) venue layer id (glow or points). Used so isochrone can be moved below it.
-   * Order: selected polygon (DMA) < isochrone < glow < point.
+   * Determine which layer to insert isochrone layers before.
+   * 1) Consumer-provided `before-layer` attribute (explicit ordering).
+   * 2) First circle layer in the style (generic fallback).
    */
-  private _findFirstVenueLayerId(): string | undefined {
-    if (!this.map) return undefined;
-    try {
-      const style = (
-        this.map as { getStyle?: () => { layers?: Array<{ id?: string }> } }
-      ).getStyle?.();
-      if (!style?.layers?.length) return undefined;
-      for (const layer of style.layers) {
-        const id = layer.id ?? '';
-        if (id.endsWith('-glow') || id.endsWith('-points') || /-venue-/.test(id)) {
-          return layer.id;
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return undefined;
-  }
-
-  /**
-   * Find the layer to insert isochrone layers before: above selected polygon (DMA), below point/glow.
-   * 1) First venue-like layer (glow or points) so isochrone is below both.
-   * 2) First circle layer.
-   * 3) Layer after last DMA so isochrone is above selected polygon.
-   * 4) Last resort: first layer in the style.
-   */
-  private findFirstCircleLayer(): string | undefined {
-    const firstVenue = this._findFirstVenueLayerId();
-    if (firstVenue) return firstVenue;
+  private findBeforeLayer(): string | undefined {
+    // Prefer explicit before-layer attribute set by the consumer
+    const explicit = this.beforeLayer;
+    if (explicit && this.map?.getLayer?.(explicit)) return explicit;
 
     if (!this.map) return undefined;
     try {
@@ -382,17 +359,6 @@ export class IsochroneElement extends MapChildElement {
       for (const layer of style.layers) {
         if (layer.type === 'circle') return layer.id;
       }
-
-      const dmaLayerIds = ['dma-fill', 'dma-highlight-fill', 'dma-highlight-outline'];
-      let lastDmaIndex = -1;
-      for (let i = 0; i < style.layers.length; i++) {
-        if (dmaLayerIds.includes(style.layers[i].id ?? '')) lastDmaIndex = i;
-      }
-      if (lastDmaIndex >= 0 && lastDmaIndex < style.layers.length - 1) {
-        return style.layers[lastDmaIndex + 1].id;
-      }
-
-      return style.layers[0]?.id;
     } catch {
       // ignore
     }
@@ -605,8 +571,8 @@ export class IsochroneElement extends MapChildElement {
         }
       } else {
         // First render: create source + layers once
-        // Find first circle layer to insert before (isochrones should be below points)
-        const beforeLayerId = this.findFirstCircleLayer();
+        // Find the layer to insert before (consumer `before-layer` or first circle layer)
+        const beforeLayerId = this.findBeforeLayer();
 
         debug.log('[Isochrone] fetchAndRenderIsochrone creating source + layers', {
           sourceId: this.sourceId,
@@ -661,18 +627,20 @@ export class IsochroneElement extends MapChildElement {
           }
         }
 
-        // Ensure isochrone is above selected polygon (DMA) but below point/glow
-        const firstVenueLayerId = this._findFirstVenueLayerId();
-        if (firstVenueLayerId && this.map.moveLayer && this.map.getLayer?.(firstVenueLayerId)) {
+        // If consumer specified a before-layer, ensure ordering after addLayer
+        // (addLayer already used beforeLayerId, but moveLayer handles edge cases
+        //  where the reference layer was added after the initial addLayer call).
+        const moveTarget = this.beforeLayer;
+        if (moveTarget && this.map.moveLayer && this.map.getLayer?.(moveTarget)) {
           try {
             if (this.lineLayerId && this.map.getLayer?.(this.lineLayerId)) {
-              this.map.moveLayer(this.lineLayerId, firstVenueLayerId);
+              this.map.moveLayer(this.lineLayerId, moveTarget);
             }
             if (this.fillLayerId && this.map.getLayer?.(this.fillLayerId)) {
-              this.map.moveLayer(this.fillLayerId, firstVenueLayerId);
+              this.map.moveLayer(this.fillLayerId, moveTarget);
             }
           } catch (err) {
-            debug.warn('[Isochrone] moveLayer failed', { firstVenueLayerId, err });
+            debug.warn('[Isochrone] moveLayer failed', { moveTarget, err });
           }
         }
       }
@@ -957,6 +925,11 @@ export class IsochroneElement extends MapChildElement {
 
   get visible(): boolean {
     return this.getAttribute('visible') !== 'false';
+  }
+
+  /** Layer ID to insert isochrone layers before (consumer controls ordering). */
+  get beforeLayer(): string | null {
+    return this.getAttribute('before-layer');
   }
 
   get render(): 'polygon' | 'h3' {
