@@ -14,8 +14,8 @@ import {
   getUIProviderByName,
 } from '../../providers/registry';
 import { MapTilerUIProvider } from '../../providers/maptiler-provider';
-import { PointElement } from './point';
-import { PolygonElement } from './polygon';
+import type { PointElement } from './point';
+import type { PolygonElement } from './polygon';
 import { type IsochroneElement } from './isochrone';
 import type { MapInstance } from '../../providers/types';
 import {
@@ -2995,7 +2995,13 @@ export class MapElement extends BaseElement {
       nameProperty?: string;
     } = {}
   ): number {
-    const points = PointElement.createFromGeoJSON(geojson, options);
+    // Lazy-resolve PointElement to avoid statically importing point.js (~292 KB)
+    const PointCls = customElements.get('gk-point') as any;
+    if (!PointCls?.createFromGeoJSON) {
+      console.warn('[gk-map] gk-point not registered. Import point element first.');
+      return 0;
+    }
+    const points = PointCls.createFromGeoJSON(geojson, options) as PointElement[];
     points.forEach((point) => this.appendChild(point));
     return points.length;
   }
@@ -3021,11 +3027,17 @@ export class MapElement extends BaseElement {
       maxPoints?: number;
     } = {}
   ): number {
-    const polygons = PolygonElement.createFromGeoJSON(geojson, options);
+    // Lazy-resolve PolygonElement to avoid static import of @turf/simplify
+    const PolygonCls = customElements.get('gk-polygon') as any;
+    if (!PolygonCls?.createFromGeoJSON) {
+      console.warn('[gk-map] gk-polygon not registered. Import polygon element first.');
+      return 0;
+    }
+    const polygons = PolygonCls.createFromGeoJSON(geojson, options) as PolygonElement[];
     // Batch append using DocumentFragment for better performance
     if (polygons.length > 0) {
       const fragment = document.createDocumentFragment();
-      polygons.forEach((polygon) => fragment.appendChild(polygon));
+      polygons.forEach((polygon: PolygonElement) => fragment.appendChild(polygon));
       this.appendChild(fragment);
     }
     return polygons.length;
@@ -3041,12 +3053,18 @@ export class MapElement extends BaseElement {
       options: Parameters<typeof MapElement.prototype.addPolygonFromGeoJSON>[1];
     }>
   ): number {
+    // Lazy-resolve PolygonElement to avoid static import of @turf/simplify
+    const PolygonCls = customElements.get('gk-polygon') as any;
+    if (!PolygonCls?.createFromGeoJSON) {
+      console.warn('[gk-map] gk-polygon not registered. Import polygon element first.');
+      return 0;
+    }
     const fragment = document.createDocumentFragment();
     let totalCount = 0;
 
     for (const { geojson, options } of features) {
-      const polygons = PolygonElement.createFromGeoJSON(geojson, options);
-      polygons.forEach((polygon) => fragment.appendChild(polygon));
+      const polygons = PolygonCls.createFromGeoJSON(geojson, options) as PolygonElement[];
+      polygons.forEach((polygon: PolygonElement) => fragment.appendChild(polygon));
       totalCount += polygons.length;
     }
 

@@ -577,7 +577,7 @@ export class PointElement extends MapChildElement {
     this.hoverEventLayerId = this.glow && this.glowLayerId ? this.glowLayerId : this.layerId;
     const hoverLayerId = this.hoverEventLayerId;
 
-    // Hover: drive hover glow layer via setData
+    // Hover: drive hover glow layer via setData + dispatch gk-point-hover / gk-point-hover-end
     const onMouseEnter = (e: MapEvent): void => {
       const canvas = this.map?.getCanvas?.();
       if (canvas?.style) canvas.style.cursor = 'pointer';
@@ -587,13 +587,38 @@ export class PointElement extends MapChildElement {
         features[0].geometry?.type === 'Point' &&
         'coordinates' in features[0].geometry
       ) {
-        this.setHoverAt(features[0].geometry.coordinates as [number, number]);
+        const coords = features[0].geometry.coordinates as [number, number];
+        this.setHoverAt(coords);
+
+        const pointId = this._propPointId ?? this.safeGetAttribute('point-id');
+        const pointName = this._propPointName ?? this.safeGetAttribute('point-name');
+        this.dispatchEvent(
+          new CustomEvent('gk-point-hover', {
+            detail: {
+              pointId,
+              pointName,
+              lngLat: { lng: coords[0], lat: coords[1] },
+              map: this.map,
+              pointElement: this,
+            },
+            bubbles: true,
+            cancelable: true,
+          })
+        );
       }
     };
     const onMouseLeave = (): void => {
       const canvas = this.map?.getCanvas?.();
       if (canvas?.style) canvas.style.cursor = '';
       if (!this.selectedLayers) this.setHoverAt(null);
+
+      this.dispatchEvent(
+        new CustomEvent('gk-point-hover-end', {
+          detail: { map: this.map, pointElement: this },
+          bubbles: true,
+          cancelable: true,
+        })
+      );
     };
     this.map.on('mouseenter', hoverLayerId, onMouseEnter);
     this.map.on('mouseleave', hoverLayerId, onMouseLeave);

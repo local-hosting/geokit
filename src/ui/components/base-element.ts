@@ -138,6 +138,18 @@ export class BaseElement extends HTMLElement {
       BaseElement._styleReadyCache.set(this.map, cache);
     }
 
+    // If listeners already set up AND callbacks were already drained (size 0),
+    // the load/style.load events already fired. New callbacks would be stuck in a
+    // dead queue. Fall back to rAF since the style must be loaded.
+    if (cache.listenersSetup && cache.callbacks.size === 0) {
+      requestAnimationFrame(() => {
+        if (this.map) {
+          callback();
+        }
+      });
+      return;
+    }
+
     // Add callback to shared set
     cache.callbacks.add(callback);
 
@@ -590,6 +602,10 @@ export class BaseElement extends HTMLElement {
 
   /**
    * Utility: Set up standard layer interactivity
+   *
+   * Dispatches three raw events (`${prefix}-click`, `${prefix}-mouseenter`,
+   * `${prefix}-mouseleave`) and two semantic hover events
+   * (`gk-${prefix}-hover`, `gk-${prefix}-hover-end`) that bubble up the DOM.
    */
   protected setupLayerInteractivity(layerId: string, eventPrefix: string): void {
     if (!this.map || !layerId) return;
@@ -626,6 +642,19 @@ export class BaseElement extends HTMLElement {
           bubbles: true,
         })
       );
+      // Semantic hover event (mirrors gk-point-hover pattern)
+      this.dispatchEvent(
+        new CustomEvent(`gk-${eventPrefix}-hover`, {
+          detail: {
+            lngLat: e.lngLat,
+            features: e.features,
+            map: this.map,
+            element: this,
+          },
+          bubbles: true,
+          cancelable: true,
+        })
+      );
     });
 
     // Mouse leave
@@ -643,6 +672,17 @@ export class BaseElement extends HTMLElement {
             originalEvent: e,
           },
           bubbles: true,
+        })
+      );
+      // Semantic hover-end event (mirrors gk-point-hover-end pattern)
+      this.dispatchEvent(
+        new CustomEvent(`gk-${eventPrefix}-hover-end`, {
+          detail: {
+            map: this.map,
+            element: this,
+          },
+          bubbles: true,
+          cancelable: true,
         })
       );
     });

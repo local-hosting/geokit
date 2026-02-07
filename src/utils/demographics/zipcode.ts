@@ -141,7 +141,21 @@ export const isDemographicsCacheLoaded = isDemographicsDataLoaded;
  * ```
  */
 export function loadH3ZipIndex(indexData: Record<string, string[]>): void {
-  h3ZipIndex = indexData;
+  if (!h3ZipIndex) {
+    h3ZipIndex = indexData;
+    return;
+  }
+  // Merge new entries into existing index (supports incremental loading)
+  for (const [cell, zips] of Object.entries(indexData)) {
+    const existing = h3ZipIndex[cell];
+    if (!existing) {
+      h3ZipIndex[cell] = zips;
+    } else {
+      for (const zip of zips) {
+        if (!existing.includes(zip)) existing.push(zip);
+      }
+    }
+  }
 }
 
 /**
