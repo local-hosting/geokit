@@ -24,6 +24,10 @@ import type { Position } from '../../types';
  */
 export function smoothRing(iterations: number = 2) {
   return (ring: Position[]): Position[] => {
+    // Defensive: convert object-with-numeric-keys to array (corrupted GeoJSON)
+    if (!Array.isArray(ring)) {
+      ring = Object.values(ring) as Position[];
+    }
     if (ring.length < 4) return ring; // Need at least 3 unique points + closing point
 
     let result = ring.slice();
@@ -53,6 +57,10 @@ export function smoothRing(iterations: number = 2) {
  */
 export function smoothLine(iterations: number = 2) {
   return (line: Position[]): Position[] => {
+    // Defensive: convert object-with-numeric-keys to array (corrupted GeoJSON)
+    if (!Array.isArray(line)) {
+      line = Object.values(line) as Position[];
+    }
     if (line.length < 3) return line;
 
     let result = line.slice();
