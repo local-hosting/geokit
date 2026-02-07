@@ -1,6 +1,6 @@
 {
   "name": "@twinfile/geokit",
-  "version": "0.2.26",
+  "version": "0.2.33",
   "description": "A functional, curried geospatial utility toolkit for browser and Node.js",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
@@ -9,72 +9,330 @@
   "types": "./dist/esm/index.d.ts",
   "exports": {
     ".": {
+      "source": "./src/index.ts",
       "types": "./dist/esm/index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.cjs"
+      "require": "./dist/cjs/index.cjs",
+      "default": "./dist/esm/index.js"
     },
     "./distance": {
+      "source": "./src/utils/distance/index.ts",
       "types": "./dist/esm/utils/distance/index.d.ts",
       "import": "./dist/esm/utils/distance/index.js",
       "require": "./dist/cjs/utils/distance/index.cjs"
     },
     "./coordinates": {
+      "source": "./src/utils/coordinates/index.ts",
       "types": "./dist/esm/utils/coordinates/index.d.ts",
       "import": "./dist/esm/utils/coordinates/index.js",
       "require": "./dist/cjs/utils/coordinates/index.cjs"
     },
     "./geojson": {
+      "source": "./src/utils/geojson/index.ts",
       "types": "./dist/esm/utils/geojson/index.d.ts",
       "import": "./dist/esm/utils/geojson/index.js",
       "require": "./dist/cjs/utils/geojson/index.cjs"
     },
     "./normalize": {
+      "source": "./src/utils/normalize/index.ts",
       "types": "./dist/esm/utils/normalize/index.d.ts",
       "import": "./dist/esm/utils/normalize/index.js",
       "require": "./dist/cjs/utils/normalize/index.cjs"
     },
     "./bounds": {
+      "source": "./src/utils/bounds/index.ts",
       "types": "./dist/esm/utils/bounds/index.d.ts",
       "import": "./dist/esm/utils/bounds/index.js",
-      "require": "./dist/cjs/utils/bounds/index.cjs"
+      "require": "./dist/cjs/utils/bounds/index.cjs",
+      "default": "./dist/esm/utils/bounds/index.js"
+    },
+    "./h3": {
+      "source": "./src/utils/h3/index.ts",
+      "types": "./dist/esm/utils/h3/index.d.ts",
+      "import": "./dist/esm/utils/h3/index.js",
+      "require": "./dist/cjs/utils/h3/index.cjs",
+      "default": "./dist/esm/utils/h3/index.js"
+    },
+    "./geohash": {
+      "source": "./src/utils/geohash/index.ts",
+      "types": "./dist/esm/utils/geohash/index.d.ts",
+      "import": "./dist/esm/utils/geohash/index.js",
+      "require": "./dist/cjs/utils/geohash/index.cjs",
+      "default": "./dist/esm/utils/geohash/index.js"
+    },
+    "./spatial": {
+      "source": "./src/utils/spatial/index.ts",
+      "types": "./dist/esm/utils/spatial/index.d.ts",
+      "import": "./dist/esm/utils/spatial/index.js",
+      "require": "./dist/cjs/utils/spatial/index.cjs",
+      "default": "./dist/esm/utils/spatial/index.js"
+    },
+    "./simplify": {
+      "source": "./src/utils/simplify/index.ts",
+      "types": "./dist/esm/utils/simplify/index.d.ts",
+      "import": "./dist/esm/utils/simplify/index.js",
+      "require": "./dist/cjs/utils/simplify/index.cjs"
     },
     "./types": {
-      "types": "./dist/esm/utils/types/index.d.ts",
-      "import": "./dist/esm/utils/types/index.js",
-      "require": "./dist/cjs/utils/types/index.cjs"
+      "source": "./src/types/index.ts",
+      "types": "./dist/esm/types/index.d.ts",
+      "import": "./dist/esm/types/index.js",
+      "require": "./dist/cjs/types/index.cjs",
+      "default": "./dist/esm/types/index.js"
+    },
+    "./demographics": {
+      "source": "./src/utils/demographics/zipcode.ts",
+      "types": "./dist/esm/utils/demographics/zipcode.d.ts",
+      "import": "./dist/esm/utils/demographics/zipcode.js",
+      "require": "./dist/cjs/utils/demographics/zipcode.cjs"
     },
     "./ui": {
+      "source": "./src/ui/index.ts",
       "types": "./dist/esm/ui/index.d.ts",
       "import": "./dist/esm/ui/index.js",
-      "require": "./dist/cjs/ui/index.cjs"
+      "require": "./dist/cjs/ui/index.cjs",
+      "default": "./dist/esm/ui/index.js"
     },
-    "./ui/theme.css": "./dist/ui/theme.css",
+    "./ui/core": {
+      "source": "./src/ui/core.ts",
+      "types": "./dist/esm/ui/core.d.ts",
+      "import": "./dist/esm/ui/core.js",
+      "require": "./dist/cjs/ui/core.cjs",
+      "default": "./dist/esm/ui/core.js"
+    },
+    "./ui/elements/isochrone": {
+      "source": "./src/ui/components/elements/isochrone/isochrone.ts",
+      "types": "./dist/esm/ui/components/elements/isochrone/isochrone.d.ts",
+      "import": "./dist/esm/ui/components/elements/isochrone/isochrone.js",
+      "default": "./dist/esm/ui/components/elements/isochrone/isochrone.js"
+    },
+    "./ui/layer-styles": {
+      "source": "./src/ui/utils/layer-styles.ts",
+      "types": "./dist/esm/ui/utils/layer-styles.d.ts",
+      "import": "./dist/esm/ui/utils/layer-styles.js",
+      "default": "./dist/esm/ui/utils/layer-styles.js"
+    },
+    "./ui/shared-points": {
+      "source": "./src/ui/shared-points.ts",
+      "types": "./dist/esm/ui/shared-points.d.ts",
+      "import": "./dist/esm/ui/shared-points.js",
+      "default": "./dist/esm/ui/shared-points.js"
+    },
+    "./ui/elements/popup": {
+      "source": "./src/ui/components/elements/popup/popup.ts",
+      "types": "./dist/esm/ui/components/elements/popup/popup.d.ts",
+      "import": "./dist/esm/ui/components/elements/popup/popup.js",
+      "default": "./dist/esm/ui/components/elements/popup/popup.js"
+    },
+    "./ui/elements/map-collection": {
+      "source": "./src/ui/components/elements/map-collection/map-collection.ts",
+      "types": "./dist/esm/ui/components/elements/map-collection/map-collection.d.ts",
+      "import": "./dist/esm/ui/components/elements/map-collection/map-collection.js",
+      "default": "./dist/esm/ui/components/elements/map-collection/map-collection.js"
+    },
+    "./ui/theme.css": {
+      "source": "./src/ui/theme.css",
+      "default": "./dist/ui/theme.css"
+    },
     "./ui.theme.css": "./dist/ui/theme.css",
     "./api": {
+      "source": "./src/api/index.ts",
       "types": "./dist/esm/api/index.d.ts",
       "import": "./dist/esm/api/index.js",
-      "require": "./dist/cjs/api/index.cjs"
+      "require": "./dist/cjs/api/index.cjs",
+      "default": "./dist/esm/api/index.js"
+    },
+    "./api/registry": {
+      "source": "./src/api/providers/registry.ts",
+      "types": "./dist/esm/api/providers/registry.d.ts",
+      "import": "./dist/esm/api/providers/registry.js",
+      "require": "./dist/cjs/api/providers/registry.cjs",
+      "default": "./dist/esm/api/providers/registry.js"
+    },
+    "./api/types": {
+      "source": "./src/api/providers/types.ts",
+      "types": "./dist/esm/api/providers/types.d.ts",
+      "import": "./dist/esm/api/providers/types.js",
+      "require": "./dist/cjs/api/providers/types.cjs",
+      "default": "./dist/esm/api/providers/types.js"
+    },
+    "./api/providers/mapbox": {
+      "source": "./src/api/providers/mapbox-provider.ts",
+      "types": "./dist/esm/api/providers/mapbox-provider.d.ts",
+      "import": "./dist/esm/api/providers/mapbox-provider.js",
+      "require": "./dist/cjs/api/providers/mapbox-provider.cjs",
+      "default": "./dist/esm/api/providers/mapbox-provider.js"
+    },
+    "./api/providers/maptiler": {
+      "source": "./src/api/providers/maptiler-provider.ts",
+      "types": "./dist/esm/api/providers/maptiler-provider.d.ts",
+      "import": "./dist/esm/api/providers/maptiler-provider.js",
+      "require": "./dist/cjs/api/providers/maptiler-provider.cjs"
+    },
+    "./api/providers/google-places": {
+      "source": "./src/api/providers/google-places-provider.ts",
+      "types": "./dist/esm/api/providers/google-places-provider.d.ts",
+      "import": "./dist/esm/api/providers/google-places-provider.js",
+      "require": "./dist/cjs/api/providers/google-places-provider.cjs"
+    },
+    "./api/providers/foursquare": {
+      "source": "./src/api/providers/foursquare-provider.ts",
+      "types": "./dist/esm/api/providers/foursquare-provider.d.ts",
+      "import": "./dist/esm/api/providers/foursquare-provider.js",
+      "require": "./dist/cjs/api/providers/foursquare-provider.cjs"
+    },
+    "./cdn": {
+      "source": "./src/cdn/index.ts",
+      "types": "./dist/esm/cdn/index.d.ts",
+      "import": "./dist/esm/cdn/index.js",
+      "require": "./dist/cjs/cdn/index.cjs",
+      "default": "./dist/esm/cdn/index.js"
+    },
+    "./ui/dev-proxy/maptiler": {
+      "source": "./src/ui/dev-proxy/maptiler-dev-proxy.ts",
+      "types": "./dist/esm/ui/dev-proxy/maptiler-dev-proxy.d.ts",
+      "import": "./dist/esm/ui/dev-proxy/maptiler-dev-proxy.js",
+      "require": "./dist/cjs/ui/dev-proxy/maptiler-dev-proxy.cjs",
+      "default": "./dist/esm/ui/dev-proxy/maptiler-dev-proxy.js"
+    },
+    "./ui/fill-antialias": {
+      "source": "./src/ui/utils/fill-antialias.ts",
+      "types": "./dist/esm/ui/utils/fill-antialias.d.ts",
+      "import": "./dist/esm/ui/utils/fill-antialias.js",
+      "require": "./dist/cjs/ui/utils/fill-antialias.cjs",
+      "default": "./dist/esm/ui/utils/fill-antialias.js"
+    },
+    "./ui/choropleth-fill-paint": {
+      "source": "./src/ui/utils/choropleth-fill-paint.ts",
+      "types": "./dist/esm/ui/utils/choropleth-fill-paint.d.ts",
+      "import": "./dist/esm/ui/utils/choropleth-fill-paint.js",
+      "require": "./dist/cjs/ui/utils/choropleth-fill-paint.cjs",
+      "default": "./dist/esm/ui/utils/choropleth-fill-paint.js"
+    },
+    "./ui/dma-colors": {
+      "source": "./src/ui/utils/dma-colors.ts",
+      "types": "./dist/esm/ui/utils/dma-colors.d.ts",
+      "import": "./dist/esm/ui/utils/dma-colors.js",
+      "require": "./dist/cjs/ui/utils/dma-colors.cjs",
+      "default": "./dist/esm/ui/utils/dma-colors.js"
+    },
+    "./ui/map-terrain-disable": {
+      "source": "./src/ui/utils/map-terrain-disable.ts",
+      "types": "./dist/esm/ui/utils/map-terrain-disable.d.ts",
+      "import": "./dist/esm/ui/utils/map-terrain-disable.js",
+      "require": "./dist/cjs/ui/utils/map-terrain-disable.cjs",
+      "default": "./dist/esm/ui/utils/map-terrain-disable.js"
+    },
+    "./ui/layer-stack": {
+      "source": "./src/ui/utils/layer-stack.ts",
+      "types": "./dist/esm/ui/utils/layer-stack.d.ts",
+      "import": "./dist/esm/ui/utils/layer-stack.js",
+      "require": "./dist/cjs/ui/utils/layer-stack.cjs",
+      "default": "./dist/esm/ui/utils/layer-stack.js"
+    },
+    "./ui/geojson-source-options": {
+      "source": "./src/ui/utils/geojson-source-options.ts",
+      "types": "./dist/esm/ui/utils/geojson-source-options.d.ts",
+      "import": "./dist/esm/ui/utils/geojson-source-options.js",
+      "require": "./dist/cjs/ui/utils/geojson-source-options.cjs",
+      "default": "./dist/esm/ui/utils/geojson-source-options.js"
+    },
+    "./ui/admin-outline-preset": {
+      "source": "./src/ui/utils/admin-outline-preset.ts",
+      "types": "./dist/esm/ui/utils/admin-outline-preset.d.ts",
+      "import": "./dist/esm/ui/utils/admin-outline-preset.js",
+      "require": "./dist/cjs/ui/utils/admin-outline-preset.cjs",
+      "default": "./dist/esm/ui/utils/admin-outline-preset.js"
+    },
+    "./ui/state-boundaries": {
+      "source": "./src/ui/utils/admin-outline-preset.ts",
+      "types": "./dist/esm/ui/utils/admin-outline-preset.d.ts",
+      "import": "./dist/esm/ui/utils/admin-outline-preset.js",
+      "require": "./dist/cjs/ui/utils/admin-outline-preset.cjs",
+      "default": "./dist/esm/ui/utils/admin-outline-preset.js"
+    },
+    "./ui/county-boundaries": {
+      "source": "./src/ui/utils/admin-outline-preset.ts",
+      "types": "./dist/esm/ui/utils/admin-outline-preset.d.ts",
+      "import": "./dist/esm/ui/utils/admin-outline-preset.js",
+      "require": "./dist/cjs/ui/utils/admin-outline-preset.cjs",
+      "default": "./dist/esm/ui/utils/admin-outline-preset.js"
+    },
+    "./ui/boundary-map": {
+      "source": "./src/ui/utils/boundary-map.ts",
+      "types": "./dist/esm/ui/utils/boundary-map.d.ts",
+      "import": "./dist/esm/ui/utils/boundary-map.js",
+      "require": "./dist/cjs/ui/utils/boundary-map.cjs",
+      "default": "./dist/esm/ui/utils/boundary-map.js"
+    },
+    "./ui/place-boundaries": {
+      "source": "./src/ui/utils/admin-outline-preset.ts",
+      "types": "./dist/esm/ui/utils/admin-outline-preset.d.ts",
+      "import": "./dist/esm/ui/utils/admin-outline-preset.js",
+      "require": "./dist/cjs/ui/utils/admin-outline-preset.cjs",
+      "default": "./dist/esm/ui/utils/admin-outline-preset.js"
+    },
+    "./ui/layer-datasets": {
+      "source": "./src/ui/components/elements/layer/layer-datasets.ts",
+      "types": "./dist/esm/ui/components/elements/layer/layer-datasets.d.ts",
+      "import": "./dist/esm/ui/components/elements/layer/layer-datasets.js",
+      "require": "./dist/cjs/ui/components/elements/layer/layer-datasets.cjs",
+      "default": "./dist/esm/ui/components/elements/layer/layer-datasets.js"
+    },
+    "./ui/bootstrap/ensure-map-ready": {
+      "source": "./src/ui/bootstrap/ensure-map-ready.ts",
+      "types": "./dist/esm/ui/bootstrap/ensure-map-ready.d.ts",
+      "import": "./dist/esm/ui/bootstrap/ensure-map-ready.js",
+      "require": "./dist/cjs/ui/bootstrap/ensure-map-ready.cjs",
+      "default": "./dist/esm/ui/bootstrap/ensure-map-ready.js"
+    },
+    "./ui/debug/layer-draw-profiler": {
+      "source": "./src/ui/debug/layer-draw-profiler.ts",
+      "types": "./dist/esm/ui/debug/layer-draw-profiler.d.ts",
+      "import": "./dist/esm/ui/debug/layer-draw-profiler.js",
+      "require": "./dist/cjs/ui/debug/layer-draw-profiler.cjs",
+      "default": "./dist/esm/ui/debug/layer-draw-profiler.js"
+    },
+    "./mcp": {
+      "source": "./src/mcp/index.ts",
+      "types": "./dist/esm/mcp/index.d.ts",
+      "import": "./dist/esm/mcp/index.js",
+      "default": "./dist/esm/mcp/index.js"
     }
   },
+  "sideEffects": [
+    "*.css",
+    "./dist/esm/ui/core.js",
+    "./dist/esm/ui/components/elements/*.js",
+    "./dist/esm/ui/components/controls/*.js",
+    "./dist/cjs/ui/core.cjs",
+    "./dist/cjs/ui/components/elements/*.cjs",
+    "./dist/cjs/ui/components/controls/*.cjs",
+    "./src/ui/core.ts",
+    "./src/ui/components/elements/*.ts",
+    "./src/ui/components/controls/*.ts"
+  ],
   "files": [
     "dist",
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p config/tsconfig.json && tsc -p config/tsconfig.cjs.json && node scripts/build/fix-esm-imports.js && node scripts/build/rename-cjs.js && node scripts/build/copy-theme-css.js",
+    "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "dev": "vite --config config/vite.demo.config.js",
-    "build:demo": "vite build --config config/vite.demo.config.js",
-    "preview:demo": "vite preview --config config/vite.demo.config.js",
+    "cdn:export-markets": "yarn --cwd ../pipeline geo cdn --markets",
     "test": "vitest run --config config/vitest.config.ts",
     "test:watch": "vitest --config config/vitest.config.ts",
     "test:integration": "vitest run --config config/vitest.integration.config.ts",
     "test:all": "vitest run --config config/vitest.config.ts && vitest run --config config/vitest.integration.config.ts",
     "test:browser": "vitest run --config config/vitest.browser.config.ts",
-    "typecheck": "tsc -p config/tsconfig.json --noEmit",
+    "test:demo": "tsx tests/integration/demo-smoke.ts",
+    "mcp:serve": "tsx src/mcp/server.ts",
+    "map-host": "vite --config config/vite.mcp-host.config.js",
+    "typecheck": "tsc -p config/tsconfig.json --noEmit && tsc -p config/tsconfig.mcp.json --noEmit",
     "lint": "eslint --config config/eslint.config.mjs . --ext .ts",
     "lint:fix": "eslint --config config/eslint.config.mjs . --ext .ts --fix",
-    "format": "prettier --config config/.prettierrc.json --write \"**/*.{ts,json,md}\"",
-    "format:check": "prettier --config config/.prettierrc.json --check \"**/*.{ts,json,md}\"",
+    "format": "prettier --config config/.prettierrc.json --ignore-path config/.prettierignore --write \"**/*.{ts,json,md}\"",
+    "format:check": "prettier --config config/.prettierrc.json --ignore-path config/.prettierignore --check \"**/*.{ts,json,md}\"",
     "prepare": "husky",
     "prepublishOnly": "yarn build && yarn test",
     "postinstall": "patch-package"
@@ -102,6 +360,8 @@
     "@twinfile:registry": "https://npm.pkg.github.com"
   },
   "devDependencies": {
+    "@twinfile/cdn": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
     "@types/topojson-client": "^3.1.5",
@@ -118,21 +378,22 @@
     "patch-package": "^8.0.1",
     "playwright": "^1.56.1",
     "prettier": "^3.6.2",
+    "tsx": "^4.20.5",
+    "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "vite": "^6.1.0",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "zod": "^3.25.0"
   },
   "lint-staged": {
     "*.ts": [
-      "prettier --config config/.prettierrc.json --write",
+      "prettier --config config/.prettierrc.json --ignore-path config/.prettierignore --write",
       "eslint --config config/eslint.config.mjs --fix"
     ],
     "*.{json,md}": [
-      "prettier --config config/.prettierrc.json --write"
+      "prettier --config config/.prettierrc.json --ignore-path config/.prettierignore --write"
     ]
   },
-  "peerDependencies": {},
-  "peerDependenciesMeta": {},
   "dependencies": {
     "@maptiler/sdk": "3.10.2",
     "@turf/along": "^7.3.0",
@@ -153,6 +414,7 @@
     "@turf/line-intersect": "^7.3.0",
     "@turf/midpoint": "^7.3.0",
     "@turf/nearest-point-on-line": "^7.3.0",
+    "@turf/point-to-line-distance": "^7.3.0",
     "@turf/simplify": "^7.3.0",
     "@turf/union": "^7.3.1",
     "@types/geojson": "^7946.0.16",
@@ -160,6 +422,8 @@
     "latlon-geohash": "^2.0.0",
     "lru-cache": "^11.2.4",
     "mapbox-gl": "^3.17.0",
-    "topojson-client": "^3.1.0"
+    "topojson-client": "^3.1.0",
+    "topojson-server": "^3.0.1",
+    "topojson-simplify": "^3.0.3"
   }
 }

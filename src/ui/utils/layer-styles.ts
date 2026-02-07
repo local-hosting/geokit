@@ -1310,22 +1310,39 @@ function setupHoverLayers(
     }
   }
 
-  // Attach mouse handlers to glow and point layers
-  const hitLayers = [glowLayerId, pointLayerId].filter((id) => map.getLayer?.(id));
+  // Use only the glow layer for hit testing (mousemove / mouseleave / click).
+  // The glow has a larger radius than the point, so one layer gives a single
+  // leave boundary and avoids the point's mouseleave clearing hover while
+  // the cursor is still over the glow at higher zoom.
+  const hitLayerId = map.getLayer?.(glowLayerId) ? glowLayerId : null;
   debug.log('[layer-styles] setupHoverLayers', {
-    hitLayers,
+    hitLayerId,
     hoverSourceId,
     hoverGlowLayerId,
     hasHoverSource: !!map.getSource?.(hoverSourceId),
     hasHoverGlowLayer: !!map.getLayer?.(hoverGlowLayerId),
   });
-  if (hitLayers.length === 0) {
-    debug.log('[layer-styles] setupHoverLayers: no hit layers found, skipping');
+  if (!hitLayerId) {
+    debug.log('[layer-styles] setupHoverLayers: glow layer not found, skipping');
     return;
   }
 
-  // Store the current hover feature
+  // Store the current hover feature + track last dispatched feature for dedup
   let currentHoverFeature: GeoJSON.Feature | null = null;
+  /** Coordinates of the last dispatched gk-point-hover (dedup glow+point layer hits). */
+  let lastDispatchedKey: string | null = null;
+
+  /** Find the parent gk-map element from the map instance (for event dispatch). */
+  function findMapElement(): HTMLElement | null {
+    const container = (map as any).getContainer?.();
+    if (!container) return null;
+    let el: HTMLElement | null = container as HTMLElement;
+    while (el) {
+      if (el.tagName?.toLowerCase() === 'gk-map') return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
 
   function renderHoverFeature(): void {
     if (!currentHoverFeature || !map) return;
@@ -1390,46 +1407,155 @@ function setupHoverLayers(
     }
   }
 
-  function onMouseEnter(e: {
+  /** Dispatch gk-point-hover-end from the gk-map element and clear tracking state. */
+  function dispatchHoverEnd(): void {
+    if (lastDispatchedKey !== null) {
+      lastDispatchedKey = null;
+      const mapEl = findMapElement();
+      if (mapEl) {
+        mapEl.dispatchEvent(
+          new CustomEvent('gk-point-hover-end', {
+            detail: { sourceId, map, element: mapEl },
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      }
+    }
+  }
+
+  /** Coordinate key of the feature currently under the cursor (mousemove dedup). */
+  let currentHoverKey: string | null = null;
+
+  /**
+   * mousemove handler on the invisible hit layer.
+   * Fires continuously as the cursor moves, so we track the current feature by
+   * coordinate key and only dispatch events / update visuals when it changes.
+   */
+  function onMouseMove(e: {
     features?: Array<{ geometry?: unknown; properties?: Record<string, unknown> }>;
   }): void {
     const features = e?.features;
     if (!features?.length) {
-      clearHoverFeature();
-      setCursor('');
+      if (currentHoverKey !== null) {
+        currentHoverKey = null;
+        clearHoverFeature();
+        setCursor('');
+        dispatchHoverEnd();
+      }
       return;
     }
+
     setCursor('pointer');
     const f = features[0];
     const geometry = f?.geometry;
     if (!geometry) {
-      clearHoverFeature();
+      if (currentHoverKey !== null) {
+        currentHoverKey = null;
+        clearHoverFeature();
+        dispatchHoverEnd();
+      }
       return;
     }
 
-    // Store and render the hover feature once (no continuous animation needed)
+    const coords =
+      geometry && 'coordinates' in (geometry as any)
+        ? (geometry as { coordinates: [number, number] }).coordinates
+        : null;
+    const key = coords ? `${coords[0]},${coords[1]}` : null;
+
+    // Same feature — skip redundant update
+    if (key === currentHoverKey) return;
+
+    currentHoverKey = key;
+
+    // Update hover visual
     currentHoverFeature = {
       type: 'Feature',
       geometry: geometry as GeoJSON.Geometry,
       properties: { ...(f.properties || {}) },
     };
     renderHoverFeature();
+
+    // Dispatch gk-point-hover event from the gk-map element
+    if (key && key !== lastDispatchedKey) {
+      lastDispatchedKey = key;
+      const mapEl = findMapElement();
+      if (mapEl) {
+        mapEl.dispatchEvent(
+          new CustomEvent('gk-point-hover', {
+            detail: {
+              lngLat: coords ? { lng: coords[0], lat: coords[1] } : undefined,
+              features: features ? [...features] : [],
+              sourceId,
+              map,
+              element: mapEl,
+            },
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      }
+    }
   }
 
   function onMouseLeave(): void {
+    currentHoverKey = null;
     clearHoverFeature();
     setCursor('');
+    dispatchHoverEnd();
   }
 
-  // Attach handlers to all hit layers
-  for (const layerId of hitLayers) {
-    try {
-      map.on('mouseenter', layerId, onMouseEnter as any);
-      map.on('mouseleave', layerId, onMouseLeave as any);
-      debug.log('[layer-styles] attached hover handlers to layer', layerId);
-    } catch (err) {
-      debug.log('[layer-styles] FAILED to attach hover handlers', layerId, err);
+  // Click handler: dispatch gk-point-click from the gk-map element.
+  // Single hit layer means no glow+point double-fire, but keep cooldown for safety.
+  let lastClickTime = 0;
+  function onClick(e: {
+    features?: Array<{ geometry?: unknown; properties?: Record<string, unknown> }>;
+    lngLat?: { lng: number; lat: number };
+    originalEvent?: Event;
+  }): void {
+    const now = Date.now();
+    if (now - lastClickTime < 50) return; // dedup glow+point double-fire
+    lastClickTime = now;
+
+    const features = e?.features;
+    if (!features?.length) return;
+
+    const f = features[0];
+    const geometry = f?.geometry;
+    const coords =
+      geometry && 'coordinates' in (geometry as any)
+        ? (geometry as { coordinates: [number, number] }).coordinates
+        : null;
+    const lngLat = coords ? { lng: coords[0], lat: coords[1] } : (e.lngLat ?? undefined);
+
+    const mapEl = findMapElement();
+    if (mapEl) {
+      mapEl.dispatchEvent(
+        new CustomEvent('gk-point-click', {
+          detail: {
+            lngLat,
+            features: [...features],
+            sourceId,
+            map,
+            element: mapEl,
+            originalEvent: e.originalEvent,
+          },
+          bubbles: true,
+          cancelable: true,
+        })
+      );
     }
+  }
+
+  // Single hit layer (glow): mousemove + mouseleave + click
+  try {
+    map.on('mousemove', hitLayerId, onMouseMove as any);
+    map.on('mouseleave', hitLayerId, onMouseLeave as any);
+    map.on('click', hitLayerId, onClick as any);
+    debug.log('[layer-styles] attached mousemove+click handlers to hit layer', hitLayerId);
+  } catch (err) {
+    debug.log('[layer-styles] FAILED to attach handlers', hitLayerId, err);
   }
 }
 

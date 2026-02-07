@@ -9,4 +9,4 @@ export * from './layer-styles';
 export * from './feature-state-hover';
 export * from './logger';
 export * from './theme';
-export { getFeatureId } from '../../utils/geojson';
+export { getFeatureId } from '../../utils/geojson/get-feature-id';

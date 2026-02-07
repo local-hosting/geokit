@@ -294,9 +294,9 @@ export class PopupElement extends MapChildElement {
         align-items: center;
         background: var(--gk-popup-tag-background, rgba(139, 148, 158, 0.15));
         color: var(--gk-popup-tag-text, #c9d1d9);
-        font-size: 11px;
-        border-radius: 4px;
-        padding: 3px 8px;
+        font-size: 13px;
+        border-radius: 5px;
+        padding: 5px 12px;
         gap: 0;
         overflow: hidden;
       }
@@ -311,14 +311,14 @@ export class PopupElement extends MapChildElement {
         color: var(--gk-popup-text-muted, #6e7681);
         font-weight: 500;
         background: var(--gk-popup-tag-label-background, rgba(139, 148, 158, 0.08));
-        padding: 3px 6px;
-        border-radius: 4px 0 0 4px;
+        padding: 5px 10px;
+        border-radius: 5px 0 0 5px;
       }
 
       .geokit-popup-tag-value {
         background: var(--gk-popup-tag-background, rgba(139, 148, 158, 0.15));
-        padding: 3px 6px;
-        border-radius: 0 4px 4px 0;
+        padding: 5px 10px;
+        border-radius: 0 5px 5px 0;
       }
 
       .geokit-popup-actions {
@@ -388,6 +388,14 @@ export class PopupElement extends MapChildElement {
         width: 12px;
         height: 12px;
         flex-shrink: 0;
+      }
+
+      /* Hover popup: lightweight preview that doesn't block clicks on the map */
+      .geokit-popup-hover .maplibregl-popup-content,
+      .geokit-popup-hover .mapboxgl-popup-content {
+        pointer-events: none;
+        min-width: 100px;
+        padding: 8px 12px;
       }
     `;
     document.head.appendChild(style);
