@@ -394,6 +394,14 @@ export {
 // H3-to-ZIP index loader (lazy-loaded from URL, saves ~690KB bundle size)
 export { initializeZipIndex, loadZipIndexData } from './utils/demographics/zip-h3-index';
 
+// TopoJSON conversion utilities
+export type {
+  Topology,
+  GeometryObject as TopoGeometryObject,
+  Properties as TopoProperties,
+} from './utils/topojson';
+export { topoFeature, topoMerge, topoMesh, topoNeighbors, topoObjectNames } from './utils/topojson';
+
 // Cache utilities
 export type { CacheOptions, CacheStats } from './utils/cache';
 export { GeoCache, roundForCacheKey, coordinateCacheKey } from './utils/cache';

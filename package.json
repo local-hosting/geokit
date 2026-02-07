@@ -104,6 +104,7 @@
   "devDependencies": {
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
+    "@types/topojson-client": "^3.1.5",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
     "@typescript-eslint/parser": "^8.47.0",
     "@vitest/browser": "^2.1.8",
@@ -158,6 +159,7 @@
     "h3-js": "^4.3.0",
     "latlon-geohash": "^2.0.0",
     "lru-cache": "^11.2.4",
-    "mapbox-gl": "^3.17.0"
+    "mapbox-gl": "^3.17.0",
+    "topojson-client": "^3.1.0"
   }
 }
