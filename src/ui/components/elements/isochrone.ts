@@ -85,11 +85,6 @@ export class IsochroneElement extends MapChildElement {
 
   /** Re-add isochrone layers after map style change (e.g. theme toggle). */
   protected override onStyleLoad(): void {
-    debug.log('[Isochrone] onStyleLoad', {
-      hasMap: !!this.map,
-      visible: this.visible,
-      currentCacheKey: this.currentCacheKey,
-    });
     if (!this.map) return;
     // Clear cache so we re-add layers even though data is unchanged (style replace removed them)
     this.currentCacheKey = null;
@@ -100,6 +95,76 @@ export class IsochroneElement extends MapChildElement {
         this.fetchAndRenderIsochrone();
       });
     });
+  }
+
+  // Cleanup function for hover handlers (stored so we can remove on teardown)
+  private hoverCleanup: (() => void) | null = null;
+
+  /**
+   * Setup hover handlers on the fill layer so consumers receive
+   * `gk-isochrone-hover` / `gk-isochrone-hover-end` events.
+   */
+  private setupHoverHandlers(): void {
+    if (!this.map || !this.fillLayerId) return;
+    if (!this.map.getLayer?.(this.fillLayerId)) return;
+
+    // Clean up previous handlers (idempotent)
+    this.cleanupHoverHandlers();
+
+    const fillLayer = this.fillLayerId;
+
+    const onMouseEnter = (e: any): void => {
+      const canvas = this.map?.getCanvas?.();
+      if (canvas?.style) canvas.style.cursor = 'pointer';
+
+      this.dispatchEvent(
+        new CustomEvent('gk-isochrone-hover', {
+          detail: {
+            lngLat: e.lngLat,
+            features: e.features,
+            map: this.map,
+            element: this,
+          },
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    };
+
+    const onMouseLeave = (): void => {
+      const canvas = this.map?.getCanvas?.();
+      if (canvas?.style) canvas.style.cursor = '';
+
+      this.dispatchEvent(
+        new CustomEvent('gk-isochrone-hover-end', {
+          detail: {
+            map: this.map,
+            element: this,
+          },
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    };
+
+    this.map.on('mouseenter', fillLayer, onMouseEnter);
+    this.map.on('mouseleave', fillLayer, onMouseLeave);
+
+    this.hoverCleanup = () => {
+      try {
+        this.map?.off?.('mouseenter', fillLayer, onMouseEnter);
+        this.map?.off?.('mouseleave', fillLayer, onMouseLeave);
+      } catch {
+        // Map may already be destroyed
+      }
+    };
+  }
+
+  private cleanupHoverHandlers(): void {
+    if (this.hoverCleanup) {
+      this.hoverCleanup();
+      this.hoverCleanup = null;
+    }
   }
 
   /**
@@ -366,19 +431,8 @@ export class IsochroneElement extends MapChildElement {
   }
 
   private async fetchAndRenderIsochrone(): Promise<void> {
-    debug.log('[Isochrone] fetchAndRenderIsochrone entry', {
-      hasMap: !!this.map,
-      visible: this.visible,
-      sourceId: this.sourceId ?? null,
-    });
-    if (!this.map) {
-      debug.log('[Isochrone] fetchAndRenderIsochrone early return: no map');
-      return;
-    }
-    if (!this.visible) {
-      debug.log('[Isochrone] fetchAndRenderIsochrone early return: not visible');
-      return;
-    }
+    if (!this.map) return;
+    if (!this.visible) return;
 
     // Ensure IDs are initialized (in case connectedCallback hasn't completed)
     if (!this.sourceId) {
@@ -393,7 +447,6 @@ export class IsochroneElement extends MapChildElement {
         this.fillLayerId = `polygon-fill-isochrone-${uuid}`;
         this.lineLayerId = `polygon-stroke-isochrone-${uuid}`;
       }
-      debug.log('[Isochrone] fetchAndRenderIsochrone initialized IDs', { sourceId: this.sourceId });
     }
 
     const lat = parseFloat(this.getAttribute('lat') || '');
@@ -418,49 +471,20 @@ export class IsochroneElement extends MapChildElement {
     // Create cache key (include 'stored' suffix when using pre-computed data)
     const cacheKey = `${lat},${lng},${time},${mode}${canUseStoredData ? ':stored' : ''}`;
     if (cacheKey === this.currentCacheKey) {
-      debug.log('[Isochrone] fetchAndRenderIsochrone early return: cache hit', {
-        cacheKey,
-        currentCacheKey: this.currentCacheKey,
-      });
       return;
     }
 
-    debug.log('[Isochrone] fetchAndRenderIsochrone proceeding', {
-      lat,
-      lng,
-      time,
-      mode,
-      cacheKey,
-      canUseStoredData,
-    });
     this.currentCacheKey = cacheKey;
 
     let result: GeoJSON.FeatureCollection | null = null;
 
     if (canUseStoredData) {
       // Use pre-computed data - skip API fetch (settings match what was stored)
-      debug.log(
-        `[Isochrone] Using stored data for ${lat.toFixed(6)},${lng.toFixed(6)} (${time}m ${mode})`
-      );
       result = storedData;
     } else {
-      // Get API provider that supports isochrone
+      // Get API provider that supports isochrone (optional when app uses stored data only)
       const provider = getProviderForCapability('isochrone');
       if (!provider) {
-        console.error('[Isochrone] No API provider supports isochrone capability');
-        this.dispatchEvent(
-          new CustomEvent('isochrone-error', {
-            detail: {
-              error: new Error('No API provider supports isochrone capability'),
-              lat,
-              lng,
-              time,
-              mode,
-              element: this,
-            },
-            bubbles: true,
-          })
-        );
         return;
       }
 
@@ -551,9 +575,6 @@ export class IsochroneElement extends MapChildElement {
         | undefined;
 
       if (existingSource && typeof existingSource.setData === 'function') {
-        debug.log('[Isochrone] fetchAndRenderIsochrone updating source in-place', {
-          sourceId: this.sourceId,
-        });
         existingSource.setData(processedData);
 
         // Update paint properties in case color/opacity/stroke changed
@@ -574,12 +595,6 @@ export class IsochroneElement extends MapChildElement {
         // Find the layer to insert before (consumer `before-layer` or first circle layer)
         const beforeLayerId = this.findBeforeLayer();
 
-        debug.log('[Isochrone] fetchAndRenderIsochrone creating source + layers', {
-          sourceId: this.sourceId,
-          fillLayerId: this.fillLayerId,
-          lineLayerId: this.lineLayerId,
-          beforeLayerId,
-        });
         this.map.addSource(this.sourceId, {
           type: 'geojson',
           data: processedData,
@@ -627,6 +642,9 @@ export class IsochroneElement extends MapChildElement {
           }
         }
 
+        // Setup hover handlers on the fill layer
+        this.setupHoverHandlers();
+
         // If consumer specified a before-layer, ensure ordering after addLayer
         // (addLayer already used beforeLayerId, but moveLayer handles edge cases
         //  where the reference layer was added after the initial addLayer call).
@@ -645,7 +663,6 @@ export class IsochroneElement extends MapChildElement {
         }
       }
 
-      debug.log('[Isochrone] fetchAndRenderIsochrone done');
       // Dispatch event immediately after we have the data
       // This allows demographics to start calculating concurrently with map rendering
       // Demographics only need the polygon geometry, not the visual rendering
@@ -863,6 +880,8 @@ export class IsochroneElement extends MapChildElement {
   }
 
   protected override onMapUnload(): void {
+    // Clean up hover handlers before map reference is cleared
+    this.cleanupHoverHandlers();
     // Clean up layers when map is frozen/unloaded
     // This ensures proper cleanup even if element stays in DOM
     this.removeIsochrone();
@@ -870,6 +889,9 @@ export class IsochroneElement extends MapChildElement {
   }
 
   override disconnectedCallback(): void {
+    // Clean up hover handlers
+    this.cleanupHoverHandlers();
+
     // Clean up map interaction listeners
     this.cleanupMapInteractionListeners();
 
