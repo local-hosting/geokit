@@ -820,10 +820,12 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       // MapTiler's addPoint helper doesn't pass promoteId to the source it creates.
       // By creating the source before the helper runs, the helper will use our source.
       if (promoteId && geojson && !map.getSource?.(sourceId)) {
+        // tolerance: 0 prevents geojson-vt from dropping points at low zoom
         map.addSource(sourceId, {
           type: 'geojson',
           data: geojson,
           promoteId,
+          tolerance: 0,
         });
         debug.log('[layer-styles] source ADD with promoteId before helper', {
           sourceId,
@@ -889,18 +891,11 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
           );
         }
       }
-      // Apply selection-aware stroke: 3px when __selected, otherwise use provided stroke.
-      // This works with MapTiler helper (which doesn't support promoteId for feature-state).
+      // Apply base stroke width. Selection ring is handled by a dedicated layer (not the point stroke).
       if (map.setPaintProperty) {
         try {
           const baseStrokeWidth = _circleStrokeWidth ?? 0;
-          const selectionStrokeWidth = [
-            'case',
-            ['==', ['get', '__selected'], true],
-            3,
-            baseStrokeWidth,
-          ];
-          map.setPaintProperty(pointLayerId, 'circle-stroke-width', selectionStrokeWidth as any);
+          map.setPaintProperty(pointLayerId, 'circle-stroke-width', baseStrokeWidth as any);
           const strokeColorVal =
             _circleStrokeColor ??
             selectionRingColor ??
@@ -921,9 +916,11 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   // When helper was tried and failed, ensure source exists so the manual path can add layers.
   if (useHelper && !helperSucceeded && geojson && !map.getSource?.(sourceId)) {
     try {
+      // tolerance: 0 prevents geojson-vt from dropping points at low zoom
       map.addSource(sourceId, {
         type: 'geojson',
         data: geojson,
+        tolerance: 0,
         ...(promoteId ? { promoteId } : {}),
       });
       debug.log('[layer-styles] source ADD (manual path)', { sourceId });
@@ -980,37 +977,9 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         console.error(`[geokit] Failed to add glow layer ${glowLayerId}:`, err);
       }
     }
-    // Selection ring: driven by feature-state 'selected' so it can appear instantly on click (no source setData)
-    const ringLayerId = `${pointLayerId}-selection-ring`;
-    if (!map.getLayer?.(ringLayerId)) {
-      try {
-        const ringRadiusExpr = getSelectionRingRadiusInterpolation();
-        map.addLayer({
-          id: ringLayerId,
-          type: 'circle',
-          source: sourceId,
-          minzoom: 0, // Ensure visibility at all zoom levels
-          paint: {
-            'circle-radius': [
-              'case',
-              ['boolean', ['feature-state', 'selected'], false],
-              ringRadiusExpr,
-              0,
-            ],
-            'circle-color': 'rgba(0,0,0,0)',
-            'circle-stroke-width': [
-              'case',
-              ['boolean', ['feature-state', 'selected'], false],
-              2,
-              0,
-            ],
-            'circle-stroke-color': selectionRingColor,
-          },
-        } as any);
-      } catch (err) {
-        console.error(`[geokit] Failed to add selection ring ${ringLayerId}:`, err);
-      }
-    }
+    // Selection ring: dedicated single-feature source so no data-driven expressions
+    // are evaluated on all venue features (avoids MapTiler per-tile rendering budget issues).
+    setupSelectionRingLayer(map, sourceId, pointLayerId, selectionRingColor);
 
     // Setup automatic hover layers (same pattern as non-helper path)
     setupHoverLayers(map, sourceId, glowLayerId, pointLayerId, {
@@ -1091,8 +1060,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   }
 
   // Point layer (top): zoom-based radius so points get larger as you zoom in; data-driven circle-color.
-  // Selection stroke uses __selected property (works without promoteId, unlike feature-state).
-  // The selection-ring layer below uses feature-state as a secondary indicator when promoteId works.
+  // Selection stroke and ring both use feature-state 'selected' (requires promoteId on source).
   if (!map.getLayer?.(pointLayerId)) {
     const circleColorVal = circleColor ?? resolveDefaultLayerColor();
     const radiusVal = pointRadius ?? getPointRadiusInterpolation();
@@ -1102,11 +1070,8 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       'circle-opacity': 1,
       'circle-blur': 0,
     };
-    // Selection stroke: show 3px when __selected, otherwise use provided stroke width.
-    // This works with MapTiler helper (which doesn't support promoteId for feature-state).
-    const baseStrokeWidth = _circleStrokeWidth ?? 0;
-    const selectionStrokeWidth = ['case', ['==', ['get', '__selected'], true], 3, baseStrokeWidth];
-    pointPaint['circle-stroke-width'] = selectionStrokeWidth;
+    // Base stroke width. Selection ring is handled by a dedicated layer (not the point stroke).
+    pointPaint['circle-stroke-width'] = _circleStrokeWidth ?? 0;
     pointPaint['circle-stroke-color'] =
       _circleStrokeColor ??
       selectionRingColor ??
@@ -1147,37 +1112,9 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       }
     }
 
-    // Selection ring: driven by feature-state 'selected' so it can appear instantly on click (no source setData)
-    const ringLayerId = `${pointLayerId}-selection-ring`;
-    if (!map.getLayer?.(ringLayerId)) {
-      try {
-        const ringRadiusExpr = getSelectionRingRadiusInterpolation();
-        map.addLayer({
-          id: ringLayerId,
-          type: 'circle',
-          source: sourceId,
-          minzoom: 0, // Ensure visibility at all zoom levels
-          paint: {
-            'circle-radius': [
-              'case',
-              ['boolean', ['feature-state', 'selected'], false],
-              ringRadiusExpr,
-              0,
-            ],
-            'circle-color': 'rgba(0,0,0,0)',
-            'circle-stroke-width': [
-              'case',
-              ['boolean', ['feature-state', 'selected'], false],
-              2,
-              0,
-            ],
-            'circle-stroke-color': selectionRingColor,
-          },
-        } as any);
-      } catch (err) {
-        console.error(`[geokit] Failed to add selection ring ${ringLayerId}:`, err);
-      }
-    }
+    // Selection ring: dedicated single-feature source so no data-driven expressions
+    // are evaluated on all venue features (avoids MapTiler per-tile rendering budget issues).
+    setupSelectionRingLayer(map, sourceId, pointLayerId, selectionRingColor);
   }
 
   // Setup automatic hover layers using dedicated source (avoids feature-state issues)
@@ -1213,6 +1150,105 @@ const EMPTY_GEOJSON: GeoJSON.FeatureCollection = {
 interface GeoJSONSourceWithSetData {
   setData?(data: GeoJSON.FeatureCollection | GeoJSON.Feature): void;
 }
+
+// ============================================================================
+// Selection Ring (dedicated single-feature source)
+// ============================================================================
+
+/**
+ * Create a dedicated source + layer for the selection ring.
+ * Uses a single-feature source (0-1 features) so no data-driven expressions
+ * are evaluated on all venue features. Same pattern as hover layers.
+ */
+function setupSelectionRingLayer(
+  map: MapInstance,
+  sourceId: string,
+  pointLayerId: string,
+  selectionRingColor: string
+): void {
+  const selectionSourceId = `${sourceId}-selection`;
+  const ringLayerId = `${pointLayerId}-selection-ring`;
+
+  // Create dedicated selection source (empty initially)
+  if (!map.getSource?.(selectionSourceId)) {
+    try {
+      map.addSource(selectionSourceId, {
+        type: 'geojson',
+        data: EMPTY_GEOJSON,
+      });
+      debug.log('[layer-styles] selection source ADD', { selectionSourceId });
+    } catch (err) {
+      console.error(`[geokit] Failed to add selection source ${selectionSourceId}:`, err);
+      return;
+    }
+  }
+
+  // Create selection ring layer (pure zoom interpolation, no data-driven expressions)
+  if (!map.getLayer?.(ringLayerId)) {
+    try {
+      map.addLayer({
+        id: ringLayerId,
+        type: 'circle',
+        source: selectionSourceId,
+        minzoom: 0,
+        paint: {
+          'circle-radius': getSelectionRingRadiusInterpolation(),
+          'circle-color': 'rgba(0,0,0,0)',
+          'circle-stroke-width': 2,
+          'circle-stroke-color': selectionRingColor,
+        },
+      } as any);
+      debug.log('[layer-styles] selection ring layer ADD', { ringLayerId });
+    } catch (err) {
+      console.error(`[geokit] Failed to add selection ring ${ringLayerId}:`, err);
+    }
+  }
+}
+
+/**
+ * Update the selection ring for shared point layers.
+ * Sets the dedicated selection source to a single Point feature at the given
+ * coordinates, or clears it when coordinates is null.
+ *
+ * @param map - Map instance
+ * @param sourceId - The base source ID used when creating the shared point layers
+ * @param coordinates - Selected venue coordinates, or null to clear
+ */
+export function updateSharedPointSelection(
+  map: MapInstance,
+  sourceId: string,
+  coordinates: { lng: number; lat: number } | null
+): void {
+  const selectionSourceId = `${sourceId}-selection`;
+  const source = map?.getSource?.(selectionSourceId) as GeoJSONSourceWithSetData | undefined;
+  if (!source?.setData) return;
+
+  try {
+    if (coordinates) {
+      source.setData({
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [coordinates.lng, coordinates.lat],
+            },
+            properties: {},
+          },
+        ],
+      });
+    } else {
+      source.setData(EMPTY_GEOJSON);
+    }
+  } catch {
+    // Ignore - source may have been removed
+  }
+}
+
+// ============================================================================
+// Hover Layer Setup (used by createSharedPointLayers)
+// ============================================================================
 
 /**
  * Setup hover layers for shared point layers.
