@@ -413,12 +413,12 @@ export function multiplyRadiusExpression(
  * });
  * ```
  */
-/** Minimum circle radius in pixels so points stay visible when zoomed out (avoids hide/show flicker). */
-const MIN_POINT_RADIUS_PX = 1;
+/** Minimum circle radius in pixels so points stay visible when zoomed out (Safari needs ≥2px or points can vanish). */
+const MIN_POINT_RADIUS_PX = 2;
 
 export function getPointRadiusInterpolation(options: CircleStyleOptions = {}): unknown[] {
   const { scale = 1, exponent = 1.5 } = options;
-  // Point radius never below 1px so venues don't disappear/flicker when zooming out
+  // Point radius never below 2px so Safari reliably renders when zoomed out (1px can vanish)
   return [
     'interpolate',
     ['exponential', exponent],
@@ -765,10 +765,10 @@ export function createGlowPointLayers(config: GlowPointLayerConfig): {
  *
  * @param config - Layer configuration with explicit IDs and paint expressions
  */
-/** Zoom–radius stops for MapTiler helpers.addPoint: points get larger as you zoom in. */
+/** Zoom–radius stops for MapTiler helpers.addPoint. Min 2px at low zoom so Safari doesn't drop points when zoomed out. */
 const MAPTILER_POINT_RADIUS_ZOOM: Array<{ zoom: number; value: number }> = [
-  { zoom: 0, value: 0.85 },
-  { zoom: 2, value: 1 },
+  { zoom: 0, value: 2 },
+  { zoom: 2, value: 2 },
   { zoom: 6, value: 2 },
   { zoom: 10, value: 3.1 },
   { zoom: 14, value: 4.25 },
