@@ -318,12 +318,22 @@ export class IsochroneElement extends MapChildElement {
 
     if (this.isInitialized) return;
 
-    // Generate unique IDs using polygon naming convention for automatic z-ordering
-    // Polygon layers are rendered below points, which is the correct order for isochrones
-    const uuid = crypto.randomUUID();
-    this.sourceId = `isochrone-${uuid}`;
-    this.fillLayerId = `polygon-fill-isochrone-${uuid}`;
-    this.lineLayerId = `polygon-stroke-isochrone-${uuid}`;
+    // If a stable source-id attribute is set, use it instead of a random UUID.
+    // This allows the host app to pre-create the source + layers (with empty data)
+    // during map setup, so the isochrone only ever calls setData() — never
+    // addSource/addLayer — which avoids MapTiler style recalculation that can
+    // make other circle layers partially vanish.
+    const stableId = this.getAttribute('source-id');
+    if (stableId) {
+      this.sourceId = stableId;
+      this.fillLayerId = `polygon-fill-${stableId}`;
+      this.lineLayerId = `polygon-stroke-${stableId}`;
+    } else {
+      const uuid = crypto.randomUUID();
+      this.sourceId = `isochrone-${uuid}`;
+      this.fillLayerId = `polygon-fill-isochrone-${uuid}`;
+      this.lineLayerId = `polygon-stroke-isochrone-${uuid}`;
+    }
 
     this.isInitialized = true;
   }
@@ -406,10 +416,17 @@ export class IsochroneElement extends MapChildElement {
 
     // Ensure IDs are initialized (in case connectedCallback hasn't completed)
     if (!this.sourceId) {
-      const uuid = crypto.randomUUID();
-      this.sourceId = `isochrone-${uuid}`;
-      this.fillLayerId = `polygon-fill-isochrone-${uuid}`;
-      this.lineLayerId = `polygon-stroke-isochrone-${uuid}`;
+      const stableId = this.getAttribute('source-id');
+      if (stableId) {
+        this.sourceId = stableId;
+        this.fillLayerId = `polygon-fill-${stableId}`;
+        this.lineLayerId = `polygon-stroke-${stableId}`;
+      } else {
+        const uuid = crypto.randomUUID();
+        this.sourceId = `isochrone-${uuid}`;
+        this.fillLayerId = `polygon-fill-isochrone-${uuid}`;
+        this.lineLayerId = `polygon-stroke-isochrone-${uuid}`;
+      }
       debug.log('[Isochrone] fetchAndRenderIsochrone initialized IDs', { sourceId: this.sourceId });
     }
 
@@ -543,94 +560,124 @@ export class IsochroneElement extends MapChildElement {
       // Don't convert to H3 on initial render - use raw polygon for speed
       // Conversion to H3 will happen on map interaction via upgradeResolution()
 
-      // Remove existing layers (but preserve IDs for reuse)
-      this.cleanupExistingLayers();
-
-      // Find first circle layer to insert before (isochrones should be below points)
-      const beforeLayerId = this.findFirstCircleLayer();
-
-      // Ensure IDs exist (regenerate if needed)
+      // Ensure IDs exist (generated once per element lifetime)
       if (!this.sourceId) {
-        const uuid = crypto.randomUUID();
-        this.sourceId = `isochrone-${uuid}`;
-        this.fillLayerId = `polygon-fill-isochrone-${uuid}`;
-        this.lineLayerId = `polygon-stroke-isochrone-${uuid}`;
+        const stableId = this.getAttribute('source-id');
+        if (stableId) {
+          this.sourceId = stableId;
+          this.fillLayerId = `polygon-fill-${stableId}`;
+          this.lineLayerId = `polygon-stroke-${stableId}`;
+        } else {
+          const uuid = crypto.randomUUID();
+          this.sourceId = `isochrone-${uuid}`;
+          this.fillLayerId = `polygon-fill-isochrone-${uuid}`;
+          this.lineLayerId = `polygon-stroke-isochrone-${uuid}`;
+        }
       }
 
-      // Add source
       if (!this.map) return;
 
-      debug.log('[Isochrone] fetchAndRenderIsochrone adding source + layers', {
-        sourceId: this.sourceId,
-        fillLayerId: this.fillLayerId,
-        lineLayerId: this.lineLayerId,
-        beforeLayerId,
-      });
-      this.map.addSource(this.sourceId, {
-        type: 'geojson',
-        data: processedData,
-      });
+      // Reuse existing source if it exists — just update data in place (no layer add/remove).
+      // This avoids triggering MapLibre style recalculation which can cause other layers to
+      // partially vanish. Layers are created only once; subsequent renders just swap the data.
+      const existingSource = this.map.getSource?.(this.sourceId) as
+        | { setData?: (data: unknown) => void }
+        | undefined;
 
-      // Add fill layer (above polygons, below points). Do not pass undefined as second arg (MapTiler coalesceChanges).
-      if (this.fillLayerId) {
-        const fillSpec = {
-          id: this.fillLayerId,
-          type: 'fill',
-          source: this.sourceId,
-          paint: {
-            'fill-color': this.color,
-            'fill-opacity': this.opacity,
-            'fill-antialias': false,
-          },
-        };
-        if (beforeLayerId != null) {
-          this.map.addLayer(fillSpec, beforeLayerId);
-        } else {
-          this.map.addLayer(fillSpec);
-        }
-      }
+      if (existingSource && typeof existingSource.setData === 'function') {
+        debug.log('[Isochrone] fetchAndRenderIsochrone updating source in-place', {
+          sourceId: this.sourceId,
+        });
+        existingSource.setData(processedData);
 
-      // Add line layer (above polygons, below points) - skip for H3 rendering to avoid stroke on hexagons
-      if (this.lineLayerId && this.strokeWidth > 0 && this.render !== 'h3') {
-        const lineSpec = {
-          id: this.lineLayerId,
-          type: 'line',
-          source: this.sourceId,
-          paint: {
-            'line-color': this.strokeColor,
-            'line-width': this.strokeWidth,
-            'line-blur': 1, // Soften edges
-          },
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round',
-          },
-        };
-        if (beforeLayerId != null) {
-          this.map.addLayer(lineSpec, beforeLayerId);
-        } else {
-          this.map.addLayer(lineSpec);
-        }
-      }
-
-      // Ensure isochrone is above selected polygon (DMA) but below point/glow: move both layers before first venue layer
-      const firstVenueLayerId = this._findFirstVenueLayerId();
-      if (firstVenueLayerId && this.map.moveLayer && this.map.getLayer?.(firstVenueLayerId)) {
+        // Update paint properties in case color/opacity/stroke changed
         try {
-          if (this.lineLayerId && this.map.getLayer?.(this.lineLayerId)) {
-            this.map.moveLayer(this.lineLayerId, firstVenueLayerId);
-          }
           if (this.fillLayerId && this.map.getLayer?.(this.fillLayerId)) {
-            this.map.moveLayer(this.fillLayerId, firstVenueLayerId);
+            this.map.setPaintProperty?.(this.fillLayerId, 'fill-color', this.color);
+            this.map.setPaintProperty?.(this.fillLayerId, 'fill-opacity', this.opacity);
           }
-        } catch (err) {
-          debug.warn('[Isochrone] moveLayer failed', { firstVenueLayerId, err });
+          if (this.lineLayerId && this.map.getLayer?.(this.lineLayerId)) {
+            this.map.setPaintProperty?.(this.lineLayerId, 'line-color', this.strokeColor);
+            this.map.setPaintProperty?.(this.lineLayerId, 'line-width', this.strokeWidth);
+          }
+        } catch (paintErr) {
+          debug.warn('[Isochrone] setPaintProperty failed', paintErr);
+        }
+      } else {
+        // First render: create source + layers once
+        // Find first circle layer to insert before (isochrones should be below points)
+        const beforeLayerId = this.findFirstCircleLayer();
+
+        debug.log('[Isochrone] fetchAndRenderIsochrone creating source + layers', {
+          sourceId: this.sourceId,
+          fillLayerId: this.fillLayerId,
+          lineLayerId: this.lineLayerId,
+          beforeLayerId,
+        });
+        this.map.addSource(this.sourceId, {
+          type: 'geojson',
+          data: processedData,
+        });
+
+        // Add fill layer (above polygons, below points). Do not pass undefined as second arg (MapTiler coalesceChanges).
+        if (this.fillLayerId) {
+          const fillSpec = {
+            id: this.fillLayerId,
+            type: 'fill',
+            source: this.sourceId,
+            paint: {
+              'fill-color': this.color,
+              'fill-opacity': this.opacity,
+              'fill-antialias': false,
+            },
+          };
+          if (beforeLayerId != null) {
+            this.map.addLayer(fillSpec, beforeLayerId);
+          } else {
+            this.map.addLayer(fillSpec);
+          }
+        }
+
+        // Add line layer (above polygons, below points) - skip for H3 rendering to avoid stroke on hexagons
+        if (this.lineLayerId && this.strokeWidth > 0 && this.render !== 'h3') {
+          const lineSpec = {
+            id: this.lineLayerId,
+            type: 'line',
+            source: this.sourceId,
+            paint: {
+              'line-color': this.strokeColor,
+              'line-width': this.strokeWidth,
+              'line-blur': 1, // Soften edges
+            },
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+            },
+          };
+          if (beforeLayerId != null) {
+            this.map.addLayer(lineSpec, beforeLayerId);
+          } else {
+            this.map.addLayer(lineSpec);
+          }
+        }
+
+        // Ensure isochrone is above selected polygon (DMA) but below point/glow
+        const firstVenueLayerId = this._findFirstVenueLayerId();
+        if (firstVenueLayerId && this.map.moveLayer && this.map.getLayer?.(firstVenueLayerId)) {
+          try {
+            if (this.lineLayerId && this.map.getLayer?.(this.lineLayerId)) {
+              this.map.moveLayer(this.lineLayerId, firstVenueLayerId);
+            }
+            if (this.fillLayerId && this.map.getLayer?.(this.fillLayerId)) {
+              this.map.moveLayer(this.fillLayerId, firstVenueLayerId);
+            }
+          } catch (err) {
+            debug.warn('[Isochrone] moveLayer failed', { firstVenueLayerId, err });
+          }
         }
       }
 
-      debug.log(
-        '[Isochrone] fetchAndRenderIsochrone done (source + layers added, restore complete)'
-      );
+      debug.log('[Isochrone] fetchAndRenderIsochrone done');
       // Dispatch event immediately after we have the data
       // This allows demographics to start calculating concurrently with map rendering
       // Demographics only need the polygon geometry, not the visual rendering
