@@ -23,6 +23,7 @@ import { haversineMeters } from '../distance/haversine';
 import { pointInGeometry } from '../containment/point-in-geometry';
 import { getProviderForCapability } from '../../api/providers/registry';
 import { polygonToH3 } from '../h3';
+import { getBounds } from '../bounds';
 
 /**
  * H3-to-ZIP index for instant lookups
@@ -482,34 +483,6 @@ export function filterZipsByPolygon(
 }
 
 /**
- * Get the bounding box of a polygon
- */
-function getPolygonBounds(polygon: Polygon | MultiPolygon): {
-  minLng: number;
-  maxLng: number;
-  minLat: number;
-  maxLat: number;
-} {
-  let minLng = Infinity;
-  let maxLng = -Infinity;
-  let minLat = Infinity;
-  let maxLat = -Infinity;
-
-  const rings = polygon.type === 'Polygon' ? polygon.coordinates : polygon.coordinates.flat();
-
-  for (const ring of rings) {
-    for (const [lng, lat] of ring) {
-      if (lng < minLng) minLng = lng;
-      if (lng > maxLng) maxLng = lng;
-      if (lat < minLat) minLat = lat;
-      if (lat > maxLat) maxLat = lat;
-    }
-  }
-
-  return { minLng, maxLng, minLat, maxLat };
-}
-
-/**
  * Find ZIP codes within an isochrone polygon
  *
  * Uses H3 index for instant lookups if available (no API calls).
@@ -550,9 +523,10 @@ export async function findZipsInPolygon(
     // Best cache key: store location + mode + time (covers all isochrone variations)
     cacheKey = `iso:${centerLat.toFixed(4)},${centerLng.toFixed(4)}:${options.mode}:${options.timeMinutes}`;
   } else {
-    // Fallback: polygon bounds
-    const bounds = getPolygonBounds(polygon);
-    cacheKey = `poly3:${centerLat.toFixed(4)},${centerLng.toFixed(4)}:${bounds.minLng.toFixed(3)},${bounds.minLat.toFixed(3)},${bounds.maxLng.toFixed(3)},${bounds.maxLat.toFixed(3)}`;
+    // Fallback: polygon bounds (use shared getBounds / Turf)
+    const b = getBounds([polygon]);
+    const [minLng, minLat, maxLng, maxLat] = b ?? [0, 0, 0, 0];
+    cacheKey = `poly3:${centerLat.toFixed(4)},${centerLng.toFixed(4)}:${minLng.toFixed(3)},${minLat.toFixed(3)},${maxLng.toFixed(3)},${maxLat.toFixed(3)}`;
   }
   const cached = zipCache.get(cacheKey);
   if (cached) {
