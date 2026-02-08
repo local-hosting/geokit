@@ -590,6 +590,15 @@ export async function findZipsInPolygon(
   return zipArray;
 }
 
+/** Average travel speeds by mode */
+const TRAVEL_SPEEDS_KMH: Record<string, number> = {
+  driving: 50, // ~30 mph average (accounting for traffic, turns)
+  cycling: 15, // ~9 mph average
+  walking: 5, // ~3 mph average
+};
+
+const KM_TO_MILES = 0.621371;
+
 /**
  * Estimate travel radius in meters based on travel time and mode
  *
@@ -598,17 +607,22 @@ export async function findZipsInPolygon(
  * @returns Estimated radius in meters
  */
 export function estimateTravelRadius(timeMinutes: number, mode: string): number {
-  // Average speeds in km/h
-  const speeds: Record<string, number> = {
-    driving: 50, // ~30 mph average (accounting for traffic, turns)
-    cycling: 15, // ~9 mph average
-    walking: 5, // ~3 mph average
-  };
-
-  const speedKmh = speeds[mode] || speeds.driving;
+  const speedKmh = TRAVEL_SPEEDS_KMH[mode] || TRAVEL_SPEEDS_KMH.driving;
   const distanceKm = (speedKmh * timeMinutes) / 60;
-
   return distanceKm * 1000; // Convert to meters
+}
+
+/**
+ * Estimate travel radius in miles based on travel time and mode.
+ * Convenience wrapper around {@link estimateTravelRadius}.
+ *
+ * @param timeMinutes - Travel time in minutes
+ * @param mode - Travel mode (driving, walking, cycling)
+ * @returns Estimated radius in miles
+ */
+export function estimateTravelRadiusMiles(timeMinutes: number, mode: string): number {
+  const meters = estimateTravelRadius(timeMinutes, mode);
+  return (meters / 1000) * KM_TO_MILES;
 }
 
 /**
