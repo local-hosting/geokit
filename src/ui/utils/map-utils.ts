@@ -176,6 +176,86 @@ export function isMapStyleLoaded(map: MapInstance | null): boolean {
 }
 
 // ============================================================================
+// Map State Utilities
+// ============================================================================
+
+/**
+ * Check if a map instance is in a usable state.
+ *
+ * More defensive than `isMapStyleLoaded` — catches exceptions thrown by
+ * destroyed/frozen map instances (e.g. after a component unmounts or a
+ * map-collection pool recycles the element) and verifies `getStyle()`
+ * returns a valid style object with sources.
+ *
+ * Use this as a guard before any map SDK call that could throw on a
+ * stale reference.
+ *
+ * @param map - MapInstance (or null/undefined)
+ * @returns true when the map can safely accept addLayer/setData/etc. calls
+ *
+ * @example
+ * ```ts
+ * if (!isMapUsable(map)) return;
+ * map.addLayer(layerSpec);
+ * ```
+ */
+export function isMapUsable(map: MapInstance | null | undefined): boolean {
+  if (!map) return false;
+  try {
+    const style = map.getStyle?.();
+    if (!style) return false;
+    if (typeof style === 'object' && !(style as Record<string, unknown>).sources) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================================
+// Source Data Utilities
+// ============================================================================
+
+/**
+ * Safely update GeoJSON source data on a raw MapInstance.
+ *
+ * This is the standalone equivalent of `MapElement.updateSourceData()`.
+ * Use it when you only have a MapInstance reference (not a gk-map element).
+ *
+ * Guards against:
+ * - Missing source (returns false)
+ * - Source without `setData` method (returns false)
+ * - Exceptions from destroyed maps (returns false)
+ *
+ * @param map      - MapInstance to update
+ * @param sourceId - GeoJSON source ID
+ * @param data     - New GeoJSON data to set
+ * @returns true if the update succeeded, false otherwise
+ *
+ * @example
+ * ```ts
+ * const ok = updateSourceData(map, 'venues', featureCollection);
+ * if (!ok) console.warn('Source update failed');
+ * ```
+ */
+export function updateSourceData(
+  map: MapInstance | null | undefined,
+  sourceId: string,
+  data: unknown
+): boolean {
+  if (!map) return false;
+  try {
+    const source = map.getSource?.(sourceId);
+    if (!source) return false;
+    if (typeof (source as any).setData !== 'function') return false;
+    (source as any).setData(data);
+    return true;
+  } catch (error) {
+    console.warn(`[geokit] Failed to update source: ${sourceId}`, error);
+    return false;
+  }
+}
+
+// ============================================================================
 // Cursor Management Utilities
 // ============================================================================
 
