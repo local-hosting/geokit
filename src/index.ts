@@ -388,6 +388,7 @@ export {
   filterZipsByPolygon,
   findZipsInPolygon,
   estimateTravelRadius,
+  estimateTravelRadiusMiles,
   clearZipCache,
 } from './utils/demographics/zipcode';
 
@@ -405,3 +406,11 @@ export { topoFeature, topoMerge, topoMesh, topoNeighbors, topoObjectNames } from
 // Cache utilities
 export type { CacheOptions, CacheStats } from './utils/cache';
 export { GeoCache, roundForCacheKey, coordinateCacheKey } from './utils/cache';
+
+// Retry utilities
+export type { RetryOptions } from './utils/retry';
+export { withRetry, delay } from './utils/retry';
+
+// Logger utilities
+export type { LoggerOptions, DebugLogger, Logger } from './utils/logger';
+export { createLogger } from './utils/logger';
