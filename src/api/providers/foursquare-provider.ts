@@ -19,6 +19,10 @@ import {
   type PlaceSearchResult,
 } from './types';
 import { ProviderCache, coordinateCacheKey } from './cache';
+import { RequestQueue } from './request-queue';
+import { requireAPIKey, assertResponseOk, retryOn429 } from './api-utils';
+
+const PROVIDER_NAME = 'Foursquare';
 
 export class FoursquareAPIProvider extends BaseAPIProvider {
   protected config: MapProviderConfig | null = null;
@@ -31,17 +35,8 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
     name: 'FoursquareCache',
   });
 
-  // Rate limiting: queue requests and process with concurrency control
-  private requestQueue: Array<{
-    resolve: (value: PlaceSearchResult[]) => void;
-    reject: (error: Error) => void;
-    fn: () => Promise<PlaceSearchResult[]>;
-  }> = [];
-  private isProcessingQueue = false;
-  private readonly MAX_CONCURRENT = 6;
-  private readonly REQUEST_DELAY_MS = 50;
-  private readonly MAX_RETRIES = 3;
-  private readonly RETRY_DELAY_MS = 1000;
+  // Rate-limited request queue
+  private queue = new RequestQueue({ maxConcurrent: 6, batchDelayMs: 50 });
 
   constructor() {
     super();
@@ -70,9 +65,7 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
    * Search for places/venues
    */
   async placeSearch(options: PlaceSearchOptions): Promise<PlaceSearchResult[]> {
-    if (!this.apiKey) {
-      throw new Error('Foursquare API Provider: No API key configured.');
-    }
+    requireAPIKey(this.apiKey, `${PROVIDER_NAME} API Provider`);
 
     // Must have either query or ll (location)
     if (!options.query && !options.ll) {
@@ -89,60 +82,7 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
     }
 
     // Queue the actual API request with rate limiting
-    return this.queueRequest(() => this.placeSearchInternal(options, cacheKey));
-  }
-
-  /**
-   * Queue a request for rate-limited execution
-   */
-  private queueRequest(fn: () => Promise<PlaceSearchResult[]>): Promise<PlaceSearchResult[]> {
-    return new Promise((resolve, reject) => {
-      this.requestQueue.push({ resolve, reject, fn });
-      this.processQueue();
-    });
-  }
-
-  /**
-   * Process the request queue with concurrent execution
-   */
-  private async processQueue(): Promise<void> {
-    if (this.isProcessingQueue) return;
-    this.isProcessingQueue = true;
-
-    while (this.requestQueue.length > 0) {
-      // Take up to MAX_CONCURRENT requests from the queue
-      const batch: typeof this.requestQueue = [];
-      while (batch.length < this.MAX_CONCURRENT && this.requestQueue.length > 0) {
-        const request = this.requestQueue.shift();
-        if (request) batch.push(request);
-      }
-
-      // Execute batch concurrently
-      await Promise.all(
-        batch.map(async (request) => {
-          try {
-            const result = await request.fn();
-            request.resolve(result);
-          } catch (error) {
-            request.reject(error instanceof Error ? error : new Error(String(error)));
-          }
-        })
-      );
-
-      // Small delay between batches to avoid overwhelming the API
-      if (this.requestQueue.length > 0) {
-        await this.delay(this.REQUEST_DELAY_MS);
-      }
-    }
-
-    this.isProcessingQueue = false;
-  }
-
-  /**
-   * Utility delay function
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return this.queue.enqueue(() => this.placeSearchInternal(options, cacheKey));
   }
 
   /**
@@ -150,8 +90,7 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
    */
   private async placeSearchInternal(
     options: PlaceSearchOptions,
-    cacheKey: string,
-    retryCount = 0
+    cacheKey: string
   ): Promise<PlaceSearchResult[]> {
     const {
       query,
@@ -210,34 +149,19 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
         'fsq_id,name,geocodes,location,categories,distance,rating,price,hours,tel,website'
       );
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          Authorization: this.apiKey!,
-          Accept: 'application/json',
-        },
+      const fetchFn = () =>
+        fetch(url.toString(), {
+          headers: {
+            Authorization: this.apiKey!,
+            Accept: 'application/json',
+          },
+        });
+
+      const response = await retryOn429(fetchFn, {
+        providerName: PROVIDER_NAME,
       });
 
-      // Handle rate limiting with exponential backoff
-      if (response.status === 429) {
-        if (retryCount < this.MAX_RETRIES) {
-          const retryDelay = this.RETRY_DELAY_MS * Math.pow(2, retryCount);
-          console.warn(
-            `[Foursquare] Rate limited, retrying in ${retryDelay}ms (attempt ${retryCount + 1}/${this.MAX_RETRIES})`
-          );
-          await this.delay(retryDelay);
-          return this.placeSearchInternal(options, cacheKey, retryCount + 1);
-        }
-        throw new Error('Foursquare API error: 429 - Too Many Requests (max retries exceeded)');
-      }
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(
-          `Foursquare API error: ${response.status} ${response.statusText}${
-            (error as any).message ? ` - ${(error as any).message}` : ''
-          }`
-        );
-      }
+      await assertResponseOk(response, PROVIDER_NAME);
 
       const data = await response.json();
 
