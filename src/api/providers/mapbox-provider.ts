@@ -21,7 +21,11 @@ import {
   type ReverseGeocodeResult,
 } from './types';
 import { ProviderCache, coordinateCacheKey } from './cache';
+import { RequestQueue } from './request-queue';
+import { assertResponseOk, retryOn429 } from './api-utils';
 import type { FeatureCollection } from 'geojson';
+
+const PROVIDER_NAME = 'Mapbox';
 
 export class MapboxAPIProvider extends BaseAPIProvider {
   protected config: MapProviderConfig | null = null;
@@ -34,18 +38,8 @@ export class MapboxAPIProvider extends BaseAPIProvider {
     name: 'MapboxCache',
   });
 
-  // Rate limiting: queue requests and process with concurrency control
-  private requestQueue: Array<{
-    resolve: (value: FeatureCollection) => void;
-    reject: (error: Error) => void;
-    fn: () => Promise<FeatureCollection>;
-  }> = [];
-  private isProcessingQueue = false;
-  private activeRequests = 0;
-  private readonly MAX_CONCURRENT = 6; // Process up to 6 requests at a time
-  private readonly REQUEST_DELAY_MS = 50; // 50ms between batches
-  private readonly MAX_RETRIES = 3;
-  private readonly RETRY_DELAY_MS = 1000; // Start with 1 second retry delay
+  // Rate-limited request queue
+  private queue = new RequestQueue({ maxConcurrent: 6, batchDelayMs: 50 });
 
   constructor() {
     super();
@@ -91,60 +85,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
     }
 
     // Queue the actual API request with rate limiting
-    return this.queueRequest(() => this.fetchIsochroneInternal(options, cacheKey));
-  }
-
-  /**
-   * Queue a request for rate-limited execution
-   */
-  private queueRequest(fn: () => Promise<FeatureCollection>): Promise<FeatureCollection> {
-    return new Promise((resolve, reject) => {
-      this.requestQueue.push({ resolve, reject, fn });
-      this.processQueue();
-    });
-  }
-
-  /**
-   * Process the request queue with concurrent execution
-   */
-  private async processQueue(): Promise<void> {
-    if (this.isProcessingQueue) return;
-    this.isProcessingQueue = true;
-
-    while (this.requestQueue.length > 0) {
-      // Take up to MAX_CONCURRENT requests from the queue
-      const batch: typeof this.requestQueue = [];
-      while (batch.length < this.MAX_CONCURRENT && this.requestQueue.length > 0) {
-        const request = this.requestQueue.shift();
-        if (request) batch.push(request);
-      }
-
-      // Execute batch concurrently
-      await Promise.all(
-        batch.map(async (request) => {
-          try {
-            const result = await request.fn();
-            request.resolve(result);
-          } catch (error) {
-            request.reject(error instanceof Error ? error : new Error(String(error)));
-          }
-        })
-      );
-
-      // Small delay between batches to avoid overwhelming the API
-      if (this.requestQueue.length > 0) {
-        await this.delay(this.REQUEST_DELAY_MS);
-      }
-    }
-
-    this.isProcessingQueue = false;
-  }
-
-  /**
-   * Utility delay function
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return this.queue.enqueue(() => this.fetchIsochroneInternal(options, cacheKey));
   }
 
   /**
@@ -152,8 +93,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
    */
   private async fetchIsochroneInternal(
     options: IsochroneOptions,
-    cacheKey: string,
-    retryCount = 0
+    cacheKey: string
   ): Promise<FeatureCollection> {
     const { lat, lng, minutes, mode, colors } = options;
 
@@ -191,10 +131,13 @@ export class MapboxAPIProvider extends BaseAPIProvider {
         url.searchParams.set('contours_colors', mapboxColors.join(','));
       }
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          Referer: 'http://localhost:5173/', // Bypass referrer restrictions
-        },
+      const fetchFn = () =>
+        fetch(url.toString(), {
+          headers: { Referer: 'http://localhost:5173/' },
+        });
+
+      const response = await retryOn429(fetchFn, {
+        providerName: PROVIDER_NAME,
       });
 
       // Handle case where fetch returns undefined (network unavailable)
@@ -204,27 +147,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
         );
       }
 
-      // Handle rate limiting with exponential backoff
-      if (response.status === 429) {
-        if (retryCount < this.MAX_RETRIES) {
-          const retryDelay = this.RETRY_DELAY_MS * Math.pow(2, retryCount);
-          console.warn(
-            `[Mapbox] Rate limited, retrying in ${retryDelay}ms (attempt ${retryCount + 1}/${this.MAX_RETRIES})`
-          );
-          await this.delay(retryDelay);
-          return this.fetchIsochroneInternal(options, cacheKey, retryCount + 1);
-        }
-        throw new Error('Mapbox API error: 429 - Too Many Requests (max retries exceeded)');
-      }
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(
-          `Mapbox API error: ${response.status} ${response.statusText}${
-            (error as any).message ? ` - ${(error as any).message}` : ''
-          }`
-        );
-      }
+      await assertResponseOk(response, PROVIDER_NAME);
 
       const data = await response.json();
       const result = data as FeatureCollection;
@@ -271,22 +194,13 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       url.searchParams.set('geometries', 'geojson');
       url.searchParams.set('overview', 'full');
       url.searchParams.set('alternatives', alternatives.toString());
-      url.searchParams.set('access_token', this.accessToken);
+      url.searchParams.set('access_token', this.accessToken!);
 
       const response = await fetch(url.toString(), {
-        headers: {
-          Referer: 'http://localhost:5173/', // Bypass referrer restrictions
-        },
+        headers: { Referer: 'http://localhost:5173/' },
       });
 
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(
-          `Mapbox API error: ${response.status} ${response.statusText}${
-            (error as any).message ? ` - ${(error as any).message}` : ''
-          }`
-        );
-      }
+      await assertResponseOk(response, PROVIDER_NAME);
 
       const data = await response.json();
 
@@ -333,7 +247,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       const url = new URL(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`
       );
-      url.searchParams.set('access_token', this.accessToken);
+      url.searchParams.set('access_token', this.accessToken!);
       url.searchParams.set('limit', limit.toString());
 
       if (proximity) {
@@ -345,19 +259,10 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       }
 
       const response = await fetch(url.toString(), {
-        headers: {
-          Referer: 'http://localhost:5173/',
-        },
+        headers: { Referer: 'http://localhost:5173/' },
       });
 
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(
-          `Mapbox API error: ${response.status} ${response.statusText}${
-            (error as any).message ? ` - ${(error as any).message}` : ''
-          }`
-        );
-      }
+      await assertResponseOk(response, PROVIDER_NAME);
 
       const data = await response.json();
 
@@ -400,7 +305,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
     try {
       // Mapbox reverse geocoding: pass coordinates as the query
       const url = new URL(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json`);
-      url.searchParams.set('access_token', this.accessToken);
+      url.searchParams.set('access_token', this.accessToken!);
       url.searchParams.set('limit', limit.toString());
 
       // Filter by types if specified (e.g., 'postcode' for ZIP codes)
@@ -409,19 +314,10 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       }
 
       const response = await fetch(url.toString(), {
-        headers: {
-          Referer: 'http://localhost:5173/',
-        },
+        headers: { Referer: 'http://localhost:5173/' },
       });
 
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(
-          `Mapbox API error: ${response.status} ${response.statusText}${
-            (error as any).message ? ` - ${(error as any).message}` : ''
-          }`
-        );
-      }
+      await assertResponseOk(response, PROVIDER_NAME);
 
       const data = await response.json();
       const featureCollection = data as FeatureCollection;
