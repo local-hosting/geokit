@@ -3590,7 +3590,19 @@ export class MapElement extends BaseElement {
       styles?: Partial<CSSStyleDeclaration>;
     } = {}
   ): MapElement {
-    const map = new MapElement();
+    // Must use createElement so the browser uses the registered custom element constructor (new MapElement() throws Illegal constructor once defined).
+    // Use exactly one argument: some environments throw NotSupportedError if a second argument (e.g. options) is passed.
+    let map: MapElement;
+    try {
+      map = document.createElement('gk-map') as MapElement;
+    } catch {
+      // Fallback when createElement('gk-map') throws (e.g. cached bundle passing options, or strict UA)
+      const wrap = document.createElement('div');
+      wrap.innerHTML = '<gk-map></gk-map>';
+      const el = wrap.firstElementChild;
+      if (!el) throw new Error('Failed to create gk-map');
+      map = el as MapElement;
+    }
 
     // Set ID if provided
     if (options.id) {
@@ -3679,9 +3691,11 @@ export class MapElement extends BaseElement {
   ): MapElement {
     const map = MapElement.create(options);
 
-    // Add controls
-    for (const controlConfig of controls) {
-      map.addControl(controlConfig);
+    // Add controls only if the instance has addControl (always true when create() uses createElement)
+    if (typeof map.addControl === 'function') {
+      for (const controlConfig of controls) {
+        map.addControl(controlConfig);
+      }
     }
 
     return map;
