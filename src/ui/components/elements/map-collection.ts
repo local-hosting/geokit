@@ -40,6 +40,10 @@ const CONCURRENT_ACTIVATION_BATCH = 2;
 const MAX_FAIL_COUNT = 3; // Max retries before giving up
 const RETRY_BACKOFF_MS = 2000; // Wait 2s between retries
 
+// Only activate slots that actually intersect the visible viewport (small margin).
+// IntersectionObserver uses a large rootMargin so we filter here to avoid activating maps above/below the fold.
+const ACTIVATION_VIEWPORT_MARGIN_PX = 50;
+
 function mapCollectionDebug(msg: string, data?: Record<string, unknown>): void {
   if (
     typeof window !== 'undefined' &&
@@ -76,6 +80,7 @@ export class MapCollectionElement extends BaseElement {
   private _maxZoom: number | null = null;
   private scrollDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private handleNewMapsRafId: number | null = null;
+  private handleNewMapsDelayId: ReturnType<typeof setTimeout> | null = null;
   private isProcessing: boolean = false; // Lock to prevent concurrent processing
   private pendingReprocess: boolean = false; // Track if reprocess needed after current run
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
@@ -177,7 +182,9 @@ export class MapCollectionElement extends BaseElement {
     // Build slots array FIRST - no placeholders during initial setup (they'll show when we actually load)
     // This prevents "Loading..." flash during scroll
     this.slots = mapElements.map((mapElement) => {
-      mapElement.setPoolManaged(true);
+      if (typeof mapElement.setPoolManaged === 'function') {
+        mapElement.setPoolManaged(true);
+      }
       // Don't show placeholder here - wait until processVisibilityChanges decides to load
       return {
         slotElement: mapElement,
@@ -306,11 +313,23 @@ export class MapCollectionElement extends BaseElement {
     this.syncActiveCount();
 
     const now = Date.now();
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 0;
+    const margin = ACTIVATION_VIEWPORT_MARGIN_PX;
+
+    // Clamp isVisible to strict viewport so we don't activate maps above/below the fold
+    // (IntersectionObserver uses large rootMargin; slots outside viewport can be frozen when we need room)
+    for (const slot of this.slots) {
+      const rect = slot.slotElement.getBoundingClientRect();
+      const inViewport = rect.bottom > -margin && rect.top < vh + margin;
+      if (!inViewport) {
+        slot.isVisible = false;
+      }
+    }
 
     try {
       // Find visible slots that need activation (not already active or being activated)
       // Skip slots that failed recently (backoff) or exceeded max retries
-      const visibleInactive = this.slots.filter((s) => {
+      let visibleInactive = this.slots.filter((s) => {
         if (!s.isVisible || s.isActive || s.isActivating) return false;
         // Skip if exceeded max retries
         if (s.failCount >= MAX_FAIL_COUNT) return false;
@@ -319,13 +338,23 @@ export class MapCollectionElement extends BaseElement {
         return true;
       });
 
+      // Restrict to slots that actually intersect the visible viewport (already clamped above)
+      visibleInactive = visibleInactive.filter((s) => {
+        const rect = s.slotElement.getBoundingClientRect();
+        return rect.bottom > -margin && rect.top < vh + margin;
+      });
+
       if (visibleInactive.length === 0) return;
 
       // Show placeholders immediately for all visible maps that will load
       // This gives instant feedback that maps are about to load
       for (const slot of visibleInactive) {
-        if (!slot.mapElement.hasPlaceholder() && !(slot.mapElement as any).isInitialized) {
-          slot.mapElement.showPlaceholder();
+        const el = slot.mapElement;
+        const hasPlaceholder =
+          typeof el.hasPlaceholder === 'function' ? el.hasPlaceholder() : false;
+        const isInit = (el as unknown as { isInitialized?: boolean }).isInitialized;
+        if (!hasPlaceholder && !isInit && typeof el.showPlaceholder === 'function') {
+          el.showPlaceholder();
         }
       }
 
@@ -341,19 +370,19 @@ export class MapCollectionElement extends BaseElement {
         return distA - distB;
       });
 
-      // Calculate how many we can activate (up to pool size)
-      const availableSlots = this.poolSize - this.activeCount;
-      const toActivate = sortedVisibleInactive.slice(0, Math.max(availableSlots, 0));
-
-      // If we need more room, freeze invisible maps first
+      // Make room first: freeze invisible maps so we have slots for newly visible ones (e.g. NY/LA on scroll up)
+      let availableSlots = this.poolSize - this.activeCount;
       if (visibleInactive.length > availableSlots) {
         const needed = Math.min(visibleInactive.length - availableSlots, this.activeCount);
         for (let i = 0; i < needed; i++) {
           await this.deactivateOneInvisible();
-          // Small delay to ensure WebGL context is fully released
           await new Promise((resolve) => setTimeout(resolve, 50));
         }
+        availableSlots = this.poolSize - this.activeCount;
       }
+
+      // Now compute who to activate (after making room)
+      const toActivate = sortedVisibleInactive.slice(0, Math.max(availableSlots, 0));
 
       // Activate maps in small parallel batches to speed load (batch size limits WebGL pressure)
       for (let i = 0; i < toActivate.length; i += CONCURRENT_ACTIVATION_BATCH) {
@@ -457,13 +486,19 @@ export class MapCollectionElement extends BaseElement {
         poolSize: this.poolSize,
         placeholderText: placeholderBefore?.textContent?.slice(0, 30) ?? null,
       });
-      slotInfo.mapElement.ensureAttributes({
-        apiKey: this.apiKey,
-        provider: 'maptiler',
-        mapStyle: this.mapStyle,
-        minZoom: this.minZoom,
-        maxZoom: this.maxZoom,
-      });
+      if (typeof slotInfo.mapElement.ensureAttributes === 'function') {
+        slotInfo.mapElement.ensureAttributes({
+          apiKey: this.apiKey,
+          provider: 'maptiler',
+          mapStyle: this.mapStyle,
+          minZoom: this.minZoom,
+          maxZoom: this.maxZoom,
+        });
+      }
+      if (typeof slotInfo.mapElement.unfreeze !== 'function') {
+        mapCollectionDebug('activateSlot: mapElement.unfreeze not available', { slotIndex });
+        return;
+      }
       const success = await slotInfo.mapElement.unfreeze(this.activeCount - 1);
       mapCollectionDebug('activateSlot: unfreeze returned', {
         slotIndex,
@@ -614,7 +649,9 @@ export class MapCollectionElement extends BaseElement {
 
     for (const mapElement of mapElements) {
       if (!existingElements.has(mapElement)) {
-        mapElement.setPoolManaged(true);
+        if (typeof mapElement.setPoolManaged === 'function') {
+          mapElement.setPoolManaged(true);
+        }
         // Don't show placeholder here - wait until processVisibilityChanges decides to load
         // This prevents "Loading..." flash during scroll
 
@@ -640,18 +677,36 @@ export class MapCollectionElement extends BaseElement {
       }
     }
 
-    // If we added new maps, let IntersectionObserver handle visibility detection
-    // Don't call processVisibilityChanges() immediately - the observer callback will do it
-    // after proper layout, which prevents WebGL context exhaustion from premature activation
+    // If we added new maps, let IntersectionObserver handle visibility detection.
+    // Also schedule a delayed run so slots that didn't get isVisible on first pass
+    // (e.g. bottom row in 2x3 grid) get a second chance and don't stay black.
     if (hasNewMaps) {
+      if (this.handleNewMapsDelayId) {
+        clearTimeout(this.handleNewMapsDelayId);
+        this.handleNewMapsDelayId = null;
+      }
+      this.handleNewMapsDelayId = setTimeout(() => {
+        this.handleNewMapsDelayId = null;
+        // Force visibility for slots in viewport that IntersectionObserver missed (e.g. bottom row)
+        const vh = typeof window !== 'undefined' ? window.innerHeight : 0;
+        const margin = ACTIVATION_VIEWPORT_MARGIN_PX;
+        for (const slot of this.slots) {
+          if (!slot.isVisible && !slot.isActive) {
+            const rect = slot.slotElement.getBoundingClientRect();
+            if (rect.bottom > -margin && rect.top < vh + margin) {
+              slot.isVisible = true;
+            }
+          }
+        }
+        this.processVisibilityChanges();
+      }, 250);
       if (typeof window !== 'undefined' && (window as any).__GEOVIEW_DEBUG__) {
         console.log(
           '[map-collection] handleNewMaps done, slots:',
           this.slots.length,
-          '(waiting for IntersectionObserver)'
+          '(IntersectionObserver + 250ms fallback)'
         );
       }
-      // Note: IntersectionObserver will fire async after layout and call processVisibilityChanges
     }
   }
 
@@ -809,7 +864,9 @@ export class MapCollectionElement extends BaseElement {
                   this.activeCount--;
                   slot.failCount = 0;
                   slot.lastFailTime = 0;
-                  slot.mapElement.showPlaceholder('Loading...');
+                  if (typeof slot.mapElement.showPlaceholder === 'function') {
+                    slot.mapElement.showPlaceholder('Loading...');
+                  }
                   setTimeout(() => this.activateSlot(slot), 1500);
                 }
               } else {
@@ -820,7 +877,9 @@ export class MapCollectionElement extends BaseElement {
                 if (styleLoaded) {
                   slot.firstSeenRestoringAt = 0;
                   (slot.mapElement as unknown as { isInitialized: boolean }).isInitialized = true;
-                  slot.mapElement.hidePlaceholder();
+                  if (typeof slot.mapElement.hidePlaceholder === 'function') {
+                    slot.mapElement.hidePlaceholder();
+                  }
                 }
               }
             }
@@ -893,6 +952,10 @@ export class MapCollectionElement extends BaseElement {
     if (this.handleNewMapsRafId !== null) {
       cancelAnimationFrame(this.handleNewMapsRafId);
       this.handleNewMapsRafId = null;
+    }
+    if (this.handleNewMapsDelayId !== null) {
+      clearTimeout(this.handleNewMapsDelayId);
+      this.handleNewMapsDelayId = null;
     }
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
