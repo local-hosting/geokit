@@ -341,16 +341,16 @@ export class MapElement extends BaseElement {
         interactive: this.getAttribute('interactive') !== 'false',
       };
 
-      // Probe for WebGL context before creating map to avoid "context already lost" when at limit
-      if (!this.canAcquireWebGLContext()) {
-        debug.warn('[gk-map] WebGL context unavailable (e.g. too many maps), skipping createMap');
+      // Create map; if browser is at WebGL context limit, createMap may throw
+      try {
+        this.map = await provider.createMap(container, options);
+      } catch (err) {
+        debug.warn('[gk-map] Map creation failed (e.g. too many WebGL contexts):', err);
         this.showPlaceholder('Loading...');
         this.isInitialized = false;
         this._isInitializing = false;
         return;
       }
-
-      this.map = await provider.createMap(container, options);
 
       // Wrap queryRenderedFeatures so MapTiler SDK internal calls (e.g. mousemove) don't throw
       // "unknown feature value" when parsing vector tiles in Safari
@@ -695,26 +695,6 @@ export class MapElement extends BaseElement {
       }
     };
     map.on('styleimagemissing', this._styleImageMissingHandler);
-  }
-
-  /**
-   * Probe for WebGL context availability before creating a map.
-   * Avoids "INVALID_OPERATION: loseContext: context already lost" when the browser limit is reached.
-   */
-  private canAcquireWebGLContext(): boolean {
-    if (typeof document === 'undefined') return true;
-    try {
-      const canvas = document.createElement('canvas');
-      const gl =
-        canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) ||
-        canvas.getContext('webgl', { failIfMajorPerformanceCaveat: false });
-      if (!gl) return false;
-      const ext = gl.getExtension('WEBGL_lose_context');
-      if (ext) ext.loseContext();
-      return true;
-    } catch {
-      return false;
-    }
   }
 
   /**
