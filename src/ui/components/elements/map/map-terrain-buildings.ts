@@ -56,9 +56,8 @@ export function createTerrainZoomHandler(ctx: MapTerrainContext): (() => void) |
 
   const updateTerrain = (): void => {
     try {
-      const toggleEnabled =
-        ctx.getAttribute('terrain-enabled') !== null &&
-        ctx.getAttribute('terrain-enabled') !== 'false';
+      const enabledAttr = ctx.getAttribute('terrain-enabled');
+      const toggleEnabled = enabledAttr !== null && enabledAttr !== 'false';
       const currentZoom = map.getZoom?.() ?? 0;
       const zoomOk = currentZoom >= minZoom;
       if (toggleEnabled && zoomOk) {
@@ -281,12 +280,15 @@ export function setupHillshade(ctx: MapTerrainContext): (() => void) | null {
       const hasSource = !!map.getSource?.(HILLSHADE_SOURCE_ID);
       const hasLayer = !!map.getLayer?.(HILLSHADE_LAYER_ID);
 
+      debug.log('[gk-map] hillshade update', { enabled, hasSource, hasLayer, sourceUrl, opacity });
+
       if (enabled && !hasSource) {
         map.addSource(HILLSHADE_SOURCE_ID, {
           type: 'raster',
           url: sourceUrl,
           tileSize: 256,
         });
+        debug.log('[gk-map] hillshade: source added');
       }
 
       if (enabled && !hasLayer) {
@@ -305,14 +307,15 @@ export function setupHillshade(ctx: MapTerrainContext): (() => void) | null {
           id: HILLSHADE_LAYER_ID,
           type: 'raster',
           source: HILLSHADE_SOURCE_ID,
-          maxzoom: 12,
           paint: { 'raster-opacity': opacity },
         };
 
         if (beforeLayerId) {
           map.addLayer(layerSpec, beforeLayerId);
+          debug.log('[gk-map] hillshade: layer added before', beforeLayerId);
         } else {
           map.addLayer(layerSpec);
+          debug.log('[gk-map] hillshade: layer added (top)');
         }
       } else if (!enabled && hasLayer) {
         map.removeLayer(HILLSHADE_LAYER_ID);
