@@ -9,13 +9,13 @@
  * <gk-isochrone lat="40.7128" lng="-74.0060" time="15" mode="driving" render="h3" h3-resolution="7"></gk-isochrone>
  */
 
-import { MapChildElement } from '../map-child-element';
-import { getProviderForCapability } from '../../../api/providers/registry';
-import { polygonToH3, h3SetToMultiPolygon } from '../../../utils/h3';
-import { smoothFeatureCollection } from '../../../utils/smoothing';
-import { debug } from '../../utils/logger';
-import { getCSSVariable, getCSSVariableNumber } from '../../utils/theme';
-import type { Polygon } from '../../../types';
+import { MapChildElement } from '../../map-child-element';
+import { getProviderForCapability } from '../../../../api/providers/registry';
+import { smoothFeatureCollection } from '../../../../utils/smoothing';
+import { debug } from '../../../utils/logger';
+import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
+import { convertToH3 } from './isochrone-h3';
+import { getIsochroneCacheKey } from './isochrone-fetch';
 
 export interface IsochroneOptions {
   lat: number;
@@ -468,8 +468,7 @@ export class IsochroneElement extends MapChildElement {
     const canUseStoredData =
       storedData !== null && storedDataTime === time && storedDataMode === mode;
 
-    // Create cache key (include 'stored' suffix when using pre-computed data)
-    const cacheKey = `${lat},${lng},${time},${mode}${canUseStoredData ? ':stored' : ''}`;
+    const cacheKey = getIsochroneCacheKey(lat, lng, time, mode, canUseStoredData);
     if (cacheKey === this.currentCacheKey) {
       return;
     }
@@ -806,14 +805,20 @@ export class IsochroneElement extends MapChildElement {
         }
 
         // Try to convert from current source data (guard: source may have been removed by setStyle)
-        const upgradedData = this.convertToH3(source._data);
+        const upgradedData = convertToH3(source._data, this.h3Resolution, {
+          color: this.color,
+          opacity: this.opacity,
+        });
         this.applyUpgradedDataAndDispatch(source, upgradedData, targetResolution);
         return;
       }
 
       // Convert original raw polygon to H3 hexagons at target resolution
       // This is the expensive operation, but we're doing it during idle time
-      const upgradedData = this.convertToH3(originalData);
+      const upgradedData = convertToH3(originalData, this.h3Resolution, {
+        color: this.color,
+        opacity: this.opacity,
+      });
 
       // Validate conversion produced features
       if (!upgradedData || !upgradedData.features || upgradedData.features.length === 0) {
@@ -1010,76 +1015,6 @@ export class IsochroneElement extends MapChildElement {
       delete (this as any)._storedDataTime;
       delete (this as any)._storedDataMode;
     }
-  }
-
-  /**
-   * Convert isochrone polygons to H3 hexagons and merge them
-   */
-  private convertToH3(featureCollection: GeoJSON.FeatureCollection): GeoJSON.FeatureCollection {
-    const resolution = this.h3Resolution;
-    const processedFeatures: GeoJSON.Feature[] = [];
-
-    for (const feature of featureCollection.features) {
-      // Only process Polygon geometries (skip MultiPolygon from API)
-      if (feature.geometry.type !== 'Polygon') {
-        // If it's already a MultiPolygon, keep it as is
-        processedFeatures.push(feature);
-        continue;
-      }
-
-      const polygon = feature.geometry as Polygon;
-      const color = feature.properties?.fill || feature.properties?.color || this.color;
-      const contour = feature.properties?.contour;
-
-      try {
-        // Convert polygon to H3 cells
-        const hexagons = polygonToH3(polygon, resolution);
-
-        if (hexagons.length === 0) {
-          // If no hexagons found, keep original polygon
-          processedFeatures.push(feature);
-          continue;
-        }
-
-        // Sort H3 cells to ensure deterministic MultiPolygon generation
-        // This prevents the geometry from changing between page loads
-        const sortedHexagons = [...hexagons].sort();
-
-        // Merge all H3 cells into a continuous MultiPolygon
-        const mergedGeometry = h3SetToMultiPolygon(sortedHexagons);
-
-        // Validate merged geometry
-        if (
-          !mergedGeometry ||
-          !mergedGeometry.coordinates ||
-          mergedGeometry.coordinates.length === 0
-        ) {
-          processedFeatures.push(feature);
-          continue;
-        }
-
-        // Create new feature with merged geometry
-        processedFeatures.push({
-          type: 'Feature',
-          geometry: mergedGeometry as GeoJSON.MultiPolygon,
-          properties: {
-            ...feature.properties,
-            contour,
-            color,
-            fill: color,
-            'fill-opacity': this.opacity,
-          },
-        });
-      } catch {
-        // Fallback to original polygon on error
-        processedFeatures.push(feature);
-      }
-    }
-
-    return {
-      type: 'FeatureCollection',
-      features: processedFeatures,
-    };
   }
 
   // Public API

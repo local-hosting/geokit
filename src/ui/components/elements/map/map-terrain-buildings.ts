@@ -1,0 +1,244 @@
+/**
+ * Map terrain and 3D buildings (Single Responsibility: setup/cleanup terrain and buildings by zoom)
+ */
+
+import { debug } from '../../../utils/logger';
+import type { MapInstance } from '../../../providers/types';
+
+export interface MapTerrainContext {
+  getAttribute(name: string): string | null;
+  map: MapInstance | null;
+}
+
+const TERRAIN_SOURCE_ID = 'gk-terrain-dem';
+const BUILDINGS_LAYER_ID = 'gk-3d-buildings';
+
+/**
+ * Create zoom handler that toggles 3D terrain. Caller must attach to map.on('zoom', handler) and store handler for cleanup.
+ */
+export function createTerrainZoomHandler(ctx: MapTerrainContext): (() => void) | null {
+  const minZoomAttr = ctx.getAttribute('terrain-min-zoom');
+  if (minZoomAttr === null || minZoomAttr === '') return null;
+
+  const minZoom = parseFloat(minZoomAttr);
+  if (!Number.isFinite(minZoom) || !ctx.map) return null;
+
+  const map = ctx.map as any;
+  if (!map.addSource || !map.setTerrain) return null;
+
+  const explicitUrl = ctx.getAttribute('terrain-source-url')?.trim();
+  const provider = ctx.getAttribute('provider');
+  const apiKey = ctx.getAttribute('api-key');
+  const sourceUrl =
+    explicitUrl ||
+    (provider === 'maptiler' && apiKey
+      ? `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${apiKey}`
+      : 'https://demotiles.maplibre.org/terrain-tiles/tiles.json');
+  const exaggerationAttr = ctx.getAttribute('terrain-exaggeration');
+  const exaggeration = Number.isFinite(parseFloat(String(exaggerationAttr)))
+    ? parseFloat(String(exaggerationAttr))
+    : 1;
+
+  if (map.getSource?.(TERRAIN_SOURCE_ID)) return null;
+
+  try {
+    map.addSource(TERRAIN_SOURCE_ID, {
+      type: 'raster-dem',
+      url: sourceUrl,
+      tileSize: 256,
+    });
+  } catch (err) {
+    debug.warn('[gk-map] Failed to add terrain source', err);
+    return null;
+  }
+
+  const updateTerrain = (): void => {
+    try {
+      const toggleEnabled =
+        ctx.getAttribute('terrain-enabled') !== null &&
+        ctx.getAttribute('terrain-enabled') !== 'false';
+      const currentZoom = map.getZoom?.() ?? 0;
+      const zoomOk = currentZoom >= minZoom;
+      if (toggleEnabled && zoomOk) {
+        map.setTerrain?.({ source: TERRAIN_SOURCE_ID, exaggeration });
+      } else {
+        map.setTerrain?.(null);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  map.on('zoom', updateTerrain);
+  updateTerrain();
+  return updateTerrain;
+}
+
+/**
+ * Remove terrain listener and disable terrain.
+ */
+export function cleanupTerrain(map: MapInstance | null, handler: (() => void) | null): void {
+  const m = map as any;
+  if (handler && m?.off) {
+    try {
+      m.off('zoom', handler);
+    } catch {
+      // ignore
+    }
+  }
+  if (m?.setTerrain) {
+    try {
+      m.setTerrain(null);
+    } catch {
+      // ignore
+    }
+  }
+}
+
+/**
+ * Create zoom handler that toggles 3D buildings. Caller must attach to map.on('zoom', handler) and store handler for cleanup.
+ */
+export function createBuildingsZoomHandler(ctx: MapTerrainContext): (() => void) | null {
+  const minZoomAttr = ctx.getAttribute('buildings-min-zoom');
+  if (minZoomAttr === null || minZoomAttr === '') return null;
+
+  const minZoom = parseFloat(minZoomAttr);
+  if (!Number.isFinite(minZoom) || !ctx.map) return null;
+
+  const map = ctx.map as any;
+  if (!map.getStyle || !map.setLayoutProperty) return null;
+
+  const updateBuildings = (): void => {
+    try {
+      const toggleEnabled =
+        ctx.getAttribute('buildings-enabled') !== null &&
+        ctx.getAttribute('buildings-enabled') !== 'false';
+      const currentZoom = map.getZoom?.() ?? 0;
+      const zoomOk = currentZoom >= minZoom;
+      const shouldShow = toggleEnabled && zoomOk;
+
+      const existingLayer = map.getLayer?.(BUILDINGS_LAYER_ID);
+
+      if (shouldShow && !existingLayer) {
+        const style = map.getStyle?.();
+        const sources = style?.sources ?? {};
+        let buildingSource: string | null = null;
+        let buildingSourceLayer: string | null = null;
+
+        for (const [sourceId, source] of Object.entries(sources)) {
+          if (
+            sourceId.includes('building') ||
+            sourceId === 'openmaptiles' ||
+            sourceId === 'maptiler_planet'
+          ) {
+            buildingSource = sourceId;
+            if ((source as { type?: string }).type === 'vector') {
+              buildingSourceLayer = 'building';
+            }
+            break;
+          }
+        }
+
+        if (!buildingSource) {
+          for (const sourceId of Object.keys(sources)) {
+            if (
+              sourceId === 'composite' ||
+              sourceId === 'openmaptiles' ||
+              sourceId.includes('maptiler')
+            ) {
+              buildingSource = sourceId;
+              buildingSourceLayer = 'building';
+              break;
+            }
+          }
+        }
+
+        if (buildingSource) {
+          try {
+            const style = map.getStyle?.();
+            const layers = (style?.layers ?? []) as Array<{ id: string; type?: string }>;
+            let beforeLayerId: string | undefined;
+            for (const layer of layers) {
+              const t = layer.type ?? '';
+              if (t === 'circle' || t === 'symbol') {
+                beforeLayerId = layer.id;
+                break;
+              }
+            }
+            const layerSpec = {
+              id: BUILDINGS_LAYER_ID,
+              type: 'fill-extrusion',
+              source: buildingSource,
+              ...(buildingSourceLayer && { 'source-layer': buildingSourceLayer }),
+              minzoom: minZoom,
+              paint: {
+                'fill-extrusion-color': [
+                  'interpolate',
+                  ['linear'],
+                  ['get', 'height'],
+                  0,
+                  '#d4d4d4',
+                  50,
+                  '#a3a3a3',
+                  100,
+                  '#737373',
+                ],
+                'fill-extrusion-height': [
+                  'coalesce',
+                  ['get', 'height'],
+                  ['get', 'render_height'],
+                  10,
+                ],
+                'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
+                'fill-extrusion-opacity': 0.7,
+              },
+            };
+            if (beforeLayerId) {
+              map.addLayer(layerSpec as any, beforeLayerId);
+            } else {
+              map.addLayer(layerSpec as any);
+            }
+          } catch {
+            // Layer add failed
+          }
+        }
+      } else if (!shouldShow && existingLayer) {
+        try {
+          map.removeLayer(BUILDINGS_LAYER_ID);
+        } catch {
+          // ignore
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  map.on('zoom', updateBuildings);
+  updateBuildings();
+  return updateBuildings;
+}
+
+/**
+ * Remove buildings listener and layer.
+ */
+export function cleanup3DBuildings(map: MapInstance | null, handler: (() => void) | null): void {
+  const m = map as any;
+  if (!m) return;
+
+  if (m.off && handler) {
+    try {
+      m.off('zoom', handler);
+    } catch {
+      // ignore
+    }
+  }
+
+  try {
+    if (typeof m.getLayer === 'function' && m.getLayer(BUILDINGS_LAYER_ID)) {
+      m.removeLayer(BUILDINGS_LAYER_ID);
+    }
+  } catch {
+    // ignore
+  }
+}

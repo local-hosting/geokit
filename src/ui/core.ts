@@ -19,7 +19,7 @@ export * from './providers';
 export { NavigationControlElement } from './components/controls/navigation-control';
 
 // Re-export element classes needed at startup (map only)
-export { MapElement } from './components/elements/map';
+export { MapElement } from './components/elements/map/map';
 
 // Re-export only the lightweight utilities needed at startup.
 // Heavy modules (layer-styles ~312 KB, feature-state-hover) are excluded;
