@@ -215,19 +215,13 @@ export class IsochroneElement extends MapChildElement {
 
         const targetResolution = this.h3Resolution;
         // Convert from raw polygon to H3 hexagons
-        if (typeof requestIdleCallback !== 'undefined') {
-          requestIdleCallback(
-            () => {
-              this.pendingUpgrade = false;
-              this.upgradeResolution(targetResolution);
-            },
-            { timeout: 2000 } // Start upgrade after 2 seconds max if no idle time
-          );
-        } else {
-          // Fallback: upgrade immediately (but still debounced)
-          this.pendingUpgrade = false;
-          this.upgradeResolution(targetResolution);
-        }
+        requestIdleCallback(
+          () => {
+            this.pendingUpgrade = false;
+            this.upgradeResolution(targetResolution);
+          },
+          { timeout: 2000 } // Start upgrade after 2 seconds max if no idle time
+        );
       }, this.UPGRADE_DEBOUNCE_MS);
     };
 
@@ -268,16 +262,12 @@ export class IsochroneElement extends MapChildElement {
 
       const targetResolution = this.h3Resolution;
       // Convert from raw polygon to H3 hexagons on click
-      if (typeof requestIdleCallback !== 'undefined') {
-        requestIdleCallback(
-          () => {
-            this.upgradeResolution(targetResolution);
-          },
-          { timeout: 1000 } // Faster timeout for explicit clicks
-        );
-      } else {
-        this.upgradeResolution(targetResolution);
-      }
+      requestIdleCallback(
+        () => {
+          this.upgradeResolution(targetResolution);
+        },
+        { timeout: 1000 } // Faster timeout for explicit clicks
+      );
     };
     if (this.map.on) {
       this.map.on('click', clickListener);

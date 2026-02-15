@@ -49,6 +49,8 @@ import {
   cleanupTerrain as cleanupTerrainFn,
   createBuildingsZoomHandler,
   cleanup3DBuildings as cleanup3DBuildingsFn,
+  setupHillshade as setupHillshadeFn,
+  cleanupHillshade as cleanupHillshadeFn,
 } from './map-terrain-buildings';
 import {
   checkAndUpdateStyle as checkAndUpdateStyleFn,
@@ -92,6 +94,8 @@ export class MapElement extends BaseElement {
     'terrain-enabled',
     'buildings-min-zoom',
     'buildings-enabled',
+    'hillshade-enabled',
+    'hillshade-opacity',
   ];
 
   private _controlsVisible: boolean = true;
@@ -136,6 +140,9 @@ export class MapElement extends BaseElement {
 
   /** Buildings: zoom handler for toggling 3D buildings; removed in removeAllMapListeners */
   private _buildingsZoomHandler: (() => void) | null = null;
+
+  /** Hillshade: update handler for toggling hand-drawn hillshade overlay; removed in removeAllMapListeners */
+  private _hillshadeUpdateHandler: (() => void) | null = null;
 
   /** Bearing clamp: moveend handler to keep map mostly upright; removed in removeAllMapListeners */
   private _bearingClampHandler: (() => void) | null = null;
@@ -555,6 +562,9 @@ export class MapElement extends BaseElement {
         // 3D buildings: enable when zoom >= buildings-min-zoom (if set)
         this.setup3DBuildings();
 
+        // Hand-drawn hillshade overlay (if hillshade-enabled attribute is set)
+        this.setupHillshade();
+
         // Defer non-critical setup to avoid blocking first paint
         const deferredSetup = () => {
           this.setupAutoHideControls();
@@ -562,12 +572,7 @@ export class MapElement extends BaseElement {
           this.setupUrlSync();
         };
 
-        if (typeof requestIdleCallback !== 'undefined') {
-          requestIdleCallback(deferredSetup, { timeout: 200 });
-        } else {
-          // Fallback for Safari (no requestIdleCallback)
-          setTimeout(deferredSetup, 0);
-        }
+        requestIdleCallback(deferredSetup, { timeout: 200 });
       };
 
       // MapTiler SDK (MapLibre) events: 'load' = style loaded; 'idle' = no pending renders (tiles painted)
@@ -1023,6 +1028,7 @@ export class MapElement extends BaseElement {
     this.cleanupUrlSync();
     this.cleanupTerrain();
     this.cleanup3DBuildings();
+    this.cleanupHillshade();
     const map = this.map as any;
     if (!map?.off) return;
     if (this._styleImageMissingHandler) {
@@ -1055,6 +1061,18 @@ export class MapElement extends BaseElement {
   private cleanup3DBuildings(): void {
     cleanup3DBuildingsFn(this.map, this._buildingsZoomHandler);
     this._buildingsZoomHandler = null;
+  }
+
+  private setupHillshade(): void {
+    this._hillshadeUpdateHandler = setupHillshadeFn({
+      getAttribute: (n) => this.getAttribute(n),
+      map: this.map,
+    });
+  }
+
+  private cleanupHillshade(): void {
+    cleanupHillshadeFn(this.map);
+    this._hillshadeUpdateHandler = null;
   }
 
   /**
@@ -1140,6 +1158,16 @@ export class MapElement extends BaseElement {
     // Buildings toggle from Layers sidebar: re-run buildings logic when buildings-enabled changes
     if (name === 'buildings-enabled' && this._buildingsZoomHandler) {
       this._buildingsZoomHandler();
+      return;
+    }
+
+    // Hillshade toggle: re-run hillshade logic when hillshade-enabled changes
+    if (name === 'hillshade-enabled') {
+      if (this._hillshadeUpdateHandler) {
+        this._hillshadeUpdateHandler();
+      } else if (newValue !== null && newValue !== 'false') {
+        this.setupHillshade();
+      }
       return;
     }
 
