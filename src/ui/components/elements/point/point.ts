@@ -10,13 +10,18 @@
  * <gk-point lat="40.7128" lng="-74.0060" color="#ff0000" size="8" glow></gk-point>
  */
 
-import { MapChildElement } from '../map-child-element';
-import { normalizeCoordinatesArray, isValidCoordinate } from '../../../utils/coordinates';
-import type { MapEvent, MapRenderedFeature } from '../../providers/types';
-import { getCSSVariable, getCSSVariableNumber } from '../../utils/theme';
-import { debug } from '../../utils/logger';
-import { PopupElement } from './popup';
-import { HOVER_CONFIG } from '../../utils/feature-state-hover';
+import { MapChildElement } from '../../map-child-element';
+import { normalizeCoordinatesArray, isValidCoordinate } from '../../../../utils/coordinates';
+import type { MapEvent, MapRenderedFeature } from '../../../providers/types';
+import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
+import { debug } from '../../../utils/logger';
+import { PopupElement } from '../popup/popup';
+import { applyPointPaintProperties } from './point-style';
+import { createPointLayers as createPointLayersFn, type PointMapLike } from './point-layers';
+import {
+  applySelectedVisual as applySelectedVisualFn,
+  clearSelectedVisual,
+} from './point-selection';
 
 export interface PointOptions {
   lat: number;
@@ -386,160 +391,34 @@ export class PointElement extends MapChildElement {
       sourceId: this.sourceId,
       layerId: this.layerId,
     });
-
-    try {
-      this.map.addSource(this.sourceId, {
-        type: 'geojson',
-        data: pointData,
-        promoteId: 'point-id',
-      });
-    } catch (error) {
-      console.error('[Point] Failed to add source:', error);
-      return;
-    }
-
-    // Hover source: single point driven by setData (hover only; selected state uses selectedLayers)
-    const emptyHover: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
-    try {
-      this.map.addSource(this.hoverSourceId!, {
-        type: 'geojson',
-        data: emptyHover,
-      });
-    } catch (error) {
-      console.error('[Point] Failed to add hover source:', error);
-    }
-
-    // Add glow layer if enabled (bottom layer - constant opacity, no feature-state)
-    if (this.glow && this.glowLayerId) {
-      debug.log('[Point] glow layer ADD (createPointLayers)', {
-        where: 'point.ts createPointLayers',
-        when: 'after source, before point layer',
-        glowLayerId: this.glowLayerId,
+    createPointLayersFn(
+      {
+        map: this.map as PointMapLike,
+        mapElement: this.mapElement ?? document.documentElement,
         sourceId: this.sourceId,
-      });
-      try {
-        this.map.addLayer({
-          id: this.glowLayerId,
-          type: 'circle',
-          source: this.sourceId,
-          paint: {
-            'circle-radius': this.getGlowRadiusExpression(),
-            'circle-color': this.glowColor,
-            'circle-opacity': this.glowOpacity,
-            'circle-blur': this.glowBlur,
-          },
-        });
-        debug.log('[Point] glow layer ADD done', { glowLayerId: this.glowLayerId });
-      } catch (error) {
-        console.error('[Point] Failed to add glow layer:', error);
-      }
-    } else {
-      debug.log('[Point] glow layer SKIP (not added)', {
-        where: 'point.ts createPointLayers',
-        reason: !this.glow ? 'glow disabled' : 'no glowLayerId',
+        layerId: this.layerId,
+        shadowLayerId: this.shadowLayerId,
+        glowLayerId: this.glowLayerId,
+        hoverSourceId: this.hoverSourceId,
+        hoverLayerId: this.hoverLayerId,
+        size: this.size,
+        color: this.color,
+        opacity: this.opacity,
+        pointBlur: this.pointBlur,
+        strokeWidth: this.strokeWidth,
+        strokeColor: this.strokeColor,
+        strokeOpacity: this.strokeOpacity,
         glow: this.glow,
-        glowLayerId: this.glowLayerId ?? null,
-      });
-    }
-
-    // Add shadow layer if enabled
-    if (this.shadow && this.shadowLayerId) {
-      try {
-        this.map.addLayer({
-          id: this.shadowLayerId,
-          type: 'circle',
-          source: this.sourceId,
-          paint: {
-            'circle-radius': this.getShadowRadiusExpression(),
-            'circle-color': this.shadowColor,
-            'circle-opacity': this.shadowOpacity,
-            'circle-blur': this.shadowBlur,
-          },
-        });
-      } catch (error) {
-        console.error('[Point] Failed to add shadow layer:', error);
-      }
-    }
-
-    // Hover glow layer: uses HOVER_CONFIG from feature-state-hover.ts as source of truth
-    const hoverOpacity = getCSSVariableNumber(
-      this.mapElement,
-      '--gk-point-glow-hover-opacity',
-      HOVER_CONFIG.glowOpacity
+        glowColor: this.glowColor,
+        glowOpacity: this.glowOpacity,
+        glowBlur: this.glowBlur,
+        shadow: this.shadow,
+        shadowColor: this.shadowColor,
+        shadowOpacity: this.shadowOpacity,
+        shadowBlur: this.shadowBlur,
+      },
+      pointData
     );
-    const hoverBlur = getCSSVariableNumber(this.mapElement, '--gk-glow-blur', 0.8);
-    const hoverColor =
-      getCSSVariable(this.mapElement, '--gk-point-glow-color', this.glowColor) || this.glowColor;
-    if (this.hoverLayerId && this.hoverSourceId) {
-      try {
-        this.map.addLayer(
-          {
-            id: this.hoverLayerId,
-            type: 'circle',
-            source: this.hoverSourceId,
-            paint: {
-              'circle-radius': this.getHoverGlowRadiusExpression(),
-              'circle-color': hoverColor,
-              'circle-opacity': hoverOpacity,
-              'circle-blur': hoverBlur,
-            },
-          },
-          this.layerId
-        );
-      } catch (error) {
-        console.error('[Point] Failed to add hover layer:', error);
-      }
-    }
-
-    // Hover point layer: uses HOVER_CONFIG from feature-state-hover.ts as source of truth
-    const hoverPointLayerId = `${this.hoverLayerId}-point`;
-    if (this.hoverSourceId) {
-      try {
-        this.map.addLayer({
-          id: hoverPointLayerId,
-          type: 'circle',
-          source: this.hoverSourceId,
-          paint: {
-            'circle-radius': this.getZoomRadiusExpression(),
-            'circle-color': this.color,
-            'circle-opacity': HOVER_CONFIG.pointOpacity,
-            'circle-blur': 0,
-            'circle-stroke-width': HOVER_CONFIG.pointStrokeWidth,
-            'circle-stroke-color': HOVER_CONFIG.pointStrokeColor,
-          },
-        });
-      } catch (error) {
-        console.error('[Point] Failed to add hover point layer:', error);
-      }
-    }
-
-    // Add main point layer (constant opacity, no feature-state)
-    const paint: Record<string, unknown> = {
-      'circle-radius': this.getZoomRadiusExpression(),
-      'circle-color': this.color,
-      'circle-opacity': this.opacity,
-      'circle-blur': this.pointBlur,
-    };
-
-    if (this.strokeWidth > 0) {
-      paint['circle-stroke-width'] = this.strokeWidth;
-      paint['circle-stroke-color'] = this.strokeColor;
-      paint['circle-stroke-opacity'] = this.strokeOpacity;
-    } else {
-      paint['circle-stroke-width'] = 0;
-    }
-
-    try {
-      this.map.addLayer({
-        id: this.layerId,
-        type: 'circle',
-        source: this.sourceId,
-        paint,
-      });
-      debug.log('[Point] createPointLayers done', { layerId: this.layerId });
-    } catch (error) {
-      console.error('[Point] Failed to add main layer:', error);
-    }
   }
 
   private setHoverAt(coordinates: [number, number] | null): void {
@@ -848,85 +727,19 @@ export class PointElement extends MapChildElement {
    */
   private applySelectedVisual(feature: GeoJSON.Feature): void {
     if (!this.map || !this.layerId || !this.sourceId) return;
-
     this.blur();
-
-    const selectedLayerId = `${this.layerId}-selected`;
-    const selectedShadowLayerId = `${this.layerId}-selected-shadow`;
-    const selectedSourceId = `${this.sourceId}-selected`;
-
-    const selectedData: GeoJSON.FeatureCollection = {
-      type: 'FeatureCollection',
-      features: [JSON.parse(JSON.stringify(feature))],
-    };
-
-    try {
-      if (this.map.getSource?.(selectedSourceId)) {
-        this.map.removeSource(selectedSourceId);
-      }
-
-      this.map.addSource(selectedSourceId, {
-        type: 'geojson',
-        data: selectedData,
-      });
-
-      if (this.map?.getLayer?.(selectedShadowLayerId)) {
-        this.map.removeLayer(selectedShadowLayerId);
-      }
-      if (this.map?.getLayer?.(selectedLayerId)) {
-        this.map.removeLayer(selectedLayerId);
-      }
-
-      const selectedShadowColor = getCSSVariable(this.mapElement, '--gk-focus-shadow-color', '');
-      const selectedRingColor = getCSSVariable(this.mapElement, '--gk-focus-ring-color', '');
-
-      this.map.addLayer(
-        {
-          id: selectedShadowLayerId,
-          type: 'circle',
-          source: selectedSourceId,
-          paint: {
-            'circle-radius': this.getShadowRadiusExpression(),
-            'circle-color': selectedShadowColor,
-            'circle-opacity': getCSSVariableNumber(
-              this.mapElement,
-              '--gk-point-glow-focus-opacity',
-              0
-            ),
-            'circle-blur': 3,
-            'circle-stroke-width': 0,
-          },
-        },
-        this.layerId
-      );
-
-      this.map.addLayer(
-        {
-          id: selectedLayerId,
-          type: 'circle',
-          source: selectedSourceId,
-          paint: {
-            'circle-radius': this.getZoomRadiusExpression(),
-            'circle-color': 'transparent',
-            'circle-opacity': 1,
-            'circle-stroke-width': 2,
-            'circle-stroke-color': selectedRingColor,
-            'circle-stroke-opacity': 1,
-          },
-        },
-        this.layerId
-      );
-
-      this.selectedLayers = {
-        layerId: selectedLayerId,
-        shadowLayerId: selectedShadowLayerId,
-        sourceId: selectedSourceId,
-      };
+    const result = applySelectedVisualFn(
+      this.map as any,
+      this.layerId,
+      this.sourceId,
+      this.size,
+      this.mapElement ?? document.documentElement,
+      feature
+    );
+    if (result) {
+      this.selectedLayers = result;
       this.selectedCreatedTime = Date.now();
       this.safeSetAttribute('selected', 'true');
-    } catch (error) {
-      console.error('[Point] Error applying selected visual:', error);
-      this.blur();
     }
   }
 
@@ -935,18 +748,9 @@ export class PointElement extends MapChildElement {
    */
   public blur(): void {
     if (!this.map) return;
-
     this.setHoverAt(null);
     this.removeAttribute('selected');
-
-    if (!this.selectedLayers) return;
-
-    const { layerId, shadowLayerId, sourceId } = this.selectedLayers;
-
-    if (this.map?.getLayer?.(layerId)) this.map.removeLayer(layerId);
-    if (this.map?.getLayer?.(shadowLayerId)) this.map.removeLayer(shadowLayerId);
-    if (this.map?.getSource?.(sourceId)) this.map.removeSource(sourceId);
-
+    clearSelectedVisual(this.map as any, this.selectedLayers);
     this.selectedLayers = null;
   }
 
@@ -981,127 +785,18 @@ export class PointElement extends MapChildElement {
     );
   }
 
-  private getZoomRadiusExpression(): unknown[] {
-    const scale = this.size / 6;
-    return [
-      'interpolate',
-      ['exponential', 1.8],
-      ['zoom'],
-      3,
-      Math.max(1, 2 * scale),
-      5,
-      Math.max(1, 3 * scale),
-      7,
-      Math.max(1, 5 * scale),
-      9,
-      Math.max(2, 8 * scale),
-      11,
-      Math.max(3, 12 * scale),
-      13,
-      Math.max(4, 18 * scale),
-      15,
-      Math.max(6, 26 * scale),
-      17,
-      Math.max(8, 36 * scale),
-      19,
-      Math.max(10, 48 * scale),
-    ];
-  }
-
-  private getShadowRadiusExpression(): unknown[] {
-    const scale = this.size / 6;
-    return [
-      'interpolate',
-      ['exponential', 1.8],
-      ['zoom'],
-      3,
-      Math.max(1, 3 * scale),
-      5,
-      Math.max(1, 4 * scale),
-      7,
-      Math.max(2, 7 * scale),
-      9,
-      Math.max(3, 11 * scale),
-      11,
-      Math.max(4, 16 * scale),
-      13,
-      Math.max(6, 24 * scale),
-      15,
-      Math.max(8, 34 * scale),
-      17,
-      Math.max(10, 46 * scale),
-      19,
-      Math.max(12, 60 * scale),
-    ];
-  }
-
-  /**
-   * Get glow radius expression - larger than point for visual effect + hit area
-   * Uses exponential interpolation for smooth zoom transitions
-   */
-  private getGlowRadiusExpression(): unknown[] {
-    const scale = this.size / 6;
-    return [
-      'interpolate',
-      ['exponential', 1.5],
-      ['zoom'],
-      3,
-      Math.max(2, 3.5 * scale),
-      6,
-      Math.max(3, 5 * scale),
-      8,
-      Math.max(5, 8 * scale),
-      10,
-      Math.max(7, 11 * scale),
-      14,
-      Math.max(10, 14 * scale),
-      18,
-      Math.max(14, 18 * scale),
-    ];
-  }
-
-  /**
-   * Get hover glow radius expression - uses HOVER_CONFIG.glowRadiusScale from feature-state-hover.ts
-   */
-  private getHoverGlowRadiusExpression(): unknown[] {
-    const scale = this.size / 6;
-    const hoverScale = HOVER_CONFIG.glowRadiusScale;
-    return [
-      'interpolate',
-      ['exponential', 1.5],
-      ['zoom'],
-      3,
-      Math.max(2, 3.5 * scale * hoverScale),
-      6,
-      Math.max(3, 5 * scale * hoverScale),
-      8,
-      Math.max(5, 8 * scale * hoverScale),
-      10,
-      Math.max(7, 11 * scale * hoverScale),
-      14,
-      Math.max(10, 14 * scale * hoverScale),
-      18,
-      Math.max(14, 18 * scale * hoverScale),
-    ];
-  }
-
   private updatePointStyle(): void {
     if (!this.map || !this.layerId) return;
-
     try {
-      this.map?.setPaintProperty?.(this.layerId, 'circle-radius', this.getZoomRadiusExpression());
-      this.map?.setPaintProperty?.(this.layerId, 'circle-color', this.color);
-      this.map?.setPaintProperty?.(this.layerId, 'circle-opacity', this.opacity);
-
-      if (this.strokeWidth > 0) {
-        this.map?.setPaintProperty?.(this.layerId, 'circle-stroke-width', this.strokeWidth);
-        this.map?.setPaintProperty?.(this.layerId, 'circle-stroke-color', this.strokeColor);
-        this.map?.setPaintProperty?.(this.layerId, 'circle-stroke-opacity', this.strokeOpacity);
-      } else {
-        this.map?.setPaintProperty?.(this.layerId, 'circle-stroke-width', 0);
-      }
+      applyPointPaintProperties(this.map, this.layerId, {
+        size: this.size,
+        color: this.color,
+        opacity: this.opacity,
+        strokeWidth: this.strokeWidth,
+        strokeColor: this.strokeColor,
+        strokeOpacity: this.strokeOpacity,
+      });
     } catch {
-      // Silently recreate point if style update fails
       this.addPoint();
     }
   }

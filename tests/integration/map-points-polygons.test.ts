@@ -118,8 +118,8 @@ describe('Multiple Points Rendering', () => {
 
   beforeEach(async () => {
     // Import and register custom elements
-    await import('../../src/ui/components/elements/map');
-    await import('../../src/ui/components/elements/point');
+    await import('../../src/ui/components/elements/map/map');
+    await import('../../src/ui/components/elements/point/point');
     await import('../../src/ui/components/elements/polygon');
 
     // Wait for custom elements to be defined

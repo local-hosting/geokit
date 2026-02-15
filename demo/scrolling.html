@@ -82,11 +82,30 @@
     }
 
     .active-map-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       background: rgba(33, 38, 45, 0.8);
       padding: 0.35rem 0.6rem;
       border-radius: 4px;
       border: 1px solid rgba(48, 54, 61, 0.6);
       font-size: 0.8rem;
+    }
+
+    .active-map-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .active-map-status--ready {
+      background: #3fb950;
+    }
+    .active-map-status--loading {
+      background: #d29922;
+    }
+    .active-map-status--error {
+      background: #f85149;
     }
 
     .stat {
@@ -209,9 +228,7 @@
       box-sizing: border-box;
     }
 
-    gk-map[data-pool-map="true"] .map-placeholder {
-      display: none;
-    }
+    /* Placeholders stay visible until map loads; hidePlaceholder() removes them when ready. */
 
     .info-banner {
       background: #1f6feb;
@@ -526,15 +543,27 @@
         activeMapsEl.textContent = String(stats?.inUse ?? 0);
         availableMapsEl.textContent = String(stats?.available ?? 0);
 
-        // Update active map names
-        if (collection.getActiveMapNames && activeMapsNamesEl) {
-          const activeNames = collection.getActiveMapNames();
-          if (activeNames.length === 0) {
-            activeMapsNamesEl.textContent = 'None';
-          } else {
-            activeMapsNamesEl.innerHTML = activeNames
-              .map(name => `<span class="active-map-name">${name}</span>`)
+        // Update active map names with status indicator
+        if (activeMapsNamesEl) {
+          const entries = collection.getActiveMapEntries?.();
+          if (entries && entries.length > 0) {
+            activeMapsNamesEl.innerHTML = entries
+              .map(({ id, status }) =>
+                `<span class="active-map-name" title="${id}: ${status}">
+                  <span class="active-map-status active-map-status--${status}" aria-label="${status}"></span>
+                  ${id}
+                </span>`
+              )
               .join('');
+          } else {
+            const names = collection.getActiveMapNames?.() ?? [];
+            if (names.length === 0) {
+              activeMapsNamesEl.textContent = 'None';
+            } else {
+              activeMapsNamesEl.innerHTML = names
+                .map(name => `<span class="active-map-name">${name}</span>`)
+                .join('');
+            }
           }
         }
       } catch (error) {

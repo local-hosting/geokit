@@ -17,7 +17,7 @@ describe('Control Visibility Toggle', () => {
     const { MapTilerUIProvider } = await import('../../../src/ui/providers/maptiler-provider');
 
     // Import and register custom elements - must be done before creating elements
-    await import('../../../src/ui/components/elements/map');
+    await import('../../../src/ui/components/elements/map/map');
     await import('../../../src/ui/components/controls/navigation-control');
     await import('../../../src/ui/components/controls/scale-control');
 

@@ -32,7 +32,7 @@ describe.skipIf(isTestEnv)('Control Visibility Toggle', () => {
     // Dynamically import to avoid loading MapLibre GL at module load time
     const { registerUIProvider, setUIProvider } = await import('../../src/ui/providers/registry');
     const { MapTilerUIProvider } = await import('../../src/ui/providers/maptiler-provider');
-    await import('../../src/ui/components/elements/map');
+    await import('../../src/ui/components/elements/map/map');
     await import('../../src/ui/components/controls/navigation-control');
     await import('../../src/ui/components/controls/scale-control');
 

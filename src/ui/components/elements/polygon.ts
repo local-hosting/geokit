@@ -9,7 +9,7 @@
 
 import { MapChildElement } from '../map-child-element';
 import { normalizeCoordinatesArray } from '../../../utils/coordinates';
-import { simplifyPolygonRingToMaxPoints } from '../../../utils/simplify';
+import { simplifyPolygonRingToMaxPoints } from '../../../utils/simplify/polygon';
 import { debug } from '../../utils/logger';
 import { getCSSVariable } from '../../utils/theme';
 import type { LatLon } from '../../../types';

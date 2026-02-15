@@ -84,6 +84,104 @@ export function getMapInstanceFromElement(element: HTMLElement | null): MapInsta
 }
 
 // ============================================================================
+// Container-scoped map event helpers
+// ============================================================================
+
+/** gk-map-ready detail shape (element = gk-map, map = MapLibre instance) */
+export interface GkMapReadyDetail {
+  map?: MapInstance;
+  element?: HTMLElement;
+}
+
+/**
+ * Run a handler when gk-map-ready fires and the event target is inside the given container.
+ * Use when you have multiple maps (e.g. in a collection) and only want to react to maps in your subtree.
+ *
+ * @param container - Parent element (e.g. grid or hero node)
+ * @param handler - Called with (mapElement, mapInstance) when a map in container becomes ready
+ * @returns Unsubscribe function
+ */
+export function onMapReadyInContainer(
+  container: HTMLElement | null,
+  handler: (mapElement: HTMLElement, mapInstance: MapInstance | null) => void | Promise<void>
+): () => void {
+  if (!container) return () => {};
+
+  const listener = async (event: Event): Promise<void> => {
+    const customEvent = event as CustomEvent<GkMapReadyDetail>;
+    const mapElement = (customEvent.detail?.element ?? event.target) as HTMLElement;
+    if (!mapElement || !container.contains(mapElement)) return;
+
+    const mapInstance =
+      (mapElement as HTMLElement & { getMap?: () => MapInstance })?.getMap?.() ??
+      customEvent.detail?.map ??
+      null;
+    await handler(mapElement, mapInstance);
+  };
+
+  document.addEventListener('gk-map-ready', listener as EventListener);
+  return () => document.removeEventListener('gk-map-ready', listener as EventListener);
+}
+
+/**
+ * Run a handler when a map is unloaded and the event target is inside the given container.
+ *
+ * @param container - Parent element
+ * @param handler - Called with (mapElement, mapInstance) when a map in container unloads
+ * @returns Unsubscribe function
+ */
+export function onMapUnloadInContainer(
+  container: HTMLElement | null,
+  handler: (mapElement: HTMLElement, mapInstance: MapInstance | null) => void
+): () => void {
+  if (!container) return () => {};
+
+  const listener = (event: Event): void => {
+    const customEvent = event as CustomEvent<GkMapReadyDetail>;
+    const mapElement = (customEvent.detail?.element ?? event.target) as HTMLElement;
+    if (!mapElement || !container.contains(mapElement)) return;
+
+    const mapInstance =
+      (mapElement as HTMLElement & { getMap?: () => MapInstance })?.getMap?.() ??
+      customEvent.detail?.map ??
+      null;
+    handler(mapElement, mapInstance);
+  };
+
+  document.addEventListener('gk-map-unload', listener);
+  return () => document.removeEventListener('gk-map-unload', listener);
+}
+
+/**
+ * Run a handler when gk-map-unfreeze fires and the event target is inside the given container.
+ *
+ * @param container - Parent element
+ * @param handler - Called with (mapElement, mapInstance) when a map in container unfreezes
+ * @returns Unsubscribe function
+ */
+export function onMapUnfreezeInContainer(
+  container: HTMLElement | null,
+  handler: (mapElement: HTMLElement, mapInstance: MapInstance | null) => void | Promise<void>
+): () => void {
+  if (!container) return () => {};
+
+  const listener = async (event: Event): Promise<void> => {
+    const customEvent = event as CustomEvent<GkMapReadyDetail>;
+    const mapElement = (customEvent.detail?.element ?? event.target) as HTMLElement;
+    if (!mapElement || !container.contains(mapElement)) return;
+
+    const mapInstance =
+      (mapElement as HTMLElement & { getMap?: () => MapInstance })?.getMap?.() ??
+      customEvent.detail?.map ??
+      null;
+    await handler(mapElement, mapInstance);
+  };
+
+  document.addEventListener('gk-map-unfreeze', listener as EventListener);
+  return () => document.removeEventListener('gk-map-unfreeze', listener as EventListener);
+}
+
+// ============================================================================
 // Style Loading Utilities
 // ============================================================================
 
@@ -420,7 +518,7 @@ export function setupIsochronePrefetch(
 // Layer Click Popup Utilities
 // ============================================================================
 
-import { PopupElement, type PopupContentOptions } from '../components/elements/popup';
+import { PopupElement, type PopupContentOptions } from '../components/elements/popup/popup';
 
 export interface LayerClickPopupOptions {
   /** Source ID to get full feature properties from */

@@ -35,6 +35,44 @@ import type {
   PopupOptions,
 } from './types';
 
+/** Max number of style URLs to cache (one per theme/map name). */
+const MAX_STYLE_CACHE = 8;
+/** Cache: MapTiler style URL -> promise of parsed style object. Shared across all maps to avoid N duplicate fetches. */
+const styleCache = new Map<string, Promise<Record<string, unknown>>>();
+
+function isMapTilerStyleUrl(url: string): boolean {
+  return (
+    typeof url === 'string' &&
+    (url.startsWith('https://api.maptiler.com/') || url.startsWith('http://api.maptiler.com/')) &&
+    url.includes('/style.json')
+  );
+}
+
+/**
+ * Fetch a MapTiler style URL once and cache the parsed object. Reused by every map using that URL
+ * so Safari (and all browsers) don't issue N identical style.json requests for the pool.
+ */
+async function getStyleObject(url: string): Promise<Record<string, unknown>> {
+  let promise = styleCache.get(url);
+  if (!promise) {
+    promise = fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error(`Style fetch failed: ${r.status}`);
+        return r.json() as Promise<Record<string, unknown>>;
+      })
+      .then((obj) => {
+        if (obj && typeof obj === 'object' && 'version' in obj) return obj;
+        throw new Error('Invalid style JSON');
+      });
+    styleCache.set(url, promise);
+    if (styleCache.size > MAX_STYLE_CACHE) {
+      const firstKey = styleCache.keys().next().value;
+      if (firstKey !== undefined) styleCache.delete(firstKey);
+    }
+  }
+  return promise;
+}
+
 /**
  * True if the value is valid for MapTiler/MapLibre setStyle (URL, StyleSpec object, or JSON string).
  * Used to no-op setStyle when the SDK passes an invalid value (e.g. style name during remove()).
@@ -176,22 +214,28 @@ export class MapTilerUIProvider extends BaseUIProvider {
     return this.sdkLoadPromise;
   }
 
+  /**
+   * Create a Map instance. Options follow MapTiler SDK MapOptions:
+   * https://docs.maptiler.com/sdk-js/api/map/
+   * - center as [lng, lat] (GeoJSON order)
+   * - style as URL or style name (SDK resolves names when apiKey is set)
+   * - apiKey in options is equivalent to config.apiKey
+   */
   async createMap(container: HTMLElement, options: MapOptions): Promise<any> {
     if (!this.sdk) {
       await this.initialize(this.config || {});
     }
 
-    // Ensure API key is set
-    if (this.config?.apiKey && this.sdk?.config) {
-      this.sdk.config.apiKey = this.config.apiKey;
+    const apiKey = this.config?.apiKey || '';
+    if (apiKey && this.sdk?.config) {
+      this.sdk.config.apiKey = apiKey;
     }
 
-    const apiKey = this.config?.apiKey || '';
     const styleBase = (name: string) =>
       `https://api.maptiler.com/maps/${name}/style.json?key=${apiKey}`;
 
-    // Build style: use explicit URLs to avoid SDK deprecated enums (e.g. "Streets Default v2")
-    let style: any = options.style;
+    // Style: full URL, or resolve known names to URLs (SDK accepts both; URLs avoid deprecated enum values)
+    let style: string = options.style ?? '';
     if (!style) {
       style = styleBase('dataviz-dark');
     } else if (typeof style === 'string' && !style.startsWith('http')) {
@@ -210,31 +254,38 @@ export class MapTilerUIProvider extends BaseUIProvider {
       style = styleMap[style.toLowerCase()] ?? styleBase(style);
     }
 
-    const mapOptions = {
+    // Use shared style object for MapTiler URLs so pool maps don't each fetch the same style.json (Safari load).
+    let styleOption: string | Record<string, unknown> = style;
+    if (typeof style === 'string' && isMapTilerStyleUrl(style)) {
+      try {
+        styleOption = await getStyleObject(style);
+      } catch (e) {
+        console.warn('[MapTiler] Style cache fetch failed, using URL:', e);
+      }
+    }
+
+    const mapOptions: Record<string, unknown> = {
       container,
-      style,
-      center: [options.lng || 0, options.lat || 0],
-      zoom: options.zoom || 2,
-      // Zoom limits (prevent zooming out/in too far)
+      style: styleOption,
+      center: [options.lng ?? 0, options.lat ?? 0],
+      zoom: options.zoom ?? 2,
       ...(options.minZoom !== undefined && { minZoom: options.minZoom }),
       ...(options.maxZoom !== undefined && { maxZoom: options.maxZoom }),
-      pitch: options.pitch || 0,
-      // Limit max pitch to prevent disorienting "upside down" tilting (SDK default is 85)
+      pitch: options.pitch ?? 0,
       maxPitch: options.maxPitch ?? 60,
-      bearing: options.bearing || 0,
-      // Hide MapTiler logo for paid accounts
+      bearing: options.bearing ?? 0,
       maptilerLogo: false,
-      // Interactive by default
       interactive: options.interactive !== false,
-      // Disable all default controls - users must add them explicitly via child components
       navigationControl: false,
       geolocateControl: false,
       scaleControl: false,
       fullscreenControl: false,
       attributionControl: false,
-      // Spread any extra options
       ...(options.extra || {}),
     };
+    if (apiKey) {
+      mapOptions.apiKey = apiKey;
+    }
 
     const map = new this.sdk.Map(mapOptions);
 

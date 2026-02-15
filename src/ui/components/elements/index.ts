@@ -4,10 +4,11 @@
  * Exports all map element components
  */
 
-export { MapElement } from './map';
+export { MapElement } from './map/map';
 export { MarkerElement } from './marker';
 export { PolygonElement } from './polygon';
-export { PointElement } from './point';
+export { PointElement } from './point/point';
+export { PointLayerElement, type PointLayerOptions } from './point/point-layer';
 export { PolylineElement } from './polyline';
 export {
   LayerElement,
@@ -16,8 +17,7 @@ export {
   type LayerClickEventDetail,
   type LayerMouseEnterEventDetail,
   type LayerMouseLeaveEventDetail,
-} from './layer';
-export { PointLayerElement, type PointLayerOptions } from './point-layer';
+} from './layer/layer';
 export {
   PopupElement,
   dispatchClearPopupsEvent,
@@ -25,7 +25,7 @@ export {
   type PopupContentOptions,
   type PopupTag,
   type PopupAction,
-} from './popup';
+} from './popup/popup';
 export { H3Element } from './h3';
-export { IsochroneElement } from './isochrone';
-export { MapCollectionElement } from './map-collection';
+export { IsochroneElement } from './isochrone/isochrone';
+export { MapCollectionElement } from './map-collection/map-collection';

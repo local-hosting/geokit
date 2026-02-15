@@ -10,14 +10,14 @@
  * (same detail shape as gk-layer; layerId/sourceId refer to the point layer/source).
  */
 
-import { MapChildElement } from '../map-child-element';
-import { debug } from '../../utils/logger';
-import type { MapEvent } from '../../providers/types';
+import { MapChildElement } from '../../map-child-element';
+import { debug } from '../../../utils/logger';
+import type { MapEvent } from '../../../providers/types';
 import type {
   LayerClickEventDetail,
   LayerMouseEnterEventDetail,
   LayerMouseLeaveEventDetail,
-} from './layer';
+} from '../layer/layer';
 
 export interface PointLayerOptions {
   sourceId: string;

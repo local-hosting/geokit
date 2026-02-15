@@ -106,3 +106,13 @@ export type H3Area = string & { __brand: 'H3Area' };
  * Union type for all spatial index types
  */
 export type SpatialIndex = GeohashPoint | GeohashArea | H3Point | H3Area;
+
+// UI popup types (gk-popup element)
+export type {
+  PopupOptions,
+  StyledPopupOptions,
+  PointPopupProperties,
+  PopupTag,
+  PopupAction,
+  PopupContentOptions,
+} from './popup';
