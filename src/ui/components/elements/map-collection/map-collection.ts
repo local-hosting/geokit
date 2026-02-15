@@ -25,12 +25,12 @@ interface SlotInfo {
   firstSeenRestoringAt: number;
 }
 
-// Debounce delay - wait for scrolling to stop before activating
-// 100ms is responsive while still debouncing rapid scroll
-const SCROLL_DEBOUNCE_MS = 100;
+// Debounce delay - wait for scrolling to stop before activating.
+// Only decide which maps are "on screen" after scroll has settled to avoid loading maps for cards that scroll through.
+const SCROLL_DEBOUNCE_MS = 300;
 
 // Extended debounce when user is actively scrolling (detected via rapid intersection changes)
-const SCROLL_ACTIVE_DEBOUNCE_MS = 150;
+const SCROLL_ACTIVE_DEBOUNCE_MS = 500;
 
 // Activate this many maps in parallel. First visible maps (e.g. 4) all start loading together for faster first paint.
 // Stay under typical WebGL context limits (8–16); pool-size on scrolling demo is 10.
@@ -93,6 +93,7 @@ export class MapCollectionElement extends BaseElement {
   private lastIntersectionTime: number = 0; // Track time of last intersection change
   private intersectionChangeCount: number = 0; // Count rapid intersection changes (scroll detection)
   private isScrolling: boolean = false; // True when user is actively scrolling
+  private suppressActivationUntil: number = 0; // Skip activation until this timestamp (e.g. during programmatic scroll)
 
   constructor() {
     super();
@@ -381,6 +382,14 @@ export class MapCollectionElement extends BaseElement {
   }
 
   /**
+   * Suppress map activation for a period (e.g. during programmatic scroll to a selected venue).
+   * Call before triggering smooth scroll so cards that pass through the viewport don't activate maps.
+   */
+  suppressActivation(durationMs: number): void {
+    this.suppressActivationUntil = Date.now() + durationMs;
+  }
+
+  /**
    * Process visibility changes - unfreeze visible slots, lazy freeze.
    * Uses a lock to prevent concurrent processing during fast scrolling.
    */
@@ -392,6 +401,12 @@ export class MapCollectionElement extends BaseElement {
     this.isProcessing = true;
     this.pendingReprocess = false;
 
+    if (Date.now() < this.suppressActivationUntil) {
+      this.isProcessing = false;
+      const remaining = this.suppressActivationUntil - Date.now();
+      setTimeout(() => this.processVisibilityChanges(), remaining);
+      return;
+    }
     if (this.isCollectionHidden()) {
       this.isProcessing = false;
       return;
