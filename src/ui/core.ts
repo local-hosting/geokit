@@ -12,6 +12,29 @@
  *   await import('@twinfile/geokit/ui/elements/isochrone');
  */
 
+// Polyfill requestIdleCallback for Safari (unsupported natively).
+// Must run before MapTiler SDK is evaluated — it calls requestIdleCallback unconditionally.
+if (typeof globalThis.requestIdleCallback === 'undefined') {
+  (globalThis as unknown as Record<string, unknown>).requestIdleCallback = (
+    cb: IdleRequestCallback,
+    opts?: IdleRequestOptions
+  ): number => {
+    const start = Date.now();
+    return setTimeout(
+      () => {
+        cb({
+          didTimeout: false,
+          timeRemaining: () => Math.max(0, 50 - (Date.now() - start)),
+        });
+      },
+      opts?.timeout ? 1 : 1
+    ) as unknown as number;
+  };
+  (globalThis as unknown as Record<string, unknown>).cancelIdleCallback = (id: number): void => {
+    clearTimeout(id);
+  };
+}
+
 // Re-export UI providers (types, registry, implementations)
 export * from './providers';
 

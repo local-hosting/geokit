@@ -12,6 +12,8 @@ export interface MapTerrainContext {
 
 const TERRAIN_SOURCE_ID = 'gk-terrain-dem';
 const BUILDINGS_LAYER_ID = 'gk-3d-buildings';
+const HILLSHADE_SOURCE_ID = 'gk-hillshade';
+const HILLSHADE_LAYER_ID = 'gk-hillshade-layer';
 
 /**
  * Create zoom handler that toggles 3D terrain. Caller must attach to map.on('zoom', handler) and store handler for cleanup.
@@ -237,6 +239,115 @@ export function cleanup3DBuildings(map: MapInstance | null, handler: (() => void
   try {
     if (typeof m.getLayer === 'function' && m.getLayer(BUILDINGS_LAYER_ID)) {
       m.removeLayer(BUILDINGS_LAYER_ID);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Add MapTiler hand-drawn hillshade as a raster overlay (available up to zoom 12).
+ * Returns an update function the caller can invoke when the enabled attribute changes.
+ */
+export function setupHillshade(ctx: MapTerrainContext): (() => void) | null {
+  if (!ctx.map) return null;
+
+  const map = ctx.map as any;
+  if (!map.addSource || !map.addLayer) return null;
+
+  const provider = ctx.getAttribute('provider');
+  const apiKey = ctx.getAttribute('api-key');
+  const sourceUrl =
+    provider === 'maptiler' && apiKey
+      ? `https://api.maptiler.com/tiles/hand-drawn-hillshade/tiles.json?key=${apiKey}`
+      : null;
+
+  if (!sourceUrl) {
+    debug.warn('[gk-map] Hillshade requires maptiler provider with an api-key');
+    return null;
+  }
+
+  const opacityAttr = ctx.getAttribute('hillshade-opacity');
+  const opacity = Number.isFinite(parseFloat(String(opacityAttr)))
+    ? Math.min(1, Math.max(0, parseFloat(String(opacityAttr))))
+    : 0.3;
+
+  const updateHillshade = (): void => {
+    try {
+      const enabled =
+        ctx.getAttribute('hillshade-enabled') !== null &&
+        ctx.getAttribute('hillshade-enabled') !== 'false';
+
+      const hasSource = !!map.getSource?.(HILLSHADE_SOURCE_ID);
+      const hasLayer = !!map.getLayer?.(HILLSHADE_LAYER_ID);
+
+      if (enabled && !hasSource) {
+        map.addSource(HILLSHADE_SOURCE_ID, {
+          type: 'raster',
+          url: sourceUrl,
+          tileSize: 256,
+        });
+      }
+
+      if (enabled && !hasLayer) {
+        const style = map.getStyle?.();
+        const layers = (style?.layers ?? []) as Array<{ id: string; type?: string }>;
+        let beforeLayerId: string | undefined;
+        for (const layer of layers) {
+          const t = layer.type ?? '';
+          if (t === 'circle' || t === 'symbol' || t === 'line' || t === 'fill') {
+            beforeLayerId = layer.id;
+            break;
+          }
+        }
+
+        const layerSpec: Record<string, unknown> = {
+          id: HILLSHADE_LAYER_ID,
+          type: 'raster',
+          source: HILLSHADE_SOURCE_ID,
+          maxzoom: 12,
+          paint: { 'raster-opacity': opacity },
+        };
+
+        if (beforeLayerId) {
+          map.addLayer(layerSpec, beforeLayerId);
+        } else {
+          map.addLayer(layerSpec);
+        }
+      } else if (!enabled && hasLayer) {
+        map.removeLayer(HILLSHADE_LAYER_ID);
+      }
+
+      if (!enabled && hasSource && !hasLayer) {
+        map.removeSource(HILLSHADE_SOURCE_ID);
+      }
+    } catch (err) {
+      debug.warn('[gk-map] Hillshade update failed', err);
+    }
+  };
+
+  updateHillshade();
+  return updateHillshade;
+}
+
+/**
+ * Remove hillshade layer and source.
+ */
+export function cleanupHillshade(map: MapInstance | null): void {
+  const m = map as any;
+  if (!m) return;
+
+  try {
+    if (typeof m.getLayer === 'function' && m.getLayer(HILLSHADE_LAYER_ID)) {
+      m.removeLayer(HILLSHADE_LAYER_ID);
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    if (typeof m.getSource === 'function' && m.getSource(HILLSHADE_SOURCE_ID)) {
+      m.removeSource(HILLSHADE_SOURCE_ID);
     }
   } catch {
     // ignore
