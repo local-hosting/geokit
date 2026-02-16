@@ -21,6 +21,14 @@ export * from './components/elements';
 
 // Re-export utilities
 export * from './utils';
+// Explicit re-exports so bundlers (Rollup/Vite) resolve them from the barrel
+export { createScrollIdle } from './utils/scroll-idle';
+export {
+  onMapReadyInContainer,
+  onMapUnloadInContainer,
+  onMapUnfreezeInContainer,
+} from './utils/map-utils';
+export { MapElement } from './components/elements/map/map';
 
 // Auto-register all components (side-effects)
 import './components/controls/navigation-control';
