@@ -244,7 +244,7 @@ export class MapElement extends BaseElement {
   async initializeMap(): Promise<void> {
     // Prevent concurrent initialization
     if (this._isInitializing) {
-      console.warn('[gk-map] Already initializing, skipping duplicate call');
+      debug.warn('[gk-map] Already initializing, skipping duplicate call');
       return;
     }
 
@@ -327,7 +327,7 @@ export class MapElement extends BaseElement {
         } catch {
           // No provider set, auto-initialize MapTiler if we have an API key
           if (apiKey) {
-            console.warn('[geokit] Auto-initializing MapTiler provider from api-key attribute');
+            debug.warn('[geokit] Auto-initializing MapTiler provider from api-key attribute');
             registerUIProvider('maptiler', new MapTilerUIProvider());
             provider = await getProviderByName('maptiler', { apiKey });
           } else {
@@ -2095,7 +2095,7 @@ export class MapElement extends BaseElement {
   public async unfreeze(poolIndex?: number): Promise<boolean> {
     // Prevent concurrent unfreeze operations
     if (this._isUnfreezing) {
-      console.warn('[gk-map] Already unfreezing, skipping duplicate call');
+      debug.warn('[gk-map] Already unfreezing, skipping duplicate call');
       return false;
     }
 
@@ -2140,7 +2140,7 @@ export class MapElement extends BaseElement {
         }
         // Resize and repaint so map fills container after scroll-back (container may have been zero-size when frozen)
         resizeAndRepaintMapFn(this.map);
-        console.log('[gk-map] active', this.getMapLabel());
+        debug.log('[gk-map] active', { label: this.getMapLabel() });
         // Dispatch unfreeze event after reinitialization completes
         // Note: initializeMap() already dispatches gk-map-ready, but we also dispatch
         // gk-map-unfreeze to make the lifecycle explicit for components that need it
@@ -2166,7 +2166,7 @@ export class MapElement extends BaseElement {
         if (this.isInitialized) {
           this.hidePlaceholder();
         }
-        console.log('[gk-map] active', this.getMapLabel());
+        debug.log('[gk-map] active', { label: this.getMapLabel() });
         this.dispatchEvent(
           new CustomEvent('gk-map-unfreeze', {
             detail: { map: this.map, element: this },
@@ -2182,7 +2182,7 @@ export class MapElement extends BaseElement {
       );
       return false;
     } catch (error) {
-      console.warn('[gk-map] Failed to unfreeze:', error);
+      debug.warn('[gk-map] Failed to unfreeze:', error);
       this._isFrozen = false;
       this.showPlaceholder('Map load error');
       this.dispatchEvent(
@@ -2209,7 +2209,7 @@ export class MapElement extends BaseElement {
   public async freeze(): Promise<void> {
     // Wait if currently unfreezing to avoid race condition
     if (this._isUnfreezing) {
-      console.warn('[gk-map] Waiting for unfreeze to complete before freezing');
+      debug.warn('[gk-map] Waiting for unfreeze to complete before freezing');
       // Wait up to 10 seconds for unfreeze to complete
       const maxWait = 10000;
       const startTime = Date.now();
@@ -2226,8 +2226,10 @@ export class MapElement extends BaseElement {
       })
     );
 
-    // Show placeholder with "Restoring..." message
+    // Show placeholder with "Restoring..." message (for when user scrolls back)
     this.showPlaceholder('Restoring...');
+    // Don't run stuck timer for this placeholder: we're tearing down, not loading
+    this._clearStuckCheck();
 
     // Destroy the map to free WebGL context
     // Browsers can only handle a few WebGL contexts, so we must destroy when frozen
@@ -2237,7 +2239,7 @@ export class MapElement extends BaseElement {
 
     // Update pool state - no longer in pool
     this.setPoolState(false);
-    console.log('[gk-map] frozen', this.getMapLabel());
+    debug.log('[gk-map] frozen', { label: this.getMapLabel() });
   }
 
   /**
@@ -2252,7 +2254,7 @@ export class MapElement extends BaseElement {
 
     // Wait if currently initializing to avoid race condition
     if (this._isInitializing) {
-      console.warn('[gk-map] Waiting for initialization to complete before freezing');
+      debug.warn('[gk-map] Waiting for initialization to complete before freezing');
       const maxWait = 5000;
       const startTime = Date.now();
       while (this._isInitializing && Date.now() - startTime < maxWait) {
