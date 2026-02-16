@@ -8,6 +8,7 @@
 import { BaseElement } from '../../base-element';
 import { type MapElement } from '../map/map';
 import { getProviderConfig } from '../../../providers/registry';
+import { debug } from '../../../utils/logger';
 
 interface SlotInfo {
   slotElement: HTMLElement;
@@ -535,12 +536,10 @@ export class MapCollectionElement extends BaseElement {
       const success = await this.unfreezeSlot(slotInfo);
 
       if (success) {
-        console.log(
-          '[map-collection] active',
-          this.getSlotId(slotInfo.slotElement),
-          'activeCount',
-          this.activeCount
-        );
+        debug.log('[map-collection] active', {
+          slotId: this.getSlotId(slotInfo.slotElement),
+          activeCount: this.activeCount,
+        });
         slotInfo.failCount = 0;
         slotInfo.lastFailTime = 0;
         slotInfo.lastHealthCheckAttempt = 0;
@@ -591,7 +590,7 @@ export class MapCollectionElement extends BaseElement {
       await toFreeze.mapElement.freeze();
       toFreeze.isActive = false;
       this.activeCount--;
-      console.log('[map-collection] frozen', slotId, 'activeCount', this.activeCount);
+      debug.log('[map-collection] frozen', { slotId, activeCount: this.activeCount });
       return true;
     }
 
@@ -647,10 +646,8 @@ export class MapCollectionElement extends BaseElement {
         if (this.handleNewMapsRafId !== null) cancelAnimationFrame(this.handleNewMapsRafId);
         this.handleNewMapsRafId = requestAnimationFrame(() => {
           this.handleNewMapsRafId = null;
-          if (typeof window !== 'undefined' && (window as any).__GEOVIEW_DEBUG__) {
-            const count = this.querySelectorAll('gk-map').length;
-            console.log('[map-collection] rAF handleNewMaps, gk-map count in DOM:', count);
-          }
+          const count = this.querySelectorAll('gk-map').length;
+          debug.log('[map-collection] rAF handleNewMaps', { gkMapCountInDom: count });
           this.handleNewMaps();
         });
       }
@@ -718,13 +715,10 @@ export class MapCollectionElement extends BaseElement {
         }
         this.processVisibilityChanges();
       }, 250);
-      if (typeof window !== 'undefined' && (window as any).__GEOVIEW_DEBUG__) {
-        console.log(
-          '[map-collection] handleNewMaps done, slots:',
-          this.slots.length,
-          '(IntersectionObserver + 250ms fallback)'
-        );
-      }
+      debug.log('[map-collection] handleNewMaps done', {
+        slots: this.slots.length,
+        note: 'IntersectionObserver + 250ms fallback',
+      });
     }
   }
 
