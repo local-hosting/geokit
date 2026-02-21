@@ -4,6 +4,21 @@
 
 import type { PointPopupProperties, PopupContentOptions, PopupTag } from '../../../../types/popup';
 
+function decodeHtmlEntitiesForText(value: unknown): string {
+  if (value == null) return '';
+  const raw = String(value);
+  if (!raw.includes('&')) return raw;
+  if (typeof document === 'undefined') return raw;
+
+  // Browsers typically require semicolons; upstream data sometimes omits it (e.g. "&amp").
+  const normalized = raw.replace(/&amp(?!;)/g, '&amp;');
+
+  // Decode using the browser's entity parser, then always assign via textContent elsewhere.
+  const el = document.createElement('textarea');
+  el.innerHTML = normalized;
+  return el.value;
+}
+
 /**
  * Build popup content DOM with title and ID tags (native DOM only, safe from Vue reactivity).
  */
@@ -14,14 +29,14 @@ export function buildPopupContent(title?: string, properties?: PointPopupPropert
   if (title) {
     const titleEl = document.createElement('h4');
     titleEl.setAttribute('class', 'geokit-popup-title');
-    titleEl.textContent = title;
+    titleEl.textContent = decodeHtmlEntitiesForText(title);
     container.appendChild(titleEl);
   }
 
   if (properties) {
     const parts: string[] = [];
-    if (properties.city) parts.push(String(properties.city).trim());
-    if (properties.state) parts.push(String(properties.state).trim());
+    if (properties.city) parts.push(decodeHtmlEntitiesForText(properties.city).trim());
+    if (properties.state) parts.push(decodeHtmlEntitiesForText(properties.state).trim());
     if (parts.length > 0) {
       const addressEl = document.createElement('h5');
       addressEl.setAttribute('class', 'geokit-popup-address');
@@ -41,7 +56,7 @@ export function buildPopupContent(title?: string, properties?: PointPopupPropert
       if (val != null && val !== '') {
         const tag = document.createElement('span');
         tag.setAttribute('class', 'geokit-popup-tag');
-        tag.textContent = String(val);
+        tag.textContent = decodeHtmlEntitiesForText(val);
         tagsContainer.appendChild(tag);
         hasTags = true;
       }
@@ -49,7 +64,7 @@ export function buildPopupContent(title?: string, properties?: PointPopupPropert
     if (!hasTags && properties.id != null && properties.id !== '') {
       const tag = document.createElement('span');
       tag.setAttribute('class', 'geokit-popup-tag');
-      tag.textContent = String(properties.id);
+      tag.textContent = decodeHtmlEntitiesForText(properties.id);
       tagsContainer.appendChild(tag);
       hasTags = true;
     }
@@ -85,7 +100,7 @@ export function buildPopupContentGeneric(options: PopupContentOptions): HTMLElem
     if (headline) {
       const textSpan = document.createElement('span');
       textSpan.setAttribute('class', 'geokit-popup-title-text');
-      textSpan.appendChild(document.createTextNode(headline));
+      textSpan.appendChild(document.createTextNode(decodeHtmlEntitiesForText(headline)));
       headlineEl.appendChild(textSpan);
     }
 
@@ -96,7 +111,7 @@ export function buildPopupContentGeneric(options: PopupContentOptions): HTMLElem
       if (headlineBadge) {
         const badgeEl = document.createElement('span');
         badgeEl.setAttribute('class', 'geokit-popup-badge');
-        badgeEl.textContent = headlineBadge;
+        badgeEl.textContent = decodeHtmlEntitiesForText(headlineBadge);
         if (headlineBadgeColor) {
           badgeEl.style.background = headlineBadgeColor;
           badgeEl.style.color = '#fff';
@@ -110,7 +125,7 @@ export function buildPopupContentGeneric(options: PopupContentOptions): HTMLElem
         }
         const badge2El = document.createElement('span');
         badge2El.setAttribute('class', 'geokit-popup-badge');
-        badge2El.textContent = headlineBadge2;
+        badge2El.textContent = decodeHtmlEntitiesForText(headlineBadge2);
         if (headlineBadge2Color) {
           badge2El.style.background = headlineBadge2Color;
           badge2El.style.color = '#fff';
@@ -127,7 +142,7 @@ export function buildPopupContentGeneric(options: PopupContentOptions): HTMLElem
   if (subhead) {
     const subheadEl = document.createElement('h5');
     subheadEl.setAttribute('class', 'geokit-popup-address');
-    subheadEl.textContent = subhead;
+    subheadEl.textContent = decodeHtmlEntitiesForText(subhead);
     container.appendChild(subheadEl);
   }
 
@@ -143,18 +158,20 @@ export function buildPopupContentGeneric(options: PopupContentOptions): HTMLElem
       tagEl.setAttribute('class', 'geokit-popup-tag');
 
       if (typeof tagItem === 'string') {
-        tagEl.textContent = truncate(tagItem);
-        if (tagItem.length > 12) tagEl.setAttribute('title', tagItem);
+        const decoded = decodeHtmlEntitiesForText(tagItem);
+        tagEl.textContent = truncate(decoded);
+        if (decoded.length > 12) tagEl.setAttribute('title', decoded);
       } else {
         if (tagItem.label) {
           const labelEl = document.createElement('span');
           labelEl.setAttribute('class', 'geokit-popup-tag-label');
-          labelEl.textContent = tagItem.label;
+          labelEl.textContent = decodeHtmlEntitiesForText(tagItem.label);
           tagEl.appendChild(labelEl);
         }
-        const truncatedValue = truncate(tagItem.value);
+        const decodedValue = decodeHtmlEntitiesForText(tagItem.value);
+        const truncatedValue = truncate(decodedValue);
         tagEl.appendChild(document.createTextNode(truncatedValue));
-        if (tagItem.value.length > 12) tagEl.setAttribute('title', tagItem.value);
+        if (decodedValue.length > 12) tagEl.setAttribute('title', decodedValue);
       }
       tagsContainer.appendChild(tagEl);
     }
@@ -169,7 +186,7 @@ export function buildPopupContentGeneric(options: PopupContentOptions): HTMLElem
     if (footerLabel) {
       const labelEl = document.createElement('span');
       labelEl.setAttribute('class', 'geokit-popup-footer-label');
-      labelEl.textContent = footerLabel;
+      labelEl.textContent = decodeHtmlEntitiesForText(footerLabel);
       actionsContainer.appendChild(labelEl);
     }
 
@@ -191,9 +208,9 @@ export function buildPopupContentGeneric(options: PopupContentOptions): HTMLElem
         linkEl.setAttribute('href', action.href);
         linkEl.setAttribute('target', '_blank');
         linkEl.setAttribute('rel', 'noopener noreferrer');
-        linkEl.setAttribute('title', action.label);
+        linkEl.setAttribute('title', decodeHtmlEntitiesForText(action.label));
         if (action.svg) linkEl.innerHTML = action.svg;
-        else linkEl.textContent = action.label;
+        else linkEl.textContent = decodeHtmlEntitiesForText(action.label);
         actionsContainer.appendChild(linkEl);
       }
     }
@@ -232,19 +249,19 @@ export function addTagsToPopup(
     const tagEl = document.createElement('span');
     tagEl.setAttribute('class', 'geokit-popup-tag');
     if (typeof tagItem === 'string') {
-      tagEl.textContent = tagItem;
+      tagEl.textContent = decodeHtmlEntitiesForText(tagItem);
     } else {
       if (tagItem.label) {
         const labelEl = document.createElement('span');
         labelEl.setAttribute('class', 'geokit-popup-tag-label');
-        labelEl.textContent = tagItem.label + ' ';
+        labelEl.textContent = decodeHtmlEntitiesForText(tagItem.label) + ' ';
         tagEl.appendChild(labelEl);
         const valueEl = document.createElement('span');
         valueEl.setAttribute('class', 'geokit-popup-tag-value');
-        valueEl.textContent = tagItem.value;
+        valueEl.textContent = decodeHtmlEntitiesForText(tagItem.value);
         tagEl.appendChild(valueEl);
       } else {
-        tagEl.textContent = tagItem.value;
+        tagEl.textContent = decodeHtmlEntitiesForText(tagItem.value);
       }
     }
     tagsContainer.appendChild(tagEl);
