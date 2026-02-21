@@ -407,6 +407,9 @@ export { topoFeature, topoMerge, topoMesh, topoNeighbors, topoObjectNames } from
 export type { CacheOptions, CacheStats } from './utils/cache';
 export { GeoCache, roundForCacheKey, coordinateCacheKey } from './utils/cache';
 
+// API tracking utilities
+export { ApiTracker, BudgetExceededError } from './utils/api-tracker';
+
 // Retry utilities
 export type { RetryOptions } from './utils/retry';
 export { withRetry, delay } from './utils/retry';
