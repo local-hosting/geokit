@@ -178,7 +178,12 @@ export class PolygonElement extends MapChildElement {
     // Check visible - read from property first
     const visible = this._propVisible ?? this.safeGetAttribute('visible');
     if (visible === false || visible === 'false') {
-      debug.log('[Polygon] createPolygon skipped: not visible', { layerId: this.layerId });
+      // If we were previously visible and became hidden, ensure layers/sources are removed.
+      // This prevents "stuck outlines" when consumers toggle visibility instead of removing
+      // the element from the DOM.
+      this.removeLayerInteractivity(this.layerId);
+      this.cleanupMapLayers([this.layerId, this.strokeLayerId], [this.sourceId]);
+      debug.log('[Polygon] createPolygon: cleared (not visible)', { layerId: this.layerId });
       return;
     }
 
@@ -281,9 +286,12 @@ export class PolygonElement extends MapChildElement {
         this._propStrokeWidth ?? parseFloat(this.safeGetAttribute('stroke-width') || '2');
 
       if (strokeWidth > 0) {
+        // Prefer explicit stroke-color; otherwise fall back to fill-color so the outline
+        // matches the polygon's theme color by default (helps apps keep pill/outline colors in sync).
         const strokeColor =
           this._propStrokeColor ??
           this.safeGetAttribute('stroke-color') ??
+          fillColor ??
           getCSSVariable(this.mapElement, '--gk-polygon-stroke-color', '');
         const strokeOpacity =
           this._propStrokeOpacity ?? parseFloat(this.safeGetAttribute('stroke-opacity') || '1');
@@ -343,7 +351,14 @@ export class PolygonElement extends MapChildElement {
         this.createPolygon();
         break;
       case 'visible':
-        this.toggleLayerVisibility([this.layerId, this.strokeLayerId], () => this.createPolygon());
+        // When hidden, fully remove layers/sources so outlines can't remain on the map.
+        // When shown again, recreate from current attributes/properties.
+        if (newValue === 'false') {
+          this.removeLayerInteractivity(this.layerId);
+          this.cleanupMapLayers([this.layerId, this.strokeLayerId], [this.sourceId]);
+        } else {
+          this.createPolygon();
+        }
         break;
       case 'fill-color':
       case 'fill-opacity':
@@ -376,10 +391,15 @@ export class PolygonElement extends MapChildElement {
   }
 
   private updateStrokeStyle(): void {
+    const fillColor =
+      this._propFillColor ??
+      this.safeGetAttribute('fill-color') ??
+      getCSSVariable(this.mapElement, '--gk-polygon-fill-color', '');
     this.updatePaintProperties(this.strokeLayerId, {
       'line-color':
         this._propStrokeColor ??
         this.safeGetAttribute('stroke-color') ??
+        fillColor ??
         getCSSVariable(this.mapElement, '--gk-polygon-stroke-color', ''),
       'line-width':
         this._propStrokeWidth ?? parseFloat(this.safeGetAttribute('stroke-width') || '2'),
