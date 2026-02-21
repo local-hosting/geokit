@@ -1,11 +1,14 @@
 /**
  * LRU Cache Utility
  *
- * Reusable LRU cache with TTL, hit/miss tracking, and stats.
- * Used across API providers and other services for consistent caching.
+ * Reusable LRU cache with TTL, hit/miss tracking, stats,
+ * and optional disk persistence for cross-run caching.
  */
 
 import { LRUCache } from 'lru-cache';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
 
 /**
  * Cache configuration options
@@ -17,6 +20,8 @@ export interface CacheOptions {
   ttlMs?: number;
   /** Name for logging/debugging (optional) */
   name?: string;
+  /** Directory path for disk persistence. When set, entries survive process restarts. */
+  diskPath?: string;
 }
 
 /**
@@ -24,6 +29,16 @@ export interface CacheOptions {
  */
 interface CacheEntry<T> {
   data: T;
+}
+
+/** Disk envelope includes a timestamp so TTL can be enforced across restarts. */
+interface DiskEnvelope<T> {
+  ts: number;
+  data: T;
+}
+
+function diskKey(key: string): string {
+  return crypto.createHash('sha256').update(key).digest('hex').slice(0, 16);
 }
 
 /**
@@ -55,26 +70,68 @@ export class GeoCache<T> {
   private hits = 0;
   private misses = 0;
   private name: string;
+  private diskPath: string | undefined;
+  private ttlMs: number;
+  private diskDirReady = false;
 
   constructor(options: CacheOptions = {}) {
-    const { maxEntries = 100, ttlMs = 10 * 60 * 1000, name = 'GeoCache' } = options;
+    const { maxEntries = 100, ttlMs = 10 * 60 * 1000, name = 'GeoCache', diskPath } = options;
 
     this.name = name;
+    this.ttlMs = ttlMs;
+    this.diskPath = diskPath;
     this.cache = new LRUCache<string, CacheEntry<T>>({
       max: maxEntries,
       ttl: ttlMs,
     });
   }
 
+  private ensureDiskDir(): void {
+    if (this.diskDirReady || !this.diskPath) return;
+    if (!fs.existsSync(this.diskPath)) fs.mkdirSync(this.diskPath, { recursive: true });
+    this.diskDirReady = true;
+  }
+
+  private diskFilePath(key: string): string | undefined {
+    if (!this.diskPath) return undefined;
+    return path.join(this.diskPath, `${diskKey(key)}.json`);
+  }
+
+  private readDisk(key: string): T | undefined {
+    const fp = this.diskFilePath(key);
+    if (!fp || !fs.existsSync(fp)) return undefined;
+    try {
+      const envelope = JSON.parse(fs.readFileSync(fp, 'utf-8')) as DiskEnvelope<T>;
+      if (Date.now() - envelope.ts > this.ttlMs) return undefined;
+      this.cache.set(key, { data: envelope.data });
+      return envelope.data;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private writeDisk(key: string, data: T): void {
+    const fp = this.diskFilePath(key);
+    if (!fp) return;
+    this.ensureDiskDir();
+    const envelope: DiskEnvelope<T> = { ts: Date.now(), data };
+    fs.writeFileSync(fp, JSON.stringify(envelope), 'utf-8');
+  }
+
   /**
-   * Get a cached value by key
-   * Returns undefined if not found or expired
+   * Get a cached value by key.
+   * Checks in-memory LRU first, then falls back to disk if diskPath is configured.
    */
   get(key: string): T | undefined {
     const entry = this.cache.get(key);
     if (entry) {
       this.hits++;
       return entry.data;
+    }
+    const diskData = this.readDisk(key);
+    if (diskData !== undefined) {
+      this.hits++;
+      return diskData;
     }
     this.misses++;
     return undefined;
@@ -84,30 +141,42 @@ export class GeoCache<T> {
    * Check if a key exists in cache (without affecting hit/miss stats)
    */
   has(key: string): boolean {
-    return this.cache.has(key);
+    if (this.cache.has(key)) return true;
+    if (!this.diskPath) return false;
+    const fp = this.diskFilePath(key);
+    return !!fp && fs.existsSync(fp);
   }
 
   /**
-   * Store a value in the cache
+   * Store a value in both in-memory LRU and (optionally) on disk.
    */
   set(key: string, data: T): void {
     this.cache.set(key, { data });
+    this.writeDisk(key, data);
   }
 
   /**
-   * Remove a specific key from the cache
+   * Remove a specific key from cache and disk.
    */
   delete(key: string): boolean {
-    return this.cache.delete(key);
+    const removed = this.cache.delete(key);
+    const fp = this.diskFilePath(key);
+    if (fp && fs.existsSync(fp)) fs.unlinkSync(fp);
+    return removed;
   }
 
   /**
-   * Clear all cached data and reset stats
+   * Clear all cached data, disk files, and reset stats.
    */
   clear(): void {
     this.cache.clear();
     this.hits = 0;
     this.misses = 0;
+    if (this.diskPath && fs.existsSync(this.diskPath)) {
+      for (const f of fs.readdirSync(this.diskPath)) {
+        if (f.endsWith('.json')) fs.unlinkSync(path.join(this.diskPath, f));
+      }
+    }
   }
 
   /**
