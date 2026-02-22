@@ -178,6 +178,7 @@ export {
   boundsIntersects,
   pointInGeometry,
   pointInGeometryCurried,
+  resolvePointToFeatureProperty,
 } from './utils/containment';
 
 // Area utilities
