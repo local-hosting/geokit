@@ -196,6 +196,11 @@ export class MapTilerUIProvider extends BaseUIProvider {
         // Disable telemetry - we don't need MapTiler usage analytics
         if (maptilerModule.config) {
           maptilerModule.config.telemetry = false;
+          // Disable local tile caching — the localcache_source:// protocol
+          // breaks in SPA apps with path-based routing
+          maptilerModule.config.caching = false;
+          maptilerModule.config.session = false;
+          maptilerModule.config.cacheApiRequests = false;
         }
 
         // Expose to window for backward compatibility
@@ -287,7 +292,19 @@ export class MapTilerUIProvider extends BaseUIProvider {
       mapOptions.apiKey = apiKey;
     }
 
+    // Ensure caching stays off right before map creation
+    if (this.sdk?.config) {
+      this.sdk.config.caching = false;
+      this.sdk.config.session = false;
+    }
+
     const map = new this.sdk.Map(mapOptions);
+
+    // Disable caching again after construction (SDK constructor may re-enable)
+    if (this.sdk?.config) {
+      this.sdk.config.caching = false;
+      this.sdk.config.session = false;
+    }
 
     // Wrap setStyle so invalid values are no-oped. MapTiler SDK's remove() calls setStyle()
     // with its default variant ("Streets Default v2"), which is deprecated and invalid for
