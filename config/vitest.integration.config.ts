@@ -35,6 +35,7 @@ export default defineConfig({
       MAPTILER_API_KEY: process.env.MAPTILER_API_KEY || process.env.MAPTILER_KEY || '',
       MAPBOX_ACCESS_TOKEN: process.env.MAPBOX_ACCESS_TOKEN || process.env.MAPBOX_TOKEN || '',
       FOURSQUARE_API_KEY: process.env.FOURSQUARE_API_KEY || '',
+      TOMORROW_IO_API_KEY: process.env.TOMORROW_IO_API_KEY || '',
     },
   },
 });
