@@ -79,8 +79,30 @@ const CENSUS_VARIABLES: Record<DemographicField, string[]> = {
   ],
   language: [
     'C16001_001E', // Total population 5+
-    'C16001_003E', // Spanish
-    'C16001_021E', // Chinese
+    'C16001_003E', // Spanish: speak English very well
+    'C16001_004E', // Spanish: speak English less than very well
+    'C16001_005E', // French, Haitian, Cajun: very well
+    'C16001_006E', // French, Haitian, Cajun: less well
+    'C16001_007E', // German, West Germanic: very well
+    'C16001_008E', // German, West Germanic: less well
+    'C16001_009E', // Russian, Polish, Slavic: very well
+    'C16001_010E', // Russian, Polish, Slavic: less well
+    'C16001_011E', // Other Indo-European: very well
+    'C16001_012E', // Other Indo-European: less well
+    'C16001_013E', // Korean: very well
+    'C16001_014E', // Korean: less well
+    'C16001_015E', // Chinese: very well
+    'C16001_016E', // Chinese: less well
+    'C16001_017E', // Vietnamese: very well
+    'C16001_018E', // Vietnamese: less well
+    'C16001_019E', // Tagalog: very well
+    'C16001_020E', // Tagalog: less well
+    'C16001_021E', // Other Asian/Pacific Island: very well
+    'C16001_022E', // Other Asian/Pacific Island: less well
+    'C16001_023E', // Arabic: very well
+    'C16001_024E', // Arabic: less well
+    'C16001_025E', // Other/unspecified: very well
+    'C16001_026E', // Other/unspecified: less well
   ],
   ethnicity: [
     'B02001_001E', // Total population
@@ -405,20 +427,67 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
         }
       }
 
-      // Find top two non-English languages
+      // Find non-English languages (C16001: each language = very well + less than very well)
+      const MINORITY_LANGUAGE_PCT_THRESHOLD = 3;
       let topLanguage: string | undefined;
       let topLanguagePct: number | undefined;
       let secondLanguage: string | undefined;
       let secondLanguagePct: number | undefined;
+      let otherLanguages: { name: string; pct: number }[] | undefined;
 
       const langPop = getValue('C16001_001E') || 0; // Population 5+ years
       if (langPop > 0) {
         const languages = [
-          { name: 'Spanish', count: getValue('C16001_003E') || 0 },
-          { name: 'Chinese', count: getValue('C16001_021E') || 0 },
+          {
+            name: 'Spanish',
+            count: (getValue('C16001_003E') || 0) + (getValue('C16001_004E') || 0),
+          },
+          {
+            name: 'French / Haitian / Cajun',
+            count: (getValue('C16001_005E') || 0) + (getValue('C16001_006E') || 0),
+          },
+          {
+            name: 'German',
+            count: (getValue('C16001_007E') || 0) + (getValue('C16001_008E') || 0),
+          },
+          {
+            name: 'Russian / Polish / Slavic',
+            count: (getValue('C16001_009E') || 0) + (getValue('C16001_010E') || 0),
+          },
+          {
+            name: 'Other Indo-European',
+            count: (getValue('C16001_011E') || 0) + (getValue('C16001_012E') || 0),
+          },
+          {
+            name: 'Korean',
+            count: (getValue('C16001_013E') || 0) + (getValue('C16001_014E') || 0),
+          },
+          {
+            name: 'Chinese',
+            count: (getValue('C16001_015E') || 0) + (getValue('C16001_016E') || 0),
+          },
+          {
+            name: 'Vietnamese',
+            count: (getValue('C16001_017E') || 0) + (getValue('C16001_018E') || 0),
+          },
+          {
+            name: 'Tagalog',
+            count: (getValue('C16001_019E') || 0) + (getValue('C16001_020E') || 0),
+          },
+          {
+            name: 'Other Asian / Pacific Island',
+            count: (getValue('C16001_021E') || 0) + (getValue('C16001_022E') || 0),
+          },
+          {
+            name: 'Arabic',
+            count: (getValue('C16001_023E') || 0) + (getValue('C16001_024E') || 0),
+          },
+          {
+            name: 'Other languages',
+            count: (getValue('C16001_025E') || 0) + (getValue('C16001_026E') || 0),
+          },
         ];
 
-        // Sort by count descending and filter out zero counts
         const sortedLangs = languages.filter((l) => l.count > 0).sort((a, b) => b.count - a.count);
 
         if (sortedLangs.length > 0) {
@@ -430,6 +499,14 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
           const secondLang = sortedLangs[1];
           secondLanguage = secondLang.name;
           secondLanguagePct = Math.round((secondLang.count / langPop) * 100);
+        }
+        // Additional minority languages over threshold (exclude top two)
+        const rest = sortedLangs.slice(2);
+        const overThreshold = rest
+          .map((l) => ({ name: l.name, pct: Math.round((l.count / langPop) * 100) }))
+          .filter((l) => l.pct > MINORITY_LANGUAGE_PCT_THRESHOLD);
+        if (overThreshold.length > 0) {
+          otherLanguages = overThreshold;
         }
       }
 
@@ -528,6 +605,7 @@ export class CensusDemographicsProvider extends BaseAPIProvider {
         topLanguagePct,
         secondLanguage,
         secondLanguagePct,
+        otherLanguages,
         // Internet access
         broadbandPct,
         cellularOnlyPct,

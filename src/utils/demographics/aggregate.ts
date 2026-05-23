@@ -123,18 +123,24 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
     secondGenerationPct = totalPop > 0 ? Math.round((secondWeight / totalPop) * 100) : undefined;
   }
 
-  // Find top two languages by weighted voting
+  // Find languages by weighted voting (top two + others over 3%)
+  const MINORITY_LANGUAGE_PCT_THRESHOLD = 3;
   const languageVotes: Record<string, number> = {};
   for (const result of validResults) {
+    const pop = result.totalPopulation || 0;
     if (result.topLanguage && result.topLanguagePct) {
-      const pop = result.totalPopulation || 0;
       const weight = pop * (result.topLanguagePct / 100);
       languageVotes[result.topLanguage] = (languageVotes[result.topLanguage] || 0) + weight;
     }
     if (result.secondLanguage && result.secondLanguagePct) {
-      const pop = result.totalPopulation || 0;
       const weight = pop * (result.secondLanguagePct / 100);
       languageVotes[result.secondLanguage] = (languageVotes[result.secondLanguage] || 0) + weight;
+    }
+    if (result.otherLanguages) {
+      for (const { name, pct } of result.otherLanguages) {
+        const weight = pop * (pct / 100);
+        languageVotes[name] = (languageVotes[name] || 0) + weight;
+      }
     }
   }
 
@@ -142,6 +148,7 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
   let topLanguagePct: number | undefined;
   let secondLanguage: string | undefined;
   let secondLanguagePct: number | undefined;
+  let otherLanguages: { name: string; pct: number }[] | undefined;
 
   const languageEntries = Object.entries(languageVotes).sort((a, b) => b[1] - a[1]);
   if (languageEntries.length > 0) {
@@ -153,6 +160,16 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
     const [secondLang, secondWeight] = languageEntries[1];
     secondLanguage = secondLang;
     secondLanguagePct = totalPop > 0 ? Math.round((secondWeight / totalPop) * 100) : undefined;
+  }
+  const restLanguages = languageEntries.slice(2);
+  const overThreshold = restLanguages
+    .map(([name, weight]) => ({
+      name,
+      pct: totalPop > 0 ? Math.round((weight / totalPop) * 100) : 0,
+    }))
+    .filter((l) => l.pct > MINORITY_LANGUAGE_PCT_THRESHOLD);
+  if (overThreshold.length > 0) {
+    otherLanguages = overThreshold;
   }
 
   // Find top two ethnicities by weighted voting
@@ -214,6 +231,7 @@ export function aggregateDemographics(results: DemographicsResult[]): Demographi
     topLanguagePct,
     secondLanguage,
     secondLanguagePct,
+    otherLanguages,
     topEthnicity,
     topEthnicityPct,
     secondEthnicity,
