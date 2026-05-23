@@ -38,6 +38,7 @@ import {
 import {
   injectHideAttributionStyles as injectHideAttributionStylesFn,
   injectAutoHideStyles as injectAutoHideStylesFn,
+  isMaplibreLayoutCssLoaded,
 } from './map-controls-styles';
 import {
   parseUrlHashState as parseUrlHashStateFn,
@@ -269,11 +270,7 @@ export class MapElement extends BaseElement {
 
         // Load CSS for the provider (skip if already loaded via preload)
         if (providerName === 'maptiler') {
-          // Check if CSS is already loaded (e.g., via HTML preload)
-          const hasMaptilerCss = Array.from(document.styleSheets).some((sheet) =>
-            sheet.href?.includes('maptiler-sdk')
-          );
-          if (!hasMaptilerCss) {
+          if (!isMaplibreLayoutCssLoaded()) {
             await import('@maptiler/sdk/dist/maptiler-sdk.css');
           }
         } else if (providerName === 'mapbox') {
