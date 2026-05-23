@@ -5,6 +5,22 @@
 const HIDE_ATTRIBUTION_STYLE_ID = 'gk-hide-attribution-style';
 const AUTO_HIDE_STYLE_ID = 'gk-auto-hide-controls-style';
 
+/** True when MapLibre corner control layout rules are present (Vite-injected CSS has no href). */
+export function isMaplibreLayoutCssLoaded(): boolean {
+  if (typeof document === 'undefined') return false;
+  for (const sheet of document.styleSheets) {
+    try {
+      for (const rule of sheet.cssRules) {
+        const selector = (rule as CSSStyleRule).selectorText;
+        if (selector?.includes('.maplibregl-ctrl-top-right')) return true;
+      }
+    } catch {
+      // Cross-origin stylesheets
+    }
+  }
+  return false;
+}
+
 export function injectHideAttributionStyles(): void {
   if (typeof document === 'undefined' || document.getElementById(HIDE_ATTRIBUTION_STYLE_ID)) return;
 
