@@ -9,7 +9,7 @@ const projectRoot = resolve(__dirname, '..');
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', '*.cjs', '*.mjs', 'scripts/archive/**'],
+    ignores: ['dist/**', 'node_modules/**', '*.cjs', '*.mjs'],
   },
   {
     files: ['src/**/*.ts'],

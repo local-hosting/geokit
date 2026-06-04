@@ -7,13 +7,10 @@
  * 1. H3 Index (fast) - Uses pre-computed H3 cell → ZIP mapping for instant lookups
  * 2. API Fallback (slow) - Uses Mapbox reverse geocoding if index not available
  *
- * To enable fast mode, load the H3-to-ZIP index:
+ * To enable fast mode, load the H3-to-ZIP index (from CDN, lockers, or pipeline):
  * ```typescript
- * // Option 1: Load from URL
- * await loadH3ZipIndexFromUrl('/data/zip-h3-index.json');
- *
- * // Option 2: Load directly
  * loadH3ZipIndex(indexData);
+ * // or: await loadH3ZipIndexFromUrl('/us/indexes/zip-h3-index.json');
  * ```
  */
 
