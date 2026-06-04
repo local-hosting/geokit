@@ -10,7 +10,6 @@ This directory contains tests for all API providers in the geokit library.
 - `mapbox-provider.test.ts` - Mapbox API provider tests
 - `maptiler-provider.test.ts` - MapTiler API provider tests
 - `google-places-provider.test.ts` - Google Places API provider tests
-- `census-demographics-provider.test.ts` - Census Demographics API provider tests
 
 ## Provider Response Types
 
@@ -33,10 +32,6 @@ This directory contains tests for all API providers in the geokit library.
 
 - **placeSearch()**: `Promise<PlaceSearchResult[]>` - Always returns array (empty array if no results, throws on error)
 - **fetchBehavioral()**: `Promise<BehavioralResult | null>` - Returns null if place not found, throws on error
-
-### CensusDemographicsProvider
-
-- **fetchDemographics()**: `Promise<DemographicsResult | null>` - Returns null if data unavailable or invalid input, throws on network error
 
 ## Response Guarantees
 

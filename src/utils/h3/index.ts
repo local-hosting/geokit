@@ -40,3 +40,5 @@ export {
   h3PointNeighbors,
   h3AreaNeighbors,
 } from './type-safe';
+
+export { compactH3CellId, expandH3CellId } from './cell-id';
