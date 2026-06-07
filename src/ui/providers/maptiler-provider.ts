@@ -131,7 +131,7 @@ export class MapTilerUIProvider extends BaseUIProvider {
   }
 
   async initialize(config: MapProviderConfig): Promise<void> {
-    this.config = config;
+    this.config = { ...(this.config ?? {}), ...config };
 
     // Suppress banner early - before any SDK method might log it
     suppressMaptilerBanner();
@@ -236,6 +236,8 @@ export class MapTilerUIProvider extends BaseUIProvider {
       this.sdk.config.apiKey = apiKey;
     }
 
+    const transformRequest = this.config?.transformRequest;
+
     const styleBase = (name: string) =>
       `https://api.maptiler.com/maps/${name}/style.json?key=${apiKey}`;
 
@@ -262,8 +264,10 @@ export class MapTilerUIProvider extends BaseUIProvider {
     // Use shared style object for MapTiler URLs so pool maps don't each fetch the same style.json (Safari load).
     let styleOption: string | Record<string, unknown> = style;
     if (typeof style === 'string' && isMapTilerStyleUrl(style)) {
+      const styleFetchUrl =
+        typeof transformRequest === 'function' ? transformRequest(style, 'Style').url : style;
       try {
-        styleOption = await getStyleObject(style);
+        styleOption = await getStyleObject(styleFetchUrl);
       } catch (e) {
         console.warn('[MapTiler] Style cache fetch failed, using URL:', e);
       }
@@ -290,6 +294,9 @@ export class MapTilerUIProvider extends BaseUIProvider {
     };
     if (apiKey) {
       mapOptions.apiKey = apiKey;
+    }
+    if (typeof transformRequest === 'function') {
+      mapOptions.transformRequest = transformRequest;
     }
 
     // Ensure caching stays off right before map creation
