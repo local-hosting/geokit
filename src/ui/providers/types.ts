@@ -12,6 +12,11 @@ export interface MapProviderConfig {
   accessToken?: string;
   /** Optional URL to load MapTiler SDK from (e.g. CDN UMD). Script must set window.maptilersdk. */
   sdkScriptUrl?: string;
+  /** MapLibre transformRequest — rewrite tile/style URLs (e.g. dev proxy for referrer-restricted keys). */
+  transformRequest?: (
+    url: string,
+    resourceType?: string
+  ) => { url: string; headers?: Record<string, string> };
   [key: string]: unknown;
 }
 

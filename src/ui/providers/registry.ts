@@ -1,6 +1,6 @@
 /**
  * UI Provider Registry
- * 
+ *
  * Manages UI providers for map rendering
  * Multiple providers can be active simultaneously - each map uses its own provider
  */
@@ -25,11 +25,11 @@ const providerConfigs = new Map<string, MapProviderConfig>();
 /**
  * Configure global settings for providers
  * This allows setting API keys/tokens once instead of on each map element
- * 
+ *
  * @example
  * ```typescript
  * import { configure } from '@geokit/ui';
- * 
+ *
  * configure({
  *   maptiler: { apiKey: 'YOUR_API_KEY' },
  *   mapbox: { accessToken: 'YOUR_ACCESS_TOKEN' }
@@ -38,7 +38,8 @@ const providerConfigs = new Map<string, MapProviderConfig>();
  */
 export function configure(config: Record<string, MapProviderConfig>): void {
   for (const [provider, providerConfig] of Object.entries(config)) {
-    providerConfigs.set(provider, providerConfig);
+    const existing = providerConfigs.get(provider);
+    providerConfigs.set(provider, { ...existing, ...providerConfig });
   }
 }
 
@@ -75,14 +76,22 @@ export async function setUIProvider(
 
   if (!provider) {
     throw new Error(
-      `UI Provider "${name}" not found. Available providers: ${Array.from(
-        uiProviders.keys()
-      ).join(', ')}`
+      `UI Provider "${name}" not found. Available providers: ${Array.from(uiProviders.keys()).join(
+        ', '
+      )}`
     );
   }
 
-  // Initialize the provider
-  await provider.initialize(config || {});
+  if (config && Object.keys(config).length > 0) {
+    const existing = providerConfigs.get(name);
+    providerConfigs.set(name, { ...existing, ...config });
+  }
+
+  const mergedConfig = {
+    ...providerConfigs.get(name),
+    ...config,
+  };
+  await provider.initialize(Object.keys(mergedConfig).length > 0 ? mergedConfig : {});
 
   defaultUIProvider = provider;
 
@@ -104,9 +113,9 @@ export async function getProviderByName(
 
   if (!provider) {
     throw new Error(
-      `UI Provider "${name}" not found. Available providers: ${Array.from(
-        uiProviders.keys()
-      ).join(', ')}`
+      `UI Provider "${name}" not found. Available providers: ${Array.from(uiProviders.keys()).join(
+        ', '
+      )}`
     );
   }
 
@@ -167,4 +176,3 @@ export function clearUIProviders(): void {
 export function _resetRegistries(): void {
   clearUIProviders();
 }
-

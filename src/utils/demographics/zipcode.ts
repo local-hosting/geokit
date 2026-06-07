@@ -27,6 +27,7 @@ import { getBounds } from '../bounds';
  * Loaded lazily when first needed
  */
 let h3ZipIndex: Record<string, string[]> | null = null;
+/** Native zip-h3-index resolution (r5); platform grid rolls up via @twinfile/geo. */
 const H3_INDEX_RESOLUTION = 5;
 
 /**

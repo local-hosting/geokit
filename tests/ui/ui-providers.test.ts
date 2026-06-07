@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
+  configure,
+  getProviderByName,
   registerUIProvider,
   setUIProvider,
   getUIProvider,
@@ -17,7 +19,7 @@ class MockUIProvider implements BaseUIProvider {
   }
 
   async initialize(config: MapProviderConfig): Promise<void> {
-    this.config = config;
+    this.config = { ...(this.config ?? {}), ...config };
     this.initialized = true;
   }
 
@@ -86,6 +88,25 @@ describe('UI Providers', () => {
 
       expect(() => registerUIProvider('provider1', provider1)).not.toThrow();
       expect(() => registerUIProvider('provider2', provider2)).not.toThrow();
+    });
+  });
+
+  describe('configure + getProviderByName', () => {
+    it('preserves transformRequest when re-init passes apiKey only', async () => {
+      const transformRequest = vi.fn((url: string) => ({ url: `/proxy/${url}` }));
+      const provider = new MockUIProvider();
+      const initSpy = vi.spyOn(provider, 'initialize');
+      registerUIProvider('merge-test', provider);
+
+      configure({ 'merge-test': { apiKey: 'global-key', transformRequest } });
+      await setUIProvider('merge-test', { apiKey: 'global-key', transformRequest });
+
+      await getProviderByName('merge-test', { apiKey: 'map-element-key' });
+
+      expect(initSpy).toHaveBeenLastCalledWith({
+        apiKey: 'map-element-key',
+        transformRequest,
+      });
     });
   });
 
