@@ -25,9 +25,9 @@ Published on GitHub Packages (`@twinfile` scope). Configure `.npmrc` for `https:
 
 Geokit does not bundle census data. Load a pre-built crosswalk and ZIP-level demographics, then query polygons:
 
-- **`loadZipIndexData` / `loadDemographicsData`** — pass JSON you already fetched
-- **`@twinfile/cdn/client`** — `loadMarketDemographicsFromCdn` wires geokit from Globe CDN
-- **Pipeline** — builds `zip-h3-index.json` and DMA shards (`@twinfile/geo`)
+- **`loadZipIndexData` / `loadDemographicsData`** — pass JSON you already fetched (from host catalogs in Fieldwise)
+- **Globe CDN** — geo shapes only (ZCTA polygons); no ACS attributes on CDN
+- **Pipeline / lockers** — `geo-crosswalks`, `census-catalog`, and `census-{dma}` shards (`@twinfile/geo`)
 
 Without the index, polygon ZIP lookup falls back to Mapbox reverse geocoding (slow).
 
