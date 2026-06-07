@@ -10,7 +10,7 @@
  * To enable fast mode, load the H3-to-ZIP index (from CDN, lockers, or pipeline):
  * ```typescript
  * loadH3ZipIndex(indexData);
- * // or: await loadH3ZipIndexFromUrl('/us/indexes/zip-h3-index.json');
+ * // CDN: /cell/index.json + tier shards (/cell/r{N}/{cellId}); compile source stays r5
  * ```
  */
 
