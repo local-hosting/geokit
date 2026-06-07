@@ -12,7 +12,7 @@
  *   loadZipIndexData(h3ToZips);
  *
  *   // Or load from a URL your app hosts
- *   await initializeZipIndex('/us/indexes/zip-h3-index.json');
+ *   await initializeZipIndex('/cell/r5/{cellId}'); // or load monolith from pipeline data path
  */
 
 import { loadH3ZipIndex, loadH3ZipIndexFromUrl, isH3IndexLoaded } from './zipcode';
