@@ -783,6 +783,12 @@ const nearby = pois
 
 This package is designed to work in both browser and Node.js environments. It uses only standard JavaScript APIs and has no platform-specific dependencies.
 
+## Map UI (Web Components)
+
+Import from `@twinfile/geokit/ui`. Custom elements (`gk-map`, `gk-point`, `gk-layer`, …) emit `gk-*` events for app integration.
+
+See [docs/EVENTS.md](./docs/EVENTS.md) for the full event reference.
+
 ## Development
 
 ### Setup
