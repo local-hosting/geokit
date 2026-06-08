@@ -19,11 +19,11 @@
       line-height: 1.6;
     }
 
-    .sidebar {
+    .scroll-panel {
       position: fixed;
       top: 0;
       left: 0;
-      width: 280px;
+      width: var(--demo-scroll-panel-width, 280px);
       height: 100vh;
       background: #ffffff;
       backdrop-filter: none;
@@ -36,13 +36,13 @@
       flex-direction: column;
     }
 
-    .sidebar h1 {
+    .scroll-panel h1 {
       font-size: 1.25rem;
       margin-bottom: 0.5rem;
       line-height: 1.3;
     }
 
-    .sidebar > p {
+    .scroll-panel > p {
       color: #444444;
       font-size: 0.8rem;
       margin-bottom: 1.5rem;
@@ -130,8 +130,8 @@
       color: #000000;
     }
 
-    .main-content {
-      margin-left: 280px;
+    .scroll-main {
+      margin-left: var(--demo-scroll-panel-width, 280px);
     }
 
     .map-grid {
@@ -248,7 +248,7 @@
     }
 
     @media (max-width: 900px) {
-      .sidebar {
+      .scroll-panel {
         position: relative;
         width: 100%;
         height: auto;
@@ -256,7 +256,11 @@
         border-bottom: 1px solid rgba(48, 54, 61, 0.6);
       }
 
-      .main-content {
+      .scroll-main {
+        margin-left: 0;
+      }
+
+      body.demo-has-nav .scroll-main {
         margin-left: 0;
       }
 
@@ -277,9 +281,9 @@
     }
   </style>
 </head>
-<body>
-  <header id="demo-nav"></header>
-  <aside class="sidebar">
+<body data-demo-active="scrolling">
+  <aside id="demo-nav" aria-label="Demo pages"></aside>
+  <aside class="scroll-panel">
     <h1>Map Collection Scrolling Demo</h1>
     <p>Scroll through the grid to see maps being reused from a pool. Only a few maps are active at a time.</p>
     <div class="stats" id="stats">
@@ -302,7 +306,7 @@
     </div>
   </aside>
 
-  <main class="main-content">
+  <main class="scroll-main">
     <div class="info-banner">
       This demo shows how <code>gk-map-collection</code> manages a pool of map instances that are reused as you scroll.
     </div>
@@ -596,8 +600,8 @@
     setTimeout(updateStats, 1000);
   </script>
   <script type="module">
-    import { mountDemoNav } from './nav.js';
-    mountDemoNav('scrolling');
+    import { mountDemoNavFromDocument } from './nav.js';
+    mountDemoNavFromDocument();
   </script>
 </body>
 </html>
