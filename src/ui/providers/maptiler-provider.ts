@@ -261,15 +261,21 @@ export class MapTilerUIProvider extends BaseUIProvider {
       style = styleMap[style.toLowerCase()] ?? styleBase(style);
     }
 
-    // Use shared style object for MapTiler URLs so pool maps don't each fetch the same style.json (Safari load).
+    // Shared style object avoids N duplicate style.json fetches (Safari). When transformRequest is
+    // set (Fieldwise dev proxy), pass a proxied URL — cached objects embed absolute api.maptiler.com
+    // tile URLs that workers fetch without Referer, so isStyleLoaded() never completes.
     let styleOption: string | Record<string, unknown> = style;
     if (typeof style === 'string' && isMapTilerStyleUrl(style)) {
       const styleFetchUrl =
         typeof transformRequest === 'function' ? transformRequest(style, 'Style').url : style;
-      try {
-        styleOption = await getStyleObject(styleFetchUrl);
-      } catch (e) {
-        console.warn('[MapTiler] Style cache fetch failed, using URL:', e);
+      if (typeof transformRequest === 'function') {
+        styleOption = styleFetchUrl;
+      } else {
+        try {
+          styleOption = await getStyleObject(styleFetchUrl);
+        } catch (e) {
+          console.warn('[MapTiler] Style cache fetch failed, using URL:', e);
+        }
       }
     }
 
