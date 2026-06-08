@@ -89,6 +89,10 @@ export function createTerrainZoomHandler(ctx: MapTerrainContext): (() => void) |
   const minZoomAttr = ctx.getAttribute('terrain-min-zoom');
   if (minZoomAttr === null || minZoomAttr === '') return null;
 
+  const enabledAttr = ctx.getAttribute('terrain-enabled');
+  const toggleEnabled = enabledAttr !== null && enabledAttr !== 'false';
+  if (!toggleEnabled) return null;
+
   const minZoom = parseFloat(minZoomAttr);
   if (!Number.isFinite(minZoom) || !ctx.map) return null;
 
