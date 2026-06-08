@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CDN bulk demo</title>
+  <link rel="stylesheet" href="../brutalist.css">
+  <link rel="stylesheet" href="./cdn-demo.css">
+</head>
+<body class="cdn-demo">
+  <header id="demo-nav"></header>
+  <div class="cdn-shell">
+    <h1>bulk</h1>
+    <p class="subtitle">fetchCountiesBulkGeoJson · fetchStatesBulkGeoJson</p>
+    <div class="cdn-actions">
+      <button id="counties" type="button">Load counties</button>
+      <button id="states" type="button">Load states</button>
+      <button id="both" type="button">Prefetch both</button>
+    </div>
+    <pre id="log" class="cdn-log"></pre>
+    <div id="map" class="cdn-map"></div>
+  </div>
+  <script type="module" src="./bulk.js"></script>
+</body>
+</html>

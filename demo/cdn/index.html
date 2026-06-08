@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>geokit CDN demos</title>
+  <link rel="stylesheet" href="./cdn-demo.css">
+</head>
+<body class="cdn-demo">
+  <header id="demo-nav"></header>
+  <div class="cdn-hub">
+    <h1>geokit /cdn</h1>
+    <p class="subtitle">Live demos against Globe CDN — one page per module export.</p>
+    <div class="cdn-cards">
+      <a class="cdn-card" href="./fetch.html"><strong>fetch</strong><span>fetchGlobeCdn / fetchGlobeCdnJson — raw HTTP + Accept header</span></a>
+      <a class="cdn-card" href="./paths.html"><strong>paths</strong><span>URL builders — countyShapeUrl, state cities catalog</span></a>
+      <a class="cdn-card" href="./bulk.html"><strong>bulk</strong><span>counties + states outline FeatureCollections</span></a>
+      <a class="cdn-card" href="./county.html"><strong>county</strong><span>fetchCountyShapeFeature, fetchCountyShapesForFips</span></a>
+      <a class="cdn-card" href="./place.html"><strong>place</strong><span>catalog, cities bulk, single place feature</span></a>
+      <a class="cdn-card" href="./bounds.html"><strong>bounds</strong><span>boundsFromFeature / boundsFromFeatures</span></a>
+      <a class="cdn-card" href="./resolve-shape.html"><strong>resolve-shape</strong><span>FIPS, state+place, borough aliases → bounds</span></a>
+    </div>
+    <p class="subtitle" style="margin-top:24px">CDN base: <code id="cdn-base"></code></p>
+  </div>
+  <script type="module">
+    import { mountDemoNav } from '../nav.js';
+    import { cdnBaseLabel } from './shared.js';
+    mountDemoNav('cdn-hub');
+    document.getElementById('cdn-base').textContent = cdnBaseLabel();
+  </script>
+</body>
+</html>

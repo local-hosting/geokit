@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CDN county demo</title>
+  <link rel="stylesheet" href="./cdn-demo.css">
+</head>
+<body class="cdn-demo">
+  <header id="demo-nav"></header>
+  <div class="cdn-shell">
+    <div class="cdn-panel">
+      <h1>county</h1>
+      <p class="subtitle">fetchCountyShapeFeature · fetchCountyShapesForFips</p>
+      <div class="cdn-field"><label for="fips">FIPS (comma-separated for bulk)</label><input id="fips" value="36047,06037" /></div>
+      <div class="cdn-actions">
+        <button type="button" id="one">Load one</button>
+        <button type="button" class="secondary" id="bulk">Load bulk</button>
+      </div>
+      <pre class="cdn-log" id="log"></pre>
+    </div>
+    <div class="cdn-map-wrap"><div id="map" class="cdn-map"></div></div>
+  </div>
+  <script type="module" src="./county.js"></script>
+</body>
+</html>
