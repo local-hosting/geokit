@@ -6,4 +6,4 @@ coverage
 *.log
 .env
 .env.local
-tests/ui/**/__screenshots__
+tests/ui/**/__screenshots__.yarn/
