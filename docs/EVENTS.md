@@ -1,75 +1,105 @@
-# Geokit UI Events
+# Geokit UI events
 
-All custom events use the `gk-*` prefix where they are part of the public API. This document lists every event fired or listened to by geokit so apps can integrate without reaching into internals.
-
----
-
-## gk-map (element)
-
-| Event                          | When                                                                     | Detail                                                                                                                |
-| ------------------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `gk-map-ready`                 | Map is initialized and ready to use                                      | `{ map, element }`                                                                                                    |
-| `gk-map-style-load`            | Map style has finished loading (e.g. after theme switch)                 | `{ map, element }`                                                                                                    |
-| `gk-map-freeze`                | Map was frozen (e.g. moved off-screen in a collection)                   | `{ map, element }`                                                                                                    |
-| `gk-map-unfreeze`              | Map was unfrozen and reactivated                                         | `{ map, element }`                                                                                                    |
-| `gk-map-unload`                | Map is being torn down                                                   | `{ map, element }`                                                                                                    |
-| `gk-theme-change`              | Theme attribute or class changed                                         | `{ theme, themeName }`                                                                                                |
-| `gk-feature-selection-changed` | Selection on a GeoJSON source was updated via `updateFeatureSelection()` | `{ sourceId, selectedId, previousSelectedId }` — `selectedId` is the newly selected feature id (or `null` if cleared) |
-| `controls-visibility-change`   | Controls visibility toggled                                              | `{ visible }`                                                                                                         |
-| `child-added`                  | A child element was added (internal)                                     | `{ element, tagName }` — does not bubble                                                                              |
-| `child-removed`                | A child element was removed (internal)                                   | `{ element, tagName }` — does not bubble                                                                              |
+Custom events use the `gk-*` prefix where they are part of the public API. This document lists events fired or listened to by geokit so apps can integrate without reaching into internals.
 
 ---
 
-## gk-point (element)
+## gk-map
 
-| Event            | When                                                           | Detail                                                                  |
-| ---------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `point-created`  | Point layers were added to the map                             | `{ lat, lng, element }`                                                 |
-| `gk-point-focus` | Point was selected (click or `focus()` / `selected` attribute) | `{ pointId, pointName, title, lngLat, map, pointElement }` — cancelable |
-| `gk-point-blur`  | Point was deselected (click away or `blur()`)                  | `{ map }` — cancelable                                                  |
-
----
-
-## gk-isochrone (element)
-
-| Event                | When                                            | Detail                                     |
-| -------------------- | ----------------------------------------------- | ------------------------------------------ |
-| `isochrone-loaded`   | Isochrone data loaded and rendered              | `{ lat, lng, time, mode, data, element }`  |
-| `isochrone-error`    | Isochrone request or render failed              | `{ error, lat, lng, time, mode, element }` |
-| `isochrone-upgraded` | Isochrone was upgraded (e.g. resolution change) | `{ lat, lng, ... }`                        |
-
----
-
-## Popups (created via PopupElement.showPointPopup)
-
-| Event             | Target                                         | When                                       | Detail                                                                    |
-| ----------------- | ---------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------- |
-| `gk-popup-closed` | `gk-map` (or `document` if no gk-map ancestor) | Popup was closed (close button or removed) | `{ popup, map }` — use to sync selection/UI when user dismisses the popup |
+| Event                          | When                                                           | Detail                                                                                        |
+| ------------------------------ | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `gk-map-ready`                 | Map initialized and ready                                      | `{ map, element }`                                                                            |
+| `gk-map-style-load`            | Style finished loading (e.g. after theme switch)               | `{ map, element }`                                                                            |
+| `gk-map-freeze`                | Map frozen (e.g. off-screen in a collection)                   | `{ map, element }`                                                                            |
+| `gk-map-unfreeze`              | Map unfrozen and reactivated                                   | `{ map, element }`                                                                            |
+| `gk-map-unload`                | Map torn down                                                  | `{ map, element }`                                                                            |
+| `gk-map-failed`                | Map init or recovery failed                                    | `{ element, error? }`                                                                         |
+| `gk-map-stuck`                 | Map stuck on placeholder past timeout                          | `{ element }`                                                                                 |
+| `gk-theme-change`              | Theme attribute or class changed                               | `{ theme, themeName }`                                                                        |
+| `gk-feature-selection-changed` | Selection updated via `updateFeatureSelection()`               | `{ sourceId, selectedId, previousSelectedId }` — `selectedId` is the new feature id or `null` |
+| `gk-point-click`               | Click on a shared point layer (from `createSharedPointLayers`) | `{ lngLat, features, sourceId, map, element, originalEvent }` — cancelable                    |
+| `controls-visibility-change`   | Controls visibility toggled                                    | `{ visible }`                                                                                 |
+| `child-added`                  | Child element added (internal)                                 | `{ element, tagName }` — does not bubble                                                      |
+| `child-removed`                | Child element removed (internal)                               | `{ element, tagName }` — does not bubble                                                      |
+| `themechange`                  | Legacy theme event (prefer `gk-theme-change`)                  | `{ theme, themeName }`                                                                        |
 
 ---
 
-## gk-popup (element, declarative)
+## gk-point
 
-| Event          | When                       | Detail                           |
-| -------------- | -------------------------- | -------------------------------- |
-| `popup-opened` | Popup was shown on the map | `{ lat, lng, content, element }` |
+| Event                   | When                                                                  | Detail                                                                  |
+| ----------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `point-created`         | Point layers added to the map                                         | `{ lat, lng, element }`                                                 |
+| `gk-point-focus`        | Point selected (click or `focus()` / `selected` attribute)            | `{ pointId, pointName, title, lngLat, map, pointElement }` — cancelable |
+| `gk-point-blur`         | Point deselected                                                      | `{ map }` — cancelable                                                  |
+| `gk-point-hover`        | Pointer entered point hover layer                                     | `{ pointId, pointName, lngLat, map, pointElement }` — cancelable        |
+| `gk-point-hover-end`    | Pointer left point hover layer                                        | `{ map, pointElement }` — cancelable                                    |
+| `gk-point-data-changed` | Point data or attributes changed (internal; `gk-point-layer` listens) | (no detail)                                                             |
 
 ---
 
-## gk-map-collection (element)
+## gk-point-layer / gk-layer
 
-| Event                  | When                                      | Detail      |
-| ---------------------- | ----------------------------------------- | ----------- |
-| `map-collection-ready` | Collection has initialized its pool/slots | (no detail) |
+| Event                 | When                               | Detail                                                               |
+| --------------------- | ---------------------------------- | -------------------------------------------------------------------- |
+| `gk-layer-click`      | Feature clicked on layer           | `{ feature, lngLat, layerId, sourceId, originalEvent }` — cancelable |
+| `gk-layer-mouseenter` | Pointer entered a rendered feature | `{ feature, lngLat, layerId, sourceId }`                             |
+| `gk-layer-mouseleave` | Pointer left the layer             | `{ layerId, sourceId }`                                              |
+
+---
+
+## gk-isochrone
+
+| Event                    | When                                        | Detail                                            |
+| ------------------------ | ------------------------------------------- | ------------------------------------------------- |
+| `isochrone-loaded`       | Isochrone data loaded and rendered          | `{ lat, lng, time, mode, data, element }`         |
+| `isochrone-error`        | Isochrone request or render failed          | `{ error, lat, lng, time, mode, element }`        |
+| `isochrone-upgraded`     | Isochrone upgraded (e.g. resolution change) | `{ lat, lng, ... }`                               |
+| `gk-isochrone-hover`     | Pointer entered isochrone fill              | `{ lngLat, features, map, element }` — cancelable |
+| `gk-isochrone-hover-end` | Pointer left isochrone fill                 | `{ map, element }` — cancelable                   |
+
+---
+
+## gk-popup
+
+| Event             | When                             | Detail                                                                   |
+| ----------------- | -------------------------------- | ------------------------------------------------------------------------ |
+| `popup-opened`    | Declarative popup shown          | `{ lat, lng, content, element }`                                         |
+| `gk-popup-closed` | Popup closed (button or removed) | `{ popup, map }` — dispatched on nearest `gk-map` ancestor or `document` |
+
+---
+
+## gk-map-collection
+
+| Event                  | When                                  | Detail      |
+| ---------------------- | ------------------------------------- | ----------- |
+| `map-collection-ready` | Collection initialized its pool/slots | (no detail) |
+
+---
+
+## Other elements
+
+| Element        | Event                       | When                 | Detail                          |
+| -------------- | --------------------------- | -------------------- | ------------------------------- |
+| `gk-polygon`   | `polygon-created`           | Polygon layer added  | `{ element, ... }`              |
+| `gk-marker`    | `marker-created`            | Marker added         | `{ lat, lng, element }`         |
+| `gk-marker`    | `marker-click`              | Marker clicked       | `{ lat, lng, element }`         |
+| `gk-marker`    | `marker-dragend`            | Marker drag ended    | `{ lat, lng, element }`         |
+| `gk-polyline`  | `polyline-created`          | Polyline layer added | `{ element, ... }`              |
+| `gk-polyline`  | `polyline-click`            | Polyline clicked     | `{ lngLat, features, element }` |
+| `gk-h3`        | `h3-created`                | H3 hex layer added   | `{ element, ... }`              |
+| `gk-geolocate` | `geolocate`                 | User location found  | `{ coords }`                    |
+| `gk-geolocate` | `geolocate-error`           | Geolocation failed   | `{ error }`                     |
+| `gk-geolocate` | `track-user-location-start` | Tracking started     | (no detail)                     |
+| `gk-geolocate` | `track-user-location-end`   | Tracking ended       | (no detail)                     |
 
 ---
 
 ## Document (dispatched by geokit)
 
-| Event                 | When                                                                       | Detail                                                         |
-| --------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `gk-clear-all-popups` | App calls `PopupElement.closeAllPopupsForSource(map, sourceId)` or similar | `{ sourceId }` — used to coordinate closing popups across maps |
+| Event                 | When                                                | Detail                                                   |
+| --------------------- | --------------------------------------------------- | -------------------------------------------------------- |
+| `gk-clear-all-popups` | `PopupElement.closeAllPopupsForSource()` or similar | `{ sourceId? }` — coordinates closing popups across maps |
 
 ---
 
@@ -77,16 +107,16 @@ All custom events use the `gk-*` prefix where they are part of the public API. T
 
 Apps can dispatch these to drive geokit behavior:
 
-| Event                 | Effect                                                                                                                                 |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `gk-clear-all-focus`  | All `gk-point` elements clear their selected state (blur). Detail can include `{ pointElement, pointId }` to exclude a specific point. |
-| `gk-clear-all-popups` | All `gk-point` elements close their popup (if any). Detail can include `{ pointElement, pointId }` to exclude a specific point.        |
+| Event                 | Effect                                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `gk-clear-all-focus`  | All `gk-point` elements clear selected state. Detail can include `{ pointElement, pointId }` to exclude one point. |
+| `gk-clear-all-popups` | All `gk-point` elements close their popup. Detail can include `{ pointElement, pointId }` to exclude one point.    |
 
 ---
 
 ## Usage examples
 
-**Sync app state when feature selection changes (e.g. venue layer):**
+**Sync app state when feature selection changes:**
 
 ```js
 mapElement.addEventListener('gk-feature-selection-changed', (e) => {
@@ -97,7 +127,7 @@ mapElement.addEventListener('gk-feature-selection-changed', (e) => {
 });
 ```
 
-**Clear selection when user closes the popup:**
+**Clear selection when the user closes the popup:**
 
 ```js
 document.addEventListener('gk-popup-closed', () => {
@@ -109,4 +139,14 @@ document.addEventListener('gk-popup-closed', () => {
 
 ```js
 document.dispatchEvent(new CustomEvent('gk-clear-all-focus', { bubbles: true }));
+```
+
+**Map ready only inside a container:**
+
+```js
+import { onMapReadyInContainer } from '@twinfile/geokit/ui';
+
+const unsub = onMapReadyInContainer(containerEl, (mapElement, map) => {
+  // decorate map, add layers, etc.
+});
 ```
