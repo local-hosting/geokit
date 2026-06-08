@@ -5,15 +5,17 @@ import { DEMO_SECTIONS } from './pages.js';
  * @returns {string}
  */
 export function renderDemoNav(activeId) {
-  return DEMO_SECTIONS.map((section) => {
+  const sections = DEMO_SECTIONS.map((section) => {
     const links = section.items
       .map((item) => {
         const active = item.id === activeId ? ' active' : '';
         return `<a href="${item.path}" class="demo-nav-link${active}">${item.label}</a>`;
       })
       .join('');
-    return `<div class="demo-nav-section"><span class="demo-nav-label">${section.label}</span>${links}</div>`;
+    return `<div class="demo-nav-section"><span class="demo-nav-label">${section.label}</span><div class="demo-nav-links">${links}</div></div>`;
   }).join('');
+
+  return `<div class="demo-nav-brand">geokit</div>${sections}`;
 }
 
 /**
