@@ -43,8 +43,10 @@ const styleCache = new Map<string, Promise<Record<string, unknown>>>();
 function isMapTilerStyleUrl(url: string): boolean {
   return (
     typeof url === 'string' &&
-    (url.startsWith('https://api.maptiler.com/') || url.startsWith('http://api.maptiler.com/')) &&
-    url.includes('/style.json')
+    url.includes('/style.json') &&
+    (url.startsWith('https://api.maptiler.com/') ||
+      url.startsWith('http://api.maptiler.com/') ||
+      url.startsWith('/__maptiler-api/'))
   );
 }
 
@@ -123,6 +125,11 @@ export class MapTilerUIProvider extends BaseUIProvider {
 
   getName(): string {
     return 'maptiler';
+  }
+
+  /** True when SDK module is loaded (instance or window.maptilersdk). */
+  isInitialized(): boolean {
+    return Boolean(this.sdk || (typeof window !== 'undefined' && (window as any).maptilersdk));
   }
 
   getCssUrl(): string | null {
@@ -297,6 +304,8 @@ export class MapTilerUIProvider extends BaseUIProvider {
       fullscreenControl: false,
       attributionControl: false,
       ...(options.extra || {}),
+      terrain: false,
+      terrainControl: false,
     };
     if (apiKey) {
       mapOptions.apiKey = apiKey;
@@ -312,6 +321,21 @@ export class MapTilerUIProvider extends BaseUIProvider {
     }
 
     const map = new this.sdk.Map(mapOptions);
+
+    if (typeof map.disableTerrain === 'function') {
+      try {
+        map.disableTerrain();
+      } catch {
+        /* ignore */
+      }
+    }
+    if (typeof map.setTerrain === 'function') {
+      try {
+        map.setTerrain(null);
+      } catch {
+        /* ignore */
+      }
+    }
 
     // Disable caching again after construction (SDK constructor may re-enable)
     if (this.sdk?.config) {

@@ -285,7 +285,9 @@ export class MapElement extends BaseElement {
         if (!existingProvider) {
           // Provider not registered, register and initialize it
           if (providerName === 'maptiler') {
-            registerUIProvider('maptiler', new MapTilerUIProvider());
+            if (!getUIProviderByName('maptiler')) {
+              registerUIProvider('maptiler', new MapTilerUIProvider());
+            }
             // Only pass config if explicitly provided via attributes
             provider = await getProviderByName('maptiler', apiKey ? { apiKey } : undefined);
           } else if (providerName === 'mapbox') {
@@ -325,7 +327,9 @@ export class MapElement extends BaseElement {
           // No provider set, auto-initialize MapTiler if we have an API key
           if (apiKey) {
             debug.warn('[geokit] Auto-initializing MapTiler provider from api-key attribute');
-            registerUIProvider('maptiler', new MapTilerUIProvider());
+            if (!getUIProviderByName('maptiler')) {
+              registerUIProvider('maptiler', new MapTilerUIProvider());
+            }
             provider = await getProviderByName('maptiler', { apiKey });
           } else {
             throw new Error(
@@ -553,14 +557,21 @@ export class MapElement extends BaseElement {
           })
         );
 
-        // 3D terrain: enable when zoom >= terrain-min-zoom (if set)
-        this.setupTerrain();
+        // 3D terrain / hillshade are opt-in via attributes (default off)
+        if (this.isMapOverlayEnabled('terrain-enabled') && this.getAttribute('terrain-min-zoom')) {
+          this.setupTerrain();
+        } else {
+          this.cleanupTerrain();
+        }
 
         // 3D buildings: enable when zoom >= buildings-min-zoom (if set)
         this.setup3DBuildings();
 
-        // Hand-drawn hillshade overlay (if hillshade-enabled attribute is set)
-        this.setupHillshade();
+        if (this.isMapOverlayEnabled('hillshade-enabled')) {
+          this.setupHillshade();
+        } else {
+          this.cleanupHillshade();
+        }
 
         // Defer non-critical setup to avoid blocking first paint
         const deferredSetup = () => {
@@ -597,6 +608,17 @@ export class MapElement extends BaseElement {
             }
             if (fallbackCount >= fallbackMax) {
               window.clearInterval(fallbackId);
+              const mapContainer = (
+                this.map as { getContainer?: () => HTMLElement | null } | undefined
+              )?.getContainer?.();
+              const hasCanvas = Boolean(mapContainer?.querySelector?.('canvas'));
+              if (hasCanvas) {
+                debug.log('[gk-map] fallback: canvas painted, dispatching map-ready', {
+                  check: fallbackCount,
+                });
+                dispatchMapReady();
+                return;
+              }
               debug.log('[gk-map] fallback: style never loaded after 5s, will retry', {
                 _isFrozen: this._isFrozen,
               });
@@ -1034,6 +1056,13 @@ export class MapElement extends BaseElement {
     }
     map.off('style.load');
     map.off('error');
+  }
+
+  /** True when a boolean map overlay attribute is enabled (present and not "false"/"0"). */
+  private isMapOverlayEnabled(name: string): boolean {
+    if (!this.hasAttribute(name)) return false;
+    const value = this.getAttribute(name);
+    return value !== 'false' && value !== '0';
   }
 
   private setupTerrain(): void {
