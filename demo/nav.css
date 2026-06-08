@@ -1,0 +1,103 @@
+:root {
+  --demo-nav-height: 52px;
+}
+
+.demo-nav-host {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  min-height: var(--demo-nav-height);
+  padding: 8px 12px;
+  box-sizing: border-box;
+  background: var(--bk-bg);
+  border-bottom: var(--bk-border);
+}
+
+.demo-nav-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.demo-nav-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bk-muted);
+  margin-right: 2px;
+}
+
+.demo-nav-link {
+  font-family: var(--bk-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border: var(--bk-border);
+  border-radius: 0;
+  background: var(--bk-bg);
+  color: var(--bk-fg);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-nav-link:hover {
+  background: var(--bk-fg);
+  color: var(--bk-bg);
+}
+
+.demo-nav-link.active {
+  background: var(--bk-fg);
+  color: var(--bk-bg);
+}
+
+body.demo-has-nav #map-container {
+  height: calc(100vh - var(--demo-nav-height));
+}
+
+body.demo-has-nav .theme-toggle {
+  position: fixed;
+  top: 8px;
+  right: 12px;
+  left: auto;
+  z-index: 1001;
+}
+
+body.demo-has-nav #status {
+  top: calc(var(--demo-nav-height) + 10px);
+}
+
+body.demo-has-nav .sidebar {
+  top: var(--demo-nav-height);
+  height: calc(100vh - var(--demo-nav-height));
+}
+
+body.demo-has-nav.cdn-demo .cdn-shell {
+  min-height: calc(100vh - var(--demo-nav-height));
+  margin-top: var(--demo-nav-height);
+}
+
+body.demo-has-nav.cdn-demo .cdn-map-wrap {
+  min-height: calc(100vh - var(--demo-nav-height));
+}
+
+body.demo-has-nav.cdn-demo .cdn-hub {
+  margin-top: var(--demo-nav-height);
+}
+
+body.demo-has-nav.centered-demo {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding-top: var(--demo-nav-height);
+}

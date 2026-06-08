@@ -1,0 +1,28 @@
+/**
+ * Dev demos — hide MapLibre footer attribution chrome.
+ * Product apps should show credits; examples keep the map canvas clean.
+ */
+.cdn-map .maplibregl-ctrl-attrib,
+.cdn-map .maplibregl-ctrl-attrib-button,
+.cdn-map .maplibregl-ctrl-attrib-inner,
+.cdn-map .maplibregl-ctrl-logo,
+.cdn-map .maplibregl-compact,
+.cdn-map .maplibregl-compact-show,
+.cdn-map .maplibregl-ctrl-bottom-left:has(.maplibregl-ctrl-attrib),
+.cdn-map .maplibregl-ctrl-bottom-right:has(.maplibregl-ctrl-attrib),
+.cdn-map a[href*='maptiler'],
+.cdn-map a[href*='maplibre'],
+.cdn-map a[href*='openstreetmap'] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+gk-map.gk-hide-attribution .maplibregl-ctrl-attrib-button,
+gk-map.gk-hide-attribution .maplibregl-compact,
+gk-map.gk-hide-attribution .maplibregl-ctrl-bottom-right:empty,
+gk-map.gk-hide-attribution .maplibregl-ctrl-bottom-left:has(.maplibregl-ctrl-attrib) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
