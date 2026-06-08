@@ -123,7 +123,6 @@ export async function getProviderByName(
   const globalConfig = providerConfigs.get(name);
   const finalConfig = { ...globalConfig, ...config };
 
-  // Initialize if config is provided or available globally
   if (Object.keys(finalConfig).length > 0) {
     await provider.initialize(finalConfig);
   }
