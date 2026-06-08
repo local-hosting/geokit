@@ -1,7 +1,10 @@
 // geokit Demo App
 // Map view state (zoom, center, pitch, bearing) is preserved in the URL hash (#map=zoom/lat/lng[/pitch][/bearing])
 // when the map has the sync-url attribute. Pan/zoom the map and refresh or use browser back/forward to restore.
+import { mountDemoNavFromDocument } from './nav.js';
 import '../src/ui/theme.css';
+
+mountDemoNavFromDocument();
 // Configure API keys before gk-map elements are registered (their connectedCallback runs immediately and needs config).
 import { configure } from '../src/ui/providers/registry.ts';
 const maptilerKey = import.meta.env.MAPTILER_KEY;
@@ -49,17 +52,14 @@ const themeIcon = themeToggle?.querySelector('.theme-icon');
 const mapElement = document.getElementById('demo-map');
 
 function updateThemeUI(themeName) {
-  if (themeName === 'light') {
-    document.body.classList.add('light-theme');
-    if (themeIcon) themeIcon.textContent = '☀️';
-  } else {
-    document.body.classList.remove('light-theme');
-    if (themeIcon) themeIcon.textContent = '🌙';
-  }
+  const invert = themeName === 'dark';
+  document.body.classList.toggle('bk-invert', invert);
+  document.body.classList.toggle('light-theme', !invert);
+  if (themeIcon) themeIcon.textContent = invert ? 'WHT' : 'INV';
 }
 
 // Initialize theme UI based on attribute
-const initialTheme = mapElement?.getAttribute('theme') || 'dark';
+const initialTheme = mapElement?.getAttribute('theme') || 'light';
 updateThemeUI(initialTheme);
 
 // Listen for theme toggle click

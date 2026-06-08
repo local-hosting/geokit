@@ -6,12 +6,12 @@
   <title>geokit Map Demo</title>
   <link rel="stylesheet" href="./style.css">
 </head>
-<body>
+<body data-demo-active="main">
+  <header id="demo-nav"></header>
   <div id="map-container">
     <!-- Each gk-map shows its own loading UI until ready -->
-    <!-- Theme toggle button -->
     <button id="theme-toggle" class="theme-toggle" title="Toggle theme">
-      <span class="theme-icon">🌙</span>
+      <span class="theme-icon">INV</span>
     </button>
     <gk-map 
       id="demo-map"
@@ -19,7 +19,7 @@
       lat="40.7128" 
       lng="-74.006" 
       zoom="12"
-      theme="dark"
+      theme="light" map-style="basic"
       sync-url>
       <!-- Demo isochrone: 15-minute driving time from NYC center (H3 hexagon version) -->
       <!-- Color works on both light and dark themes so it stays visible after theme toggle -->
@@ -30,8 +30,8 @@
         mode="driving"
         render="h3"
         h3-resolution="10"
-        color="#3388ff"
-        opacity="0.25"
+        color="#000000"
+        opacity="0.12"
         stroke-width="0">
       </gk-isochrone>
       
@@ -42,7 +42,7 @@
         lng="-74.006"
         point-id="nyc-center"
         point-name="New York City Center"
-        color="#00D9FF"
+        color="#000000"
         size="3">
       </gk-point>
       

@@ -1,5 +1,8 @@
 // geokit Layer Creation Test - Using Expression Builders
+import { mountDemoNav } from './nav.js';
 import '../src/ui/theme.css';
+
+mountDemoNav('layers-test');
 import { configure } from '../src/ui/index.ts';
 import { 
   createSharedPointLayers,

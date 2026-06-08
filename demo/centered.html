@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="stylesheet" href="./brutalist.css">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>geokit - Provider Comparison</title>
   <style>
     body { display: flex; gap: 2rem; justify-content: center; align-items: center; height: 100vh; margin: 0; }
     .map-card { width: 25vw; height: 25vh; }
-    .map-card h3 { margin: 0 0 0.5rem 0; font-family: sans-serif; font-size: 0.9rem; color: #666; }
+    .map-card h3 { margin: 0 0 0.5rem 0; font-family: sans-serif; font-size: 0.9rem; color: #000; }
   </style>
 </head>
-<body>
+<body class="centered-demo" data-demo-active="centered">
+  <header id="demo-nav"></header>
   <div class="map-card">
     <h3>MapTiler</h3>
-    <gk-map provider="maptiler" lat="40.7128" lng="-74.006" zoom="12" auto-hide-controls hide-attribution>
+    <gk-map provider="maptiler" theme="light" map-style="basic" lat="40.7128" lng="-74.006" zoom="12" auto-hide-controls hide-attribution>
       <gk-control-navigation show-zoom="true" show-compass="false"></gk-control-navigation>
-      <gk-point lat="40.7128" lng="-74.006" color="#ff0000" size="12"></gk-point>
+      <gk-point lat="40.7128" lng="-74.006" color="#000000" size="12"></gk-point>
     </gk-map>
   </div>
   
   <div class="map-card">
     <h3>Mapbox</h3>
-    <gk-map provider="mapbox" lat="40.7128" lng="-74.006" zoom="12" auto-hide-controls hide-attribution>
+    <gk-map provider="mapbox" theme="light" map-style="basic" lat="40.7128" lng="-74.006" zoom="12" auto-hide-controls hide-attribution>
       <gk-control-navigation show-zoom="true" show-compass="false"></gk-control-navigation>
-      <gk-polygon points="[[40.72,-74.02],[40.72,-73.99],[40.70,-73.99],[40.70,-74.02]]" fill-color="#0066cc" fill-opacity="0.2" stroke-color="#0066cc" stroke-width="2"></gk-polygon>
+      <gk-polygon points="[[40.72,-74.02],[40.72,-73.99],[40.70,-73.99],[40.70,-74.02]]" fill-color="#000000" fill-opacity="0.08" stroke-color="#000000" stroke-width="2"></gk-polygon>
     </gk-map>
   </div>
   
