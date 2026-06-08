@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CDN bounds demo</title>
+  <link rel="stylesheet" href="./cdn-demo.css">
+</head>
+<body class="cdn-demo">
+  <header id="demo-nav"></header>
+  <div class="cdn-shell">
+    <div class="cdn-panel">
+      <h1>bounds</h1>
+      <p class="subtitle">boundsFromFeature · boundsFromFeatures</p>
+      <div class="cdn-field"><label for="fips">County FIPS</label><input id="fips" value="48201" /></div>
+      <button type="button" id="load">Load + fit bounds</button>
+      <pre class="cdn-log" id="log"></pre>
+    </div>
+    <div class="cdn-map-wrap"><div id="map" class="cdn-map"></div></div>
+  </div>
+  <script type="module" src="./bounds.js"></script>
+</body>
+</html>
