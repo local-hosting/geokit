@@ -4,22 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>geokit MCP Map</title>
-  <link rel="stylesheet" href="./style.css">
   <style>
     html, body, #map-container, gk-map {
       width: 100%;
       height: 100%;
       margin: 0;
+      padding: 0;
+      overflow: hidden;
     }
   </style>
 </head>
 <body>
-  <header id="demo-nav"></header>
   <div id="map-container">
     <gk-map
       id="mcp-map"
       provider="maptiler"
-      theme="light" map-style="basic"
+      theme="light"
+      map-style="basic"
       sync-url>
     </gk-map>
   </div>
