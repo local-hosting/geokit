@@ -13,15 +13,6 @@ export default defineConfig(({ mode }) => {
       },
       preserveSymlinks: false,
     },
-    build: {
-      outDir: '../dist-demo',
-      emptyOutDir: true,
-      rollupOptions: {
-        input: {
-          main: resolve(__dirname, '../demo/index.html'),
-        },
-      },
-    },
     server: {
       port: 3001,
       open: true,
@@ -34,6 +25,7 @@ export default defineConfig(({ mode }) => {
     define: {
       'import.meta.env.MAPTILER_KEY': JSON.stringify(env.MAPTILER_KEY),
       'import.meta.env.MAPBOX_TOKEN': JSON.stringify(env.MAPBOX_TOKEN),
+      'import.meta.env.GEOKIT_GLOBE_CDN_URL': JSON.stringify(env.GEOKIT_GLOBE_CDN_URL || env.GLOBE_CDN_URL || ''),
     },
   };
 });
