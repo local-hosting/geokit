@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CDN resolve-shape demo</title>
+  <link rel="stylesheet" href="./cdn-demo.css">
+</head>
+<body class="cdn-demo">
+  <header id="demo-nav"></header>
+  <div class="cdn-shell">
+    <div class="cdn-panel">
+      <h1>resolve-shape</h1>
+      <p class="subtitle">FIPS · state+place · borough aliases (Brooklyn → 36047)</p>
+      <div class="cdn-field"><label for="mode">Mode</label>
+        <select id="mode">
+          <option value="fips">county FIPS</option>
+          <option value="place">state + place</option>
+          <option value="borough">borough alias</option>
+        </select>
+      </div>
+      <div class="cdn-field" id="fips-wrap"><label for="fips">FIPS</label><input id="fips" value="36047" /></div>
+      <div class="cdn-field" id="state-wrap" hidden><label for="state">State</label><input id="state" value="ny" /></div>
+      <div class="cdn-field" id="place-wrap" hidden><label for="place">Place</label><input id="place" value="new-york" /></div>
+      <div class="cdn-field" id="borough-wrap" hidden><label for="borough">Borough</label><input id="borough" value="brooklyn" /></div>
+      <button type="button" id="resolve">Resolve bounds</button>
+      <pre class="cdn-log" id="log"></pre>
+    </div>
+    <div class="cdn-map-wrap"><div id="map" class="cdn-map"></div></div>
+  </div>
+  <script type="module" src="./resolve-shape.js"></script>
+</body>
+</html>

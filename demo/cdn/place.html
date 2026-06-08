@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CDN place demo</title>
+  <link rel="stylesheet" href="./cdn-demo.css">
+</head>
+<body class="cdn-demo">
+  <header id="demo-nav"></header>
+  <div class="cdn-shell">
+    <div class="cdn-panel">
+      <h1>place</h1>
+      <p class="subtitle">catalog · cities bulk · fetchStatePlaceFeature</p>
+      <div class="cdn-field"><label for="state">State</label><input id="state" value="ny" /></div>
+      <div class="cdn-field"><label for="place">Place slug</label><input id="place" value="new-york" /></div>
+      <div class="cdn-actions">
+        <button type="button" id="catalog">Load catalog</button>
+        <button type="button" class="secondary" id="cities">Cities bulk</button>
+        <button type="button" class="secondary" id="one">One place</button>
+      </div>
+      <pre class="cdn-log" id="log"></pre>
+    </div>
+    <div class="cdn-map-wrap"><div id="map" class="cdn-map"></div></div>
+  </div>
+  <script type="module" src="./place.js"></script>
+</body>
+</html>
