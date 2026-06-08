@@ -379,9 +379,41 @@ export function buildFeatureStateOpacityExpression(
   ];
 }
 
+/** Minimum circle radius in pixels (MapTiler/MapLibre can drop sub-2px points). */
+const MIN_POINT_RADIUS_PX = 2;
+
+function scaleRadiusInterpolation(interpolate: unknown[], scale: number): unknown[] {
+  if (
+    !Array.isArray(interpolate) ||
+    interpolate[0] !== 'interpolate' ||
+    typeof scale !== 'number' ||
+    scale === 1
+  ) {
+    return interpolate;
+  }
+
+  const scaled = [...interpolate];
+  for (let i = 4; i < scaled.length; i += 2) {
+    if (typeof scaled[i] === 'number') {
+      scaled[i] = Math.max(MIN_POINT_RADIUS_PX, (scaled[i] as number) * scale);
+    }
+  }
+  return scaled;
+}
+
+function defaultScaleFromMatchExpression(scaleExpression: unknown[]): number {
+  if (!Array.isArray(scaleExpression) || scaleExpression[0] !== 'match') return 1;
+  const fallback = scaleExpression[scaleExpression.length - 1];
+  return typeof fallback === 'number' ? fallback : 1;
+}
+
 /**
  * Multiply a base radius expression by a scale expression.
  * Useful for category-based radius scaling.
+ *
+ * MapTiler/MapLibre silently reject `['*', interpolate, match]` and `case` branches that
+ * return interpolate expressions for circle-radius. When the scale is a match expression,
+ * we apply the match fallback scale to the interpolate stops instead.
  *
  * @param baseRadius - Base radius expression (e.g., from getPointRadiusInterpolation)
  * @param scaleExpression - Scale multiplier expression (e.g., from buildCategoryRadiusScaleExpression)
@@ -389,8 +421,16 @@ export function buildFeatureStateOpacityExpression(
  */
 export function multiplyRadiusExpression(
   baseRadius: unknown[],
-  scaleExpression: unknown[]
+  scaleExpression: unknown[] | number
 ): unknown[] {
+  if (typeof scaleExpression === 'number') {
+    return scaleRadiusInterpolation(baseRadius, scaleExpression);
+  }
+
+  if (Array.isArray(scaleExpression) && scaleExpression[0] === 'match') {
+    return scaleRadiusInterpolation(baseRadius, defaultScaleFromMatchExpression(scaleExpression));
+  }
+
   return ['*', baseRadius, scaleExpression];
 }
 
@@ -413,9 +453,6 @@ export function multiplyRadiusExpression(
  * });
  * ```
  */
-/** Minimum circle radius in pixels so points stay visible when zoomed out (Safari needs ≥2px or points can vanish). */
-const MIN_POINT_RADIUS_PX = 2;
-
 export function getPointRadiusInterpolation(options: CircleStyleOptions = {}): unknown[] {
   const { scale = 1, exponent = 1.5 } = options;
   // Point radius never below 2px so Safari reliably renders when zoomed out (1px can vanish)
