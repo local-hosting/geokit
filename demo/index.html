@@ -2,61 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>geokit Map Demo</title>
-  <link rel="stylesheet" href="./style.css">
+  <meta http-equiv="refresh" content="0; url=/maps/index.html">
+  <title>geokit demos</title>
+  <script>location.replace('/maps/index.html');</script>
 </head>
-<body data-demo-active="main">
-  <aside id="demo-nav" aria-label="Demo pages"></aside>
-  <div id="map-container">
-    <!-- Each gk-map shows its own loading UI until ready -->
-    <button id="theme-toggle" class="theme-toggle" title="Toggle theme">
-      <span class="theme-icon">INV</span>
-    </button>
-    <gk-map 
-      id="demo-map"
-      provider="maptiler"
-      lat="40.7128" 
-      lng="-74.006" 
-      zoom="12"
-      theme="light" map-style="basic"
-      sync-url>
-      <!-- Demo isochrone: 15-minute driving time from NYC center (H3 hexagon version) -->
-      <!-- Color works on both light and dark themes so it stays visible after theme toggle -->
-      <gk-isochrone 
-        lat="40.7128" 
-        lng="-74.006" 
-        time="15" 
-        mode="driving"
-        render="h3"
-        h3-resolution="10"
-        color="#000000"
-        opacity="0.12"
-        stroke-width="0">
-      </gk-isochrone>
-      
-      <!-- Demo point: Interactive point with popup on click -->
-      <!-- Point renders above the isochrone -->
-      <gk-point 
-        lat="40.7128" 
-        lng="-74.006"
-        point-id="nyc-center"
-        point-name="New York City Center"
-        color="#000000"
-        size="3">
-      </gk-point>
-      
-      <!-- Demo popup: Styled popup showing information -->
-      <gk-popup 
-        lat="40.7580" 
-        lng="-73.9855"
-        content="<h4>Times Square</h4><p>Famous intersection in Manhattan</p>"
-        anchor="bottom"
-        close-button="true">
-      </gk-popup>
-    </gk-map>
-  </div>
-
-  <script type="module" src="./app.js"></script>
-</body>
+<body></body>
 </html>

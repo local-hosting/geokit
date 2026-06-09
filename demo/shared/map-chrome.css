@@ -1,6 +1,6 @@
 /**
  * Dev demos — hide MapLibre footer attribution chrome.
- * Product apps should show credits; examples keep the map canvas clean.
+ * Product apps should show credits; demos keep the map canvas clean.
  */
 .cdn-map .maplibregl-ctrl-attrib,
 .cdn-map .maplibregl-ctrl-attrib-button,

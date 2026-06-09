@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 3001,
-      open: true,
+      open: '/maps/index.html',
       host: true,
       fs: {
         // Allow serving files from parent directory

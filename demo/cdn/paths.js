@@ -6,10 +6,10 @@ import {
   stateCitiesCatalogUrl,
   statesBulkUrl,
 } from '../../src/cdn/paths.ts';
-import { mountDemoNav } from '../nav.js';
+import { mountDemoNavFromDocument } from '../shared/nav.js';
 import { appendLog, cdnBaseLabel } from './shared.js';
 
-mountDemoNav('paths');
+mountDemoNavFromDocument();
 const logEl = document.getElementById('log');
 const base = cdnBaseLabel();
 
