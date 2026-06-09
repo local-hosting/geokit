@@ -1,12 +1,14 @@
 /**
- * gk-layer dataset registry — CDN geo presets (state, county, dma).
+ * gk-layer dataset registry — CDN geo presets (state, county, place, zip, dma).
  */
 
 import { mountCountyDataset } from './layer-dataset-county';
+import { mountPlaceDataset } from './layer-dataset-place';
 import { mountStateDataset } from './layer-dataset-state';
+import { mountZipDataset } from './layer-dataset-zip';
 import { mountDmaDataset } from './layer-dataset-dma';
 
-export type LayerDatasetId = 'state' | 'county' | 'dma';
+export type LayerDatasetId = 'state' | 'county' | 'dma' | 'place' | 'city' | 'zip';
 
 export type LayerDatasetMode = 'viewport' | 'slugs';
 
@@ -18,6 +20,8 @@ export type LayerDatasetOptions = {
   minzoom?: number;
   interactive?: boolean;
   visible?: boolean;
+  /** Place preset — two-letter state code (e.g. tx). */
+  state?: string;
   /** DMA only */
   mode?: LayerDatasetMode;
   slugs?: string[];
@@ -79,14 +83,39 @@ type LayerDatasetRunner = {
   mount: (ctx: LayerDatasetContext) => Promise<LayerDatasetHandle | null>;
 };
 
-const REGISTRY: Record<LayerDatasetId, LayerDatasetRunner> = {
+const REGISTRY: Record<'state' | 'county' | 'dma' | 'place' | 'zip', LayerDatasetRunner> = {
   state: { mount: mountStateDataset },
   county: { mount: mountCountyDataset },
   dma: { mount: mountDmaDataset },
+  place: { mount: mountPlaceDataset },
+  zip: { mount: mountZipDataset },
 };
 
 export function isLayerDatasetId(value: string | null | undefined): value is LayerDatasetId {
-  return value === 'state' || value === 'county' || value === 'dma';
+  return (
+    value === 'state' ||
+    value === 'county' ||
+    value === 'dma' ||
+    value === 'place' ||
+    value === 'city' ||
+    value === 'zip'
+  );
+}
+
+export function resolveLayerDatasetId(
+  value: string | null | undefined
+): 'state' | 'county' | 'dma' | 'place' | 'zip' | null {
+  if (value === 'city') return 'place';
+  if (
+    value === 'state' ||
+    value === 'county' ||
+    value === 'dma' ||
+    value === 'place' ||
+    value === 'zip'
+  ) {
+    return value;
+  }
+  return null;
 }
 
 export function parseLayerDatasetSlugs(raw: string | null | undefined): string[] | undefined {
@@ -101,9 +130,11 @@ export function parseLayerDatasetSlugs(raw: string | null | undefined): string[]
 export async function mountLayerDataset(
   ctx: LayerDatasetContext
 ): Promise<LayerDatasetHandle | null> {
-  const runner = REGISTRY[ctx.dataset];
+  const resolved = resolveLayerDatasetId(ctx.dataset);
+  if (!resolved) return null;
+  const runner = REGISTRY[resolved];
   if (!runner) return null;
-  return runner.mount(ctx);
+  return runner.mount({ ...ctx, dataset: resolved });
 }
 
 export function unmountLayerDataset(handle: LayerDatasetHandle | null | undefined): void {

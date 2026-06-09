@@ -5,6 +5,7 @@ import {
   globeStateCitiesBulkUrl,
   globeStateCitiesCatalogUrl,
   globeStatesBulkUrl,
+  globeStateShapeUrl,
   countiesBulkUrl,
   countyShapeUrl,
 } from '../../src/cdn/paths';
@@ -14,6 +15,7 @@ import {
   globeStateCitiesBulkUrl as cdnStateCitiesBulkUrl,
   globeStateCitiesCatalogUrl as cdnStateCitiesCatalogUrl,
   globeStatesBulkUrl as cdnStatesBulkUrl,
+  globeStateShapeUrl as cdnStateShapeUrl,
   resolveGlobeCdnUrl as cdnResolveGlobeCdnUrl,
 } from '@twinfile/cdn/paths';
 
@@ -24,6 +26,7 @@ describe('geokit/cdn paths parity with @twinfile/cdn/paths', () => {
     expect(globeCountyShapeUrl('36047')).toBe(cdnCountyShapeUrl('36047'));
     expect(globeCountiesBulkUrl()).toBe(cdnCountiesBulkUrl());
     expect(globeStatesBulkUrl()).toBe(cdnStatesBulkUrl());
+    expect(globeStateShapeUrl('tx')).toBe(cdnStateShapeUrl('tx'));
     expect(globeStateCitiesBulkUrl('ny')).toBe(cdnStateCitiesBulkUrl('ny'));
     expect(globeStateCitiesCatalogUrl('ny')).toBe(cdnStateCitiesCatalogUrl('ny'));
   });

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   findInsertBeforeLayer,
+  GK_DATASET_DMA_FILL_LAYER_ID,
   listLayerIdsByPrefix,
+  stackGkOutlineLayersAboveDmaFill,
   stackLayersAboveAnchor,
 } from '../../src/ui/utils/layer-stack';
 
@@ -64,5 +66,32 @@ describe('layer-stack', () => {
       order.indexOf('platform-h3-grid-fill')
     );
     expect(order.indexOf('dma-boundary-fill')).toBeLessThan(order.indexOf('venues'));
+  });
+
+  it('stackGkOutlineLayersAboveDmaFill moves gk-dataset line layers above dma fill only', () => {
+    const order = [
+      'Other border',
+      'background',
+      GK_DATASET_DMA_FILL_LAYER_ID,
+      'gk-dataset-state-line',
+      'labels',
+    ];
+    const map = {
+      getStyle: () => ({ layers: order.map((id) => ({ id })) }),
+      getLayer: (id: string) => (order.includes(id) ? {} : undefined),
+      moveLayer: (layerId: string, beforeId?: string) => {
+        const from = order.indexOf(layerId);
+        if (from < 0) return;
+        order.splice(from, 1);
+        const insertAt = beforeId === undefined ? order.length : order.indexOf(beforeId);
+        order.splice(insertAt, 0, layerId);
+      },
+    };
+
+    stackGkOutlineLayersAboveDmaFill(map);
+    expect(order.indexOf('Other border')).toBeLessThan(order.indexOf(GK_DATASET_DMA_FILL_LAYER_ID));
+    expect(order.indexOf('gk-dataset-state-line')).toBeGreaterThan(
+      order.indexOf(GK_DATASET_DMA_FILL_LAYER_ID)
+    );
   });
 });

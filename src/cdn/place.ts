@@ -1,4 +1,4 @@
-import { stateCitiesBulkUrl, stateCitiesCatalogUrl } from './paths';
+import { placeShapeUrl, stateCitiesBulkUrl, stateCitiesCatalogUrl } from './paths';
 import type { GlobeCdnFetchOptions } from './fetch';
 import { fetchGlobeCdnJson } from './fetch';
 import { resolveGlobeCdnBaseUrl } from './config';
@@ -7,9 +7,12 @@ export type StatePlaceCatalogEntry = {
   slug: string;
   name?: string;
   geoid?: string;
+  url?: string;
+  bbox?: [number, number, number, number];
 };
 
 type StatePlaceCatalog = {
+  version?: number;
   entries?: StatePlaceCatalogEntry[];
 };
 
@@ -39,7 +42,7 @@ export async function fetchStatePlaceCatalog(
   for (const entry of catalog?.entries ?? []) {
     const slug = entry.slug?.trim().toLowerCase() ?? '';
     if (!slug) continue;
-    entries.push({ slug, name: entry.name, geoid: entry.geoid });
+    entries.push({ slug, name: entry.name, geoid: entry.geoid, url: entry.url, bbox: entry.bbox });
   }
 
   catalogCache.set(state, entries);
@@ -90,6 +93,51 @@ function featureMatchesPlace(feature: GeoJSON.Feature, entry: StatePlaceCatalogE
   return false;
 }
 
+function bboxIntersectsViewport(
+  bbox: [number, number, number, number],
+  west: number,
+  south: number,
+  east: number,
+  north: number
+): boolean {
+  return bbox[0] <= east && bbox[2] >= west && bbox[1] <= north && bbox[3] >= south;
+}
+
+export async function fetchStatePlaceFeatureFromUrl(
+  placeUrl: string,
+  options?: GlobeCdnFetchOptions
+): Promise<GeoJSON.Feature | null> {
+  const feature = await fetchGlobeCdnJson<GeoJSON.Feature>(placeUrl, options);
+  return feature?.geometry ? feature : null;
+}
+
+export async function fetchStatePlacesForViewport(
+  stateCode: string,
+  west: number,
+  south: number,
+  east: number,
+  north: number,
+  options?: GlobeCdnFetchOptions & { limit?: number }
+): Promise<GeoJSON.FeatureCollection> {
+  const state = normalizeState(stateCode);
+  const catalog = await fetchStatePlaceCatalog(state, options);
+  const limit = options?.limit ?? 200;
+  const base = resolveGlobeCdnBaseUrl(options?.baseUrl);
+
+  const matches = catalog
+    .filter((entry) => entry.bbox && bboxIntersectsViewport(entry.bbox, west, south, east, north))
+    .slice(0, limit);
+
+  const features: GeoJSON.Feature[] = [];
+  for (const entry of matches) {
+    const url = entry.url ?? placeShapeUrl(base, state, entry.slug);
+    const feature = await fetchStatePlaceFeatureFromUrl(url, options);
+    if (feature) features.push(feature);
+  }
+
+  return { type: 'FeatureCollection', features };
+}
+
 export async function fetchStatePlaceFeature(
   stateCode: string,
   placeSlug: string,
@@ -97,6 +145,16 @@ export async function fetchStatePlaceFeature(
 ): Promise<GeoJSON.Feature | null> {
   const entry = await findStatePlaceEntry(stateCode, placeSlug, options);
   if (!entry) return null;
+
+  if (entry.url) {
+    return await fetchStatePlaceFeatureFromUrl(entry.url, options);
+  }
+
+  const state = normalizeState(stateCode);
+  const base = resolveGlobeCdnBaseUrl(options?.baseUrl);
+  const shardUrl = placeShapeUrl(base, state, entry.slug);
+  const shard = await fetchStatePlaceFeatureFromUrl(shardUrl, options);
+  if (shard) return shard;
 
   const collection = await fetchStateCitiesGeoJson(stateCode, options);
   if (!collection) return null;

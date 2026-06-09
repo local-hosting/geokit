@@ -1,15 +1,19 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ensurePlaceBoundaries } from '../../src/ui/utils/place-boundaries';
+import {
+  ADMIN_OUTLINE_HIT_FILL_OPACITY,
+  ADMIN_OUTLINE_LINE_MIN_ZOOM,
+} from '../../src/ui/utils/admin-outline-layer';
 import { BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS } from '../../src/ui/utils/geojson-source-options';
 
 describe('place-boundaries', () => {
-  it('ensurePlaceBoundaries emits ring linestrings from city polygons', () => {
+  it('ensurePlaceBoundaries uses shared admin fill + line layers', () => {
     const cities: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
       features: [
         {
           type: 'Feature',
-          properties: { slug: 'nashville' },
+          properties: { name: 'Austin' },
           geometry: {
             type: 'Polygon',
             coordinates: [
@@ -25,17 +29,49 @@ describe('place-boundaries', () => {
         },
       ],
     };
-    const lines = ensurePlaceBoundaries(null, cities, {
-      sourceId: 'city-src',
-      lineLayerId: 'city-line',
+    const map = {
+      loaded: () => true,
+      isStyleLoaded: () => true,
+      getStyle: () => ({ sources: {}, layers: [] }),
+      getLayer: () => undefined,
+      getSource: () => undefined,
+      addSource: vi.fn(),
+      addLayer: vi.fn(),
+      setPaintProperty: vi.fn(),
+    };
+    ensurePlaceBoundaries(map, cities, {
+      polygonSourceId: 'p',
+      lineSourceId: 'p-lines',
+      fillLayerId: 'p-fill',
+      lineLayerId: 'p-line',
       lineColor: '#93c5fd',
       lineWidth: 1,
+      lineMinzoom: ADMIN_OUTLINE_LINE_MIN_ZOOM,
     });
-    expect(lines.features).toHaveLength(1);
-    expect(lines.features[0]!.geometry.coordinates.length).toBe(5);
+    expect(map.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'fill',
+        id: 'p-fill',
+        paint: expect.objectContaining({
+          'fill-opacity': ADMIN_OUTLINE_HIT_FILL_OPACITY,
+        }),
+      }),
+      undefined
+    );
+    expect(map.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'line',
+        id: 'p-line',
+        paint: expect.objectContaining({
+          'line-color': '#93c5fd',
+          'line-opacity': ['step', ['zoom'], 0, ADMIN_OUTLINE_LINE_MIN_ZOOM, 1],
+        }),
+      }),
+      undefined
+    );
   });
 
-  it('BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS uses zero tolerance and tile buffer', () => {
+  it('BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS uses zero tolerance for admin outlines', () => {
     expect(BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS).toEqual({
       tolerance: 0,
       buffer: 256,
