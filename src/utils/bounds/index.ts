@@ -9,3 +9,8 @@ export { isWithinBounds } from './is-within-bounds';
 export { boundsToObject, type BoundsObject } from './bounds-to-object';
 export { bboxToPolygon, bboxToPolygonGeometry } from './bbox-to-polygon';
 export { calculateZoomFromBounds, calculateCenterAndZoom } from './calculate-zoom';
+export {
+  resolveStatesInMapView,
+  type MapViewportBounds,
+  type StateAbbrResolver,
+} from './resolve-states-in-viewport';
