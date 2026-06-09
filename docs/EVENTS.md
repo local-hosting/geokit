@@ -6,22 +6,23 @@ Custom events use the `gk-*` prefix where they are part of the public API. This 
 
 ## gk-map
 
-| Event                          | When                                                           | Detail                                                                                        |
-| ------------------------------ | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `gk-map-ready`                 | Map initialized and ready                                      | `{ map, element }`                                                                            |
-| `gk-map-style-load`            | Style finished loading (e.g. after theme switch)               | `{ map, element }`                                                                            |
-| `gk-map-freeze`                | Map frozen (e.g. off-screen in a collection)                   | `{ map, element }`                                                                            |
-| `gk-map-unfreeze`              | Map unfrozen and reactivated                                   | `{ map, element }`                                                                            |
-| `gk-map-unload`                | Map torn down                                                  | `{ map, element }`                                                                            |
-| `gk-map-failed`                | Map init or recovery failed                                    | `{ element, error? }`                                                                         |
-| `gk-map-stuck`                 | Map stuck on placeholder past timeout                          | `{ element }`                                                                                 |
-| `gk-theme-change`              | Theme attribute or class changed                               | `{ theme, themeName }`                                                                        |
-| `gk-feature-selection-changed` | Selection updated via `updateFeatureSelection()`               | `{ sourceId, selectedId, previousSelectedId }` — `selectedId` is the new feature id or `null` |
-| `gk-point-click`               | Click on a shared point layer (from `createSharedPointLayers`) | `{ lngLat, features, sourceId, map, element, originalEvent }` — cancelable                    |
-| `controls-visibility-change`   | Controls visibility toggled                                    | `{ visible }`                                                                                 |
-| `child-added`                  | Child element added (internal)                                 | `{ element, tagName }` — does not bubble                                                      |
-| `child-removed`                | Child element removed (internal)                               | `{ element, tagName }` — does not bubble                                                      |
-| `themechange`                  | Legacy theme event (prefer `gk-theme-change`)                  | `{ theme, themeName }`                                                                        |
+| Event                          | When                                                                                                                                                | Detail                                                                                                   |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `gk-map-ready`                 | Map initialized and ready                                                                                                                           | `{ map, element }`                                                                                       |
+| `gk-map-style-load`            | Style finished loading (e.g. after theme switch)                                                                                                    | `{ map, element }`                                                                                       |
+| `gk-map-freeze`                | Map frozen (e.g. off-screen in a collection)                                                                                                        | `{ map, element }`                                                                                       |
+| `gk-map-unfreeze`              | Map unfrozen and reactivated                                                                                                                        | `{ map, element }`                                                                                       |
+| `gk-map-unload`                | Map torn down                                                                                                                                       | `{ map, element }`                                                                                       |
+| `gk-map-failed`                | Map init or recovery failed                                                                                                                         | `{ element, error? }`                                                                                    |
+| `gk-map-stuck`                 | Map stuck on placeholder past timeout                                                                                                               | `{ element }`                                                                                            |
+| `gk-theme-change`              | Theme attribute or class changed                                                                                                                    | `{ theme, themeName }`                                                                                   |
+| `gk-feature-selection-changed` | **Legacy** — selection via `updateFeatureSelection()` (`__selected` on source features). Prefer `gk-shared-point-selected` for shared point layers. | `{ sourceId, selectedId, previousSelectedId }` — `selectedId` is the new feature id or `null`            |
+| `gk-shared-point-selected`     | Shared point ring moved via click or `setSelectedPoint()`                                                                                           | `{ sourceId, featureId, previousFeatureId, lngLat, map, element }` — `featureId` is the new id or `null` |
+| `gk-point-click`               | Click on a shared point layer (from `createSharedPointLayers`). Geokit moves the selection ring before this fires.                                  | `{ lngLat, features, sourceId, featureId, map, element, originalEvent }` — cancelable                    |
+| `controls-visibility-change`   | Controls visibility toggled                                                                                                                         | `{ visible }`                                                                                            |
+| `child-added`                  | Child element added (internal)                                                                                                                      | `{ element, tagName }` — does not bubble                                                                 |
+| `child-removed`                | Child element removed (internal)                                                                                                                    | `{ element, tagName }` — does not bubble                                                                 |
+| `themechange`                  | Legacy theme event (prefer `gk-theme-change`)                                                                                                       | `{ theme, themeName }`                                                                                   |
 
 ---
 
@@ -116,15 +117,22 @@ Apps can dispatch these to drive geokit behavior:
 
 ## Usage examples
 
-**Sync app state when feature selection changes:**
+**Sync app state when a shared point layer selection changes:**
 
 ```js
-mapElement.addEventListener('gk-feature-selection-changed', (e) => {
-  const { sourceId, selectedId, previousSelectedId } = e.detail;
-  if (sourceId === 'venues-hero') {
-    store.setSelectedVenue(selectedId);
+mapElement.addEventListener('gk-shared-point-selected', (e) => {
+  const { sourceId, featureId } = e.detail;
+  if (sourceId === 'venues-louisville') {
+    store.setSelectedVenue(featureId);
   }
 });
+```
+
+**Programmatic selection (restore, deep link):**
+
+```js
+mapElement.setSelectedPoint('venues-louisville', venueSlug);
+mapElement.clearSelectedPoint('venues-louisville');
 ```
 
 **Clear selection when the user closes the popup:**

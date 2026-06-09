@@ -12,6 +12,12 @@ export const DEMO_SECTIONS = [
     items: [
       { id: 'main', path: '/maps/index.html', label: 'Main' },
       { id: 'layers-test', path: '/maps/layers-test.html', label: 'Layers' },
+      {
+        id: 'selection',
+        path: '/maps/selection.html',
+        label: 'Selection',
+        description: 'Shared-point ring on click, setSelectedPoint, gk-point focus',
+      },
       { id: 'scrolling', path: '/maps/scrolling.html', label: 'Scrolling' },
       { id: 'centered', path: '/maps/centered.html', label: 'Providers' },
     ],

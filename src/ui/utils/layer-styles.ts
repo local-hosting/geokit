@@ -6,6 +6,8 @@
  */
 
 import type { MapInstance } from '../providers/types';
+import type { Feature } from '../../types';
+import { getFeatureId } from '../../utils/geojson/get-feature-id';
 import { getCSSVariable, getCSSVariableNumber } from './theme';
 import { debug } from './logger';
 import { HOVER_CONFIG, type HoverStateHandlers } from './feature-state-hover';
@@ -1283,6 +1285,111 @@ export function updateSharedPointSelection(
   }
 }
 
+/** Property order for resolving feature ids on shared point layers (e.g. venues). */
+export const DEFAULT_SHARED_POINT_ID_PROPERTIES = ['slug', 'id', 'point-id', 'id:google-maps'];
+
+export interface SharedPointSelectionState {
+  featureId: string | null;
+  lngLat: { lng: number; lat: number } | null;
+}
+
+export interface SetSharedPointSelectionOptions {
+  idProperties?: string[];
+  /** When set with dispatchEvent, fires gk-shared-point-selected on this element. */
+  mapElement?: HTMLElement | null;
+  dispatchEvent?: boolean;
+}
+
+const sharedPointSelectionByMap = new WeakMap<
+  MapInstance,
+  Map<string, SharedPointSelectionState>
+>();
+
+function getSharedPointSelectionMap(map: MapInstance): Map<string, SharedPointSelectionState> {
+  let registry = sharedPointSelectionByMap.get(map);
+  if (!registry) {
+    registry = new Map();
+    sharedPointSelectionByMap.set(map, registry);
+  }
+  return registry;
+}
+
+export function getSharedPointSelection(
+  map: MapInstance,
+  sourceId: string
+): SharedPointSelectionState | null {
+  return getSharedPointSelectionMap(map).get(sourceId) ?? null;
+}
+
+export function clearSharedPointSelection(
+  map: MapInstance,
+  sourceId: string,
+  options?: SetSharedPointSelectionOptions
+): void {
+  setSharedPointSelection(map, sourceId, { featureId: null, lngLat: null }, options);
+}
+
+/**
+ * Move the shared-point selection ring and track the selected feature id.
+ * Prefer gk-map.setSelectedPoint() from app code; this is used internally on click.
+ */
+export function setSharedPointSelection(
+  map: MapInstance,
+  sourceId: string,
+  selection: { featureId: string | null; lngLat?: { lng: number; lat: number } | null },
+  options?: SetSharedPointSelectionOptions
+): void {
+  const previous = getSharedPointSelection(map, sourceId);
+  const previousFeatureId = previous?.featureId ?? null;
+  const featureId = selection.featureId;
+  const lngLat = selection.lngLat ?? null;
+
+  if (!featureId || !lngLat) {
+    getSharedPointSelectionMap(map).set(sourceId, { featureId: null, lngLat: null });
+    updateSharedPointSelection(map, sourceId, null);
+  } else {
+    getSharedPointSelectionMap(map).set(sourceId, { featureId, lngLat });
+    updateSharedPointSelection(map, sourceId, lngLat);
+  }
+
+  const changed = featureId !== previousFeatureId;
+  if (options?.dispatchEvent && options.mapElement && changed) {
+    options.mapElement.dispatchEvent(
+      new CustomEvent('gk-shared-point-selected', {
+        detail: {
+          sourceId,
+          featureId,
+          previousFeatureId,
+          lngLat,
+          map,
+          element: options.mapElement,
+        },
+        bubbles: true,
+      })
+    );
+  }
+}
+
+function extractPointLngLat(geometry: unknown): { lng: number; lat: number } | null {
+  if (
+    geometry &&
+    typeof geometry === 'object' &&
+    'type' in geometry &&
+    (geometry as { type?: string }).type === 'Point' &&
+    'coordinates' in geometry
+  ) {
+    const coords = (geometry as { coordinates?: unknown }).coordinates;
+    if (Array.isArray(coords) && coords.length >= 2) {
+      const lng = Number(coords[0]);
+      const lat = Number(coords[1]);
+      if (!Number.isNaN(lng) && !Number.isNaN(lat)) {
+        return { lng, lat };
+      }
+    }
+  }
+  return null;
+}
+
 // ============================================================================
 // Hover Layer Setup (used by createSharedPointLayers)
 // ============================================================================
@@ -1543,7 +1650,7 @@ function setupHoverLayers(
     dispatchHoverEnd();
   }
 
-  // Click handler: dispatch gk-point-click from the gk-map element.
+  // Click handler: move selection ring, then dispatch gk-point-click from the gk-map element.
   // Single hit layer means no glow+point double-fire, but keep cooldown for safety.
   let lastClickTime = 0;
   function onClick(e: {
@@ -1560,20 +1667,34 @@ function setupHoverLayers(
 
     const f = features[0];
     const geometry = f?.geometry;
-    const coords =
-      geometry && 'coordinates' in (geometry as any)
-        ? (geometry as { coordinates: [number, number] }).coordinates
-        : null;
-    const lngLat = coords ? { lng: coords[0], lat: coords[1] } : (e.lngLat ?? undefined);
+    const lngLat =
+      extractPointLngLat(geometry) ?? (e.lngLat ? { lng: e.lngLat.lng, lat: e.lngLat.lat } : null);
 
     const mapEl = findMapElement();
+    const featureForId = {
+      type: 'Feature',
+      properties: f?.properties ?? {},
+      geometry: geometry ?? { type: 'Point', coordinates: [0, 0] },
+    } as Feature;
+    const featureId = getFeatureId(featureForId, DEFAULT_SHARED_POINT_ID_PROPERTIES);
+
+    if (lngLat) {
+      setSharedPointSelection(
+        map,
+        sourceId,
+        { featureId, lngLat },
+        { mapElement: mapEl, dispatchEvent: true }
+      );
+    }
+
     if (mapEl) {
       mapEl.dispatchEvent(
         new CustomEvent('gk-point-click', {
           detail: {
-            lngLat,
+            lngLat: lngLat ?? undefined,
             features: [...features],
             sourceId,
+            featureId,
             map,
             element: mapEl,
             originalEvent: e.originalEvent,
