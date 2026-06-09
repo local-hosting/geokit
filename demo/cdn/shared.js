@@ -78,7 +78,7 @@ export function appendLog(logEl, message, data) {
   logEl.scrollTop = logEl.scrollHeight;
 }
 
-export { mountDemoNav, renderDemoNav } from '../nav.js';
+export { mountDemoNav, renderDemoNav } from '../shared/nav.js';
 
 export function wireMapDemo(mapEl, run) {
   const map = createMap(mapEl);

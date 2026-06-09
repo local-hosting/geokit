@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>geokit Map Collection - Scrolling Demo</title>
-  <link rel="stylesheet" href="./brutalist.css">
+  <link rel="stylesheet" href="../shared/brutalist.css">
   <style>
     * {
       margin: 0;
@@ -505,104 +505,4 @@
     </div>
   </main>
 
-  <script type="module">
-    // Configure API keys before any gk-map elements are registered (importing the full ui
-    // registers elements and upgrades <gk-map-collection> / <gk-map>; they need config on first use).
-    import { configure } from '../src/ui/providers/registry.ts';
-    const maptilerKey = import.meta.env.MAPTILER_KEY;
-    const mapboxToken = import.meta.env.MAPBOX_TOKEN;
-    configure({
-      maptiler: { apiKey: maptilerKey },
-      mapbox: { accessToken: mapboxToken },
-    });
-    await import('../src/ui/index.ts');
-    
-    let collection;
-    
-    try {
-      await customElements.whenDefined('gk-map-collection');
-      collection = document.getElementById('map-collection');
-    } catch (error) {
-      console.error('[Demo] Error loading:', error);
-    }
-    
-    const totalMapsEl = document.getElementById('total-maps');
-    const activeMapsEl = document.getElementById('active-maps');
-    const availableMapsEl = document.getElementById('available-maps');
-    const activeMapsNamesEl = document.getElementById('active-maps-names');
-
-    function updateStats() {
-      if (!collection) {
-        console.warn('[Demo] Collection element not found');
-        return;
-      }
-      
-      if (!collection.getStats) {
-        console.warn('[Demo] getStats method not available on collection');
-        return;
-      }
-      
-      try {
-        const stats = collection.getStats();
-        // Update UI without logging (stats are visible in the UI)
-        totalMapsEl.textContent = String(stats?.totalMaps ?? 0);
-        activeMapsEl.textContent = String(stats?.inUse ?? 0);
-        availableMapsEl.textContent = String(stats?.available ?? 0);
-
-        // Update active map names with status indicator
-        if (activeMapsNamesEl) {
-          const entries = collection.getActiveMapEntries?.();
-          if (entries && entries.length > 0) {
-            activeMapsNamesEl.innerHTML = entries
-              .map(({ id, status }) =>
-                `<span class="active-map-name" title="${id}: ${status}">
-                  <span class="active-map-status active-map-status--${status}" aria-label="${status}"></span>
-                  ${id}
-                </span>`
-              )
-              .join('');
-          } else {
-            const names = collection.getActiveMapNames?.() ?? [];
-            if (names.length === 0) {
-              activeMapsNamesEl.textContent = 'None';
-            } else {
-              activeMapsNamesEl.innerHTML = names
-                .map(name => `<span class="active-map-name">${name}</span>`)
-                .join('');
-            }
-          }
-        }
-      } catch (error) {
-        console.error('[Demo] Error getting stats:', error);
-        totalMapsEl.textContent = '?';
-        activeMapsEl.textContent = '?';
-        availableMapsEl.textContent = '?';
-        if (activeMapsNamesEl) {
-          activeMapsNamesEl.textContent = '?';
-        }
-      }
-    }
-
-    // Update stats periodically
-    setInterval(updateStats, 500);
-
-    // Update stats when collection is ready
-    collection?.addEventListener('map-collection-ready', () => {
-      updateStats();
-    });
-
-    // Update stats when maps are moved
-    document.addEventListener('map-moved-to-slot', () => {
-      updateStats();
-    });
-
-    // Initial update
-    setTimeout(updateStats, 1000);
-  </script>
-  <script type="module">
-    import { mountDemoNavFromDocument } from './nav.js';
-    mountDemoNavFromDocument();
-  </script>
-</body>
-</html>
-
+  <script type="module" src="./scrolling.js"></script>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>geokit CDN demos</title>
-  <link rel="stylesheet" href="./cdn-demo.css">
+  <link rel="stylesheet" href="./cdn.css">
 </head>
 <body class="cdn-demo" data-demo-active="cdn-hub">
   <aside id="demo-nav" aria-label="Demo pages"></aside>
@@ -15,8 +15,8 @@
     <p class="subtitle" style="margin-top:24px">CDN base: <code id="cdn-base"></code></p>
   </div>
   <script type="module">
-    import { mountDemoNavFromDocument } from '../nav.js';
-    import { DEMO_SECTIONS } from '../pages.js';
+    import { mountDemoNavFromDocument } from '../shared/nav.js';
+    import { DEMO_SECTIONS } from '../shared/pages.js';
     import { cdnBaseLabel } from './shared.js';
 
     mountDemoNavFromDocument();
