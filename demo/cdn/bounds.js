@@ -5,6 +5,7 @@ import {
   appendLog,
   fitBounds,
   getCdnOptions,
+  setBoundsOverlay,
   setGeoJsonOutline,
   wireMapDemo,
 } from './shared.js';
@@ -29,7 +30,8 @@ document.getElementById('load').addEventListener('click', async () => {
   }
   const bounds = boundsFromFeature(feature);
   const viewport = bounds ? calculateCenterAndZoom(bounds) : null;
-  setGeoJsonOutline(map, 'bounds-demo', feature);
+  setGeoJsonOutline(map, 'bounds-feature', feature);
+  setBoundsOverlay(map, 'bounds-box', bounds);
   fitBounds(map, bounds);
   appendLog(logEl, 'boundsFromFeature', { bounds, viewport });
 });
