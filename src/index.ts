@@ -138,6 +138,10 @@ export {
   fixPolygonRingOrder,
   filterTinyPolygons,
   cleanGeometry,
+  stripDegenerateInteriorRings,
+  type StripDegenerateInteriorRingsOptions,
+  stripAcuteOuterRingSpikes,
+  type StripAcuteOuterRingSpikesOptions,
 } from './utils/geojson';
 
 // Normalization utilities
@@ -201,6 +205,11 @@ export {
   interpolateMeters,
   nearestPointOnLine,
   nearestPointOnPolyline,
+  pointToLineDistance,
+  pointToLineDistanceMeters,
+  pointToPolylineDistanceMeters,
+  type PointToLineDistanceOptions,
+  type PointToLineDistanceUnits,
   resample,
 } from './utils/interpolation';
 
@@ -402,7 +411,17 @@ export type {
   GeometryObject as TopoGeometryObject,
   Properties as TopoProperties,
 } from './utils/topojson';
-export { topoFeature, topoMerge, topoMesh, topoNeighbors, topoObjectNames } from './utils/topojson';
+export {
+  geojsonToTopology,
+  simplifyFeatureCollectionTopology,
+  simplifyTopologyMeters,
+  topoFeature,
+  topoGeometriesByProperty,
+  topoMerge,
+  topoMesh,
+  topoNeighbors,
+  topoObjectNames,
+} from './utils/topojson';
 
 // Cache utilities
 export type { CacheOptions, CacheStats } from './utils/cache';

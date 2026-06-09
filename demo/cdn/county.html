@@ -11,11 +11,12 @@
   <div class="cdn-shell">
     <div class="cdn-panel">
       <h1>county</h1>
-      <p class="subtitle">fetchCountyShapeFeature · fetchCountyShapesForFips</p>
-      <div class="cdn-field"><label for="fips">FIPS (comma-separated for bulk)</label><input id="fips" value="36047,06037" /></div>
+      <p class="subtitle">counties bulk · fetchCountyShapeFeature · fetchCountyShapesForFips</p>
+      <div class="cdn-field"><label for="fips">FIPS (comma-separated)</label><input id="fips" value="36047,06037" /></div>
       <div class="cdn-actions">
-        <button type="button" id="one">Load one</button>
-        <button type="button" class="secondary" id="bulk">Load bulk</button>
+        <button type="button" id="counties-bulk">Counties bulk</button>
+        <button type="button" class="secondary" id="one">Load one</button>
+        <button type="button" class="secondary" id="fips-bulk">Load FIPS</button>
       </div>
       <pre class="cdn-log" id="log"></pre>
     </div>

@@ -1,4 +1,8 @@
 import {
+  fetchCountiesBulkGeoJson,
+  prefetchBoundaryOutlines,
+} from '../../src/cdn/bulk.ts';
+import {
   fetchCountyShapeFeature,
   fetchCountyShapesForFips,
 } from '../../src/cdn/county.ts';
@@ -45,7 +49,13 @@ document.getElementById('one').addEventListener('click', async () => {
   await showCollection({ type: 'FeatureCollection', features: [feature] }, 'one county');
 });
 
-document.getElementById('bulk').addEventListener('click', async () => {
+document.getElementById('counties-bulk').addEventListener('click', async () => {
+  appendLog(logEl, 'fetchCountiesBulkGeoJson()');
+  prefetchBoundaryOutlines(opts);
+  await showCollection(await fetchCountiesBulkGeoJson(opts), 'counties bulk');
+});
+
+document.getElementById('fips-bulk').addEventListener('click', async () => {
   const fips = document
     .getElementById('fips')
     .value.split(',')
@@ -53,5 +63,5 @@ document.getElementById('bulk').addEventListener('click', async () => {
     .filter(Boolean);
   appendLog(logEl, `fetchCountyShapesForFips(${fips.join(', ')})`);
   const features = await fetchCountyShapesForFips(fips, opts);
-  await showCollection({ type: 'FeatureCollection', features }, 'bulk counties');
+  await showCollection({ type: 'FeatureCollection', features }, 'FIPS list');
 });

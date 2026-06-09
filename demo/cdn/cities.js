@@ -25,7 +25,7 @@ document.getElementById('catalog').addEventListener('click', async () => {
   appendLog(logEl, `catalog (${entries.length} entries)`, entries.slice(0, 8));
 });
 
-document.getElementById('cities').addEventListener('click', async () => {
+document.getElementById('cities-bulk').addEventListener('click', async () => {
   const map = await mapReady;
   const state = document.getElementById('state').value.trim();
   const geojson = await fetchStateCitiesGeoJson(state, opts);
@@ -33,21 +33,21 @@ document.getElementById('cities').addEventListener('click', async () => {
     appendLog(logEl, 'cities bulk: null');
     return;
   }
-  setGeoJsonOutline(map, 'place-demo', geojson);
+  setGeoJsonOutline(map, 'cities-demo', geojson);
   appendLog(logEl, 'cities bulk', { features: geojson.features.length });
 });
 
 document.getElementById('one').addEventListener('click', async () => {
   const map = await mapReady;
   const state = document.getElementById('state').value.trim();
-  const place = document.getElementById('place').value.trim();
-  appendLog(logEl, `fetchStatePlaceFeature(${state}, ${place})`);
-  const feature = await fetchStatePlaceFeature(state, place, opts);
+  const city = document.getElementById('city').value.trim();
+  appendLog(logEl, `fetchStatePlaceFeature(${state}, ${city})`);
+  const feature = await fetchStatePlaceFeature(state, city, opts);
   if (!feature) {
     appendLog(logEl, 'null — try another slug from catalog');
     return;
   }
-  setGeoJsonOutline(map, 'place-demo', feature);
+  setGeoJsonOutline(map, 'cities-demo', feature);
   fitBounds(map, boundsFromFeature(feature));
-  appendLog(logEl, 'place feature', feature.properties);
+  appendLog(logEl, 'city feature', feature.properties);
 });

@@ -72,8 +72,8 @@ export interface SharedPointLayersConfig {
   circleStrokeColor: string | unknown[];
   /** Circle stroke width (number or data-driven expression) */
   circleStrokeWidth: number | unknown[];
-  /** Glow color (string or data-driven expression) */
-  glowColor: string | unknown[];
+  /** Glow color (defaults to circleColor, then --gk-point-color) */
+  glowColor?: string | unknown[];
   /** Glow opacity (number or data-driven expression) */
   glowOpacity: number | unknown[];
   /** Glow opacity on hover (number or data-driven expression) */
@@ -144,6 +144,15 @@ function resolveGlowBlur(element: Element | null = document.documentElement): nu
 /** Resolve default layer/point color from CSS (theme.css must be loaded) */
 function resolveDefaultLayerColor(element: Element | null = document.documentElement): string {
   return getCSSVariable(element, '--gk-point-color', '');
+}
+
+/** Resolve glow paint color: explicit glow → point fill → theme default */
+function resolveSharedGlowColor(
+  glowColor: string | unknown[] | undefined,
+  circleColor: string | unknown[] | undefined,
+  element: Element | null = document.documentElement
+): string | unknown[] {
+  return glowColor ?? circleColor ?? resolveDefaultLayerColor(element);
 }
 
 /** Resolve default stroke color from CSS (theme.css must be loaded) */
@@ -382,7 +391,31 @@ export function buildFeatureStateOpacityExpression(
 }
 
 /** Minimum circle radius in pixels (MapTiler/MapLibre can drop sub-2px points). */
-const MIN_POINT_RADIUS_PX = 2;
+const MIN_POINT_RADIUS_PX = 3;
+
+/** Padding beyond point edge for base glow halo (px). */
+const GLOW_HIT_PADDING_PX = 2;
+
+/** Padding beyond point edge for hover halo (px). */
+const HOVER_GLOW_PADDING_PX = 3.5;
+
+/** Bake a px offset into interpolate stops (MapTiler-safe; avoids ['+', interpolate, n]). */
+function offsetRadiusInterpolation(
+  interpolate: unknown[],
+  offset: number,
+  minRadius = 0
+): unknown[] {
+  if (!Array.isArray(interpolate) || interpolate[0] !== 'interpolate') {
+    return interpolate;
+  }
+  const result = [...interpolate];
+  for (let i = 4; i < result.length; i += 2) {
+    if (typeof result[i] === 'number') {
+      result[i] = Math.max(minRadius, (result[i] as number) + offset);
+    }
+  }
+  return result;
+}
 
 function scaleRadiusInterpolation(interpolate: unknown[], scale: number): unknown[] {
   if (
@@ -463,21 +496,21 @@ export function getPointRadiusInterpolation(options: CircleStyleOptions = {}): u
     ['exponential', exponent],
     ['zoom'],
     0,
-    Math.max(MIN_POINT_RADIUS_PX, 0.85 * scale),
+    Math.max(MIN_POINT_RADIUS_PX, 1.2 * scale),
     2,
-    Math.max(MIN_POINT_RADIUS_PX, 1 * scale),
+    Math.max(MIN_POINT_RADIUS_PX, 1.4 * scale),
     3,
-    Math.max(MIN_POINT_RADIUS_PX, 1.25 * scale),
+    Math.max(MIN_POINT_RADIUS_PX, 1.75 * scale),
     6,
-    2 * scale, // Country view
+    2.8 * scale, // Country view
     8,
-    2.6 * scale, // Regional view (medium zoom)
+    3.65 * scale, // Regional view (medium zoom)
     10,
-    3.1 * scale, // City view
+    4.35 * scale, // City view
     14,
-    4.25 * scale, // Neighborhood
+    6 * scale, // Neighborhood
     18,
-    6.5 * scale, // Max zoom
+    9 * scale, // Max zoom
   ];
 }
 
@@ -489,61 +522,32 @@ export function getPointRadiusInterpolation(options: CircleStyleOptions = {}): u
  * @returns MapLibre interpolation expression
  */
 export function getGlowRadiusInterpolation(options: CircleStyleOptions = {}): unknown[] {
-  const { scale = 1, exponent = 1.5 } = options;
-  return [
-    'interpolate',
-    ['exponential', exponent],
-    ['zoom'],
-    0,
-    2.5 * scale, // Full zoom out (below app minZoom 2)
-    2,
-    3 * scale, // App minZoom 2 - visible when zoomed out
-    3,
-    4 * scale, // Min zoom
-    6,
-    5 * scale, // Country view
-    8,
-    6 * scale, // Regional view (medium zoom)
-    10,
-    8 * scale, // City view
-    14,
-    11 * scale, // Neighborhood
-    18,
-    16 * scale, // Max zoom
-  ];
+  return offsetRadiusInterpolation(getPointRadiusInterpolation(options), GLOW_HIT_PADDING_PX);
 }
 
 /**
- * Get zoom-based radius for selection ring: same curve as point radius + stroke + gap.
- * Ring sits around (not on top of) the point. Single interpolate expression for broad MapLibre support.
+ * Hover glow radius: slightly larger than base glow, still derived from point size.
+ */
+export function getHoverGlowRadiusInterpolation(options: CircleStyleOptions = {}): unknown[] {
+  return offsetRadiusInterpolation(getPointRadiusInterpolation(options), HOVER_GLOW_PADDING_PX);
+}
+
+/** Selection ring stroke width (px); keep in sync with setupSelectionRingLayer paint. */
+export const SELECTION_RING_STROKE_WIDTH = 2;
+
+/** Clear space between point edge and ring inner edge (px). */
+const SELECTION_RING_GAP_PX = 0.5;
+
+/**
+ * Get zoom-based radius for selection ring: point radius + gap + half stroke.
+ * Derived from getPointRadiusInterpolation so MIN_POINT_RADIUS_PX and custom scale stay aligned.
  *
  * @param options - Style options (scale, exponent)
- * @returns MapLibre interpolation expression
+ * @returns MapLibre expression
  */
 export function getSelectionRingRadiusInterpolation(options: CircleStyleOptions = {}): unknown[] {
-  const { scale = 1, exponent = 1.5 } = options;
-  const gap = 2.5; // stroke width + small gap so ring doesn't cover point
-  return [
-    'interpolate',
-    ['exponential', exponent],
-    ['zoom'],
-    0,
-    0.85 * scale + gap,
-    2,
-    1 * scale + gap,
-    3,
-    1.25 * scale + gap,
-    6,
-    2 * scale + gap,
-    8,
-    2.6 * scale + gap,
-    10,
-    3.1 * scale + gap,
-    14,
-    4.25 * scale + gap,
-    18,
-    6.5 * scale + gap,
-  ];
+  const offset = SELECTION_RING_GAP_PX + SELECTION_RING_STROKE_WIDTH / 2;
+  return offsetRadiusInterpolation(getPointRadiusInterpolation(options), offset);
 }
 
 /**
@@ -806,12 +810,12 @@ export function createGlowPointLayers(config: GlowPointLayerConfig): {
  */
 /** Zoom–radius stops for MapTiler helpers.addPoint. Min 2px at low zoom so Safari doesn't drop points when zoomed out. */
 const MAPTILER_POINT_RADIUS_ZOOM: Array<{ zoom: number; value: number }> = [
-  { zoom: 0, value: 2 },
-  { zoom: 2, value: 2 },
-  { zoom: 6, value: 2 },
-  { zoom: 10, value: 3.1 },
-  { zoom: 14, value: 4.25 },
-  { zoom: 18, value: 6.5 },
+  { zoom: 0, value: 3 },
+  { zoom: 2, value: 3 },
+  { zoom: 6, value: 2.8 },
+  { zoom: 10, value: 4.35 },
+  { zoom: 14, value: 6 },
+  { zoom: 18, value: 9 },
 ];
 
 /**
@@ -843,6 +847,11 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     useFeatureStateHover = true,
     selectionRingColor = '#ffffff',
   } = config;
+
+  const container = (map as any).getContainer?.();
+  const themeElement =
+    container && typeof container.closest === 'function' ? container.closest('gk-map') : null;
+  const resolvedGlowColor = resolveSharedGlowColor(glowColor, circleColor, themeElement);
 
   const maptilerHelpers =
     typeof window !== 'undefined' ? (window as any).maptilersdk?.helpers : undefined;
@@ -972,7 +981,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     // Add glow layer below the point layer (same source created by the helper)
     if (!map.getLayer?.(glowLayerId)) {
       const glowRadiusVal = glowRadius ?? getGlowRadiusInterpolation({ scale: 1 });
-      const glowColorVal = glowColor ?? resolveDefaultLayerColor();
+      const glowColorVal = resolvedGlowColor;
       const glowBlurVal = glowBlur ?? resolveGlowBlur();
       let glowOpacityExpression: unknown[] | number;
       if (Array.isArray(glowOpacity)) {
@@ -982,7 +991,8 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         if (!useFeatureStateHover) {
           glowOpacityExpression = numOpacity;
         } else {
-          const hoverOpacity = typeof glowHoverOpacity === 'number' ? glowHoverOpacity : 1;
+          const hoverOpacity =
+            typeof glowHoverOpacity === 'number' ? glowHoverOpacity : HOVER_CONFIG.glowOpacity;
           const selectedOpacity = Math.min(hoverOpacity * 1.3, 1);
           glowOpacityExpression = [
             'case',
@@ -1023,7 +1033,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     // Setup automatic hover layers (same pattern as non-helper path)
     setupHoverLayers(map, sourceId, glowLayerId, pointLayerId, {
       glowRadius: glowRadius ?? getGlowRadiusInterpolation({ scale: 1 }),
-      glowColor: glowColor ?? resolveDefaultLayerColor(),
+      glowColor: resolvedGlowColor,
       glowBlur: glowBlur ?? resolveGlowBlur(),
       glowHoverOpacity,
       circleColor,
@@ -1043,7 +1053,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       beforeLayerId: beforeLayerId ?? undefined,
     });
     const glowRadiusVal = glowRadius ?? getGlowRadiusInterpolation({ scale: 1 });
-    const glowColorVal = glowColor ?? resolveDefaultLayerColor();
+    const glowColorVal = resolvedGlowColor;
     const glowBlurVal = glowBlur ?? resolveGlowBlur();
 
     let glowOpacityExpression: unknown[] | number;
@@ -1054,7 +1064,8 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       if (!useFeatureStateHover) {
         glowOpacityExpression = numOpacity;
       } else {
-        const hoverOpacity = typeof glowHoverOpacity === 'number' ? glowHoverOpacity : 1;
+        const hoverOpacity =
+          typeof glowHoverOpacity === 'number' ? glowHoverOpacity : HOVER_CONFIG.glowOpacity;
         const selectedOpacity = Math.min(hoverOpacity * 1.3, 1);
         glowOpacityExpression = [
           'case',
@@ -1159,7 +1170,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   // Setup automatic hover layers using dedicated source (avoids feature-state issues)
   setupHoverLayers(map, sourceId, glowLayerId, pointLayerId, {
     glowRadius: glowRadius ?? getGlowRadiusInterpolation({ scale: 1 }),
-    glowColor: glowColor ?? resolveDefaultLayerColor(),
+    glowColor: resolvedGlowColor,
     glowBlur: glowBlur ?? resolveGlowBlur(),
     glowHoverOpacity,
     circleColor,
@@ -1233,7 +1244,7 @@ function setupSelectionRingLayer(
         paint: {
           'circle-radius': getSelectionRingRadiusInterpolation(),
           'circle-color': 'rgba(0,0,0,0)',
-          'circle-stroke-width': 2,
+          'circle-stroke-width': SELECTION_RING_STROKE_WIDTH,
           'circle-stroke-color': selectionRingColor,
         },
       } as any);
@@ -1395,84 +1406,28 @@ function extractPointLngLat(geometry: unknown): { lng: number; lat: number } | n
 // ============================================================================
 
 /**
- * Setup hover layers for shared point layers.
- * Creates a dedicated hover source + glow layer + point layer that respond to mouse events.
- * Uses HOVER_CONFIG from feature-state-hover.ts as source of truth.
+ * Setup hover handlers for shared point layers.
+ * Hover highlight uses feature-state on the main glow layer (same source/geometry as the dot).
  */
 function setupHoverLayers(
   map: MapInstance,
   sourceId: string,
   glowLayerId: string,
   pointLayerId: string,
-  options: HoverLayerOptions
+  _options: HoverLayerOptions
 ): void {
-  const { glowHoverOpacity, circleColor } = options;
-  const hoverSourceId = `${sourceId}-hover`;
-  const hoverGlowLayerId = `${glowLayerId}-hover`;
-
-  // Create hover source
-  if (!map.getSource?.(hoverSourceId)) {
-    try {
-      map.addSource(hoverSourceId, {
-        type: 'geojson',
-        data: EMPTY_GEOJSON,
-      });
-      debug.log('[layer-styles] hover source ADD', { hoverSourceId });
-    } catch (err) {
-      console.error(`[geokit] Failed to add hover source ${hoverSourceId}:`, err);
-      return;
-    }
-  }
-
-  // Create hover glow layer BELOW the point layer so original point stays on top
-  // Use the same color expression as the point (DMA color) for the glow
-  const hoverGlowRadiusVal = getGlowRadiusInterpolation({ scale: HOVER_CONFIG.glowRadiusScale });
-  const hoverOpacity =
-    typeof glowHoverOpacity === 'number' ? glowHoverOpacity : HOVER_CONFIG.glowOpacity;
-
-  // Add BELOW the base glow layer so hover glow is at the very bottom
-  const addBeforeLayer = map.getLayer?.(glowLayerId) ? glowLayerId : undefined;
-
-  if (map.getSource?.(hoverSourceId) && !map.getLayer?.(hoverGlowLayerId)) {
-    try {
-      map.addLayer(
-        {
-          id: hoverGlowLayerId,
-          type: 'circle',
-          source: hoverSourceId,
-          paint: {
-            'circle-radius': hoverGlowRadiusVal,
-            'circle-color': circleColor, // Use DMA color expression
-            'circle-opacity': hoverOpacity,
-            'circle-blur': HOVER_CONFIG.glowBlur,
-          },
-        } as any,
-        addBeforeLayer // Add BELOW the point/glow layer
-      );
-    } catch (err) {
-      console.error(`[geokit] Failed to add hover glow layer ${hoverGlowLayerId}:`, err);
-    }
-  }
-
-  // Use only the glow layer for hit testing (mousemove / mouseleave / click).
-  // The glow has a larger radius than the point, so one layer gives a single
-  // leave boundary and avoids the point's mouseleave clearing hover while
-  // the cursor is still over the glow at higher zoom.
-  const hitLayerId = map.getLayer?.(glowLayerId) ? glowLayerId : null;
-  debug.log('[layer-styles] setupHoverLayers', {
-    hitLayerId,
-    hoverSourceId,
-    hoverGlowLayerId,
-    hasHoverSource: !!map.getSource?.(hoverSourceId),
-    hasHoverGlowLayer: !!map.getLayer?.(hoverGlowLayerId),
-  });
-  if (!hitLayerId) {
-    debug.log('[layer-styles] setupHoverLayers: glow layer not found, skipping');
+  // Hit-test glow + point so clicks register on the painted dot and its halo.
+  const hitLayerIds = [glowLayerId, pointLayerId].filter(
+    (id, index, arr) => !!id && !!map.getLayer?.(id) && arr.indexOf(id) === index
+  );
+  const leaveLayerId = map.getLayer?.(glowLayerId) ? glowLayerId : pointLayerId;
+  debug.log('[layer-styles] setupHoverLayers', { hitLayerIds, leaveLayerId, sourceId });
+  if (!hitLayerIds.length) {
+    debug.log('[layer-styles] setupHoverLayers: no hit layers, skipping');
     return;
   }
 
-  // Store the current hover feature + track last dispatched feature for dedup
-  let currentHoverFeature: GeoJSON.Feature | null = null;
+  let lastHoveredFeatureId: string | number | null = null;
   /** Coordinates of the last dispatched gk-point-hover (dedup glow+point layer hits). */
   let lastDispatchedKey: string | null = null;
 
@@ -1488,55 +1443,16 @@ function setupHoverLayers(
     return null;
   }
 
-  function renderHoverFeature(): void {
-    if (!currentHoverFeature || !map) return;
-
-    const source = map.getSource?.(hoverSourceId) as GeoJSONSourceWithSetData | undefined;
-    if (!source?.setData) return;
-
-    try {
-      source.setData({ type: 'FeatureCollection', features: [currentHoverFeature] });
-    } catch {
-      return;
-    }
-
-    // Create glow layer BELOW the point layer so original point stays on top (if not already created)
-    if (!map.getLayer?.(hoverGlowLayerId)) {
-      const hoverGlowRadiusVal = getGlowRadiusInterpolation({
-        scale: HOVER_CONFIG.glowRadiusScale,
-      });
-      const beforeLayer = map.getLayer?.(glowLayerId) ? glowLayerId : undefined;
+  function clearHoverFeatureState(): void {
+    if (lastHoveredFeatureId == null) return;
+    if (map.removeFeatureState && map.getSource?.(sourceId)) {
       try {
-        map.addLayer(
-          {
-            id: hoverGlowLayerId,
-            type: 'circle',
-            source: hoverSourceId,
-            paint: {
-              'circle-radius': hoverGlowRadiusVal,
-              'circle-color': circleColor, // Use DMA color expression
-              'circle-opacity': HOVER_CONFIG.glowOpacity,
-              'circle-blur': HOVER_CONFIG.glowBlur,
-            },
-          } as any,
-          beforeLayer // Add BELOW the point/glow layer
-        );
+        map.removeFeatureState({ source: sourceId, id: lastHoveredFeatureId });
       } catch {
-        // ignore
+        // Source may have been removed during style swap
       }
     }
-  }
-
-  function clearHoverFeature(): void {
-    currentHoverFeature = null;
-    const source = map?.getSource?.(hoverSourceId) as GeoJSONSourceWithSetData | undefined;
-    if (source?.setData) {
-      try {
-        source.setData(EMPTY_GEOJSON);
-      } catch {
-        // ignore
-      }
-    }
+    lastHoveredFeatureId = null;
   }
 
   function setCursor(cursor: string): void {
@@ -1568,14 +1484,15 @@ function setupHoverLayers(
     }
   }
 
+  function endHover(): void {
+    clearHoverFeatureState();
+    setCursor('');
+    dispatchHoverEnd();
+  }
+
   /** Coordinate key of the feature currently under the cursor (mousemove dedup). */
   let currentHoverKey: string | null = null;
 
-  /**
-   * mousemove handler on the invisible hit layer.
-   * Fires continuously as the cursor moves, so we track the current feature by
-   * coordinate key and only dispatch events / update visuals when it changes.
-   */
   function onMouseMove(e: {
     features?: Array<{ geometry?: unknown; properties?: Record<string, unknown> }>;
   }): void {
@@ -1583,9 +1500,7 @@ function setupHoverLayers(
     if (!features?.length) {
       if (currentHoverKey !== null) {
         currentHoverKey = null;
-        clearHoverFeature();
-        setCursor('');
-        dispatchHoverEnd();
+        endHover();
       }
       return;
     }
@@ -1596,32 +1511,36 @@ function setupHoverLayers(
     if (!geometry) {
       if (currentHoverKey !== null) {
         currentHoverKey = null;
-        clearHoverFeature();
-        dispatchHoverEnd();
+        endHover();
       }
       return;
     }
 
-    const coords =
-      geometry && 'coordinates' in (geometry as any)
-        ? (geometry as { coordinates: [number, number] }).coordinates
-        : null;
-    const key = coords ? `${coords[0]},${coords[1]}` : null;
-
-    // Same feature — skip redundant update
+    const lngLat = extractPointLngLat(geometry);
+    const key = lngLat ? `${lngLat.lng},${lngLat.lat}` : null;
     if (key === currentHoverKey) return;
 
     currentHoverKey = key;
 
-    // Update hover visual
-    currentHoverFeature = {
+    const featureForId = {
       type: 'Feature',
-      geometry: geometry as GeoJSON.Geometry,
-      properties: { ...(f.properties || {}) },
-    };
-    renderHoverFeature();
+      properties: f?.properties ?? {},
+      geometry,
+    } as Feature;
+    const featureId = getFeatureId(featureForId, DEFAULT_SHARED_POINT_ID_PROPERTIES);
 
-    // Dispatch gk-point-hover event from the gk-map element
+    if (featureId != null && featureId !== lastHoveredFeatureId) {
+      clearHoverFeatureState();
+      if (map.setFeatureState && map.getSource?.(sourceId)) {
+        try {
+          map.setFeatureState({ source: sourceId, id: featureId }, { hover: true });
+          lastHoveredFeatureId = featureId;
+        } catch {
+          // promoteId missing on source
+        }
+      }
+    }
+
     if (key && key !== lastDispatchedKey) {
       lastDispatchedKey = key;
       const mapEl = findMapElement();
@@ -1629,8 +1548,8 @@ function setupHoverLayers(
         mapEl.dispatchEvent(
           new CustomEvent('gk-point-hover', {
             detail: {
-              lngLat: coords ? { lng: coords[0], lat: coords[1] } : undefined,
-              features: features ? [...features] : [],
+              lngLat: lngLat ?? undefined,
+              features: [...features],
               sourceId,
               map,
               element: mapEl,
@@ -1645,9 +1564,7 @@ function setupHoverLayers(
 
   function onMouseLeave(): void {
     currentHoverKey = null;
-    clearHoverFeature();
-    setCursor('');
-    dispatchHoverEnd();
+    endHover();
   }
 
   // Click handler: move selection ring, then dispatch gk-point-click from the gk-map element.
@@ -1706,14 +1623,18 @@ function setupHoverLayers(
     }
   }
 
-  // Single hit layer (glow): mousemove + mouseleave + click
+  // Glow + point layers: click/move on both; mouseleave on wider glow only.
   try {
-    map.on('mousemove', hitLayerId, onMouseMove as any);
-    map.on('mouseleave', hitLayerId, onMouseLeave as any);
-    map.on('click', hitLayerId, onClick as any);
-    debug.log('[layer-styles] attached mousemove+click handlers to hit layer', hitLayerId);
+    for (const layerId of hitLayerIds) {
+      map.on('mousemove', layerId, onMouseMove as any);
+      map.on('click', layerId, onClick as any);
+    }
+    if (leaveLayerId) {
+      map.on('mouseleave', leaveLayerId, onMouseLeave as any);
+    }
+    debug.log('[layer-styles] attached mousemove+click handlers', hitLayerIds);
   } catch (err) {
-    debug.log('[layer-styles] FAILED to attach handlers', hitLayerId, err);
+    debug.log('[layer-styles] FAILED to attach handlers', hitLayerIds, err);
   }
 }
 
@@ -1763,9 +1684,12 @@ export function createSharedPointLayersWithHover(
   if (map.getSource?.(hoverSourceId) && !map.getLayer?.(hoverLayerId)) {
     // If custom glowRadius provided, scale it; otherwise use default with hover scale
     const glowRadiusVal = glowRadius
-      ? ['*', glowRadius, HOVER_CONFIG.glowRadiusScale]
-      : getGlowRadiusInterpolation({ scale: HOVER_CONFIG.glowRadiusScale });
-    const glowColorVal = glowColor ?? resolveDefaultLayerColor();
+      ? offsetRadiusInterpolation(
+          glowRadius as unknown[],
+          HOVER_GLOW_PADDING_PX - GLOW_HIT_PADDING_PX
+        )
+      : getHoverGlowRadiusInterpolation();
+    const glowColorVal = resolveSharedGlowColor(glowColor, circleColor);
     const glowBlurVal = glowBlur ?? resolveGlowBlur();
     const hoverOpacity =
       typeof glowHoverOpacity === 'number' ? glowHoverOpacity : HOVER_CONFIG.glowOpacity;

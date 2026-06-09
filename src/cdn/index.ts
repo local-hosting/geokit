@@ -27,16 +27,20 @@ export {
   fetchCountiesBulkGeoJson,
   fetchStatesBulkGeoJson,
   prefetchBoundaryOutlines,
+  prefetchCountyBoundaries,
+  prefetchStateBoundaries,
 } from './bulk';
 export { canonicalDmaCdnSlug, isLegacyDmaSlug } from './dma-slug';
 export { validateDmaCdnJwt, validateIdentityJwt, type CdnJwtValidation } from './jwt';
 export {
+  clearDmaRegionClusterCache,
   createDmaRegionClusterLoader,
   dmaCatalogEntriesFromRegionIndex,
   dmaFeaturesToCollection,
   dmaRegionBySlugFromRegionIndex,
   dmaSlugsFromRegionIndex,
   mergeDmaFeaturesBySlug,
+  prefetchDmaRegionsForViewportBounds,
   resolveRegionIdsForSlugs,
   resolveRegionIdsForViewport,
   resolveRegionIdsForViewportBounds,

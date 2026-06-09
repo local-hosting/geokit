@@ -17,7 +17,14 @@ export {
   type LayerClickEventDetail,
   type LayerMouseEnterEventDetail,
   type LayerMouseLeaveEventDetail,
+  type LayerReadyEventDetail,
 } from './layer/layer';
+export {
+  isLayerDatasetId,
+  parseLayerDatasetSlugs,
+  type LayerDatasetId,
+  type LayerDatasetOptions,
+} from './layer/layer-datasets';
 export {
   PopupElement,
   dispatchClearPopupsEvent,

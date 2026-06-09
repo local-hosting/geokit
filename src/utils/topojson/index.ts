@@ -15,6 +15,8 @@ import type {
   Properties,
 } from 'topojson-specification';
 import { feature, merge, mesh, neighbors } from 'topojson-client';
+import { topology as buildTopology } from 'topojson-server';
+import { presimplify, simplify as simplifyTopo, planarTriangleArea } from 'topojson-simplify';
 
 // Re-export key types for consumers
 export type {
@@ -23,6 +25,117 @@ export type {
   GeometryCollection,
   Properties,
 } from 'topojson-specification';
+
+/**
+ * Convert a named TopoJSON object to a GeoJSON FeatureCollection.
+ *
+ * @param topology - A parsed TopoJSON Topology
+ * @param objectName - Key of the object in `topology.objects` (e.g. "counties", "states")
+ * @returns GeoJSON FeatureCollection, or null if the object doesn't exist
+ *
+ * @example
+ * ```ts
+ * const fc = topoFeature(usAtlas, 'counties');
+ * // fc.features[0].properties.name => "San Benito"
+ * ```
+ */
+type TopoPolygonObject = Polygon | MultiPolygon;
+
+/**
+ * Build a TopoJSON topology from named GeoJSON objects.
+ * Pass `quantization: false` to keep rounded lng/lat without delta encoding.
+ */
+export function geojsonToTopology(
+  objects: Record<string, GeoJSON.GeoJSON>,
+  options: { quantization?: number | false } = {}
+): Topology {
+  const quantization = options.quantization ?? false;
+  return buildTopology(objects, quantization);
+}
+
+const PLANAR_MIN_WEIGHT_SCALE = 15;
+
+function metersPerDegreeLatitude(latDeg: number): number {
+  return 111320 * Math.cos((latDeg * Math.PI) / 180);
+}
+
+/** Planar triangle minWeight for topojson-simplify given a meter tolerance. */
+function minPlanarWeightFromToleranceMeters(toleranceMeters: number, avgLatDeg = 40): number {
+  const toleranceDeg = toleranceMeters / metersPerDegreeLatitude(avgLatDeg);
+  return ((toleranceDeg * toleranceDeg) / 2) * PLANAR_MIN_WEIGHT_SCALE;
+}
+
+/**
+ * Simplify a TopoJSON topology once — shared arcs stay aligned across features.
+ * Uses planar triangle weights (input coordinates in WGS84 degrees).
+ */
+export function simplifyTopologyMeters(topology: Topology, toleranceMeters: number): Topology {
+  if (toleranceMeters <= 0) return topology;
+  const minWeight = minPlanarWeightFromToleranceMeters(toleranceMeters);
+  const prepared = presimplify(topology, planarTriangleArea);
+  return simplifyTopo(prepared, minWeight);
+}
+
+type TopoPolygonFeatureCollection<P extends GeoJSON.GeoJsonProperties> = GeoJSON.FeatureCollection<
+  GeoJSON.Polygon | GeoJSON.MultiPolygon,
+  P
+>;
+
+/**
+ * Build topology from a polygon FeatureCollection, simplify arcs once, convert back.
+ * Feature order and properties are preserved by index.
+ */
+export function simplifyFeatureCollectionTopology<P extends GeoJSON.GeoJsonProperties>(
+  collection: TopoPolygonFeatureCollection<P>,
+  objectName: string,
+  toleranceMeters: number
+): TopoPolygonFeatureCollection<P> {
+  if (toleranceMeters <= 0 || collection.features.length === 0) {
+    return collection;
+  }
+
+  const originalFeatures = collection.features;
+  const topology = geojsonToTopology({ [objectName]: collection });
+  const simplifiedTopology = simplifyTopologyMeters(topology, toleranceMeters);
+  const simplified = topoFeature(simplifiedTopology, objectName);
+  if (!simplified?.features.length) return collection;
+
+  const features = simplified.features.map((simplifiedFeature, index) => ({
+    ...simplifiedFeature,
+    properties: originalFeatures[index]?.properties ?? simplifiedFeature.properties,
+  })) as TopoPolygonFeatureCollection<P>['features'];
+
+  return { type: 'FeatureCollection', features };
+}
+
+/**
+ * Map feature property values to TopoJSON geometry objects inside a named layer.
+ * Feature order must match the FeatureCollection passed to {@link geojsonToTopology}.
+ */
+export function topoGeometriesByProperty<P extends GeoJSON.GeoJsonProperties>(
+  topology: Topology,
+  objectName: string,
+  features: GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, P>[],
+  propertyKey: keyof P & string
+): Map<string, TopoPolygonObject> {
+  const obj = topology.objects[objectName];
+  if (!obj || obj.type !== 'GeometryCollection') {
+    throw new Error(`topoGeometriesByProperty: expected GeometryCollection "${objectName}"`);
+  }
+
+  const geometries = (obj as GeometryCollection).geometries;
+  const map = new Map<string, TopoPolygonObject>();
+
+  for (let i = 0; i < features.length; i++) {
+    const value = features[i].properties?.[propertyKey];
+    const geometry = geometries[i];
+    if (typeof value === 'string' && geometry) {
+      map.set(value, geometry as TopoPolygonObject);
+    }
+  }
+
+  return map;
+}
 
 /**
  * Convert a named TopoJSON object to a GeoJSON FeatureCollection.

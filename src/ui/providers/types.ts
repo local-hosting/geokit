@@ -174,6 +174,13 @@ export interface MapInstance {
   setZoom?(zoom: number): void;
   getZoom?(): number;
 
+  // Feature state (MapLibre promoteId + hover/selection)
+  setFeatureState?(
+    target: { source: string; id?: string | number },
+    state: Record<string, unknown>
+  ): void;
+  removeFeatureState?(target: { source: string; id?: string | number }, key?: string): void;
+
   // Querying
   queryRenderedFeatures?(
     point: { x: number; y: number },

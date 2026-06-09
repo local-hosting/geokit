@@ -28,7 +28,7 @@ export const ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS = {
 
 /** Choropleth / region polygon sources (DMA, dissolved regions). */
 export const CHOROPLETH_BOUNDARY_GEOJSON_SOURCE_OPTIONS = {
-  tolerance: 1,
+  tolerance: 0,
   buffer: 256,
   maxzoom: 14,
 } as const;

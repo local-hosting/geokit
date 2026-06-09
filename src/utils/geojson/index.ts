@@ -24,7 +24,15 @@ export {
   type RepairOptions,
 } from './repair';
 
-export { fixPolygonRingOrder, filterTinyPolygons, cleanGeometry } from './polygon-utils';
+export {
+  fixPolygonRingOrder,
+  filterTinyPolygons,
+  cleanGeometry,
+  stripDegenerateInteriorRings,
+  type StripDegenerateInteriorRingsOptions,
+  stripAcuteOuterRingSpikes,
+  type StripAcuteOuterRingSpikesOptions,
+} from './polygon-utils';
 
 export { polygonsToBoundaryLines } from './boundary-lines';
 

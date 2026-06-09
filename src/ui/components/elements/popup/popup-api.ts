@@ -103,6 +103,33 @@ export function stylePopupElement(popupElement: HTMLElement, anchor: 'top' | 'bo
   popupElement.setAttribute('data-anchor', anchor);
 }
 
+/** Keep popup anchored to geographic coordinates during pan, zoom, and tilt. */
+function attachPopupPositionSync(popup: any, map: any, coordinates: [number, number]): void {
+  if (!popup || !map?.on) return;
+
+  const sync = (): void => {
+    try {
+      popup.setLngLat?.(coordinates);
+    } catch {
+      // Map may be mid-teardown
+    }
+  };
+
+  map.on('move', sync);
+  map.on('zoom', sync);
+  map.on('rotate', sync);
+  map.on('pitch', sync);
+
+  if (typeof popup.on === 'function') {
+    popup.on('close', () => {
+      map.off?.('move', sync);
+      map.off?.('zoom', sync);
+      map.off?.('rotate', sync);
+      map.off?.('pitch', sync);
+    });
+  }
+}
+
 export function showPointPopup(
   popup: any,
   map: any,
@@ -154,6 +181,7 @@ export function showPointPopup(
 
   try {
     newPopup.setLngLat(coordinates).setDOMContent(popupContentEl).addTo(map);
+    attachPopupPositionSync(newPopup, map, coordinates);
 
     if (typeof newPopup.on === 'function') {
       newPopup.on('close', () => {
@@ -228,6 +256,7 @@ export function showPopupGeneric(
 
   try {
     newPopup.setLngLat(coordinates).setDOMContent(popupContentEl).addTo(map);
+    attachPopupPositionSync(newPopup, map, coordinates);
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {

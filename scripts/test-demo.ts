@@ -82,8 +82,8 @@ async function collectPageErrors(page: Page, path: string): Promise<string[]> {
 
   if (
     path.endsWith('/county.html') ||
-    path.endsWith('/bulk.html') ||
-    path.endsWith('/place.html')
+    path.endsWith('/cities.html') ||
+    path.endsWith('/state.html')
   ) {
     const log = await page
       .locator('#log')

@@ -2,6 +2,27 @@ import type { ViewportBounds } from './viewport';
 
 export type { ViewportBounds };
 
+/** Approximate WGS84 bounds from map center + zoom (for CDN prefetch before MapLibre is ready). */
+export function approximateViewportBoundsFromCenterZoom(
+  centerLat: number,
+  centerLng: number,
+  zoom: number,
+  viewportWidthPx = 1024,
+  viewportHeightPx = 768
+): ViewportBounds {
+  const scale = 256 * 2 ** zoom;
+  const lngSpan = (360 * viewportWidthPx) / scale;
+  const latRadians = (centerLat * Math.PI) / 180;
+  const heightLngSpan = (360 * viewportHeightPx) / scale;
+  const heightLatSpan = heightLngSpan / Math.max(Math.cos(latRadians), 0.25);
+  return {
+    west: centerLng - lngSpan / 2,
+    east: centerLng + lngSpan / 2,
+    south: centerLat - heightLatSpan / 2,
+    north: centerLat + heightLatSpan / 2,
+  };
+}
+
 export function mapViewportBounds(map: {
   getBounds?: () => {
     getWest: () => number;

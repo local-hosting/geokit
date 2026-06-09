@@ -12,6 +12,7 @@ import type {
   ViewportRegionResolveOptions,
 } from '../types/dma';
 import { compactH3CellId } from '../utils/h3/cell-id';
+import { resolveGlobeCdnBaseUrl } from './config';
 import { dmaRegionIndexUrl, dmaRegionShardUrl } from './paths';
 import { fetchGlobeCdn, type GlobeCdnFetchOptions } from './fetch';
 
@@ -19,7 +20,7 @@ export type { DmaCatalogEntry, DmaRegionClusterIndex, ViewportRegionResolveOptio
 
 export type DmaRegionClusterLoaderOptions = GlobeCdnFetchOptions & {
   getRequestInit?: () => RequestInit;
-  /** Rewrite URL before fetch (e.g. dev proxy). */
+  /** Optional URL rewrite before fetch. */
   resolveUrl?: (url: string) => string;
   onIndexLoaded?: (detail: { regions: number; resolution: number }) => void;
   onIndexUnavailable?: (detail: {
@@ -176,13 +177,65 @@ export function dmaFeaturesToCollection(
   };
 }
 
+type DmaRegionClusterSharedCache = {
+  cachedIndex: DmaRegionClusterIndex | null;
+  indexInflight: Promise<DmaRegionClusterIndex | null> | null;
+  cachedRegionShardById: Map<string, GeoJSON.FeatureCollection>;
+  inflightRegionShardById: Map<string, Promise<GeoJSON.FeatureCollection | null>>;
+  missingRegionShardById: Set<string>;
+};
+
+const sharedCacheByBaseUrl = new Map<string, DmaRegionClusterSharedCache>();
+
+function dmaLoaderCacheKey(baseUrl: string | undefined): string {
+  return (baseUrl ?? '').trim().toLowerCase() || '__default__';
+}
+
+function getSharedDmaLoaderCache(baseUrl: string | undefined): DmaRegionClusterSharedCache {
+  const key = dmaLoaderCacheKey(baseUrl);
+  let cache = sharedCacheByBaseUrl.get(key);
+  if (!cache) {
+    cache = {
+      cachedIndex: null,
+      indexInflight: null,
+      cachedRegionShardById: new Map(),
+      inflightRegionShardById: new Map(),
+      missingRegionShardById: new Set(),
+    };
+    sharedCacheByBaseUrl.set(key, cache);
+  }
+  return cache;
+}
+
+/** Clear shared DMA index + shard cache (all bases when omitted). */
+export function clearDmaRegionClusterCache(baseUrl?: string): void {
+  if (baseUrl !== undefined) {
+    sharedCacheByBaseUrl.delete(dmaLoaderCacheKey(baseUrl));
+    return;
+  }
+  sharedCacheByBaseUrl.clear();
+}
+
+/** Warm DMA index + viewport region shards during basemap load. */
+export function prefetchDmaRegionsForViewportBounds(
+  bounds: ViewportBounds,
+  options?: DmaRegionClusterLoaderOptions
+): void {
+  const baseUrl = resolveGlobeCdnBaseUrl(options?.baseUrl);
+  const loader = createDmaRegionClusterLoader({ ...options, baseUrl });
+  void (async () => {
+    const index = await loader.fetchIndex();
+    if (!index?.entries?.length) return;
+    const regionIds = resolveRegionIdsForViewportBounds(index, bounds);
+    if (!regionIds.length) return;
+    await loader.loadFeaturesForRegions(regionIds, new Map(), { index });
+  })();
+}
+
 export function createDmaRegionClusterLoader(options: DmaRegionClusterLoaderOptions) {
   const baseUrl = options.baseUrl;
-  let cachedIndex: DmaRegionClusterIndex | null = null;
-  let indexInflight: Promise<DmaRegionClusterIndex | null> | null = null;
-  const cachedRegionShardById = new Map<string, GeoJSON.FeatureCollection>();
-  const inflightRegionShardById = new Map<string, Promise<GeoJSON.FeatureCollection | null>>();
-  const missingRegionShardById = new Set<string>();
+  const cache = getSharedDmaLoaderCache(baseUrl);
+  const { cachedRegionShardById, inflightRegionShardById, missingRegionShardById } = cache;
 
   function fetchOptions(): GlobeCdnFetchOptions {
     return {
@@ -226,22 +279,22 @@ export function createDmaRegionClusterLoader(options: DmaRegionClusterLoaderOpti
   }
 
   function getCachedIndex(): DmaRegionClusterIndex | null {
-    return cachedIndex;
+    return cache.cachedIndex;
   }
 
   function clearCache(): void {
-    cachedIndex = null;
-    indexInflight = null;
+    cache.cachedIndex = null;
+    cache.indexInflight = null;
     cachedRegionShardById.clear();
     inflightRegionShardById.clear();
     missingRegionShardById.clear();
   }
 
   async function fetchIndex(): Promise<DmaRegionClusterIndex | null> {
-    if (cachedIndex) return cachedIndex;
-    if (indexInflight) return indexInflight;
+    if (cache.cachedIndex) return cache.cachedIndex;
+    if (cache.indexInflight) return cache.indexInflight;
 
-    indexInflight = (async () => {
+    cache.indexInflight = (async () => {
       const url = dmaRegionIndexUrl(baseUrl ?? '');
       try {
         const index = await fetchJson<DmaRegionClusterIndex>(url, { kind: 'dma-region-index' });
@@ -249,7 +302,7 @@ export function createDmaRegionClusterLoader(options: DmaRegionClusterLoaderOpti
           options.onIndexUnavailable?.({ url });
           return null;
         }
-        cachedIndex = index;
+        cache.cachedIndex = index;
         options.onIndexLoaded?.({
           regions: index.entries.length,
           resolution: index.resolution,
@@ -259,11 +312,11 @@ export function createDmaRegionClusterLoader(options: DmaRegionClusterLoaderOpti
         options.onIndexUnavailable?.({ url });
         return null;
       } finally {
-        indexInflight = null;
+        cache.indexInflight = null;
       }
     })();
 
-    return indexInflight;
+    return cache.indexInflight;
   }
 
   async function fetchRegionShardGeoJson(
@@ -305,12 +358,49 @@ export function createDmaRegionClusterLoader(options: DmaRegionClusterLoaderOpti
     return promise;
   }
 
+  function mergeRegionShardIntoTarget(
+    regionId: string,
+    target: Map<string, GeoJSON.Feature>,
+    loadOptions?: {
+      filterSlugs?: readonly string[];
+      onRegionMerged?: (detail: { regionId: string; featureCount: number }) => void;
+    }
+  ): number {
+    const cached = cachedRegionShardById.get(regionId);
+    if (!cached) return 0;
+
+    let added = 0;
+    if (loadOptions?.filterSlugs) {
+      const wanted = new Set(
+        loadOptions.filterSlugs.map((slug) => normalizeDmaSlug(slug)).filter(Boolean)
+      );
+      const filtered: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: cached.features.filter((feature) => {
+          const slug = normalizeDmaSlug(
+            String((feature.properties as { slug?: string })?.slug ?? feature.id ?? '')
+          );
+          return slug && wanted.has(slug);
+        }),
+      };
+      added = mergeDmaFeaturesBySlug(target, filtered);
+    } else {
+      added = mergeDmaFeaturesBySlug(target, cached);
+    }
+
+    if (added > 0) {
+      loadOptions?.onRegionMerged?.({ regionId, featureCount: target.size });
+    }
+    return added;
+  }
+
   async function loadFeaturesForRegions(
     regionIds: readonly string[],
     target: Map<string, GeoJSON.Feature>,
     loadOptions?: {
       filterSlugs?: readonly string[];
       index?: DmaRegionClusterIndex | null;
+      onRegionMerged?: (detail: { regionId: string; featureCount: number }) => void;
     }
   ): Promise<{ fetchedRegions: number; addedFeatures: number }> {
     const unique = [...new Set(regionIds.map((id) => id.trim().toLowerCase()).filter(Boolean))];
@@ -330,34 +420,20 @@ export function createDmaRegionClusterLoader(options: DmaRegionClusterLoaderOpti
     );
 
     let fetchedRegions = 0;
+    let addedFeatures = 0;
+
     await Promise.all(
       toFetch.map(async (regionId) => {
         const geojson = await fetchRegionShardGeoJson(regionId);
-        if (geojson) fetchedRegions += 1;
+        if (!geojson) return;
+        fetchedRegions += 1;
+        addedFeatures += mergeRegionShardIntoTarget(regionId, target, loadOptions);
       })
     );
 
-    let addedFeatures = 0;
     for (const regionId of toLoad) {
-      const cached = cachedRegionShardById.get(regionId);
-      if (!cached) continue;
-      if (loadOptions?.filterSlugs) {
-        const wanted = new Set(
-          loadOptions.filterSlugs.map((slug) => normalizeDmaSlug(slug)).filter(Boolean)
-        );
-        const filtered: GeoJSON.FeatureCollection = {
-          type: 'FeatureCollection',
-          features: cached.features.filter((feature) => {
-            const slug = normalizeDmaSlug(
-              String((feature.properties as { slug?: string })?.slug ?? feature.id ?? '')
-            );
-            return slug && wanted.has(slug);
-          }),
-        };
-        addedFeatures += mergeDmaFeaturesBySlug(target, filtered);
-      } else {
-        addedFeatures += mergeDmaFeaturesBySlug(target, cached);
-      }
+      if (toFetch.includes(regionId)) continue;
+      addedFeatures += mergeRegionShardIntoTarget(regionId, target, loadOptions);
     }
 
     options.onMerge?.({

@@ -3,7 +3,16 @@
  */
 
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
-import { getZoomRadiusExpression, getShadowRadiusExpression } from './point-style';
+import {
+  getHoverGlowRadiusExpression,
+  getSelectionRingRadiusExpression,
+  POINT_SELECTION_RING_STROKE_WIDTH,
+} from './point-style';
+
+export interface ApplySelectedVisualOptions {
+  /** Match focus halo to the point fill (defaults to --gk-focus-shadow-color). */
+  pointColor?: string;
+}
 
 export interface SelectedLayers {
   layerId: string;
@@ -31,7 +40,8 @@ export function applySelectedVisual(
   sourceId: string,
   size: number,
   mapElement: HTMLElement,
-  feature: GeoJSON.Feature
+  feature: GeoJSON.Feature,
+  options: ApplySelectedVisualOptions = {}
 ): SelectedLayers | null {
   if (!map?.addSource || !map?.addLayer) return null;
 
@@ -55,6 +65,8 @@ export function applySelectedVisual(
 
     const selectedShadowColor = getCSSVariable(mapElement, '--gk-focus-shadow-color', '');
     const selectedRingColor = getCSSVariable(mapElement, '--gk-focus-ring-color', '');
+    const focusHaloColor = options.pointColor || selectedShadowColor;
+    const focusHaloBlur = getCSSVariableNumber(mapElement, '--gk-glow-blur', 0.5);
 
     map.addLayer(
       {
@@ -62,10 +74,10 @@ export function applySelectedVisual(
         type: 'circle',
         source: selectedSourceId,
         paint: {
-          'circle-radius': getShadowRadiusExpression(size),
-          'circle-color': selectedShadowColor,
+          'circle-radius': getHoverGlowRadiusExpression(size),
+          'circle-color': focusHaloColor,
           'circle-opacity': getCSSVariableNumber(mapElement, '--gk-point-glow-focus-opacity', 0),
-          'circle-blur': 3,
+          'circle-blur': focusHaloBlur,
           'circle-stroke-width': 0,
         },
       },
@@ -78,10 +90,10 @@ export function applySelectedVisual(
         type: 'circle',
         source: selectedSourceId,
         paint: {
-          'circle-radius': getZoomRadiusExpression(size),
+          'circle-radius': getSelectionRingRadiusExpression(size),
           'circle-color': 'transparent',
           'circle-opacity': 1,
-          'circle-stroke-width': 2,
+          'circle-stroke-width': POINT_SELECTION_RING_STROKE_WIDTH,
           'circle-stroke-color': selectedRingColor,
           'circle-stroke-opacity': 1,
         },
