@@ -2,6 +2,7 @@ import maplibregl from 'maplibre-gl';
 
 import { resolveGlobeCdnBaseUrl } from '../../src/cdn/config.ts';
 import { rewriteGlobeCdnUrlForDevProxy } from '../../src/cdn/dev-proxy.ts';
+import { BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS } from '../../src/ui/utils/geojson-source-options.ts';
 import { bboxToPolygonGeometry } from '../../src/utils/bounds/bbox-to-polygon.ts';
 
 export function getCdnOptions() {
@@ -58,6 +59,8 @@ export function setGeoJsonOutline(map, sourceId, geojson) {
     geojson?.type === 'FeatureCollection'
       ? geojson
       : { type: 'FeatureCollection', features: [geojson] };
+  const lineColor =
+    getComputedStyle(document.documentElement).getPropertyValue('--bk-map-line').trim() || '#000';
 
   const existing = map.getSource(sourceId);
   if (existing) {
@@ -65,18 +68,26 @@ export function setGeoJsonOutline(map, sourceId, geojson) {
     return;
   }
 
-  map.addSource(sourceId, { type: 'geojson', data });
+  map.addSource(sourceId, {
+    type: 'geojson',
+    data,
+    ...BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS,
+  });
   map.addLayer({
     id: `${sourceId}-line`,
     type: 'line',
     source: sourceId,
-    paint: { 'line-color': getComputedStyle(document.documentElement).getPropertyValue('--bk-map-line').trim() || '#000', 'line-width': 2 },
+    paint: {
+      'line-color': lineColor,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 3, 0.5, 8, 1, 12, 1.5],
+      'line-opacity': 0.65,
+    },
   });
   map.addLayer({
     id: `${sourceId}-fill`,
     type: 'fill',
     source: sourceId,
-    paint: { 'fill-color': getComputedStyle(document.documentElement).getPropertyValue('--bk-map-line').trim() || '#000', 'fill-opacity': 0.05 },
+    paint: { 'fill-color': lineColor, 'fill-opacity': 0.04 },
   });
 }
 

@@ -2,11 +2,44 @@
  * MapLibre layer z-order helpers (style-order introspection and stacking).
  */
 
+export type StyleLayerLike = { id?: string; type?: string };
+
 type MapWithStyle = {
-  getStyle?: () => { layers?: Array<{ id?: string }> };
+  getStyle?: () => { layers?: StyleLayerLike[] };
   getLayer?: (id: string) => unknown;
   moveLayer?: (layerId: string, beforeId?: string) => void;
 };
+
+export type FindInsertBeforeLayerOptions = {
+  /** Skip layers that should not be used as insert anchors (e.g. choropleth underlays). */
+  skipLayer?: (layer: StyleLayerLike) => boolean;
+  /** First matching layer id is returned — use to find the bottom of app overlay stack. */
+  matchLayer: (layer: StyleLayerLike) => boolean;
+};
+
+/**
+ * Walk style layers in order; return the first id where matchLayer is true and skipLayer is false.
+ */
+export function findInsertBeforeLayer(
+  map: MapWithStyle | null | undefined,
+  options: FindInsertBeforeLayerOptions
+): string | undefined {
+  try {
+    const layers = map?.getStyle?.()?.layers;
+    if (!layers) return undefined;
+
+    for (const layer of layers) {
+      if (options.skipLayer?.(layer)) continue;
+      if (options.matchLayer(layer)) {
+        const id = layer.id;
+        return typeof id === 'string' && id.length > 0 ? id : undefined;
+      }
+    }
+  } catch {
+    /* map torn down */
+  }
+  return undefined;
+}
 
 /** Layer ids whose id starts with prefix (style order). */
 export function listLayerIdsByPrefix(
