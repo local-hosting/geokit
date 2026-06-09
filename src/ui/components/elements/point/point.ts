@@ -11,7 +11,11 @@
  */
 
 import { MapChildElement } from '../../map-child-element';
-import { normalizeCoordinatesArray, isValidCoordinate } from '../../../../utils/coordinates';
+import {
+  extractPointLngLat,
+  normalizeCoordinatesArray,
+  isValidCoordinate,
+} from '../../../../utils/coordinates';
 import type { MapEvent, MapRenderedFeature } from '../../../providers/types';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
 import { debug } from '../../../utils/logger';
@@ -232,11 +236,16 @@ export class PointElement extends MapChildElement {
             geometry: { type: 'Point', coordinates: [lng, lat] },
             properties,
           };
+          const canonical = this.canonicalPointFeature(feature);
+          const anchorLngLat = (canonical && extractPointLngLat(canonical.geometry)) ?? {
+            lng,
+            lat,
+          };
           this.handlePointSelect(
             feature,
             pointId != null ? String(pointId) : null,
             pointName != null ? String(pointName) : null,
-            { lng, lat }
+            anchorLngLat
           );
         }
       }
@@ -458,6 +467,7 @@ export class PointElement extends MapChildElement {
 
     // Hover: drive hover glow layer via setData + dispatch gk-point-hover / gk-point-hover-end
     const onMouseEnter = (e: MapEvent): void => {
+      if (this.selectedLayers) return;
       const canvas = this.map?.getCanvas?.();
       if (canvas?.style) canvas.style.cursor = 'pointer';
       const features = e?.features;
@@ -489,7 +499,7 @@ export class PointElement extends MapChildElement {
     const onMouseLeave = (): void => {
       const canvas = this.map?.getCanvas?.();
       if (canvas?.style) canvas.style.cursor = '';
-      if (!this.selectedLayers) this.setHoverAt(null);
+      this.setHoverAt(null);
 
       this.dispatchEvent(
         new CustomEvent('gk-point-hover-end', {
@@ -659,8 +669,11 @@ export class PointElement extends MapChildElement {
 
     // Ring must use canonical map coordinates (lat/lng attrs), not click lngLat.
     const selectedFeature = this.canonicalPointFeature(feature);
+    const anchorLngLat =
+      (selectedFeature && extractPointLngLat(selectedFeature.geometry)) ?? lngLat;
     if (selectedFeature) {
       this.applySelectedVisual(selectedFeature);
+      this.setHoverAt(null);
     }
 
     // Parse title from pointName
@@ -689,7 +702,7 @@ export class PointElement extends MapChildElement {
         this.popupInstance = PopupElement.showPointPopup(
           this.popupInstance,
           this.map,
-          lngLat,
+          anchorLngLat,
           title,
           properties,
           provider
@@ -727,7 +740,14 @@ export class PointElement extends MapChildElement {
     requestAnimationFrame(() => {
       this.dispatchEvent(
         new CustomEvent('gk-point-focus', {
-          detail: { pointId, pointName, title, lngLat, map: this.map, pointElement: this },
+          detail: {
+            pointId,
+            pointName,
+            title,
+            lngLat: anchorLngLat,
+            map: this.map,
+            pointElement: this,
+          },
           bubbles: true,
           cancelable: true,
         })
@@ -965,15 +985,15 @@ export class PointElement extends MapChildElement {
     const lng = this._propLng ?? parseFloat(this.safeGetAttribute('lng') || '');
     if (isNaN(lat) || isNaN(lng)) return;
 
-    const feature: GeoJSON.Feature = {
+    const fallback: GeoJSON.Feature = {
       type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [lng, lat],
-      },
+      geometry: { type: 'Point', coordinates: [lng, lat] },
       properties: {},
     };
+    const feature = this.canonicalPointFeature(fallback);
+    if (!feature) return;
 
+    this.setHoverAt(null);
     this.applySelectedVisual(feature);
   }
 

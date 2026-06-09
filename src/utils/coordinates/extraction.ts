@@ -114,6 +114,29 @@ export function extractCoordinates(
  * normalizeCoordinateInput({latitude: 40.7128, longitude: -74.0060}); // [40.7128, -74.0060]
  * ```
  */
+/** GeoJSON Point geometry → `{ lng, lat }` for map anchors and popups. */
+export function extractPointLngLat(
+  geometry: GeoJSON.Geometry | unknown
+): { lng: number; lat: number } | null {
+  if (
+    geometry &&
+    typeof geometry === 'object' &&
+    'type' in geometry &&
+    (geometry as GeoJSON.Geometry).type === 'Point' &&
+    'coordinates' in geometry
+  ) {
+    const coords = (geometry as GeoJSON.Point).coordinates;
+    if (Array.isArray(coords) && coords.length >= 2) {
+      const lng = Number(coords[0]);
+      const lat = Number(coords[1]);
+      if (Number.isFinite(lng) && Number.isFinite(lat)) {
+        return { lng, lat };
+      }
+    }
+  }
+  return null;
+}
+
 export function normalizeCoordinateInput(
   input:
     | LatLon

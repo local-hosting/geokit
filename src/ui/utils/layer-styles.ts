@@ -1510,6 +1510,7 @@ export function setSharedPointSelection(
       lngLat: resolvedLngLat,
       ...(properties ? { properties } : {}),
     });
+    clearSharedPointHoverOverlay(map, sourceId);
     if (options?.pointLayerId) {
       ensureSelectionRingOnTop(map, options.pointLayerId);
     }
@@ -1530,6 +1531,17 @@ export function setSharedPointSelection(
         bubbles: true,
       })
     );
+  }
+}
+
+function clearSharedPointHoverOverlay(map: MapInstance, sourceId: string): void {
+  const hoverSourceId = `${sourceId}-hover`;
+  const source = map.getSource?.(hoverSourceId) as GeoJSONSourceWithSetData | undefined;
+  if (!source?.setData) return;
+  try {
+    source.setData(EMPTY_GEOJSON);
+  } catch {
+    // Source may have been removed during style swap
   }
 }
 
@@ -1730,6 +1742,7 @@ function setupHoverLayers(
     const now = Date.now();
     if (now - lastClickTime < 50) return; // dedup glow+point double-fire
     lastClickTime = now;
+    endHover();
 
     const features = e?.features;
     if (!features?.length) return;
