@@ -19,18 +19,30 @@
       line-height: 1.6;
     }
 
+    /* Nav is fixed — shell grid holds panel + main within the remaining viewport */
+    body.scrolling-demo {
+      overflow-x: hidden;
+    }
+
+    .scrolling-shell {
+      display: grid;
+      grid-template-columns: var(--demo-scroll-panel-width, 280px) minmax(0, 1fr);
+      width: 100%;
+      min-height: 100vh;
+    }
+
     .scroll-panel {
-      position: fixed;
+      position: sticky;
       top: 0;
-      left: 0;
-      width: var(--demo-scroll-panel-width, 280px);
+      align-self: start;
+      width: auto;
       height: 100vh;
       background: #ffffff;
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
       border-right: 2px solid #000000;
       padding: 1.5rem;
-      z-index: 100;
+      z-index: 10;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -141,16 +153,21 @@
     }
 
     .scroll-main {
-      margin-left: var(--demo-scroll-panel-width, 280px);
+      margin-left: 0;
+      min-width: 0;
+      width: 100%;
+      max-width: 100%;
     }
 
     .map-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 1.5rem;
-      padding: 2rem;
-      max-width: 1400px;
-      margin: 0 auto;
+      padding: 1.5rem 1.5rem 2rem 1.5rem;
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      box-sizing: border-box;
       --map-height: 400px;
     }
 
@@ -244,10 +261,12 @@
     .info-banner {
       background: #000000;
       color: white;
-      padding: 1rem;
-      text-align: center;
+      padding: 1rem 1.5rem;
+      text-align: left;
       font-size: 0.9rem;
-      margin-bottom: 1rem;
+      margin-bottom: 0;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     @media (max-width: 1200px) {
@@ -258,20 +277,16 @@
     }
 
     @media (max-width: 900px) {
+      .scrolling-shell {
+        grid-template-columns: 1fr;
+      }
+
       .scroll-panel {
         position: relative;
         width: 100%;
         height: auto;
         border-right: none;
         border-bottom: 1px solid rgba(48, 54, 61, 0.6);
-      }
-
-      .scroll-main {
-        margin-left: 0;
-      }
-
-      body.demo-has-nav .scroll-main {
-        margin-left: 0;
       }
 
       .stats {
@@ -290,8 +305,9 @@
     }
   </style>
 </head>
-<body data-demo-active="scrolling">
+<body class="scrolling-demo" data-demo-active="scrolling">
   <aside id="demo-nav" aria-label="Demo pages"></aside>
+  <div class="scrolling-shell">
   <aside class="scroll-panel">
     <h1>Map Collection Scrolling Demo</h1>
     <p>Scroll through the grid to see maps being reused from a pool. Only a few maps are active at a time.</p>
@@ -513,5 +529,6 @@
     </gk-map-collection>
     </div>
   </main>
+  </div>
 
   <script type="module" src="./scrolling.js"></script>

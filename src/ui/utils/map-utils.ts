@@ -12,7 +12,10 @@
  * - mapElement.setLayerVisibility(layerId, visible)
  * - mapElement.setLayersVisibility(layerIds, visible)
  * - mapElement.setLayerFilter(layerId, filterExpression)
- * - mapElement.updateFeatureSelection(sourceId, selectedId, selectionProperty, idProperties)
+ * - mapElement.setSelectedPoint(sourceId, featureId, lngLat, idProperties)
+ * - mapElement.getSelectedPoint(sourceId)
+ * - mapElement.clearSelectedPoint(sourceId)
+ * - mapElement.updateFeatureSelection(sourceId, selectedId, selectionProperty, idProperties) — legacy
  */
 
 import type { MapInstance } from '../providers/types';

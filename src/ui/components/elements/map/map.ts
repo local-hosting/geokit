@@ -68,6 +68,12 @@ import {
   filterPolygons as filterPolygonsFn,
   filterIsochrones as filterIsochronesFn,
 } from './map-children';
+import {
+  setSharedPointSelection,
+  getSharedPointSelection,
+  clearSharedPointSelection,
+  DEFAULT_SHARED_POINT_ID_PROPERTIES,
+} from '../../../utils/layer-styles';
 
 export class MapElement extends BaseElement {
   static observedAttributes = [
@@ -2908,8 +2914,99 @@ export class MapElement extends BaseElement {
   }
 
   /**
-   * Update selection state in a GeoJSON source
-   * Sets a selection property on the selected feature, removes from others
+   * Move the selection ring on a shared point layer (from createSharedPointLayers).
+   * @param sourceId - Base source ID used when creating the shared point layers
+   * @param featureId - Feature id to select, or null to clear
+   * @param lngLat - Optional coordinates; when omitted, resolved from source data
+   * @param idProperties - Property names to match featureId in source features
+   */
+  public setSelectedPoint(
+    sourceId: string,
+    featureId: string | null,
+    lngLat?: { lng: number; lat: number } | null,
+    idProperties: string[] = DEFAULT_SHARED_POINT_ID_PROPERTIES
+  ): boolean {
+    const map = this.getMap();
+    if (!map) return false;
+
+    if (featureId === null) {
+      clearSharedPointSelection(map, sourceId, {
+        mapElement: this,
+        dispatchEvent: true,
+      });
+      return true;
+    }
+
+    let coords = lngLat ?? null;
+    if (!coords) {
+      const feature = this.findFeatureById(sourceId, featureId, idProperties);
+      coords = this.pointCoordsFromFeature(feature);
+    }
+    if (!coords) return false;
+
+    setSharedPointSelection(
+      map,
+      sourceId,
+      { featureId, lngLat: coords },
+      { mapElement: this, dispatchEvent: true }
+    );
+    return true;
+  }
+
+  /**
+   * Read the current shared-point selection for a source (ring + tracked id).
+   */
+  public getSelectedPoint(
+    sourceId: string
+  ): { featureId: string; lngLat: { lng: number; lat: number } } | null {
+    const map = this.getMap();
+    if (!map) return null;
+    const state = getSharedPointSelection(map, sourceId);
+    if (!state?.featureId || !state.lngLat) return null;
+    return { featureId: state.featureId, lngLat: state.lngLat };
+  }
+
+  /**
+   * Clear shared-point selection. When sourceId is omitted, clears all tracked sources on this map.
+   */
+  public clearSelectedPoint(sourceId?: string): boolean {
+    const map = this.getMap();
+    if (!map) return false;
+
+    if (sourceId) {
+      clearSharedPointSelection(map, sourceId, {
+        mapElement: this,
+        dispatchEvent: true,
+      });
+      return true;
+    }
+
+    // No registry of all sourceIds — callers should pass sourceId when known.
+    return false;
+  }
+
+  private pointCoordsFromFeature(
+    feature: GeoJSON.Feature | null
+  ): { lng: number; lat: number } | null {
+    const geometry = feature?.geometry;
+    if (geometry?.type === 'Point' && 'coordinates' in geometry) {
+      const coords = geometry.coordinates;
+      if (Array.isArray(coords) && coords.length >= 2) {
+        const lng = Number(coords[0]);
+        const lat = Number(coords[1]);
+        if (!Number.isNaN(lng) && !Number.isNaN(lat)) {
+          return { lng, lat };
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * @deprecated For shared point layers (createSharedPointLayers), use setSelectedPoint()
+   * which moves the dedicated selection ring without mutating venue source data.
+   *
+   * Legacy: update selection state in a GeoJSON source by setting __selected on features.
    * @param sourceId - Source ID to update
    * @param selectedId - Feature ID to select (null to clear selection)
    * @param selectionProperty - Property name to use for selection (default: '__selected')

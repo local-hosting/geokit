@@ -88,6 +88,16 @@ body.demo-has-nav #map-container {
   height: 100vh;
 }
 
+body.demo-has-nav.selection-demo {
+  width: calc(100vw - var(--demo-nav-width));
+  max-width: calc(100vw - var(--demo-nav-width));
+  overflow: hidden;
+}
+
+body.demo-has-nav.selection-demo #map-container {
+  height: 100%;
+}
+
 body.demo-has-nav .theme-toggle {
   position: fixed;
   top: 8px;
@@ -100,12 +110,20 @@ body.demo-has-nav #status {
   left: calc(var(--demo-nav-width) + 10px);
 }
 
-body.demo-has-nav .scroll-panel {
+body.demo-has-nav.scrolling-demo {
+  width: calc(100vw - var(--demo-nav-width));
+  max-width: calc(100vw - var(--demo-nav-width));
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Legacy fixed-panel offset — scrolling demo uses .scrolling-shell grid instead */
+body.demo-has-nav:not(.scrolling-demo) .scroll-panel {
   left: var(--demo-nav-width);
 }
 
-body.demo-has-nav .scroll-main {
-  margin-left: calc(var(--demo-nav-width) + var(--demo-scroll-panel-width));
+body.demo-has-nav:not(.scrolling-demo) .scroll-main {
+  margin-left: var(--demo-scroll-panel-width);
 }
 
 body.demo-has-nav.cdn-demo .cdn-shell,
