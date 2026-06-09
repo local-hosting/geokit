@@ -12,6 +12,8 @@ import {
 export interface ApplySelectedVisualOptions {
   /** Match focus halo to the point fill (defaults to --gk-focus-shadow-color). */
   pointColor?: string;
+  /** Point outline width (px); ring sits outside this edge. */
+  strokeWidth?: number;
 }
 
 export interface SelectedLayers {
@@ -90,7 +92,7 @@ export function applySelectedVisual(
         type: 'circle',
         source: selectedSourceId,
         paint: {
-          'circle-radius': getSelectionRingRadiusExpression(size),
+          'circle-radius': getSelectionRingRadiusExpression(size, options.strokeWidth ?? 0),
           'circle-color': 'transparent',
           'circle-opacity': 1,
           'circle-stroke-width': POINT_SELECTION_RING_STROKE_WIDTH,

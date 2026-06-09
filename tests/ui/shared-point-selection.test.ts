@@ -2,16 +2,19 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   clearSharedPointSelection,
   getSharedPointSelection,
+  lookupSharedPointCoords,
   setSharedPointSelection,
 } from '../../src/ui/utils/layer-styles';
 
 function createMockMap() {
-  const sources = new Map<string, { data: unknown }>();
+  const sources = new Map<string, { data: unknown; _data?: unknown }>();
   return {
     getSource: (id: string) => {
       const entry = sources.get(id);
       if (!entry) return undefined;
       return {
+        _data: entry._data,
+        data: entry._data ?? entry.data,
         setData: (data: unknown) => {
           entry.data = data;
         },
@@ -80,5 +83,37 @@ describe('shared point selection', () => {
       type: 'partner',
       averageRating: 4.2,
     });
+  });
+  it('prefers source geometry over click lngLat when selecting', () => {
+    const map = createMockMap();
+    const sourceId = 'venues-test';
+    const venueSource = {
+      _data: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: { slug: 'venue-a' },
+            geometry: { type: 'Point', coordinates: [-104.99, 39.7392] },
+          },
+        ],
+      },
+    };
+    map._sources.set(sourceId, venueSource);
+    map._sources.set(`${sourceId}-selection`, { data: null });
+
+    setSharedPointSelection(map as never, sourceId, {
+      featureId: 'venue-a',
+      lngLat: { lng: -105.5, lat: 39.2 },
+    });
+
+    expect(lookupSharedPointCoords(map as never, sourceId, 'venue-a')).toEqual({
+      lng: -104.99,
+      lat: 39.7392,
+    });
+    const ringData = map._sources.get(`${sourceId}-selection`)?.data as {
+      features: Array<{ geometry: { coordinates: number[] } }>;
+    };
+    expect(ringData.features[0].geometry.coordinates).toEqual([-104.99, 39.7392]);
   });
 });

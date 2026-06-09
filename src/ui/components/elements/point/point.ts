@@ -628,6 +628,22 @@ export class PointElement extends MapChildElement {
     this.setHoverAt(null);
   }
 
+  /** Feature geometry from lat/lng attributes — selection ring stays centered on the dot. */
+  private canonicalPointFeature(fallback: GeoJSON.Feature): GeoJSON.Feature | null {
+    const lat = parseFloat(this.safeGetAttribute('lat') || '');
+    const lng = parseFloat(this.safeGetAttribute('lng') || '');
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return fallback.geometry?.type === 'Point' ? fallback : null;
+    }
+    const normalized = normalizeCoordinatesArray([[lng, lat]], 'lonlat', 'auto');
+    const [normLng, normLat] = normalized[0];
+    return {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [normLng, normLat] },
+      properties: { ...(fallback.properties as Record<string, unknown>) },
+    };
+  }
+
   private handlePointSelect(
     feature: GeoJSON.Feature,
     pointId: string | null,
@@ -641,13 +657,10 @@ export class PointElement extends MapChildElement {
     }
     this.blur();
 
-    // Apply selected visual (ring + shadow) - use type guard to safely access coordinates
-    if (
-      feature.geometry &&
-      feature.geometry.type === 'Point' &&
-      'coordinates' in feature.geometry
-    ) {
-      this.applySelectedVisual(feature);
+    // Ring must use canonical map coordinates (lat/lng attrs), not click lngLat.
+    const selectedFeature = this.canonicalPointFeature(feature);
+    if (selectedFeature) {
+      this.applySelectedVisual(selectedFeature);
     }
 
     // Parse title from pointName
@@ -735,7 +748,7 @@ export class PointElement extends MapChildElement {
       this.size,
       this.mapElement ?? document.documentElement,
       feature,
-      { pointColor: this.color }
+      { pointColor: this.color, strokeWidth: this.strokeWidth }
     );
     if (result) {
       this.selectedLayers = result;

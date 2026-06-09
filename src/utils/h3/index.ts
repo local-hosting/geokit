@@ -43,6 +43,16 @@ export {
 
 export { compactH3CellId, expandH3CellId } from './cell-id';
 
+export {
+  h3ResolutionFromZoom,
+  H3_RESOLUTION_FROM_ZOOM_MIN,
+  H3_RESOLUTION_FROM_ZOOM_MAX,
+  H3_RESOLUTION_FROM_ZOOM_FACTOR,
+  type H3ResolutionFromZoomOptions,
+} from './resolution-from-zoom';
+
+export { h3DiskToFeatureCollection, type H3DiskToFeatureCollectionOptions } from './disk-features';
+
 export * from './cell-fade';
 export * from './cursor-dwell';
 export * from './viewport';
