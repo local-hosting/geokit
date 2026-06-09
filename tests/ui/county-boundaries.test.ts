@@ -1,15 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { addCountyBoundaries } from '../../src/ui/utils/county-boundaries';
-import { ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS } from '../../src/ui/utils/geojson-source-options';
+import { ADMIN_OUTLINE_HIT_FILL_OPACITY } from '../../src/ui/utils/admin-outline-layer';
 
 describe('county-boundaries', () => {
-  it('addCountyBoundaries dedupes shared edges into line segments', () => {
+  it('addCountyBoundaries uses fill hit target and CDN line layer', () => {
     const counties: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
       features: [
         {
           type: 'Feature',
-          properties: {},
+          properties: { fips: '01001' },
           geometry: {
             type: 'Polygon',
             coordinates: [
@@ -25,17 +25,46 @@ describe('county-boundaries', () => {
         },
       ],
     };
-    const lines = addCountyBoundaries(null, counties, {
-      sourceId: 'c',
+    const map = {
+      loaded: () => true,
+      isStyleLoaded: () => true,
+      getStyle: () => ({ sources: {}, layers: [] }),
+      getLayer: () => undefined,
+      getSource: () => undefined,
+      addSource: vi.fn(),
+      addLayer: vi.fn(),
+    };
+    addCountyBoundaries(map, counties, {
+      polygonSourceId: 'c',
+      lineSourceId: 'c-lines',
+      fillLayerId: 'c-fill',
       lineLayerId: 'c-line',
       lineColor: '#fff',
-      lineWidth: 1,
+      lineWidth: 0.5,
+      minzoom: 7,
     });
-    expect(lines.features.length).toBe(1);
-    expect(lines.features[0]!.geometry.coordinates.length).toBe(5);
-  });
-
-  it('ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS simplifies county vt tiles', () => {
-    expect(ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS).toEqual({ tolerance: 2, buffer: 256, maxzoom: 14 });
+    expect(map.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'fill',
+        id: 'c-fill',
+        minzoom: 7,
+        paint: expect.objectContaining({
+          'fill-opacity': ADMIN_OUTLINE_HIT_FILL_OPACITY,
+        }),
+      }),
+      undefined
+    );
+    expect(map.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'line',
+        id: 'c-line',
+        minzoom: 7,
+        paint: expect.objectContaining({
+          'line-color': '#fff',
+          'line-width': 0.5,
+        }),
+      }),
+      undefined
+    );
   });
 });

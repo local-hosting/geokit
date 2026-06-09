@@ -7,7 +7,12 @@
  * the script must set window.maptilersdk.
  */
 
+import {
+  inlineMapTilerTileJsonSources,
+  rewriteMapTilerStyleResourceUrls,
+} from '../dev-proxy/maptiler-dev-proxy';
 import { BaseUIProvider } from './types';
+import { getProviderConfig } from './registry';
 
 function loadScriptAndGetGlobal(url: string, globalName: string): Promise<unknown> {
   return new Promise((resolve, reject) => {
@@ -54,6 +59,8 @@ function isMapTilerStyleUrl(url: string): boolean {
  * Fetch a MapTiler style URL once and cache the parsed object. Reused by every map using that URL
  * so Safari (and all browsers) don't issue N identical style.json requests for the pool.
  */
+type MapTilerRequestTransform = (url: string, resourceType?: string) => { url: string };
+
 async function getStyleObject(url: string): Promise<Record<string, unknown>> {
   let promise = styleCache.get(url);
   if (!promise) {
@@ -67,6 +74,36 @@ async function getStyleObject(url: string): Promise<Record<string, unknown>> {
         throw new Error('Invalid style JSON');
       });
     styleCache.set(url, promise);
+    if (styleCache.size > MAX_STYLE_CACHE) {
+      const firstKey = styleCache.keys().next().value;
+      if (firstKey !== undefined) styleCache.delete(firstKey);
+    }
+  }
+  return promise;
+}
+
+/** Fetch style via dev proxy and rewrite embedded MapTiler URLs for worker tile loads. */
+async function getProxiedStyleObject(
+  url: string,
+  transformRequest: MapTilerRequestTransform
+): Promise<Record<string, unknown>> {
+  const cacheKey = `proxied:${url}`;
+  let promise = styleCache.get(cacheKey);
+  if (!promise) {
+    promise = fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error(`Style fetch failed: ${r.status}`);
+        return r.json() as Promise<Record<string, unknown>>;
+      })
+      .then(async (obj) => {
+        if (!obj || typeof obj !== 'object' || !('version' in obj)) {
+          throw new Error('Invalid style JSON');
+        }
+        rewriteMapTilerStyleResourceUrls(obj, transformRequest);
+        await inlineMapTilerTileJsonSources(obj, transformRequest);
+        return obj;
+      });
+    styleCache.set(cacheKey, promise);
     if (styleCache.size > MAX_STYLE_CACHE) {
       const firstKey = styleCache.keys().next().value;
       if (firstKey !== undefined) styleCache.delete(firstKey);
@@ -243,7 +280,8 @@ export class MapTilerUIProvider extends BaseUIProvider {
       this.sdk.config.apiKey = apiKey;
     }
 
-    const transformRequest = this.config?.transformRequest;
+    const transformRequest =
+      this.config?.transformRequest ?? getProviderConfig('maptiler')?.transformRequest;
 
     const styleBase = (name: string) =>
       `https://api.maptiler.com/maps/${name}/style.json?key=${apiKey}`;
@@ -257,6 +295,7 @@ export class MapTilerUIProvider extends BaseUIProvider {
         light: styleBase('dataviz'),
         dark: styleBase('dataviz-dark'),
         'dataviz-dark': styleBase('dataviz-dark'),
+        'backdrop-dark': styleBase('backdrop-dark'),
         dataviz: styleBase('dataviz'),
         streets: styleBase('streets'),
         'streets-dark': styleBase('streets-dark'),
@@ -269,14 +308,19 @@ export class MapTilerUIProvider extends BaseUIProvider {
     }
 
     // Shared style object avoids N duplicate style.json fetches (Safari). When transformRequest is
-    // set (Fieldwise dev proxy), pass a proxied URL — cached objects embed absolute api.maptiler.com
-    // tile URLs that workers fetch without Referer, so isStyleLoaded() never completes.
+    // set (Fieldwise dev proxy), fetch once and rewrite embedded source URLs — workers otherwise
+    // request api.maptiler.com TileJSON without Referer and referrer-locked keys return 403.
     let styleOption: string | Record<string, unknown> = style;
     if (typeof style === 'string' && isMapTilerStyleUrl(style)) {
       const styleFetchUrl =
         typeof transformRequest === 'function' ? transformRequest(style, 'Style').url : style;
       if (typeof transformRequest === 'function') {
-        styleOption = styleFetchUrl;
+        try {
+          styleOption = await getProxiedStyleObject(styleFetchUrl, transformRequest);
+        } catch (e) {
+          console.warn('[MapTiler] Proxied style fetch failed, using URL:', e);
+          styleOption = styleFetchUrl;
+        }
       } else {
         try {
           styleOption = await getStyleObject(styleFetchUrl);

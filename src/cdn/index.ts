@@ -12,9 +12,18 @@ export {
   fetchStateCitiesGeoJson,
   fetchStatePlaceCatalog,
   fetchStatePlaceFeature,
+  fetchStatePlaceFeatureFromUrl,
+  fetchStatePlacesForViewport,
   findStatePlaceEntry,
   type StatePlaceCatalogEntry,
 } from './place';
+export {
+  clearZipCatalogCache,
+  fetchZipCatalog,
+  fetchZipFeature,
+  fetchZipFeatures,
+  type ZipCatalogEntry,
+} from './zip';
 export {
   BOROUGH_COUNTY_ALIASES,
   resolvePlaceOrBoroughBounds,
@@ -66,6 +75,7 @@ export {
   globeStateCitiesBulkUrl,
   globeStateCitiesCatalogUrl,
   globeStatesBulkUrl,
+  globeStateShapeUrl,
   globeDmaMarketShapePath,
   globeDmaMarketIndexPath,
   globeDmaMarketBundlePath,
@@ -79,7 +89,10 @@ export {
   resolveGlobeCdnUrl,
   stateCitiesBulkUrl,
   stateCitiesCatalogUrl,
+  globePlaceShapeUrl,
+  placeShapeUrl,
   statesBulkUrl,
+  stateShapeUrl,
 } from './paths';
 export type {
   DmaCatalogEntry,

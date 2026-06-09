@@ -46,7 +46,7 @@ describe('polygonsToBoundaryLines', () => {
     expect(lines.features.every((feature) => feature.geometry.coordinates.length === 5)).toBe(true);
   });
 
-  it('preserves dense vertices for vt tile clipping at low zoom', () => {
+  it('preserves dense vertices for small rings', () => {
     const ring: GeoJSON.Position[] = [];
     for (let i = 0; i <= 10; i += 1) {
       ring.push([i * 0.001, 0]);
@@ -67,5 +67,27 @@ describe('polygonsToBoundaryLines', () => {
     const lines = polygonsToBoundaryLines(collection);
     expect(lines.features).toHaveLength(1);
     expect(lines.features[0]!.geometry.coordinates.length).toBe(ring.length);
+  });
+
+  it('splits rings above MapLibre line chunk size', () => {
+    const ring: GeoJSON.Position[] = [];
+    for (let i = 0; i < 9000; i += 1) {
+      ring.push([i * 0.0001, 0]);
+    }
+
+    const collection: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: { id: 'big' },
+          geometry: { type: 'Polygon', coordinates: [[...ring, ring[0]!]] },
+        },
+      ],
+    };
+
+    const lines = polygonsToBoundaryLines(collection);
+    expect(lines.features.length).toBeGreaterThan(1);
+    expect(lines.features.every((f) => f.geometry.coordinates.length <= 8192)).toBe(true);
   });
 });

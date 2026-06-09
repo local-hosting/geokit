@@ -1,10 +1,12 @@
 /**
  * Convert polygon features into boundary LineStrings for MapLibre line layers.
- * Emits one multi-point LineString per exterior ring so geojson-vt keeps borders
- * visible at low zoom (two-point segment dedupe produces sub-pixel fragments).
+ * Large rings are split into chunks — MapLibre line buckets cap at 65535 verts/segment.
  */
 
 import type { FeatureCollection, LineString, Position } from '../../types';
+
+/** Stay under MapLibre's 65535 vertex line-bucket limit (with tile merge headroom). */
+export const MAPLIBRE_BOUNDARY_LINE_VERTEX_CHUNK = 8192;
 
 function exteriorRings(geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon): Position[][] {
   if (geometry.type === 'Polygon') {
@@ -16,7 +18,37 @@ function exteriorRings(geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon): Positi
     .filter((ring): ring is Position[] => !!ring?.length);
 }
 
-/** One LineString per polygon exterior ring (shared borders may render twice). */
+function openRingPoints(ring: Position[]): Position[] {
+  if (ring.length < 2) return [...ring];
+  const first = ring[0]!;
+  const last = ring[ring.length - 1]!;
+  if (first[0] === last[0] && first[1] === last[1]) return ring.slice(0, -1);
+  return [...ring];
+}
+
+/** Split a dense ring into contiguous line chunks for MapLibre line layers. */
+export function ringToBoundaryLineChunks(
+  ring: Position[],
+  maxVertices = MAPLIBRE_BOUNDARY_LINE_VERTEX_CHUNK
+): Position[][] {
+  if (ring.length <= maxVertices) return [ring];
+
+  const open = openRingPoints(ring);
+  if (open.length <= maxVertices) return [ring];
+
+  const chunks: Position[][] = [];
+  const step = maxVertices - 1;
+
+  for (let start = 0; start < open.length - 1; start += step) {
+    const segment = open.slice(start, Math.min(open.length, start + maxVertices));
+    if (segment.length >= 2) chunks.push(segment);
+    if (start + maxVertices >= open.length) break;
+  }
+
+  return chunks.length > 0 ? chunks : [ring];
+}
+
+/** One or more LineStrings per exterior ring (shared borders may render twice). */
 export function polygonsToBoundaryLines(
   collection: FeatureCollection
 ): FeatureCollection<LineString> {
@@ -31,14 +63,16 @@ export function polygonsToBoundaryLines(
 
     for (const ring of exteriorRings(geometry)) {
       if (ring.length < 2) continue;
-      features.push({
-        type: 'Feature',
-        properties: feature.properties ?? {},
-        geometry: {
-          type: 'LineString',
-          coordinates: ring,
-        },
-      });
+      for (const chunk of ringToBoundaryLineChunks(ring)) {
+        features.push({
+          type: 'Feature',
+          properties: feature.properties ?? {},
+          geometry: {
+            type: 'LineString',
+            coordinates: chunk,
+          },
+        });
+      }
     }
   }
 

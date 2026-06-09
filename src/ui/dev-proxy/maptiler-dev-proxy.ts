@@ -23,6 +23,14 @@ function rewriteWithPrefixes(url: string, fromPrefix: string, toPrefix: string):
   return null;
 }
 
+function absolutizeSameOriginProxyPath(url: string): string {
+  if (typeof window === 'undefined') return url;
+  if (url.startsWith('/__maptiler-api/') || url.startsWith('/__maptiler-cdn/')) {
+    return `${window.location.origin}${url}`;
+  }
+  return url;
+}
+
 /** Rewrite MapTiler HTTPS URLs to same-origin dev proxy paths. */
 export function rewriteMapTilerUrl(url: string, options: MapTilerDevProxyOptions): string {
   if (!options.enabled || typeof url !== 'string') return url;
@@ -45,6 +53,80 @@ export function createMapTilerDevTransformRequest(
   options: MapTilerDevProxyOptions
 ): MapTilerTransformRequest {
   return (url) => ({ url: rewriteMapTilerUrl(url, options) });
+}
+
+/** Rewrite embedded style.json resource URLs (sources, sprite, glyphs) for dev proxy. */
+export function rewriteMapTilerStyleResourceUrls(
+  style: Record<string, unknown>,
+  transformRequest: MapTilerTransformRequest
+): void {
+  const sources = style.sources;
+  if (sources && typeof sources === 'object') {
+    for (const source of Object.values(sources as Record<string, unknown>)) {
+      if (!source || typeof source !== 'object') continue;
+      const src = source as Record<string, unknown>;
+      if (typeof src.url === 'string') {
+        src.url = transformRequest(src.url, 'Source').url;
+      }
+      if (Array.isArray(src.tiles)) {
+        src.tiles = src.tiles.map((tile) =>
+          typeof tile === 'string' ? transformRequest(tile, 'Tile').url : tile
+        );
+      }
+    }
+  }
+  if (typeof style.sprite === 'string') {
+    style.sprite = transformRequest(style.sprite, 'SpriteJSON').url;
+  }
+  if (typeof style.glyphs === 'string') {
+    style.glyphs = transformRequest(style.glyphs, 'Glyphs').url;
+  }
+}
+
+function isMapTilerTileJsonSource(src: Record<string, unknown>): boolean {
+  if (src.tiles || typeof src.url !== 'string') return false;
+  if (src.type !== 'vector' && src.type !== 'raster' && src.type !== 'raster-dem') {
+    return false;
+  }
+  return src.url.includes('tiles.json') || src.url.includes('/tiles/');
+}
+
+/**
+ * Expand TileJSON `url` sources into inline `tiles` templates with proxied paths.
+ * MapLibre workers fetch tile PBFs without Referer — direct api.maptiler.com URLs 403
+ * when the key is referrer-locked; transformRequest does not run in workers.
+ */
+export async function inlineMapTilerTileJsonSources(
+  style: Record<string, unknown>,
+  transformRequest: MapTilerTransformRequest
+): Promise<void> {
+  const sources = style.sources;
+  if (!sources || typeof sources !== 'object') return;
+
+  await Promise.all(
+    Object.values(sources as Record<string, unknown>).map(async (source) => {
+      if (!source || typeof source !== 'object') return;
+      const src = source as Record<string, unknown>;
+      if (!isMapTilerTileJsonSource(src)) return;
+
+      const tileJsonUrl = src.url as string;
+      try {
+        const resp = await fetch(tileJsonUrl);
+        if (!resp.ok) return;
+        const tileJson = (await resp.json()) as { tiles?: unknown[] };
+        if (!Array.isArray(tileJson.tiles) || tileJson.tiles.length === 0) return;
+
+        src.tiles = tileJson.tiles.map((tile) =>
+          typeof tile === 'string'
+            ? absolutizeSameOriginProxyPath(transformRequest(tile, 'Tile').url)
+            : tile
+        );
+        delete src.url;
+      } catch {
+        /* keep url fallback when TileJSON fetch fails */
+      }
+    })
+  );
 }
 
 export function mapTilerProviderConfig(

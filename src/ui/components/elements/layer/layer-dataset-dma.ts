@@ -21,7 +21,10 @@ import {
   buildDmaSlugColorExpression,
   type DmaMarketColorInput,
 } from '../../../utils/dma-colors';
-import { findInsertBeforeLayer } from '../../../utils/layer-stack';
+import {
+  findInsertBeforeLayer,
+  stackGkOutlineLayersAboveDmaFill,
+} from '../../../utils/layer-stack';
 import type { LayerDatasetContext, LayerDatasetHandle } from './layer-datasets';
 
 const TRANSPARENT_OUTLINE = 'rgba(0, 0, 0, 0)';
@@ -215,6 +218,8 @@ export async function mountDmaDataset(
       map.addLayer?.(lineLayer);
     }
   }
+
+  stackGkOutlineLayersAboveDmaFill(map);
 
   const loadOptions = {
     index,

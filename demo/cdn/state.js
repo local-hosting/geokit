@@ -4,10 +4,14 @@ import {
 } from '../../src/cdn/bulk.ts';
 import { boundsFromFeatures } from '../../src/cdn/bounds.ts';
 import {
+  addStateBoundaries,
+  applyStateLinePaint,
+  refreshStateBoundaries,
+} from '../../src/ui/utils/state-boundaries.ts';
+import {
   appendLog,
   fitBounds,
   getCdnOptions,
-  setGeoJsonOutline,
   wireMapDemo,
 } from './shared.js';
 
@@ -18,6 +22,17 @@ const logEl = document.getElementById('log');
 const opts = getCdnOptions();
 const mapReady = wireMapDemo(document.getElementById('map'));
 void mapReady.then(() => document.getElementById('one').click());
+
+function stateLineColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--bk-map-line').trim() || '#000';
+}
+
+const STATE_BOUNDARY_CONFIG = {
+  sourceId: 'state-demo',
+  lineLayerId: 'state-demo-line',
+  lineColor: stateLineColor(),
+  lineWidth: ['interpolate', ['linear'], ['zoom'], 3, 0.5, 8, 1, 12, 1.5],
+};
 
 function normalizeStateCode(code) {
   return code.trim().toLowerCase();
@@ -50,7 +65,17 @@ async function showCollection(collection, label) {
     appendLog(logEl, `${label}: no features`);
     return;
   }
-  setGeoJsonOutline(map, 'state-demo', collection);
+  const config = { ...STATE_BOUNDARY_CONFIG, lineColor: stateLineColor() };
+  if (map.getLayer?.('state-demo-fill')) {
+    map.removeLayer?.('state-demo-fill');
+  }
+  if (map.getSource?.(config.sourceId)) {
+    refreshStateBoundaries(map, collection, config.sourceId);
+    applyStateLinePaint(map, config);
+  } else {
+    addStateBoundaries(map, collection, config);
+    applyStateLinePaint(map, config);
+  }
   const bounds = boundsFromFeatures(collection.features);
   fitBounds(map, bounds);
   appendLog(logEl, label, {
