@@ -44,6 +44,7 @@ export {
 export { compactH3CellId, expandH3CellId } from './cell-id';
 
 export * from './cell-fade';
+export * from './cursor-dwell';
 export * from './viewport';
 export * from './market-cells';
 export * from './session-loaded';

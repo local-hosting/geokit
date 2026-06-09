@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { polygonsToBoundaryLines } from '../../src/utils/geojson/boundary-lines';
 
 describe('polygonsToBoundaryLines', () => {
-  it('dedupes a shared edge between adjacent polygons', () => {
+  it('emits one ring linestring per polygon', () => {
     const collection: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
       features: [
@@ -42,6 +42,30 @@ describe('polygonsToBoundaryLines', () => {
     };
 
     const lines = polygonsToBoundaryLines(collection);
-    expect(lines.features).toHaveLength(7);
+    expect(lines.features).toHaveLength(2);
+    expect(lines.features.every((feature) => feature.geometry.coordinates.length === 5)).toBe(true);
+  });
+
+  it('preserves dense vertices for vt tile clipping at low zoom', () => {
+    const ring: GeoJSON.Position[] = [];
+    for (let i = 0; i <= 10; i += 1) {
+      ring.push([i * 0.001, 0]);
+    }
+    ring.push([0.01, 0.01], [0, 0.01], [0, 0]);
+
+    const collection: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'Polygon', coordinates: [ring] },
+        },
+      ],
+    };
+
+    const lines = polygonsToBoundaryLines(collection);
+    expect(lines.features).toHaveLength(1);
+    expect(lines.features[0]!.geometry.coordinates.length).toBe(ring.length);
   });
 });

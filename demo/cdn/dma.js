@@ -11,6 +11,7 @@ import {
 import { boundsFromFeatures } from '../../src/cdn/bounds.ts';
 import { getDMAColor } from '../../src/ui/utils/dma-colors.ts';
 import { buildChoroplethFillPaint } from '../../src/ui/utils/choropleth-fill-paint.ts';
+import { CHOROPLETH_BOUNDARY_GEOJSON_SOURCE_OPTIONS } from '../../src/ui/utils/geojson-source-options.ts';
 import { mountDemoNavFromDocument } from '../shared/nav.js';
 import {
   appendLog,
@@ -80,7 +81,11 @@ async function showCollection(collection, label) {
   if (map.getSource(sourceId)) {
     map.getSource(sourceId).setData(colored);
   } else {
-    map.addSource(sourceId, { type: 'geojson', data: colored });
+    map.addSource(sourceId, {
+      type: 'geojson',
+      data: colored,
+      ...CHOROPLETH_BOUNDARY_GEOJSON_SOURCE_OPTIONS,
+    });
     map.addLayer({
       id: `${sourceId}-fill`,
       type: 'fill',
