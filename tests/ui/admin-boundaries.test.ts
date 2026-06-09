@@ -4,7 +4,11 @@ import {
   addAdminStateBoundaries,
   ensureAdminCityBoundaries,
 } from '../../src/ui/utils/admin-boundaries';
-import { BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS } from '../../src/ui/utils/geojson-source-options';
+import {
+  ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS,
+  ADMIN_STATE_GEOJSON_SOURCE_OPTIONS,
+  BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS,
+} from '../../src/ui/utils/geojson-source-options';
 
 describe('admin-boundaries', () => {
   it('addAdminStateBoundaries dedupes shared edges into line segments', () => {
@@ -85,9 +89,25 @@ describe('admin-boundaries', () => {
     expect(lines.features[0]!.geometry.coordinates.length).toBe(5);
   });
 
+  it('ADMIN_STATE_GEOJSON_SOURCE_OPTIONS simplifies state vt tiles', () => {
+    expect(ADMIN_STATE_GEOJSON_SOURCE_OPTIONS).toEqual({
+      tolerance: 1,
+      buffer: 256,
+      maxzoom: 14,
+    });
+  });
+
   it('BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS uses zero tolerance and tile buffer', () => {
     expect(BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS).toEqual({
       tolerance: 0,
+      buffer: 256,
+      maxzoom: 14,
+    });
+  });
+
+  it('ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS simplifies county vt tiles', () => {
+    expect(ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS).toEqual({
+      tolerance: 2,
       buffer: 256,
       maxzoom: 14,
     });

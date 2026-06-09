@@ -6,6 +6,12 @@ import { existsSync, statSync } from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const ASSET_EXTENSIONS = ['.js', '.json', '.css'];
+
+function hasAssetExtension(importPath) {
+  return ASSET_EXTENSIONS.some((ext) => importPath.endsWith(ext));
+}
+
 async function fixEsmImports(dir, baseDir = null) {
   if (!baseDir) baseDir = dir;
   const entries = await readdir(dir, { withFileTypes: true });
@@ -23,19 +29,15 @@ async function fixEsmImports(dir, baseDir = null) {
       content = content.replace(
         /from\s+['"](\.\.?\/[^'"]+)(?<!\.js)(?<!\/index)['"]/g,
         (match, importPath) => {
-          // Skip if it already has an extension
-          if (importPath.endsWith('.js') || importPath.endsWith('.json')) {
+          if (hasAssetExtension(importPath)) {
             return match;
           }
-          
-          // Check if it's a directory or file
+
           const resolvedPath = join(fileDir, importPath);
           if (existsSync(resolvedPath) && statSync(resolvedPath).isDirectory()) {
-            // It's a directory, use /index.js
             return `from '${importPath}/index.js'`;
           }
-          
-          // Assume it's a file and add .js
+
           return `from '${importPath}.js'`;
         }
       );
@@ -58,19 +60,15 @@ async function fixEsmImports(dir, baseDir = null) {
       content = content.replace(
         /import\s*\(\s*['"](\.\.?\/[^'"]+)(?<!\.js)(?<!\.json)(?<!\/index)['"]\s*\)/g,
         (match, importPath) => {
-          // Skip if it already has an extension
-          if (importPath.endsWith('.js') || importPath.endsWith('.json')) {
+          if (hasAssetExtension(importPath)) {
             return match;
           }
-          
-          // Check if it's a directory or file
+
           const resolvedPath = join(fileDir, importPath);
           if (existsSync(resolvedPath) && statSync(resolvedPath).isDirectory()) {
-            // It's a directory, use /index.js
             return `import('${importPath}/index.js')`;
           }
-          
-          // Assume it's a file and add .js
+
           return `import('${importPath}.js')`;
         }
       );

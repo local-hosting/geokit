@@ -11,9 +11,13 @@ const __dirname = dirname(__filename);
 
 const root = join(__dirname, '../..');
 const src = join(root, 'src/ui/theme.css');
-const destDir = join(root, 'dist/ui');
-const dest = join(destDir, 'theme.css');
+const destPaths = [
+  join(root, 'dist/ui/theme.css'),
+  join(root, 'dist/esm/ui/theme.css'),
+];
 
-await mkdir(destDir, { recursive: true });
-await copyFile(src, dest);
-console.log('[geokit build] copied theme.css to dist/ui/theme.css');
+for (const dest of destPaths) {
+  await mkdir(dirname(dest), { recursive: true });
+  await copyFile(src, dest);
+  console.log(`[geokit build] copied theme.css to ${dest.replace(root + '/', '')}`);
+}

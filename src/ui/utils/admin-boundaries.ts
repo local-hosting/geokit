@@ -3,7 +3,11 @@
  */
 
 import { polygonsToBoundaryLines } from '../../utils/geojson/boundary-lines';
-import { BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS } from './geojson-source-options';
+import {
+  ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS,
+  ADMIN_STATE_GEOJSON_SOURCE_OPTIONS,
+  BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS,
+} from './geojson-source-options';
 
 export type AdminBoundaryIds = {
   countySourceId: string;
@@ -114,7 +118,7 @@ export function addAdminCountyBoundaries(
   map!.addSource?.(config.countySourceId, {
     type: 'geojson',
     data: lines,
-    ...BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS,
+    ...ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS,
   });
 
   const before = beforeLayerId && map!.getLayer?.(beforeLayerId) ? beforeLayerId : undefined;
@@ -148,7 +152,7 @@ export function addAdminStateBoundaries(
   map!.addSource?.(config.stateSourceId, {
     type: 'geojson',
     data: lines,
-    ...BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS,
+    ...ADMIN_STATE_GEOJSON_SOURCE_OPTIONS,
   });
 
   const before = beforeLayerId && map!.getLayer?.(beforeLayerId) ? beforeLayerId : undefined;
