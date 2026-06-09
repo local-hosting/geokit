@@ -62,6 +62,12 @@ export const DEMO_SECTIONS = [
         label: 'resolve-shape',
         description: 'FIPS, state+place, borough aliases → bounds',
       },
+      {
+        id: 'dma',
+        path: '/cdn/dma.html',
+        label: 'dma',
+        description: 'DMA paths, JWT check, regional shards — /markets/dma/** (Bearer auth)',
+      },
     ],
   },
 ];

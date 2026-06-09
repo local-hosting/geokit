@@ -61,3 +61,43 @@ export function stateCitiesBulkUrl(baseUrl: string, state: string): string {
 export function stateCitiesCatalogUrl(baseUrl: string, state: string): string {
   return resolveGlobeCdnUrl(baseUrl, globeStateCitiesCatalogUrl(state));
 }
+
+export function globeDmaMarketShapePath(marketSlug: string): string {
+  return `/markets/dma/${marketSlug.trim().toLowerCase()}.json`;
+}
+
+export function globeDmaMarketIndexPath(): string {
+  return '/markets/dma/index.json';
+}
+
+export function globeDmaMarketBundlePath(): string {
+  return '/markets/dma/all.json';
+}
+
+export function globeDmaRegionIndexPath(): string {
+  return '/markets/dma/regions/index.json';
+}
+
+export function globeDmaRegionShardPath(regionId: string): string {
+  return `/markets/dma/regions/${regionId.trim().toLowerCase()}.json`;
+}
+
+export function dmaMarketShapeUrl(baseUrl: string, marketSlug: string): string {
+  return resolveGlobeCdnUrl(baseUrl, globeDmaMarketShapePath(marketSlug));
+}
+
+export function dmaMarketIndexUrl(baseUrl: string): string {
+  return resolveGlobeCdnUrl(baseUrl, globeDmaMarketIndexPath());
+}
+
+export function dmaMarketBundleUrl(baseUrl: string): string {
+  return resolveGlobeCdnUrl(baseUrl, globeDmaMarketBundlePath());
+}
+
+export function dmaRegionIndexUrl(baseUrl: string): string {
+  return resolveGlobeCdnUrl(baseUrl, globeDmaRegionIndexPath());
+}
+
+export function dmaRegionShardUrl(baseUrl: string, regionId: string): string {
+  return resolveGlobeCdnUrl(baseUrl, globeDmaRegionShardPath(regionId));
+}
