@@ -12,6 +12,7 @@ import { normalizeCoordinatesArray } from '../../../utils/coordinates';
 import { simplifyPolygonRingToMaxPoints } from '../../../utils/simplify/polygon';
 import { debug } from '../../utils/logger';
 import { getCSSVariable } from '../../utils/theme';
+import { buildChoroplethFillPaint, type FillAntialiasMap } from '../../utils/choropleth-fill-paint';
 import type { LatLon } from '../../../types';
 
 export interface PolygonOptions {
@@ -265,10 +266,10 @@ export class PolygonElement extends MapChildElement {
         id: this.layerId,
         type: 'fill',
         source: this.sourceId,
-        paint: {
+        paint: buildChoroplethFillPaint(this.map as FillAntialiasMap, {
           'fill-color': fillColor,
           'fill-opacity': fillOpacity,
-        },
+        }),
       };
       if (beforeId != null) {
         this.map.addLayer(fillSpec, beforeId);

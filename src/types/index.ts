@@ -116,3 +116,13 @@ export type {
   PopupAction,
   PopupContentOptions,
 } from './popup';
+
+export type {
+  DmaCatalogEntry,
+  DmaMarketCellsIndex,
+  DmaRegionBbox,
+  DmaRegionClusterIndex,
+  DmaRegionClusterIndexEntry,
+  ViewportRegionResolveOptions,
+} from './dma';
+export { H3_DMA_UNASSIGNED_SLUG } from './dma';

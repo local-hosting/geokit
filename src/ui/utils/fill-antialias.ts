@@ -2,7 +2,7 @@
  * MapLibre fill-antialias heuristic — earcut fold artifacts vs choropleth seams.
  */
 
-type FillAntialiasMap =
+export type FillAntialiasMap =
   | {
       getPitch?: () => number;
       getTerrain?: () => unknown;
