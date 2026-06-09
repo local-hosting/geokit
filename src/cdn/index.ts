@@ -40,8 +40,11 @@ export {
   resolveRegionIdsForSlugs,
   resolveRegionIdsForViewport,
   resolveRegionIdsForViewportBounds,
+  type DmaCatalogEntry,
+  type DmaRegionClusterIndex,
   type DmaRegionClusterLoader,
   type DmaRegionClusterLoaderOptions,
+  type ViewportRegionResolveOptions,
 } from './dma-regions';
 export {
   GLOBE_CDN_DEV_PROXY_PREFIX,
