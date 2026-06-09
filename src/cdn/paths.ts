@@ -25,6 +25,10 @@ export function globeStatesBulkUrl(country: string = DEFAULT_COUNTRY): string {
   return globeCountryUrl(country, 'indexes', 'states.json');
 }
 
+export function globeStateShapeUrl(state: string, country: string = DEFAULT_COUNTRY): string {
+  return globeCountryUrl(country, 'state', `${state.toLowerCase()}.json`);
+}
+
 export function globeStateCitiesBulkUrl(state: string, country: string = DEFAULT_COUNTRY): string {
   return globeCountryUrl(country, 'state', state.toLowerCase(), 'cities');
 }
@@ -54,12 +58,44 @@ export function statesBulkUrl(baseUrl: string): string {
   return resolveGlobeCdnUrl(baseUrl, globeStatesBulkUrl());
 }
 
+export function stateShapeUrl(baseUrl: string, state: string): string {
+  return resolveGlobeCdnUrl(baseUrl, globeStateShapeUrl(state));
+}
+
 export function stateCitiesBulkUrl(baseUrl: string, state: string): string {
   return resolveGlobeCdnUrl(baseUrl, globeStateCitiesBulkUrl(state));
 }
 
+export function globePlaceShapeUrl(
+  state: string,
+  placeSlug: string,
+  country: string = DEFAULT_COUNTRY
+): string {
+  return globeCountryUrl(country, 'place', state.toLowerCase(), placeSlug.toLowerCase());
+}
+
+export function globeZipShapeUrl(zip: string, country: string = DEFAULT_COUNTRY): string {
+  return globeCountryUrl(country, 'zip', zip);
+}
+
+export function globeZipIndexUrl(country: string = DEFAULT_COUNTRY): string {
+  return globeCountryUrl(country, 'zip', 'index.json');
+}
+
 export function stateCitiesCatalogUrl(baseUrl: string, state: string): string {
   return resolveGlobeCdnUrl(baseUrl, globeStateCitiesCatalogUrl(state));
+}
+
+export function placeShapeUrl(baseUrl: string, state: string, placeSlug: string): string {
+  return resolveGlobeCdnUrl(baseUrl, globePlaceShapeUrl(state, placeSlug));
+}
+
+export function zipShapeUrl(baseUrl: string, zip: string): string {
+  return resolveGlobeCdnUrl(baseUrl, globeZipShapeUrl(zip));
+}
+
+export function zipIndexUrl(baseUrl: string): string {
+  return resolveGlobeCdnUrl(baseUrl, globeZipIndexUrl());
 }
 
 export function globeDmaMarketShapePath(marketSlug: string): string {

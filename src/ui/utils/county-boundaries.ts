@@ -2,28 +2,33 @@
  * US county outline layers — `/us/county/**` CDN namespace.
  */
 
-import { polygonsToBoundaryLines } from '../../utils/geojson/boundary-lines';
-import { ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS } from './geojson-source-options';
+import {
+  addAdminOutlineLayer,
+  applyAdminOutlineLinePaint,
+  ADMIN_COUNTY_OUTLINE_SOURCE_OPTIONS,
+  refreshAdminOutlineData,
+  removeAdminOutlineLayer,
+  type AdminOutlineLayerConfig,
+} from './admin-outline-layer';
 import { type BoundaryMapLike, isBoundaryMapReady } from './boundary-map';
 
-export type CountyBoundaryConfig = {
-  sourceId: string;
-  lineLayerId: string;
-  lineColor: string;
-  lineWidth: number;
-};
+export type CountyBoundaryConfig = AdminOutlineLayerConfig;
+
+export function applyCountyLinePaint(
+  map: BoundaryMapLike | null | undefined,
+  config: CountyBoundaryConfig
+): void {
+  applyAdminOutlineLinePaint(map, config);
+}
 
 export function removeCountyBoundaries(
   map: BoundaryMapLike | null | undefined,
-  config: Pick<CountyBoundaryConfig, 'sourceId' | 'lineLayerId'>
+  config: Pick<
+    CountyBoundaryConfig,
+    'polygonSourceId' | 'lineSourceId' | 'fillLayerId' | 'lineLayerId'
+  >
 ): void {
-  if (!map) return;
-  try {
-    if (map.getLayer?.(config.lineLayerId)) map.removeLayer?.(config.lineLayerId);
-    if (map.getSource?.(config.sourceId)) map.removeSource?.(config.sourceId);
-  } catch {
-    /* map torn down */
-  }
+  removeAdminOutlineLayer(map, config);
 }
 
 export function addCountyBoundaries(
@@ -31,31 +36,23 @@ export function addCountyBoundaries(
   counties: GeoJSON.FeatureCollection,
   config: CountyBoundaryConfig,
   beforeLayerId?: string
-): GeoJSON.FeatureCollection<GeoJSON.LineString> {
-  const lines = polygonsToBoundaryLines(counties);
-  if (!isBoundaryMapReady(map)) return lines;
-
-  map!.addSource?.(config.sourceId, {
-    type: 'geojson',
-    data: lines,
-    ...ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS,
-  });
-
-  const before = beforeLayerId && map!.getLayer?.(beforeLayerId) ? beforeLayerId : undefined;
-
-  map!.addLayer?.(
+): GeoJSON.FeatureCollection {
+  if (!isBoundaryMapReady(map)) return counties;
+  return addAdminOutlineLayer(
+    map!,
+    counties,
     {
-      id: config.lineLayerId,
-      type: 'line',
-      source: config.sourceId,
-      paint: {
-        'line-color': config.lineColor,
-        'line-width': config.lineWidth,
-        'line-opacity': 1,
-      },
+      ...config,
+      polygonSourceOptions: config.polygonSourceOptions ?? ADMIN_COUNTY_OUTLINE_SOURCE_OPTIONS,
     },
-    before
+    beforeLayerId
   );
+}
 
-  return lines;
+export function refreshCountyBoundaries(
+  map: BoundaryMapLike | null | undefined,
+  counties: GeoJSON.FeatureCollection,
+  config: Pick<CountyBoundaryConfig, 'polygonSourceId' | 'lineSourceId'>
+): GeoJSON.FeatureCollection | null {
+  return refreshAdminOutlineData(map, counties, config);
 }

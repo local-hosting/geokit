@@ -10,8 +10,10 @@ import {
   removeStateBoundaries,
   type StateBoundaryConfig,
 } from '../../../utils/state-boundaries';
-import { suppressBasemapBorders } from '../../../utils/boundary-map';
-import { findInsertBeforeLayer } from '../../../utils/layer-stack';
+import {
+  findInsertBeforeLayer,
+  stackGkOutlineLayersAboveDmaFill,
+} from '../../../utils/layer-stack';
 import type {
   LayerDatasetContext,
   LayerDatasetHandle,
@@ -31,8 +33,10 @@ const DEFAULT_STATE_LINE_WIDTH: unknown[] = [
 ];
 
 export const STATE_DATASET_IDS = {
-  sourceId: 'gk-dataset-state',
-  layerId: 'gk-dataset-state-lines',
+  polygonSourceId: 'gk-dataset-state',
+  lineSourceId: 'gk-dataset-state-line-src',
+  fillLayerId: 'gk-dataset-state-fill',
+  lineLayerId: 'gk-dataset-state-line',
 } as const;
 
 type MapLike = NonNullable<LayerDatasetContext['map']>;
@@ -48,10 +52,10 @@ function findAnchorBeforeId(map: MapLike): string | undefined {
 
 function stateConfig(options: LayerDatasetOptions): StateBoundaryConfig {
   return {
-    sourceId: STATE_DATASET_IDS.sourceId,
-    lineLayerId: STATE_DATASET_IDS.layerId,
+    ...STATE_DATASET_IDS,
     lineColor: options.lineColor ?? 'rgba(255, 255, 255, 0.32)',
     lineWidth: options.lineWidth ?? DEFAULT_STATE_LINE_WIDTH,
+    lineMinzoom: 2,
   };
 }
 
@@ -69,13 +73,14 @@ export async function mountStateDataset(
   });
   if (!states?.features?.length) return null;
 
-  suppressBasemapBorders(map);
   addStateBoundaries(map, states, config, beforeLayerId);
   applyStateLinePaint(map, config);
+  stackGkOutlineLayersAboveDmaFill(map);
 
   return {
-    sourceId: config.sourceId,
-    layerId: config.lineLayerId,
+    sourceId: config.polygonSourceId,
+    layerId: config.fillLayerId,
+    hitLayerIds: [config.fillLayerId],
     cleanup: () => {
       removeStateBoundaries(map, config);
     },

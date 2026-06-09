@@ -9,6 +9,10 @@ export function resolveGlobeCdnRequestUrl(pathOrUrl: string, base: string): stri
   if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
     return pathOrUrl;
   }
+  // Same-origin dev proxy prefix — do not rebase onto the remote CDN origin.
+  if (pathOrUrl.startsWith('/__globe-cdn')) {
+    return pathOrUrl;
+  }
   const clean = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
   const trimmedBase = base.replace(/\/$/, '');
   if (!trimmedBase) return clean;

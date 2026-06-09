@@ -11,15 +11,10 @@ type MapWithStyle = {
 };
 
 export type FindInsertBeforeLayerOptions = {
-  /** Skip layers that should not be used as insert anchors (e.g. choropleth underlays). */
   skipLayer?: (layer: StyleLayerLike) => boolean;
-  /** First matching layer id is returned — use to find the bottom of app overlay stack. */
   matchLayer: (layer: StyleLayerLike) => boolean;
 };
 
-/**
- * Walk style layers in order; return the first id where matchLayer is true and skipLayer is false.
- */
 export function findInsertBeforeLayer(
   map: MapWithStyle | null | undefined,
   options: FindInsertBeforeLayerOptions
@@ -27,7 +22,6 @@ export function findInsertBeforeLayer(
   try {
     const layers = map?.getStyle?.()?.layers;
     if (!layers) return undefined;
-
     for (const layer of layers) {
       if (options.skipLayer?.(layer)) continue;
       if (options.matchLayer(layer)) {
@@ -41,7 +35,6 @@ export function findInsertBeforeLayer(
   return undefined;
 }
 
-/** Layer ids whose id starts with prefix (style order). */
 export function listLayerIdsByPrefix(
   map: MapWithStyle | null | undefined,
   prefix: string
@@ -57,23 +50,39 @@ export function listLayerIdsByPrefix(
   }
 }
 
-/**
- * Move layers to sit directly above anchorLayerId (below the next overlay layer).
- */
+export const GK_DATASET_DMA_FILL_LAYER_ID = 'gk-dataset-dma-fill';
+
+export function isGkDatasetOutlineLayerId(id: string): boolean {
+  return (
+    id.startsWith('gk-dataset-') &&
+    (id.endsWith('-line') || id.endsWith('-lines')) &&
+    id !== GK_DATASET_DMA_FILL_LAYER_ID &&
+    id !== 'gk-dataset-dma-line'
+  );
+}
+
+/** Stack CDN admin line layers above DMA choropleth fill. */
+export function stackGkOutlineLayersAboveDmaFill(map: MapWithStyle | null | undefined): void {
+  if (!map?.getLayer?.(GK_DATASET_DMA_FILL_LAYER_ID)) return;
+  const outlineIds = [
+    ...listLayerIdsByPrefix(map, 'gk-dataset-').filter(isGkDatasetOutlineLayerId),
+    ...['cdn-city-lines', 'cdn-state-lines', 'cdn-county-lines'].filter((id) => map.getLayer?.(id)),
+  ];
+  if (!outlineIds.length) return;
+  stackLayersAboveAnchor(map, outlineIds, GK_DATASET_DMA_FILL_LAYER_ID);
+}
+
 export function stackLayersAboveAnchor(
   map: MapWithStyle | null | undefined,
   layerIds: readonly string[],
   anchorLayerId: string
 ): void {
   if (!map || !layerIds.length || !map.getLayer?.(anchorLayerId)) return;
-
   try {
     const layers = map.getStyle?.()?.layers;
     if (!layers) return;
-
     const anchorIndex = layers.findIndex((layer) => layer.id === anchorLayerId);
     if (anchorIndex < 0) return;
-
     const moving = new Set(layerIds);
     let insertBefore: string | undefined;
     for (let i = anchorIndex + 1; i < layers.length; i += 1) {
@@ -82,7 +91,6 @@ export function stackLayersAboveAnchor(
       insertBefore = id;
       break;
     }
-
     for (const layerId of layerIds) {
       if (!map.getLayer?.(layerId)) continue;
       if (insertBefore && map.getLayer(insertBefore)) {

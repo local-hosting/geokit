@@ -20,4 +20,10 @@ describe('resolveGlobeCdnRequestUrl', () => {
       '/markets/dma/regions/texas-la.json'
     );
   });
+
+  it('does not rebase dev proxy paths onto the remote CDN origin', () => {
+    expect(resolveGlobeCdnRequestUrl('/__globe-cdn/markets/dma/regions/index.json', base)).toBe(
+      '/__globe-cdn/markets/dma/regions/index.json'
+    );
+  });
 });

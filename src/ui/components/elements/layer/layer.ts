@@ -33,6 +33,9 @@
  * <gk-layer dataset="dma" mode="viewport" interactive />
  * <gk-layer dataset="dma" mode="slugs" slugs="austin,houston" highlight-slug="austin" />
  *
+ * Vue / `:dataset` bindings conflict with HTMLElement.dataset — use layer-dataset instead:
+ * <gk-layer layer-dataset="dma" mode="viewport" interactive />
+ *
  * JWT for DMA CDN: set getRequestInit on the element in JS (not in markup).
  */
 
@@ -49,6 +52,7 @@ import {
   type LayerDatasetOptions,
   type LayerDatasetReadyDetail,
 } from './layer-datasets';
+import { stackGkOutlineLayersAboveDmaFill } from '../../../utils/layer-stack';
 
 export type LayerType =
   | 'circle'
@@ -132,6 +136,7 @@ export class LayerElement extends MapChildElement {
     'hover-state',
     'cursor',
     'dataset',
+    'layer-dataset',
     'line-color',
     'line-width',
     'mode',
@@ -139,6 +144,7 @@ export class LayerElement extends MapChildElement {
     'highlight-slug',
     'fill-opacity',
     'cdn-base',
+    'state',
   ];
 
   /** Bearer JWT and other CDN fetch headers — host app sets this in JS. */
@@ -240,7 +246,7 @@ export class LayerElement extends MapChildElement {
   // ==========================================================================
 
   get datasetId(): LayerDatasetId | null {
-    const raw = this.safeGetAttribute('dataset');
+    const raw = this.safeGetAttribute('layer-dataset') ?? this.safeGetAttribute('dataset');
     return isLayerDatasetId(raw) ? raw : null;
   }
 
@@ -272,16 +278,43 @@ export class LayerElement extends MapChildElement {
     return attr ? parseFloat(attr) : undefined;
   }
 
+  set minzoom(value: number | string | null | undefined) {
+    if (value == null || value === '') {
+      this._minzoom = undefined;
+      return;
+    }
+    const parsed = typeof value === 'number' ? value : parseFloat(String(value));
+    this._minzoom = Number.isFinite(parsed) ? parsed : undefined;
+  }
+
   get maxzoom(): number | undefined {
     if (this._maxzoom !== undefined) return this._maxzoom;
     const attr = this.safeGetAttribute('maxzoom');
     return attr ? parseFloat(attr) : undefined;
   }
 
+  set maxzoom(value: number | string | null | undefined) {
+    if (value == null || value === '') {
+      this._maxzoom = undefined;
+      return;
+    }
+    const parsed = typeof value === 'number' ? value : parseFloat(String(value));
+    this._maxzoom = Number.isFinite(parsed) ? parsed : undefined;
+  }
+
   get interactive(): boolean {
     if (this._interactive !== undefined) return this._interactive;
     const attr = this.safeGetAttribute('interactive');
     return attr !== null && attr !== 'false';
+  }
+
+  set interactive(value: boolean | string | null | undefined) {
+    if (value == null || value === false || value === 'false') {
+      this._interactive = false;
+      return;
+    }
+    this._interactive =
+      value === true || value === '' || value === 'true' || value === 'interactive';
   }
 
   get hoverState(): boolean {
@@ -334,6 +367,7 @@ export class LayerElement extends MapChildElement {
       slugs: parseLayerDatasetSlugs(this.safeGetAttribute('slugs')),
       highlightSlug: this.safeGetAttribute('highlight-slug') ?? undefined,
       fillOpacity: Number.isFinite(fillOpacity) ? fillOpacity : undefined,
+      state: this.safeGetAttribute('state') ?? undefined,
     };
   }
 
@@ -376,6 +410,19 @@ export class LayerElement extends MapChildElement {
 
     this._datasetHandle = handle;
     this._hitLayers = handle.hitLayerIds;
+
+    if (
+      dataset === 'state' ||
+      dataset === 'county' ||
+      dataset === 'dma' ||
+      dataset === 'place' ||
+      dataset === 'city' ||
+      dataset === 'zip'
+    ) {
+      stackGkOutlineLayersAboveDmaFill(
+        this.map as Parameters<typeof stackGkOutlineLayersAboveDmaFill>[0]
+      );
+    }
 
     if (this.interactive) {
       this.setupInteractions();
@@ -729,7 +776,15 @@ export class LayerElement extends MapChildElement {
     if (!this.isInitialized || oldValue === newValue) return;
 
     if (this.datasetId) {
-      const remountAttrs = ['dataset', 'cdn-base', 'mode', 'line-width', 'minzoom', 'slugs'];
+      const remountAttrs = [
+        'dataset',
+        'layer-dataset',
+        'cdn-base',
+        'mode',
+        'line-width',
+        'minzoom',
+        'slugs',
+      ];
       const patchAttrs = ['highlight-slug', 'fill-opacity', 'line-color'];
       if (remountAttrs.includes(name)) {
         void this.mountDatasetLayer();
