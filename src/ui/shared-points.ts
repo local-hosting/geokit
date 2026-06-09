@@ -25,6 +25,9 @@ export {
 export {
   SHARED_POINT_MIN_RADIUS_PX,
   SHARED_POINT_UNIFORM_GLOW_OPACITY,
+  SHARED_POINT_GLOW_BLUR,
+  SHARED_POINT_GLOW_HIT_AREA_SCALE,
+  SHARED_POINT_DEFAULT_GLOW_HOVER_OPACITY,
   SHARED_POINT_SECONDARY_RADIUS_SCALE,
   SHARED_POINT_RADIUS_EXPRESSION,
   SHARED_POINT_HOVER_GLOW_RADIUS_EXPRESSION,
@@ -49,9 +52,12 @@ export {
   ensureSharedPointGeoJsonSource,
   updateSharedPointSourceData,
   createSharedPointLayerSet,
+  createSharedPointLayersFromPaint,
+  preloadSharedPointLayerStyles,
   syncExistingSharedPointLayers,
   type RemoveMapSourcesOptions,
   type UpdateSharedPointSourceOptions,
   type CreateSharedPointLayerSetOptions,
+  type CreateSharedPointLayersFromPaintOptions,
   type SyncExistingSharedPointLayersOptions,
 } from './utils/shared-point-sync';

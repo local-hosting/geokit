@@ -1305,3 +1305,26 @@ describe('coordinates', () => {
     });
   });
 });
+
+describe('extractPointLngLat', () => {
+  it('returns lng/lat from GeoJSON Point geometry', async () => {
+    const { extractPointLngLat } = await import('../../src/utils/coordinates/extraction');
+    expect(extractPointLngLat({ type: 'Point', coordinates: [-74.006, 40.7128] })).toEqual({
+      lng: -74.006,
+      lat: 40.7128,
+    });
+  });
+
+  it('returns null for non-point geometry', async () => {
+    const { extractPointLngLat } = await import('../../src/utils/coordinates/extraction');
+    expect(
+      extractPointLngLat({
+        type: 'LineString',
+        coordinates: [
+          [0, 0],
+          [1, 1],
+        ],
+      })
+    ).toBeNull();
+  });
+});

@@ -116,4 +116,25 @@ describe('shared point selection', () => {
     };
     expect(ringData.features[0].geometry.coordinates).toEqual([-104.99, 39.7392]);
   });
+  it('clears dedicated hover overlay source on select', () => {
+    const map = createMockMap();
+    const sourceId = 'venues-test';
+    map._sources.set(`${sourceId}-selection`, { data: null });
+    map._sources.set(`${sourceId}-hover`, {
+      data: {
+        type: 'FeatureCollection',
+        features: [
+          { type: 'Feature', geometry: { type: 'Point', coordinates: [1, 2] }, properties: {} },
+        ],
+      },
+    });
+
+    setSharedPointSelection(map as never, sourceId, {
+      featureId: 'venue-a',
+      lngLat: { lng: -85.7, lat: 38.2 },
+    });
+
+    const hoverData = map._sources.get(`${sourceId}-hover`)?.data as { features: unknown[] };
+    expect(hoverData.features).toHaveLength(0);
+  });
 });
