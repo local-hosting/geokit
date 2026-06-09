@@ -292,6 +292,8 @@ export {
   polygonToH3,
   h3EdgeLength,
   h3CellArea,
+  h3ResolutionFromZoom,
+  h3DiskToFeatureCollection,
   // Type-safe functions
   coordinatesToH3Point,
   coordinatesToH3Area,
