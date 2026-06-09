@@ -15,13 +15,10 @@ import { mountDemoNavFromDocument } from '../shared/nav.js';
 mountDemoNavFromDocument();
 const logEl = document.getElementById('log');
 const opts = getCdnOptions();
-let map;
-
-wireMapDemo(document.getElementById('map'), (m) => {
-  map = m;
-});
+const mapReady = wireMapDemo(document.getElementById('map'));
 
 document.getElementById('load').addEventListener('click', async () => {
+  const map = await mapReady;
   const fips = document.getElementById('fips').value.trim();
   const feature = await fetchCountyShapeFeature(fips, opts);
   if (!feature) {

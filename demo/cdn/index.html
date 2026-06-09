@@ -2,39 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="0; url=./fetch.html">
   <title>geokit CDN demos</title>
-  <link rel="stylesheet" href="./cdn.css">
+  <script>location.replace('./fetch.html');</script>
 </head>
-<body class="cdn-demo" data-demo-active="cdn-hub">
-  <aside id="demo-nav" aria-label="Demo pages"></aside>
-  <div class="cdn-hub">
-    <h1>geokit /cdn</h1>
-    <p class="subtitle">Live demos against Globe CDN — one page per module export.</p>
-    <div class="cdn-cards" id="cdn-cards"></div>
-    <p class="subtitle" style="margin-top:24px">CDN base: <code id="cdn-base"></code></p>
-  </div>
-  <script type="module">
-    import { mountDemoNavFromDocument } from '../shared/nav.js';
-    import { DEMO_SECTIONS } from '../shared/pages.js';
-    import { cdnBaseLabel } from './shared.js';
-
-    mountDemoNavFromDocument();
-
-    const cdnSection = DEMO_SECTIONS.find((section) => section.id === 'cdn');
-    const cardsHost = document.getElementById('cdn-cards');
-    if (cdnSection && cardsHost) {
-      cardsHost.innerHTML = cdnSection.items
-        .filter((item) => item.id !== 'cdn-hub')
-        .map((item) => {
-          const href = item.path.replace(/^\/cdn\//, './');
-          const detail = item.description ?? '';
-          return `<a class="cdn-card" href="${href}"><strong>${item.label}</strong><span>${detail}</span></a>`;
-        })
-        .join('');
-    }
-
-    document.getElementById('cdn-base').textContent = cdnBaseLabel();
-  </script>
-</body>
+<body></body>
 </html>

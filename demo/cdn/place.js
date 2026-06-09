@@ -17,11 +17,7 @@ import { mountDemoNavFromDocument } from '../shared/nav.js';
 mountDemoNavFromDocument();
 const logEl = document.getElementById('log');
 const opts = getCdnOptions();
-let map;
-
-wireMapDemo(document.getElementById('map'), (m) => {
-  map = m;
-});
+const mapReady = wireMapDemo(document.getElementById('map'));
 
 document.getElementById('catalog').addEventListener('click', async () => {
   const state = document.getElementById('state').value.trim();
@@ -30,6 +26,7 @@ document.getElementById('catalog').addEventListener('click', async () => {
 });
 
 document.getElementById('cities').addEventListener('click', async () => {
+  const map = await mapReady;
   const state = document.getElementById('state').value.trim();
   const geojson = await fetchStateCitiesGeoJson(state, opts);
   if (!geojson) {
@@ -41,6 +38,7 @@ document.getElementById('cities').addEventListener('click', async () => {
 });
 
 document.getElementById('one').addEventListener('click', async () => {
+  const map = await mapReady;
   const state = document.getElementById('state').value.trim();
   const place = document.getElementById('place').value.trim();
   appendLog(logEl, `fetchStatePlaceFeature(${state}, ${place})`);

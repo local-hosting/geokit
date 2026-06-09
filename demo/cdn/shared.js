@@ -32,6 +32,7 @@ export function createMap(container) {
 }
 
 export function fitBounds(map, bounds) {
+  if (!map?.fitBounds) return;
   if (!bounds || bounds.length !== 4) return;
   map.fitBounds(
     [
@@ -43,6 +44,7 @@ export function fitBounds(map, bounds) {
 }
 
 export function setGeoJsonOutline(map, sourceId, geojson) {
+  if (!map?.getSource) return;
   const data =
     geojson?.type === 'FeatureCollection'
       ? geojson
@@ -71,6 +73,7 @@ export function setGeoJsonOutline(map, sourceId, geojson) {
 
 /** Dashed rectangle for [minLon, minLat, maxLon, maxLat] bounds overlay. */
 export function setBoundsOverlay(map, sourceId, bounds) {
+  if (!map?.getSource) return;
   if (!bounds || bounds.length !== 4) return;
 
   const lineColor =
@@ -119,8 +122,14 @@ export { mountDemoNav, renderDemoNav } from '../shared/nav.js';
 
 export function wireMapDemo(mapEl, run) {
   const map = createMap(mapEl);
-  map.on('load', () => {
-    void run(map);
+  const ready = new Promise((resolve) => {
+    const finish = () => resolve(map);
+    if (typeof map.isStyleLoaded === 'function' && map.isStyleLoaded()) {
+      finish();
+      return;
+    }
+    map.once('load', finish);
   });
-  return map;
+  if (run) void ready.then((m) => run(m));
+  return ready;
 }

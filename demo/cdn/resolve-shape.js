@@ -19,8 +19,6 @@ mountDemoNavFromDocument();
 const logEl = document.getElementById('log');
 const opts = getCdnOptions();
 const modeEl = document.getElementById('mode');
-let map;
-
 const wraps = {
   fips: document.getElementById('fips-wrap'),
   place: [document.getElementById('state-wrap'), document.getElementById('place-wrap')],
@@ -39,13 +37,12 @@ function syncMode() {
 modeEl.addEventListener('change', syncMode);
 syncMode();
 
-wireMapDemo(document.getElementById('map'), (m) => {
-  map = m;
-});
+const mapReady = wireMapDemo(document.getElementById('map'));
 
 appendLog(logEl, 'BOROUGH_COUNTY_ALIASES keys', Object.keys(BOROUGH_COUNTY_ALIASES));
 
 document.getElementById('resolve').addEventListener('click', async () => {
+  const map = await mapReady;
   const mode = modeEl.value;
   let bounds = null;
   let label = '';

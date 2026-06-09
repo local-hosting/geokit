@@ -17,13 +17,10 @@ import { mountDemoNavFromDocument } from '../shared/nav.js';
 mountDemoNavFromDocument();
 const logEl = document.getElementById('log');
 const opts = getCdnOptions();
-let map;
-
-wireMapDemo(document.getElementById('map'), (m) => {
-  map = m;
-});
+const mapReady = wireMapDemo(document.getElementById('map'));
 
 async function showCollection(collection, label) {
+  const map = await mapReady;
   if (!collection?.features?.length) {
     appendLog(logEl, `${label}: no features`);
     return;
