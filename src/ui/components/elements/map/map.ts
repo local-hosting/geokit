@@ -1309,17 +1309,20 @@ export class MapElement extends BaseElement {
   public flyTo(lat: number, lng: number, zoom?: number): void {
     if (!this.map) return;
 
-    const flyTo = (
-      this.map as { flyTo?: (options: { center: [number, number]; zoom: number }) => void }
-    ).flyTo;
-    const getZoom = (this.map as { getZoom?: () => number }).getZoom;
-    if (flyTo) {
-      const targetZoom = zoom !== undefined ? zoom : (getZoom?.() ?? 10);
-      flyTo({
-        center: [lng, lat],
-        zoom: targetZoom,
-      });
-    }
+    const map = this.map as {
+      flyTo?: (options: { center: [number, number]; zoom: number }) => void;
+      getZoom?: () => number;
+      loaded?: () => boolean;
+    };
+
+    if (!map.flyTo) return;
+    if (typeof map.loaded === 'function' && !map.loaded()) return;
+
+    const targetZoom = zoom !== undefined ? zoom : (map.getZoom?.() ?? 10);
+    map.flyTo({
+      center: [lng, lat],
+      zoom: targetZoom,
+    });
   }
 
   // ============================================================================

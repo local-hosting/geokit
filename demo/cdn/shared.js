@@ -1,20 +1,11 @@
 import maplibregl from 'maplibre-gl';
 
 import { resolveGlobeCdnBaseUrl } from '../../src/cdn/config.ts';
-import { rewriteGlobeCdnUrlForDevProxy } from '../../src/cdn/dev-proxy.ts';
 import { BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS } from '../../src/ui/utils/geojson-source-options.ts';
 import { bboxToPolygonGeometry } from '../../src/utils/bounds/bbox-to-polygon.ts';
 
 export function getCdnOptions() {
-  const baseUrl = resolveGlobeCdnBaseUrl();
-  return {
-    baseUrl,
-    resolveUrl: url =>
-      rewriteGlobeCdnUrlForDevProxy(url, {
-        enabled: import.meta.env.DEV,
-        cdnBaseUrl: baseUrl,
-      }),
-  };
+  return { baseUrl: resolveGlobeCdnBaseUrl() };
 }
 
 export function cdnBaseLabel() {

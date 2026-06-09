@@ -1,4 +1,261 @@
+import turfArea from '@turf/area';
+import { polygon as turfPolygon } from '@turf/helpers';
 import type { Polygon, MultiPolygon, Position } from '../../types';
+
+/** ~0.01 km² — spurious simplify slivers are orders of magnitude smaller. */
+const DEFAULT_MIN_HOLE_AREA_M2 = 10_000;
+/** Bbox long/short ratio above which a hole is treated as a sliver. */
+const DEFAULT_MAX_SLIVER_ASPECT = 50;
+/** Default off — callers opt in (e.g. DMA dissolve passes ~500). */
+const DEFAULT_MIN_HOLE_WIDTH_M2 = 0;
+
+export type StripDegenerateInteriorRingsOptions = {
+  minHoleAreaM2?: number;
+  maxSliverAspect?: number;
+  /** Drop holes whose shorter bbox side is below this width (meters). 0 disables. */
+  minHoleWidthM2?: number;
+};
+
+function ringBBoxAspect(ring: Position[]): number {
+  if (ring.length < 2) return 1;
+
+  let minLon = Infinity;
+  let maxLon = -Infinity;
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+
+  for (const [lon, lat] of ring) {
+    if (lon < minLon) minLon = lon;
+    if (lon > maxLon) maxLon = lon;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+  }
+
+  const width = maxLon - minLon;
+  const height = maxLat - minLat;
+  if (width === 0 && height === 0) return 1;
+
+  const longSide = Math.max(width, height);
+  const shortSide = Math.min(width, height) || longSide;
+  return longSide / shortSide;
+}
+
+function ringMinWidthM(ring: Position[]): number {
+  if (ring.length < 2) return 0;
+
+  let minLon = Infinity;
+  let maxLon = -Infinity;
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+
+  for (const [lon, lat] of ring) {
+    if (lon < minLon) minLon = lon;
+    if (lon > maxLon) maxLon = lon;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+  }
+
+  const midLat = (minLat + maxLat) / 2;
+  const metersPerDegLat = 111_320;
+  const metersPerDegLon = 111_320 * Math.cos((midLat * Math.PI) / 180);
+  const widthM = (maxLon - minLon) * metersPerDegLon;
+  const heightM = (maxLat - minLat) * metersPerDegLat;
+
+  return Math.min(widthM, heightM);
+}
+
+function ringAreaM2(ring: Position[]): number {
+  if (ring.length < 4) return 0;
+
+  try {
+    const coords = [...ring];
+    const [lon0, lat0] = coords[0];
+    const [lonN, latN] = coords[coords.length - 1];
+    if (lon0 !== lonN || lat0 !== latN) {
+      coords.push([lon0, lat0]);
+    }
+
+    const area = turfArea(turfPolygon([coords]));
+    return typeof area === 'number' && isFinite(area) ? Math.abs(area) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function isDegenerateHole(
+  ring: Position[],
+  options: Required<StripDegenerateInteriorRingsOptions>
+): boolean {
+  const area = ringAreaM2(ring);
+  if (area < options.minHoleAreaM2) return true;
+
+  if (options.minHoleWidthM2 > 0 && ringMinWidthM(ring) < options.minHoleWidthM2) {
+    return true;
+  }
+
+  if (ringBBoxAspect(ring) >= options.maxSliverAspect) {
+    return true;
+  }
+
+  return false;
+}
+
+function stripPolygonHoles(
+  polygon: Position[][],
+  options: Required<StripDegenerateInteriorRingsOptions>
+): Position[][] {
+  if (polygon.length <= 1) return polygon;
+
+  const outer = polygon[0];
+  const holes = polygon.slice(1).filter((hole) => !isDegenerateHole(hole, options));
+  return holes.length > 0 ? [outer, ...holes] : [outer];
+}
+
+/**
+ * Remove interior rings introduced by simplify/round (self-touch slivers, micro-loops).
+ * Preserves large holes (e.g. counties in another DMA fully enclosed by this DMA).
+ */
+export function stripDegenerateInteriorRings(
+  geometry: Polygon | MultiPolygon,
+  options: StripDegenerateInteriorRingsOptions = {}
+): Polygon | MultiPolygon {
+  if (!geometry?.coordinates) return geometry;
+
+  const resolved: Required<StripDegenerateInteriorRingsOptions> = {
+    minHoleAreaM2: options.minHoleAreaM2 ?? DEFAULT_MIN_HOLE_AREA_M2,
+    maxSliverAspect: options.maxSliverAspect ?? DEFAULT_MAX_SLIVER_ASPECT,
+    minHoleWidthM2: options.minHoleWidthM2 ?? DEFAULT_MIN_HOLE_WIDTH_M2,
+  };
+
+  if (geometry.type === 'Polygon') {
+    return {
+      ...geometry,
+      coordinates: stripPolygonHoles(geometry.coordinates, resolved),
+    };
+  }
+
+  if (geometry.type === 'MultiPolygon') {
+    return {
+      ...geometry,
+      coordinates: geometry.coordinates.map((poly) => stripPolygonHoles(poly, resolved)),
+    };
+  }
+
+  return geometry;
+}
+
+/** Default — union/simplify micro-notches; keeps county corners (~90°). */
+const DEFAULT_MIN_OUTER_SPIKE_ANGLE_DEG = 12;
+
+export type StripAcuteOuterRingSpikesOptions = {
+  /** Drop outer-ring vertices whose interior angle is below this (degrees). */
+  minInteriorAngleDeg?: number;
+  /** Safety cap on iterative passes. */
+  maxPasses?: number;
+};
+
+function ringInteriorAngleDeg(prev: Position, cur: Position, next: Position): number {
+  const v1x = prev[0] - cur[0];
+  const v1y = prev[1] - cur[1];
+  const v2x = next[0] - cur[0];
+  const v2y = next[1] - cur[1];
+  const m1 = Math.hypot(v1x, v1y);
+  const m2 = Math.hypot(v2x, v2y);
+  if (m1 === 0 || m2 === 0) return 180;
+
+  const cos = Math.max(-1, Math.min(1, (v1x * v2x + v1y * v2y) / (m1 * m2)));
+  return (Math.acos(cos) * 180) / Math.PI;
+}
+
+function openRingPoints(ring: Position[]): Position[] {
+  if (ring.length < 2) return [...ring];
+  const first = ring[0];
+  const last = ring[ring.length - 1];
+  if (first[0] === last[0] && first[1] === last[1]) {
+    return ring.slice(0, -1);
+  }
+  return [...ring];
+}
+
+function closeRingPoints(points: Position[]): Position[] {
+  if (points.length === 0) return points;
+  const first = points[0];
+  const last = points[points.length - 1];
+  if (first[0] === last[0] && first[1] === last[1]) {
+    return points;
+  }
+  return [...points, [first[0], first[1]] as Position];
+}
+
+function stripAcuteVerticesFromRing(
+  ring: Position[],
+  minInteriorAngleDeg: number,
+  maxPasses: number
+): Position[] {
+  let open = openRingPoints(ring);
+  if (open.length < 3) return closeRingPoints(open);
+
+  for (let pass = 0; pass < maxPasses; pass++) {
+    if (open.length < 3) break;
+
+    const next: Position[] = [];
+    let removed = false;
+
+    for (let i = 0; i < open.length; i++) {
+      const prev = open[(i - 1 + open.length) % open.length];
+      const cur = open[i];
+      const nxt = open[(i + 1) % open.length];
+      const angle = ringInteriorAngleDeg(prev, cur, nxt);
+
+      if (angle >= minInteriorAngleDeg) {
+        next.push(cur);
+      } else {
+        removed = true;
+      }
+    }
+
+    if (!removed || next.length < 3) {
+      open = next.length >= 3 ? next : open;
+      break;
+    }
+
+    open = next;
+  }
+
+  return closeRingPoints(open);
+}
+
+/**
+ * Remove micro-spikes on outer rings (union/simplify notches that read as inward lines).
+ * Interior holes are unchanged — use stripDegenerateInteriorRings for those.
+ */
+export function stripAcuteOuterRingSpikes(
+  geometry: Polygon | MultiPolygon,
+  options: StripAcuteOuterRingSpikesOptions = {}
+): Polygon | MultiPolygon {
+  if (!geometry?.coordinates) return geometry;
+
+  const minInteriorAngleDeg = options.minInteriorAngleDeg ?? DEFAULT_MIN_OUTER_SPIKE_ANGLE_DEG;
+  const maxPasses = options.maxPasses ?? 24;
+
+  const stripPolygon = (polygon: Position[][]): Position[][] => {
+    if (polygon.length === 0) return polygon;
+    const outer = stripAcuteVerticesFromRing(polygon[0], minInteriorAngleDeg, maxPasses);
+    return polygon.length > 1 ? [outer, ...polygon.slice(1)] : [outer];
+  };
+
+  if (geometry.type === 'Polygon') {
+    return {
+      ...geometry,
+      coordinates: stripPolygon(geometry.coordinates),
+    };
+  }
+
+  return {
+    ...geometry,
+    coordinates: geometry.coordinates.map(stripPolygon),
+  };
+}
 
 /**
  * Fix ring ordering for Polygon geometries

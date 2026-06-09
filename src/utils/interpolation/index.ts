@@ -5,4 +5,11 @@
 
 export { interpolate, interpolateMeters } from './along';
 export { nearestPointOnLine, nearestPointOnPolyline } from './nearest';
+export {
+  pointToLineDistance,
+  pointToLineDistanceMeters,
+  pointToPolylineDistanceMeters,
+  type PointToLineDistanceOptions,
+  type PointToLineDistanceUnits,
+} from './point-to-line-distance';
 export { resample } from './resample';

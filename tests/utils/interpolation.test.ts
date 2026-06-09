@@ -4,6 +4,8 @@ import {
   interpolateMeters,
   nearestPointOnLine,
   nearestPointOnPolyline,
+  pointToLineDistanceMeters,
+  pointToPolylineDistanceMeters,
   resample,
 } from '../../src/utils/interpolation';
 
@@ -288,6 +290,31 @@ describe('interpolation', () => {
       // Should be on one of the segments (0 to length-2)
       expect(result!.segmentIndex).toBeGreaterThanOrEqual(0);
       expect(result!.segmentIndex).toBeLessThan(polyline.length);
+    });
+  });
+  describe('pointToLineDistance', () => {
+    it('returns zero when the point lies on the segment', () => {
+      const onLine: [number, number] = [40.715, -74.005];
+      const distance = pointToLineDistanceMeters(onLine)([40.71, -74.01])([40.72, -74.0]);
+      expect(distance).toBeLessThan(1);
+    });
+
+    it('returns positive distance for an off-line point', () => {
+      const distance = pointToLineDistanceMeters([40.715, -74.005])([40.71, -74.01])([
+        40.72, -74.0,
+      ]);
+      expect(distance).toBeGreaterThan(0);
+    });
+
+    it('measures minimum distance to a polyline', () => {
+      const polyline: [number, number][] = [
+        [40.71, -74.01],
+        [40.72, -74.0],
+        [40.73, -73.99],
+      ];
+      const distance = pointToPolylineDistanceMeters([40.715, -74.005], polyline);
+      expect(distance).toBeGreaterThan(0);
+      expect(Number.isFinite(distance)).toBe(true);
     });
   });
 });

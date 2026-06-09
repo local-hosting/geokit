@@ -5,18 +5,14 @@ export type GlobeCdnFetchOptions = {
   init?: RequestInit;
 };
 
-/** Same-origin dev proxy prefix — same-origin only for this path. */
-const DEV_PROXY_PREFIX = '/__globe-cdn';
-
 export function resolveGlobeCdnRequestUrl(pathOrUrl: string, base: string): string {
   if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
     return pathOrUrl;
   }
-  if (pathOrUrl.startsWith(DEV_PROXY_PREFIX)) {
-    return pathOrUrl;
-  }
   const clean = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
-  return `${base.replace(/\/$/, '')}${clean}`;
+  const trimmedBase = base.replace(/\/$/, '');
+  if (!trimmedBase) return clean;
+  return `${trimmedBase}${clean}`;
 }
 
 export function mergeGlobeCdnInit(init?: RequestInit): RequestInit {

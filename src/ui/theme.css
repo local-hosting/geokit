@@ -35,8 +35,8 @@
   --gk-point-opacity: 1;
   --gk-point-glow-opacity: 0.35;
   --gk-point-glow-hover-opacity: 0.5;
-  --gk-point-glow-focus-opacity: 0.65;
-  --gk-glow-blur: 0.8;
+  --gk-point-glow-focus-opacity: 0.4;
+  --gk-glow-blur: 0.5;
   --gk-polygon-fill-color: #0891b2;
   --gk-polygon-stroke-color: #ffffff;
   --gk-polyline-color: #0891b2;
@@ -78,8 +78,8 @@
     --gk-point-opacity: 1;
     --gk-point-glow-opacity: 0.4;
     --gk-point-glow-hover-opacity: 0.75;
-    --gk-point-glow-focus-opacity: 0.9;
-    --gk-glow-blur: 0.8;
+    --gk-point-glow-focus-opacity: 0.5;
+    --gk-glow-blur: 0.5;
     --gk-polygon-fill-color: #3FB1CE;
     --gk-polygon-stroke-color: #000000;
     --gk-polyline-color: #3FB1CE;
@@ -122,8 +122,8 @@ gk-map.gk-theme-light {
   --gk-point-opacity: 1;
   --gk-point-glow-opacity: 0.35;
   --gk-point-glow-hover-opacity: 0.5;
-  --gk-point-glow-focus-opacity: 0.65;
-  --gk-glow-blur: 0.8;
+  --gk-point-glow-focus-opacity: 0.4;
+  --gk-glow-blur: 0.5;
   --gk-polygon-fill-color: #0891b2;
   --gk-polygon-stroke-color: #ffffff;
   --gk-polyline-color: #0891b2;
@@ -164,8 +164,8 @@ gk-map.gk-theme-dark {
   --gk-point-opacity: 1;
   --gk-point-glow-opacity: 0.4;
   --gk-point-glow-hover-opacity: 0.75;
-  --gk-point-glow-focus-opacity: 0.9;
-  --gk-glow-blur: 0.8;
+  --gk-point-glow-focus-opacity: 0.5;
+  --gk-glow-blur: 0.5;
   --gk-polygon-fill-color: #3FB1CE;
   --gk-polygon-stroke-color: #000000;
   --gk-polyline-color: #3FB1CE;
