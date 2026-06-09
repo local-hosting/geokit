@@ -3,7 +3,7 @@
  */
 
 import { polygonsToBoundaryLines } from '../../utils/geojson/boundary-lines';
-import { ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS } from './geojson-source-options';
+import { BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS } from './geojson-source-options';
 
 export type AdminBoundaryIds = {
   countySourceId: string;
@@ -23,6 +23,13 @@ export type AdminBoundaryConfig = AdminBoundaryIds &
   AdminBoundaryPaint & {
     basemapAdminBorderLayerIds?: readonly string[];
   };
+
+export type AdminCityBoundaryConfig = {
+  citySourceId: string;
+  cityLineLayerId: string;
+  cityLineColor: string;
+  cityLineWidth: number | unknown[];
+};
 
 function isMapReady(map: MapLike | null | undefined): boolean {
   if (!map) return false;
@@ -100,13 +107,14 @@ export function addAdminCountyBoundaries(
   counties: GeoJSON.FeatureCollection,
   config: AdminBoundaryConfig,
   beforeLayerId?: string
-): void {
-  if (!isMapReady(map)) return;
+): GeoJSON.FeatureCollection<GeoJSON.LineString> {
+  const lines = polygonsToBoundaryLines(counties);
+  if (!isMapReady(map)) return lines;
 
   map!.addSource?.(config.countySourceId, {
     type: 'geojson',
-    data: counties,
-    ...ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS,
+    data: lines,
+    ...BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS,
   });
 
   const before = beforeLayerId && map!.getLayer?.(beforeLayerId) ? beforeLayerId : undefined;
@@ -124,6 +132,8 @@ export function addAdminCountyBoundaries(
     },
     before
   );
+
+  return lines;
 }
 
 export function addAdminStateBoundaries(
@@ -138,6 +148,7 @@ export function addAdminStateBoundaries(
   map!.addSource?.(config.stateSourceId, {
     type: 'geojson',
     data: lines,
+    ...BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS,
   });
 
   const before = beforeLayerId && map!.getLayer?.(beforeLayerId) ? beforeLayerId : undefined;
@@ -167,6 +178,78 @@ export function refreshAdminStateBoundaries(
   const lines = polygonsToBoundaryLines(states);
   const source = map?.getSource?.(stateSourceId);
   source?.setData?.(lines);
+  return lines;
+}
+
+export function removeAdminCityBoundaries(
+  map: MapLike | null | undefined,
+  config: Pick<AdminCityBoundaryConfig, 'citySourceId' | 'cityLineLayerId'>
+): void {
+  if (!map) return;
+  try {
+    if (map.getLayer?.(config.cityLineLayerId)) map.removeLayer?.(config.cityLineLayerId);
+    if (map.getSource?.(config.citySourceId)) map.removeSource?.(config.citySourceId);
+  } catch {
+    /* map torn down */
+  }
+}
+
+export function setAdminCityLineOpacity(
+  map: MapLike | null | undefined,
+  cityLineLayerId: string,
+  opacity: number
+): void {
+  if (!map?.getLayer?.(cityLineLayerId)) return;
+  map.setPaintProperty?.(cityLineLayerId, 'line-opacity', opacity);
+}
+
+export function refreshAdminCityBoundaries(
+  map: MapLike | null | undefined,
+  cities: GeoJSON.FeatureCollection,
+  citySourceId: string
+): GeoJSON.FeatureCollection<GeoJSON.LineString> {
+  const lines = polygonsToBoundaryLines(cities);
+  map?.getSource?.(citySourceId)?.setData?.(lines);
+  return lines;
+}
+
+/** Add or refresh city/place outline lines from polygon GeoJSON. */
+export function ensureAdminCityBoundaries(
+  map: MapLike | null | undefined,
+  cities: GeoJSON.FeatureCollection,
+  config: AdminCityBoundaryConfig,
+  beforeLayerId?: string,
+  lineOpacity = 1
+): GeoJSON.FeatureCollection<GeoJSON.LineString> {
+  const lines = polygonsToBoundaryLines(cities);
+  if (!isMapReady(map)) return lines;
+
+  if (!map!.getSource?.(config.citySourceId)) {
+    map!.addSource?.(config.citySourceId, {
+      type: 'geojson',
+      data: lines,
+      ...BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS,
+    });
+
+    const before = beforeLayerId && map!.getLayer?.(beforeLayerId) ? beforeLayerId : undefined;
+    map!.addLayer?.(
+      {
+        id: config.cityLineLayerId,
+        type: 'line',
+        source: config.citySourceId,
+        paint: {
+          'line-color': config.cityLineColor,
+          'line-width': config.cityLineWidth,
+          'line-opacity': lineOpacity,
+        },
+      },
+      before
+    );
+    return lines;
+  }
+
+  refreshAdminCityBoundaries(map, cities, config.citySourceId);
+  setAdminCityLineOpacity(map, config.cityLineLayerId, lineOpacity);
   return lines;
 }
 
