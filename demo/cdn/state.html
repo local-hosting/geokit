@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>State shapes demo</title>
+  <link rel="stylesheet" href="./cdn.css">
+</head>
+<body class="cdn-demo" data-demo-active="state">
+  <aside id="demo-nav" aria-label="Demo pages"></aside>
+  <div class="cdn-shell">
+    <div class="cdn-panel">
+      <h1>state</h1>
+      <p class="subtitle">states bulk · filter one · filter codes</p>
+      <div class="cdn-field"><label for="code">State code (comma-separated)</label><input id="code" value="ny,ca" /></div>
+      <div class="cdn-actions">
+        <button type="button" id="states-bulk">States bulk</button>
+        <button type="button" class="secondary" id="one">Load one</button>
+        <button type="button" class="secondary" id="codes">Load codes</button>
+      </div>
+      <pre class="cdn-log" id="log"></pre>
+    </div>
+    <div class="cdn-map-wrap"><div id="map" class="cdn-map"></div></div>
+  </div>
+  <script type="module" src="./state.js"></script>
+</body>
+</html>

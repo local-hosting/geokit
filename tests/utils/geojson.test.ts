@@ -24,6 +24,8 @@ import {
   fixPolygonRingOrder,
   filterTinyPolygons,
   cleanGeometry,
+  stripDegenerateInteriorRings,
+  stripAcuteOuterRingSpikes,
 } from '../../src/utils/geojson';
 import type {
   Feature,
@@ -35,6 +37,7 @@ import type {
   MultiPolygon,
   GeometryCollection,
   FeatureCollection,
+  Position,
 } from '../../src/utils/types';
 
 describe('geojson', () => {
@@ -1012,6 +1015,188 @@ describe('geojson', () => {
       // @ts-expect-error - testing invalid input
       const result = cleanGeometry(point);
       expect(result).toEqual(point);
+    });
+  });
+
+  describe('stripDegenerateInteriorRings', () => {
+    const outerRing: Position[] = [
+      [-106.0, 39.5],
+      [-104.5, 39.5],
+      [-104.5, 41.0],
+      [-106.0, 41.0],
+      [-106.0, 39.5],
+    ];
+
+    it('removes thin vertical sliver holes', () => {
+      const sliverHole: Position[] = [
+        [-105.055, 40.0],
+        [-105.0549, 40.0],
+        [-105.0549, 40.07],
+        [-105.055, 40.07],
+        [-105.055, 40.0],
+      ];
+
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [outerRing, sliverHole],
+      };
+
+      const stripped = stripDegenerateInteriorRings(polygon);
+      expect(stripped.coordinates.length).toBe(1);
+    });
+
+    it('removes thin horizontal sliver holes', () => {
+      const sliverHole: Position[] = [
+        [-104.9, 40.0003],
+        [-104.8, 40.0003],
+        [-104.8, 40.00031],
+        [-104.9, 40.00031],
+        [-104.9, 40.0003],
+      ];
+
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [outerRing, sliverHole],
+      };
+
+      const stripped = stripDegenerateInteriorRings(polygon);
+      expect(stripped.coordinates.length).toBe(1);
+    });
+
+    it('keeps large interior rings', () => {
+      const largeHole: Position[] = [
+        [-105.5, 40.2],
+        [-105.2, 40.2],
+        [-105.2, 40.5],
+        [-105.5, 40.5],
+        [-105.5, 40.2],
+      ];
+
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [outerRing, largeHole],
+      };
+
+      const stripped = stripDegenerateInteriorRings(polygon);
+      expect(stripped.coordinates.length).toBe(2);
+    });
+
+    it('strips holes on each member of a MultiPolygon', () => {
+      const multiPolygon: MultiPolygon = {
+        type: 'MultiPolygon',
+        coordinates: [
+          [
+            outerRing,
+            [
+              [-105.055, 40.0],
+              [-105.0549, 40.0],
+              [-105.0549, 40.07],
+              [-105.055, 40.07],
+              [-105.055, 40.0],
+            ],
+          ],
+          [
+            [
+              [-105.0, 40.8],
+              [-104.8, 40.8],
+              [-104.8, 41.0],
+              [-105.0, 41.0],
+              [-105.0, 40.8],
+            ],
+          ],
+        ],
+      };
+
+      const stripped = stripDegenerateInteriorRings(multiPolygon);
+      expect(stripped.coordinates[0].length).toBe(1);
+      expect(stripped.coordinates[1].length).toBe(1);
+    });
+
+    it('removes long thin holes even when Turf area exceeds 1 km²', () => {
+      const longSliverHole: Position[] = [
+        [-105.6, 40.0],
+        [-105.0, 40.0],
+        [-105.0, 40.00247],
+        [-105.6, 40.00247],
+        [-105.6, 40.0],
+      ];
+
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [outerRing, longSliverHole],
+      };
+
+      const stripped = stripDegenerateInteriorRings(polygon);
+      expect(stripped.coordinates.length).toBe(1);
+    });
+
+    it('removes narrow holes when minHoleWidthM2 is set', () => {
+      const narrowHole: Position[] = [
+        [-105.25, 40.1],
+        [-105.247, 40.1],
+        [-105.247, 40.18],
+        [-105.25, 40.18],
+        [-105.25, 40.1],
+      ];
+
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [outerRing, narrowHole],
+      };
+
+      const kept = stripDegenerateInteriorRings(polygon, {
+        minHoleWidthM2: 0,
+        maxSliverAspect: 200,
+      });
+      expect(kept.coordinates.length).toBe(2);
+
+      const stripped = stripDegenerateInteriorRings(polygon, {
+        minHoleWidthM2: 500,
+        maxSliverAspect: 200,
+      });
+      expect(stripped.coordinates.length).toBe(1);
+    });
+  });
+
+  describe('stripAcuteOuterRingSpikes', () => {
+    const outerRing: Position[] = [
+      [-106.0, 39.5],
+      [-104.5, 39.5],
+      [-104.5, 41.0],
+      [-106.0, 41.0],
+      [-106.0, 39.5],
+    ];
+
+    it('removes micro-spikes on the outer ring', () => {
+      const spike: Position[] = [
+        [-105.0, 40.0],
+        [-105.05, 40.05],
+        [-105.055, 40.051],
+        [-105.06, 40.05],
+        [-105.1, 40.0],
+      ];
+      const ring = [...outerRing.slice(0, -1), ...spike, outerRing[0]];
+
+      const polygon: Polygon = { type: 'Polygon', coordinates: [ring] };
+      const stripped = stripAcuteOuterRingSpikes(polygon);
+      expect(stripped.coordinates[0].length).toBeLessThan(ring.length);
+    });
+
+    it('preserves hole rings', () => {
+      const largeHole: Position[] = [
+        [-105.5, 40.2],
+        [-105.2, 40.2],
+        [-105.2, 40.5],
+        [-105.5, 40.5],
+        [-105.5, 40.2],
+      ];
+      const polygon: Polygon = {
+        type: 'Polygon',
+        coordinates: [outerRing, largeHole],
+      };
+
+      const stripped = stripAcuteOuterRingSpikes(polygon);
+      expect(stripped.coordinates.length).toBe(2);
     });
   });
 });

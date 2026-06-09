@@ -1,3 +1,8 @@
+/**
+ * Globe CDN URL rewrite for apps that opt into a same-origin dev proxy (e.g. Fieldwise).
+ * Geokit demos and gk-layer fetch mapto.link directly.
+ */
+
 export const GLOBE_CDN_DEV_PROXY_PREFIX = '/__globe-cdn';
 
 export type GlobeCdnDevProxyOptions = {

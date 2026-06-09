@@ -76,7 +76,18 @@ export async function fetchStatesBulkGeoJson(
   }
 }
 
-/** Start county + state outline downloads (module cache shared across callers). */
+/** Warm `/us/indexes/states.json` (state namespace). */
+export function prefetchStateBoundaries(options?: GlobeCdnFetchOptions): void {
+  void fetchStatesBulkGeoJson(options);
+}
+
+/** Warm `/us/indexes/counties.json` (county namespace). */
+export function prefetchCountyBoundaries(options?: GlobeCdnFetchOptions): void {
+  void fetchCountiesBulkGeoJson(options);
+}
+
+/** Start state + county outline downloads (module cache shared across callers). */
 export function prefetchBoundaryOutlines(options?: GlobeCdnFetchOptions): void {
-  void Promise.all([fetchCountiesBulkGeoJson(options), fetchStatesBulkGeoJson(options)]);
+  prefetchStateBoundaries(options);
+  prefetchCountyBoundaries(options);
 }

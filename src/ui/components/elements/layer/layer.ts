@@ -27,11 +27,28 @@
  *   :data="geojson"
  *   :paint="{ 'circle-color': ['get', 'color'], 'circle-radius': 6 }"
  * />
+ *
+ * CDN presets (dataset mode):
+ * <gk-layer dataset="state" line-color="rgba(255,255,255,0.4)" />
+ * <gk-layer dataset="dma" mode="viewport" interactive />
+ * <gk-layer dataset="dma" mode="slugs" slugs="austin,houston" highlight-slug="austin" />
+ *
+ * JWT for DMA CDN: set getRequestInit on the element in JS (not in markup).
  */
 
 import { MapChildElement } from '../../map-child-element';
 import { findBeforeLayerId as findBeforeLayerIdFn } from './layer-order';
 import { setupLayerInteractions, type LayerInteractionsState } from './layer-interactions';
+import {
+  isLayerDatasetId,
+  mountLayerDataset,
+  parseLayerDatasetSlugs,
+  unmountLayerDataset,
+  type LayerDatasetHandle,
+  type LayerDatasetId,
+  type LayerDatasetOptions,
+  type LayerDatasetReadyDetail,
+} from './layer-datasets';
 
 export type LayerType =
   | 'circle'
@@ -99,6 +116,9 @@ export interface LayerMouseLeaveEventDetail {
   sourceId: string;
 }
 
+/** Event detail for gk-layer-ready (dataset mode — CDN geo drawn) */
+export type LayerReadyEventDetail = LayerDatasetReadyDetail;
+
 export class LayerElement extends MapChildElement {
   static observedAttributes = [
     'source-id',
@@ -111,7 +131,18 @@ export class LayerElement extends MapChildElement {
     'interactive',
     'hover-state',
     'cursor',
+    'dataset',
+    'line-color',
+    'line-width',
+    'mode',
+    'slugs',
+    'highlight-slug',
+    'fill-opacity',
+    'cdn-base',
   ];
+
+  /** Bearer JWT and other CDN fetch headers — host app sets this in JS. */
+  getRequestInit?: () => RequestInit;
 
   // Properties set via create() or attributes
   private _sourceId?: string;
@@ -129,6 +160,8 @@ export class LayerElement extends MapChildElement {
   private _hoverState?: boolean;
   private _cursor?: string;
   private _hitLayers?: string[];
+  private _datasetHandle: LayerDatasetHandle | null = null;
+  private _datasetMountGeneration = 0;
 
   // Track if we created the source (vs reusing existing)
   private _ownSource = false;
@@ -185,24 +218,39 @@ export class LayerElement extends MapChildElement {
 
   protected override async onMapReady(): Promise<void> {
     if (!this.map) return;
-    this.addLayer();
+    if (this.datasetId) {
+      await this.mountDatasetLayer();
+    } else {
+      this.addLayer();
+    }
   }
 
   /** Re-add layer after map style change (e.g. theme toggle). */
   protected override onStyleLoad(): void {
     if (!this.map) return;
-    this.addLayer();
+    if (this.datasetId) {
+      void this.mountDatasetLayer();
+    } else {
+      this.addLayer();
+    }
   }
 
   // ==========================================================================
   // Getters (property first, then attribute)
   // ==========================================================================
 
+  get datasetId(): LayerDatasetId | null {
+    const raw = this.safeGetAttribute('dataset');
+    return isLayerDatasetId(raw) ? raw : null;
+  }
+
   get sourceId(): string {
+    if (this._datasetHandle) return this._datasetHandle.sourceId;
     return this._sourceId ?? this.safeGetAttribute('source-id') ?? '';
   }
 
   get layerId(): string {
+    if (this._datasetHandle) return this._datasetHandle.layerId;
     return this._layerId ?? this.safeGetAttribute('layer-id') ?? '';
   }
 
@@ -249,10 +297,122 @@ export class LayerElement extends MapChildElement {
   /** Get layers to query for features (includes hit layers if specified) */
   private get queryLayers(): string[] {
     const layers = [this.layerId];
-    if (this._hitLayers) {
+    if (this._datasetHandle?.hitLayerIds?.length) {
+      layers.push(...this._datasetHandle.hitLayerIds);
+    } else if (this._hitLayers) {
       layers.push(...this._hitLayers);
     }
     return layers.filter(Boolean);
+  }
+
+  private buildDatasetOptions(): LayerDatasetOptions {
+    const lineWidthRaw = this.safeGetAttribute('line-width');
+    let lineWidth: number | unknown[] | undefined;
+    if (lineWidthRaw) {
+      try {
+        lineWidth = JSON.parse(lineWidthRaw) as unknown[];
+      } catch {
+        const parsed = parseFloat(lineWidthRaw);
+        if (Number.isFinite(parsed)) lineWidth = parsed;
+      }
+    }
+
+    const fillOpacityRaw = this.safeGetAttribute('fill-opacity');
+    const fillOpacity = fillOpacityRaw ? parseFloat(fillOpacityRaw) : undefined;
+
+    const modeRaw = this.safeGetAttribute('mode');
+    const mode = modeRaw === 'slugs' || modeRaw === 'viewport' ? modeRaw : undefined;
+
+    return {
+      cdnBase: this.safeGetAttribute('cdn-base') ?? undefined,
+      lineColor: this.safeGetAttribute('line-color') ?? undefined,
+      lineWidth,
+      beforeLayerId: this.beforeLayerId,
+      minzoom: this.minzoom,
+      interactive: this.interactive,
+      mode,
+      slugs: parseLayerDatasetSlugs(this.safeGetAttribute('slugs')),
+      highlightSlug: this.safeGetAttribute('highlight-slug') ?? undefined,
+      fillOpacity: Number.isFinite(fillOpacity) ? fillOpacity : undefined,
+    };
+  }
+
+  private dispatchDatasetReady(detail: LayerDatasetReadyDetail): void {
+    this.dispatchEvent(new CustomEvent('gk-layer-ready', { detail, bubbles: true }));
+  }
+
+  /** Re-fetch and redraw CDN dataset layers (e.g. after wiring Bearer JWT). */
+  async reloadDataset(): Promise<void> {
+    if (!this.datasetId || !this.map) return;
+    await this.mountDatasetLayer();
+  }
+
+  private async mountDatasetLayer(): Promise<void> {
+    const dataset = this.datasetId;
+    if (!dataset || !this.map) return;
+
+    const generation = ++this._datasetMountGeneration;
+    this.removeDatasetLayer();
+
+    const options = this.buildDatasetOptions();
+    const handle = await mountLayerDataset({
+      map: this.map as unknown as Parameters<typeof mountLayerDataset>[0]['map'],
+      element: this,
+      dataset,
+      options,
+      getRequestInit: this.getRequestInit,
+    });
+
+    if (generation !== this._datasetMountGeneration) {
+      // Stale mount — do not call handle.cleanup(); layer ids are shared and a
+      // newer mount may already own gk-dataset-* on the map.
+      return;
+    }
+
+    if (!handle) {
+      console.warn(`[gk-layer] dataset "${dataset}" mount returned no layers`);
+      return;
+    }
+
+    this._datasetHandle = handle;
+    this._hitLayers = handle.hitLayerIds;
+
+    if (this.interactive) {
+      this.setupInteractions();
+    }
+
+    this.dispatchDatasetReady({
+      dataset,
+      sourceId: handle.sourceId,
+      layerId: handle.layerId,
+    });
+  }
+
+  private removeDatasetLayer(): void {
+    this.removeInteractions();
+    unmountLayerDataset(this._datasetHandle);
+    this._datasetHandle = null;
+    this._hitLayers = undefined;
+  }
+
+  private applyDatasetOptionPatch(name: string): void {
+    if (!this._datasetHandle?.update) return;
+    const patch: Partial<LayerDatasetOptions> = {};
+
+    if (name === 'highlight-slug') {
+      patch.highlightSlug = this.safeGetAttribute('highlight-slug');
+    } else if (name === 'fill-opacity') {
+      const raw = this.safeGetAttribute('fill-opacity');
+      const parsed = raw ? parseFloat(raw) : undefined;
+      if (Number.isFinite(parsed)) patch.fillOpacity = parsed;
+    } else if (name === 'line-color') {
+      void this.mountDatasetLayer();
+      return;
+    }
+
+    if (Object.keys(patch).length > 0) {
+      this._datasetHandle.update(patch);
+    }
   }
 
   // ==========================================================================
@@ -566,17 +726,31 @@ export class LayerElement extends MapChildElement {
     oldValue: string | null,
     newValue: string | null
   ): void {
-    if (this.isInitialized && oldValue !== newValue) {
-      // Recreate layer on significant changes
-      if (['source-id', 'layer-id', 'type'].includes(name)) {
-        this.removeLayer();
-        this.addLayer();
+    if (!this.isInitialized || oldValue === newValue) return;
+
+    if (this.datasetId) {
+      const remountAttrs = ['dataset', 'cdn-base', 'mode', 'line-width', 'minzoom', 'slugs'];
+      const patchAttrs = ['highlight-slug', 'fill-opacity', 'line-color'];
+      if (remountAttrs.includes(name)) {
+        void this.mountDatasetLayer();
+      } else if (patchAttrs.includes(name)) {
+        this.applyDatasetOptionPatch(name);
       }
+      return;
+    }
+
+    if (['source-id', 'layer-id', 'type'].includes(name)) {
+      this.removeLayer();
+      this.addLayer();
     }
   }
 
   override disconnectedCallback(): void {
-    this.removeLayer();
+    if (this.datasetId) {
+      this.removeDatasetLayer();
+    } else {
+      this.removeLayer();
+    }
     super.disconnectedCallback();
   }
 

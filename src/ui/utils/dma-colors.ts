@@ -149,6 +149,28 @@ export function buildDmaFillOpacityExpression(
   ];
 }
 
+const DEFAULT_DMA_HIGHLIGHT_LINE_OPACITY = 0.85;
+
+/** Hide internal MultiPolygon rings; stroke only highlighted markets unless caller sets line-color. */
+export function buildDmaLineOpacityExpression(options: {
+  showAllOutlines: boolean;
+  highlightOpacity?: number;
+}): number | unknown[] {
+  if (options.showAllOutlines) return 1;
+  const highlightOpacity = options.highlightOpacity ?? DEFAULT_DMA_HIGHLIGHT_LINE_OPACITY;
+  return ['case', ['boolean', ['feature-state', 'highlight'], false], highlightOpacity, 0];
+}
+
+/** Fill-layer outline on highlight — avoids a line layer that traces every county ring. */
+export function buildDmaHighlightOutlineColorExpression(marketColor: unknown): unknown[] {
+  return [
+    'case',
+    ['boolean', ['feature-state', 'highlight'], false],
+    marketColor,
+    'rgba(0, 0, 0, 0)',
+  ];
+}
+
 export function createDMAColorMap(
   markets: readonly (string | DmaMarketColorInput)[]
 ): Map<string, string> {

@@ -734,7 +734,8 @@ export class PointElement extends MapChildElement {
       this.sourceId,
       this.size,
       this.mapElement ?? document.documentElement,
-      feature
+      feature,
+      { pointColor: this.color }
     );
     if (result) {
       this.selectedLayers = result;

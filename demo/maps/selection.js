@@ -91,7 +91,6 @@ mapElement.addEventListener('gk-map-ready', () => {
       '#ff6b35',
     ],
     glowOpacity: 0.45,
-    glowHoverOpacity: 1,
     selectionRingColor: '#ffffff',
   });
 

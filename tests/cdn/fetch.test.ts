@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { resolveGlobeCdnRequestUrl } from '../../src/cdn/fetch';
-import { GLOBE_CDN_DEV_PROXY_PREFIX } from '../../src/cdn/dev-proxy';
 
 describe('resolveGlobeCdnRequestUrl', () => {
   const base = 'https://mapto.link';
@@ -16,8 +15,9 @@ describe('resolveGlobeCdnRequestUrl', () => {
     expect(resolveGlobeCdnRequestUrl(url, base)).toBe(url);
   });
 
-  it('keeps same-origin dev proxy paths unchanged', () => {
-    const path = `${GLOBE_CDN_DEV_PROXY_PREFIX}/us/indexes/states.json`;
-    expect(resolveGlobeCdnRequestUrl(path, base)).toBe(path);
+  it('uses same-origin relative paths when base is empty', () => {
+    expect(resolveGlobeCdnRequestUrl('/markets/dma/regions/texas-la.json', '')).toBe(
+      '/markets/dma/regions/texas-la.json'
+    );
   });
 });

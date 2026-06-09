@@ -7,72 +7,89 @@
 /** @type {DemoSection[]} */
 export const DEMO_SECTIONS = [
   {
-    id: 'maps',
-    label: 'Maps',
+    id: 'map',
+    label: 'Map',
     items: [
       { id: 'main', path: '/maps/index.html', label: 'Main' },
-      { id: 'layers-test', path: '/maps/layers-test.html', label: 'Layers' },
+      { id: 'scrolling', path: '/maps/scrolling.html', label: 'Scrolling' },
+      { id: 'centered', path: '/maps/centered.html', label: 'Providers' },
+    ],
+  },
+  {
+    id: 'points',
+    label: 'Points',
+    items: [
       {
         id: 'selection',
         path: '/maps/selection.html',
         label: 'Selection',
         description: 'Shared-point ring on click, setSelectedPoint, gk-point focus',
       },
-      { id: 'scrolling', path: '/maps/scrolling.html', label: 'Scrolling' },
-      { id: 'centered', path: '/maps/centered.html', label: 'Providers' },
+      {
+        id: 'layers-test',
+        path: '/maps/layers-test.html',
+        label: 'Point layers',
+        description: 'MapLibre point layer expressions and category styling',
+      },
     ],
   },
   {
-    id: 'cdn',
-    label: 'CDN',
+    id: 'shapes',
+    label: 'Shapes',
+    items: [
+      {
+        id: 'state',
+        path: '/cdn/state.html',
+        label: 'State',
+        description: 'states bulk, single state, state code list',
+      },
+      {
+        id: 'cities',
+        path: '/cdn/cities.html',
+        label: 'Cities',
+        description: 'catalog, cities bulk, single city',
+      },
+      {
+        id: 'county',
+        path: '/cdn/county.html',
+        label: 'County',
+        description: 'counties bulk, single county, FIPS list',
+      },
+      {
+        id: 'dma',
+        path: '/maps/dma.html',
+        label: 'DMA',
+        description: 'gk-layer dma — all (viewport) or one (slug)',
+      },
+    ],
+  },
+  {
+    id: 'util',
+    label: 'Util',
     items: [
       {
         id: 'fetch',
         path: '/cdn/fetch.html',
-        label: 'fetch',
+        label: 'Fetch',
         description: 'fetchGlobeCdn / fetchGlobeCdnJson — raw HTTP + Accept header',
       },
       {
         id: 'paths',
         path: '/cdn/paths.html',
-        label: 'paths',
+        label: 'Paths',
         description: 'URL builders — countyShapeUrl, state cities catalog',
-      },
-      {
-        id: 'bulk',
-        path: '/cdn/bulk.html',
-        label: 'bulk',
-        description: 'counties + states outline FeatureCollections',
-      },
-      {
-        id: 'county',
-        path: '/cdn/county.html',
-        label: 'county',
-        description: 'fetchCountyShapeFeature, fetchCountyShapesForFips',
-      },
-      {
-        id: 'place',
-        path: '/cdn/place.html',
-        label: 'place',
-        description: 'catalog, cities bulk, single place feature',
       },
       {
         id: 'bounds',
         path: '/cdn/bounds.html',
-        label: 'bounds',
+        label: 'Bounds',
         description: 'boundsFromFeature / boundsFromFeatures',
       },
       {
         id: 'resolve-shape',
         path: '/cdn/resolve-shape.html',
-        label: 'resolve-shape',
+        label: 'Resolve shape',
         description: 'FIPS, state+place, borough aliases → bounds',
-      },
-      {
-        id: 'dma',
-        path: '/cdn/dma.html',
-        label: 'dma',
-        description: 'DMA paths, JWT check, regional shards — /markets/dma/** (Bearer auth)',
       },
     ],
   },

@@ -17,14 +17,14 @@
  * Used by both individual gk-point elements and shared point layers.
  */
 export const HOVER_CONFIG = {
-  /** Scale factor for hover glow radius (2.0 = 100% larger than base glow) */
-  glowRadiusScale: 2.0,
+  /** Scale factor for hover glow radius vs base glow */
+  glowRadiusScale: 1.35,
 
-  /** Default glow opacity on hover */
-  glowOpacity: 0.25,
+  /** Default glow opacity on dedicated hover layer */
+  glowOpacity: 0.35,
 
-  /** Blur for hover glow (higher = softer, more glow-like) */
-  glowBlur: 1,
+  /** Blur for hover glow (MapLibre 0–1; keep below 1 to avoid muddy halos) */
+  glowBlur: 0.55,
 
   /** Point stroke width on hover for brightness effect */
   pointStrokeWidth: 3,
