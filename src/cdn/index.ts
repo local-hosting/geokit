@@ -28,6 +28,21 @@ export {
   fetchStatesBulkGeoJson,
   prefetchBoundaryOutlines,
 } from './bulk';
+export { canonicalDmaCdnSlug, isLegacyDmaSlug } from './dma-slug';
+export { validateDmaCdnJwt, validateIdentityJwt, type CdnJwtValidation } from './jwt';
+export {
+  createDmaRegionClusterLoader,
+  dmaCatalogEntriesFromRegionIndex,
+  dmaFeaturesToCollection,
+  dmaRegionBySlugFromRegionIndex,
+  dmaSlugsFromRegionIndex,
+  mergeDmaFeaturesBySlug,
+  resolveRegionIdsForSlugs,
+  resolveRegionIdsForViewport,
+  resolveRegionIdsForViewportBounds,
+  type DmaRegionClusterLoader,
+  type DmaRegionClusterLoaderOptions,
+} from './dma-regions';
 export {
   GLOBE_CDN_DEV_PROXY_PREFIX,
   rewriteGlobeCdnUrlForDevProxy,
@@ -47,6 +62,16 @@ export {
   globeStateCitiesBulkUrl,
   globeStateCitiesCatalogUrl,
   globeStatesBulkUrl,
+  globeDmaMarketShapePath,
+  globeDmaMarketIndexPath,
+  globeDmaMarketBundlePath,
+  globeDmaRegionIndexPath,
+  globeDmaRegionShardPath,
+  dmaMarketShapeUrl,
+  dmaMarketIndexUrl,
+  dmaMarketBundleUrl,
+  dmaRegionIndexUrl,
+  dmaRegionShardUrl,
   resolveGlobeCdnUrl,
   stateCitiesBulkUrl,
   stateCitiesCatalogUrl,

@@ -16,6 +16,10 @@ import { debug } from '../../../utils/logger';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
 import { convertToH3 } from './isochrone-h3';
 import { getIsochroneCacheKey } from './isochrone-fetch';
+import {
+  buildChoroplethFillPaint,
+  type FillAntialiasMap,
+} from '../../../utils/choropleth-fill-paint';
 
 export interface IsochroneOptions {
   lat: number;
@@ -595,11 +599,14 @@ export class IsochroneElement extends MapChildElement {
             id: this.fillLayerId,
             type: 'fill',
             source: this.sourceId,
-            paint: {
-              'fill-color': this.color,
-              'fill-opacity': this.opacity,
-              'fill-antialias': false,
-            },
+            paint: buildChoroplethFillPaint(
+              this.map as FillAntialiasMap,
+              {
+                'fill-color': this.color,
+                'fill-opacity': this.opacity,
+              },
+              {}
+            ),
           };
           if (beforeLayerId != null) {
             this.map.addLayer(fillSpec, beforeLayerId);
