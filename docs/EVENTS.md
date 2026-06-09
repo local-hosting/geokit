@@ -4,6 +4,69 @@ Custom events use the `gk-*` prefix where they are part of the public API. This 
 
 ---
 
+## Shared point layers (`@twinfile/geokit/ui/shared-points`)
+
+Many map points (venues, POIs, fleet sites) share one **source + glow + point + hover + selection** layer set. Geokit owns **how** points render and update; apps own **what** each feature carries (`_color`, `brand`, ratings, etc.).
+
+| Concern                                                  | Owner                                    |
+| -------------------------------------------------------- | ---------------------------------------- |
+| Feature GeoJSON, `_color`, brand, ratings                | App (e.g. Fieldwise `buildVenueGeoJSON`) |
+| Layer ids, glow/point paint, source sync, selection ring | Geokit `shared-points`                   |
+
+**Import:**
+
+```ts
+import {
+  CachedPointFeatureBuilder,
+  createSharedPointLayersFromPaint,
+  syncExistingSharedPointLayers,
+  preloadSharedPointLayerStyles,
+} from '@twinfile/geokit/ui/shared-points';
+```
+
+**First paint** — source exists, layers do not:
+
+```ts
+ensureSharedPointGeoJsonSource(map, sourceId, geojson, 'slug');
+await createSharedPointLayersFromPaint({
+  map,
+  ids: { sourceId, glowLayerId, pointLayerId },
+  geojson,
+  paint: {
+    ids: { sourceId, glowLayerId, pointLayerId },
+    pointColorExpression,
+    pointRadiusExpression,
+    glowColorExpression,
+    glowOpacity: SHARED_POINT_UNIFORM_GLOW_OPACITY,
+    strokeWidthExpression,
+    strokeColorExpression,
+    primarySortProperty: 'brand',
+    primarySortValue: primaryBrand,
+  },
+  glowHoverOpacity: prefersLight ? 0.34 : 0.24,
+  selectionRingColor,
+  promoteId: 'slug',
+  mapProvider: mapElement.getAttribute('provider'),
+});
+layerCleanup = attachSharedPointHoverGlowRadiusSync(map, glowLayerId);
+```
+
+**Updates** — source and layers already exist:
+
+```ts
+await syncExistingSharedPointLayers({ map, ids, geojson, paint });
+```
+
+**Selection** — listen on `gk-map`, drive with `setSelectedPoint()` / `clearSelectedPoint()` (see below).
+
+**Preload** — warm the lazy `layer-styles` chunk during idle or before map route:
+
+```ts
+preloadSharedPointLayerStyles();
+```
+
+---
+
 ## gk-map
 
 | Event                          | When                                                                                                                                                | Detail                                                                                                   |

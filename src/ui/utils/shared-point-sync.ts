@@ -8,6 +8,13 @@ import { updateSourceData } from './map-utils';
 import {
   applySharedPointLayerPaint,
   attachSharedPointHoverGlowRadiusSync,
+  paintColorFromProperty,
+  sharedPointStrokeColorExpression,
+  sharedPointStrokeWidthExpression,
+  SHARED_POINT_DEFAULT_GLOW_HOVER_OPACITY,
+  SHARED_POINT_GLOW_BLUR,
+  SHARED_POINT_GLOW_HIT_AREA_SCALE,
+  SHARED_POINT_UNIFORM_GLOW_OPACITY,
   type ApplySharedPointPaintOptions,
   type SharedPointLayerIds,
 } from './shared-point-paint';
@@ -229,3 +236,91 @@ export async function syncExistingSharedPointLayers(
 }
 
 export { applySharedPointLayerPaint, attachSharedPointHoverGlowRadiusSync };
+
+async function importLayerStylesModule() {
+  return import('./layer-styles');
+}
+
+type LayerStylesModule = Awaited<ReturnType<typeof importLayerStylesModule>>;
+let layerStylesModule: LayerStylesModule | null = null;
+let layerStylesLoading: Promise<LayerStylesModule> | null = null;
+
+/** Pre-warm layer-styles during idle time (lazy-loaded ~300KB module). */
+export function preloadSharedPointLayerStyles(): void {
+  if (layerStylesModule || layerStylesLoading) return;
+  layerStylesLoading = importLayerStylesModule().then((m) => {
+    layerStylesModule = m;
+    return m;
+  });
+}
+
+async function getLayerStylesModule(): Promise<LayerStylesModule> {
+  if (layerStylesModule) return layerStylesModule;
+  if (!layerStylesLoading) preloadSharedPointLayerStyles();
+  return layerStylesLoading!;
+}
+
+export interface CreateSharedPointLayersFromPaintOptions {
+  map: MapInstance;
+  ids: SharedPointLayerIds;
+  geojson: FeatureCollection;
+  paint: ApplySharedPointPaintOptions;
+  circleOpacity?: number | unknown[];
+  glowHoverOpacity?: number;
+  glowBlur?: number;
+  glowHitAreaScale?: number;
+  selectionRingColor?: string;
+  promoteId?: string;
+  mapProvider?: string | null;
+  useMapTilerPointHelper?: boolean;
+}
+
+/**
+ * Create glow + point + hover + selection layers from app paint config.
+ * Apps own feature properties (_color, brand, ratings); geokit owns layer structure and sync.
+ */
+export async function createSharedPointLayersFromPaint(
+  options: CreateSharedPointLayersFromPaintOptions
+): Promise<void> {
+  const {
+    map,
+    ids,
+    geojson,
+    paint,
+    circleOpacity = 0.95,
+    glowHoverOpacity = SHARED_POINT_DEFAULT_GLOW_HOVER_OPACITY,
+    glowBlur = SHARED_POINT_GLOW_BLUR,
+    glowHitAreaScale = SHARED_POINT_GLOW_HIT_AREA_SCALE,
+    selectionRingColor,
+    promoteId,
+    mapProvider,
+    useMapTilerPointHelper,
+  } = options;
+
+  const { getGlowRadiusInterpolation } = await getLayerStylesModule();
+  const glowRadius = getGlowRadiusInterpolation({ scale: glowHitAreaScale });
+  const strokeWidthExpression = paint.strokeWidthExpression ?? sharedPointStrokeWidthExpression();
+  const strokeColorExpression = paint.strokeColorExpression ?? sharedPointStrokeColorExpression();
+  const glowColorExpression = paint.glowColorExpression ?? paintColorFromProperty();
+
+  await createSharedPointLayerSet(map, {
+    ids,
+    geojson,
+    mapProvider,
+    useMapTilerPointHelper,
+    promoteId,
+    circleColor: paint.pointColorExpression,
+    circleOpacity,
+    circleStrokeColor: strokeColorExpression,
+    circleStrokeWidth: strokeWidthExpression,
+    glowColor: glowColorExpression,
+    glowOpacity: paint.glowOpacity ?? SHARED_POINT_UNIFORM_GLOW_OPACITY,
+    glowHoverOpacity,
+    glowBlur,
+    pointRadius: paint.pointRadiusExpression,
+    glowRadius,
+    selectionRingColor,
+  });
+
+  applySharedPointLayerPaint(map, paint);
+}

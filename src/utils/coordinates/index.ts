@@ -7,6 +7,7 @@ export { toLatLon, toLonLat, toLonLatArray, toLatLonArray } from './conversion';
 export { isValidCoordinate } from './validation';
 export {
   extractCoordinates,
+  extractPointLngLat,
   normalizeCoordinateInput,
   normalizeCoordinatesArray,
 } from './extraction';

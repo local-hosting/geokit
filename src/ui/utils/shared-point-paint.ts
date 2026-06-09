@@ -14,6 +14,15 @@ export const SHARED_POINT_MIN_RADIUS_PX = 2.8;
 /** Default glow opacity for shared point layers. */
 export const SHARED_POINT_UNIFORM_GLOW_OPACITY = 0.24;
 
+/** Soft edge for glow halos (higher = more fade at edge). */
+export const SHARED_POINT_GLOW_BLUR = 1.5;
+
+/** Scale glow radius vs point radius for a larger click/hover hit area. */
+export const SHARED_POINT_GLOW_HIT_AREA_SCALE = 2.5;
+
+/** Default glow hover opacity when the app does not pass a theme-specific value. */
+export const SHARED_POINT_DEFAULT_GLOW_HOVER_OPACITY = 0.35;
+
 /** Non-primary values render slightly smaller when using brand-based radius scaling. */
 export const SHARED_POINT_SECONDARY_RADIUS_SCALE = 0.9;
 
