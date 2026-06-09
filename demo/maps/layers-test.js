@@ -192,7 +192,8 @@ mapElement.addEventListener('gk-map-ready', async () => {
 
     if (glowExists && pointExists) {
       log('✅ ALL LAYERS CREATED SUCCESSFULLY!', 'success');
-      log('Hover over points to test interactions');
+      log('Click a point — geokit moves the selection ring automatically');
+      log('See /maps/selection.html for events + setSelectedPoint demos');
     } else {
       log('❌ LAYER CREATION FAILED', 'error');
     }
