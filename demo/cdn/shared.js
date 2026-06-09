@@ -1,6 +1,7 @@
 import maplibregl from 'maplibre-gl';
 
 import { resolveGlobeCdnBaseUrl } from '../../src/cdn/config.ts';
+import { bboxToPolygonGeometry } from '../../src/utils/bounds/bbox-to-polygon.ts';
 
 export function getCdnOptions() {
   return { baseUrl: resolveGlobeCdnBaseUrl() };
@@ -65,6 +66,42 @@ export function setGeoJsonOutline(map, sourceId, geojson) {
     type: 'fill',
     source: sourceId,
     paint: { 'fill-color': getComputedStyle(document.documentElement).getPropertyValue('--bk-map-line').trim() || '#000', 'fill-opacity': 0.05 },
+  });
+}
+
+/** Dashed rectangle for [minLon, minLat, maxLon, maxLat] bounds overlay. */
+export function setBoundsOverlay(map, sourceId, bounds) {
+  if (!bounds || bounds.length !== 4) return;
+
+  const lineColor =
+    getComputedStyle(document.documentElement).getPropertyValue('--bk-map-line').trim() || '#000';
+  const data = {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: {},
+        geometry: bboxToPolygonGeometry(bounds),
+      },
+    ],
+  };
+
+  const existing = map.getSource(sourceId);
+  if (existing) {
+    existing.setData(data);
+    return;
+  }
+
+  map.addSource(sourceId, { type: 'geojson', data });
+  map.addLayer({
+    id: `${sourceId}-line`,
+    type: 'line',
+    source: sourceId,
+    paint: {
+      'line-color': lineColor,
+      'line-width': 2,
+      'line-dasharray': [3, 2],
+    },
   });
 }
 
