@@ -1,22 +1,10 @@
 /**
- * Convert polygon features into deduplicated boundary LineStrings.
- * Line layers on adjacent polygons double-draw shared edges without this step.
+ * Convert polygon features into boundary LineStrings for MapLibre line layers.
+ * Emits one multi-point LineString per exterior ring so geojson-vt keeps borders
+ * visible at low zoom (two-point segment dedupe produces sub-pixel fragments).
  */
 
 import type { FeatureCollection, LineString, Position } from '../../types';
-
-const COORD_PRECISION = 5;
-
-function roundCoord(value: number): number {
-  const factor = 10 ** COORD_PRECISION;
-  return Math.round(value * factor) / factor;
-}
-
-function segmentKey(a: Position, b: Position): string {
-  const aKey = `${roundCoord(a[0]!)},${roundCoord(a[1]!)}`;
-  const bKey = `${roundCoord(b[0]!)},${roundCoord(b[1]!)}`;
-  return aKey < bKey ? `${aKey}|${bKey}` : `${bKey}|${aKey}`;
-}
 
 function exteriorRings(geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon): Position[][] {
   if (geometry.type === 'Polygon') {
@@ -28,11 +16,11 @@ function exteriorRings(geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon): Positi
     .filter((ring): ring is Position[] => !!ring?.length);
 }
 
-/** One LineString per unique polygon edge (shared borders included once). */
+/** One LineString per polygon exterior ring (shared borders may render twice). */
 export function polygonsToBoundaryLines(
   collection: FeatureCollection
 ): FeatureCollection<LineString> {
-  const segments = new Map<string, Position[]>();
+  const features: FeatureCollection<LineString>['features'] = [];
 
   for (const feature of collection.features) {
     const geometry = feature.geometry;
@@ -42,21 +30,17 @@ export function polygonsToBoundaryLines(
     }
 
     for (const ring of exteriorRings(geometry)) {
-      for (let i = 0; i < ring.length - 1; i += 1) {
-        const a = ring[i]!;
-        const b = ring[i + 1]!;
-        const key = segmentKey(a, b);
-        if (!segments.has(key)) segments.set(key, [a, b]);
-      }
+      if (ring.length < 2) continue;
+      features.push({
+        type: 'Feature',
+        properties: feature.properties ?? {},
+        geometry: {
+          type: 'LineString',
+          coordinates: ring,
+        },
+      });
     }
   }
 
-  return {
-    type: 'FeatureCollection',
-    features: [...segments.values()].map((coordinates, index) => ({
-      type: 'Feature',
-      properties: { id: index },
-      geometry: { type: 'LineString', coordinates },
-    })),
-  };
+  return { type: 'FeatureCollection', features };
 }

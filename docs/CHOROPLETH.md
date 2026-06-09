@@ -25,5 +25,6 @@ Default options use `preferAntialiasedWhenFlat: true` (product maps). Pass `{}` 
 ## Related
 
 - `fillAntialiasForMap` — lower-level pitch/terrain heuristic
-- `CHOROPLETH_BOUNDARY_GEOJSON_SOURCE_OPTIONS` — geojson-vt tolerance for boundary sources
+- `BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS` — geojson-vt tuning for outline sources (`tolerance: 0`, `buffer: 256`, `maxzoom: 14`)
+- `CHOROPLETH_BOUNDARY_GEOJSON_SOURCE_OPTIONS` — alias for choropleth / DMA polygon sources
 - Fieldwise: `dmaChoroplethFillAntialiasOptions()` — terrain-aware wrapper
