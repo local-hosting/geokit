@@ -81,7 +81,7 @@ export interface SharedPointLayersConfig {
   /** Glow blur */
   glowBlur: number;
   /** Point radius expression */
-  pointRadius: unknown[];
+  pointRadius: unknown;
   /** Glow radius expression */
   glowRadius: unknown[];
   /** Optional filter expression */
@@ -818,6 +818,38 @@ const MAPTILER_POINT_RADIUS_ZOOM: Array<{ zoom: number; value: number }> = [
   { zoom: 18, value: 9 },
 ];
 
+function maptilerPointRadiusInterpolation(): unknown[] {
+  const expr: unknown[] = ['interpolate', ['linear'], ['zoom']];
+  for (const stop of MAPTILER_POINT_RADIUS_ZOOM) {
+    expr.push(stop.zoom, stop.value);
+  }
+  return expr;
+}
+
+function resolveEffectivePointRadius(
+  pointRadius: unknown | undefined,
+  usedMapTilerHelper: boolean
+): unknown {
+  if (pointRadius !== undefined) return pointRadius;
+  if (usedMapTilerHelper) return maptilerPointRadiusInterpolation();
+  return getPointRadiusInterpolation();
+}
+
+/** Ring radius derived from the point layer's circle-radius (static or data-driven). */
+export function getSelectionRingRadiusFromPointRadius(pointRadius: unknown): unknown {
+  const offset = SELECTION_RING_GAP_PX + SELECTION_RING_STROKE_WIDTH / 2;
+  if (typeof pointRadius === 'number') {
+    return pointRadius + offset;
+  }
+  if (Array.isArray(pointRadius) && pointRadius.length > 0) {
+    if (pointRadius[0] === 'interpolate') {
+      return offsetRadiusInterpolation(pointRadius, offset);
+    }
+    return ['+', pointRadius, offset];
+  }
+  return getSelectionRingRadiusInterpolation();
+}
+
 /**
  * Create GK point shared layers: one source, glow layer, and point layer for many features.
  * Layers use feature-state (hover/selected) so apps can wire hover via createHoverStateHandlers
@@ -1028,7 +1060,18 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     }
     // Selection ring: dedicated single-feature source so no data-driven expressions
     // are evaluated on all venue features (avoids MapTiler per-tile rendering budget issues).
-    setupSelectionRingLayer(map, sourceId, pointLayerId, selectionRingColor);
+    const effectivePointRadius = resolveEffectivePointRadius(pointRadius, true);
+    if (pointRadius === undefined && map.setPaintProperty) {
+      try {
+        map.setPaintProperty(pointLayerId, 'circle-radius', effectivePointRadius as any);
+      } catch (radiusErr) {
+        console.warn(
+          `[geokit] setPaintProperty circle-radius failed for ${pointLayerId}:`,
+          radiusErr
+        );
+      }
+    }
+    setupSelectionRingLayer(map, sourceId, pointLayerId, selectionRingColor, effectivePointRadius);
 
     // Setup automatic hover layers (same pattern as non-helper path)
     setupHoverLayers(map, sourceId, glowLayerId, pointLayerId, {
@@ -1037,7 +1080,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       glowBlur: glowBlur ?? resolveGlowBlur(),
       glowHoverOpacity,
       circleColor,
-      pointRadius: pointRadius ?? getPointRadiusInterpolation(),
+      pointRadius: effectivePointRadius,
     });
     return;
   }
@@ -1164,7 +1207,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
 
     // Selection ring: dedicated single-feature source so no data-driven expressions
     // are evaluated on all venue features (avoids MapTiler per-tile rendering budget issues).
-    setupSelectionRingLayer(map, sourceId, pointLayerId, selectionRingColor);
+    setupSelectionRingLayer(map, sourceId, pointLayerId, selectionRingColor, radiusVal);
   }
 
   // Setup automatic hover layers using dedicated source (avoids feature-state issues)
@@ -1188,7 +1231,7 @@ interface HoverLayerOptions {
   glowBlur: number;
   glowHoverOpacity?: number | unknown[];
   circleColor: string | unknown[];
-  pointRadius: unknown[];
+  pointRadius: unknown;
 }
 
 const EMPTY_GEOJSON: GeoJSON.FeatureCollection = {
@@ -1214,7 +1257,8 @@ function setupSelectionRingLayer(
   map: MapInstance,
   sourceId: string,
   pointLayerId: string,
-  selectionRingColor: string
+  selectionRingColor: string,
+  pointRadius?: unknown
 ): void {
   const selectionSourceId = `${sourceId}-selection`;
   const ringLayerId = `${pointLayerId}-selection-ring`;
@@ -1242,7 +1286,9 @@ function setupSelectionRingLayer(
         source: selectionSourceId,
         minzoom: 0,
         paint: {
-          'circle-radius': getSelectionRingRadiusInterpolation(),
+          'circle-radius': getSelectionRingRadiusFromPointRadius(
+            pointRadius ?? getPointRadiusInterpolation()
+          ),
           'circle-color': 'rgba(0,0,0,0)',
           'circle-stroke-width': SELECTION_RING_STROKE_WIDTH,
           'circle-stroke-color': selectionRingColor,
@@ -1267,14 +1313,14 @@ function setupSelectionRingLayer(
 export function updateSharedPointSelection(
   map: MapInstance,
   sourceId: string,
-  coordinates: { lng: number; lat: number } | null
+  selection: { lngLat: { lng: number; lat: number }; properties?: Record<string, unknown> } | null
 ): void {
   const selectionSourceId = `${sourceId}-selection`;
   const source = map?.getSource?.(selectionSourceId) as GeoJSONSourceWithSetData | undefined;
   if (!source?.setData) return;
 
   try {
-    if (coordinates) {
+    if (selection?.lngLat) {
       source.setData({
         type: 'FeatureCollection',
         features: [
@@ -1282,9 +1328,9 @@ export function updateSharedPointSelection(
             type: 'Feature',
             geometry: {
               type: 'Point',
-              coordinates: [coordinates.lng, coordinates.lat],
+              coordinates: [selection.lngLat.lng, selection.lngLat.lat],
             },
-            properties: {},
+            properties: { ...(selection.properties ?? {}) },
           },
         ],
       });
@@ -1347,20 +1393,28 @@ export function clearSharedPointSelection(
 export function setSharedPointSelection(
   map: MapInstance,
   sourceId: string,
-  selection: { featureId: string | null; lngLat?: { lng: number; lat: number } | null },
+  selection: {
+    featureId: string | null;
+    lngLat?: { lng: number; lat: number } | null;
+    properties?: Record<string, unknown> | null;
+  },
   options?: SetSharedPointSelectionOptions
 ): void {
   const previous = getSharedPointSelection(map, sourceId);
   const previousFeatureId = previous?.featureId ?? null;
   const featureId = selection.featureId;
   const lngLat = selection.lngLat ?? null;
+  const properties = selection.properties ?? null;
 
   if (!featureId || !lngLat) {
     getSharedPointSelectionMap(map).set(sourceId, { featureId: null, lngLat: null });
     updateSharedPointSelection(map, sourceId, null);
   } else {
     getSharedPointSelectionMap(map).set(sourceId, { featureId, lngLat });
-    updateSharedPointSelection(map, sourceId, lngLat);
+    updateSharedPointSelection(map, sourceId, {
+      lngLat,
+      ...(properties ? { properties } : {}),
+    });
   }
 
   const changed = featureId !== previousFeatureId;
@@ -1599,7 +1653,7 @@ function setupHoverLayers(
       setSharedPointSelection(
         map,
         sourceId,
-        { featureId, lngLat },
+        { featureId, lngLat, properties: f?.properties ?? {} },
         { mapElement: mapEl, dispatchEvent: true }
       );
     }

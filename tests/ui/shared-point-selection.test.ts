@@ -62,4 +62,23 @@ describe('shared point selection', () => {
     };
     expect(ringData.features).toHaveLength(0);
   });
+  it('copies selected feature properties onto the ring source', () => {
+    const map = createMockMap();
+    const sourceId = 'venues-test';
+    map._sources.set(`${sourceId}-selection`, { data: null });
+
+    setSharedPointSelection(map as never, sourceId, {
+      featureId: 'venue-a',
+      lngLat: { lng: -85.7, lat: 38.2 },
+      properties: { type: 'partner', averageRating: 4.2 },
+    });
+
+    const ringData = map._sources.get(`${sourceId}-selection`)?.data as {
+      features: Array<{ properties: Record<string, unknown> }>;
+    };
+    expect(ringData.features[0].properties).toEqual({
+      type: 'partner',
+      averageRating: 4.2,
+    });
+  });
 });
