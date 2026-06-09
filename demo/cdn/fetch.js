@@ -1,8 +1,8 @@
 import { fetchGlobeCdn, fetchGlobeCdnJson } from '../../src/cdn/fetch.ts';
-import { mountDemoNav } from '../nav.js';
+import { mountDemoNavFromDocument } from '../shared/nav.js';
 import { appendLog, cdnBaseLabel, getCdnOptions } from './shared.js';
 
-mountDemoNav('fetch');
+mountDemoNavFromDocument();
 const logEl = document.getElementById('log');
 const pathInput = document.getElementById('path');
 const opts = getCdnOptions();

@@ -1,6 +1,5 @@
 /**
  * Registry for geokit demo pages — nav sidebar and Playwright smoke tests.
- * MCP map host is integration infra (@twinfile/mcp open_map), not a browsable demo.
  * @typedef {{ id: string, path: string, label: string, description?: string }} DemoPage
  * @typedef {{ id: string, label: string, items: DemoPage[] }} DemoSection
  */
@@ -11,10 +10,10 @@ export const DEMO_SECTIONS = [
     id: 'maps',
     label: 'Maps',
     items: [
-      { id: 'main', path: '/index.html', label: 'Main' },
-      { id: 'layers-test', path: '/layers-test.html', label: 'Layers' },
-      { id: 'scrolling', path: '/scrolling.html', label: 'Scrolling' },
-      { id: 'centered', path: '/centered.html', label: 'Providers' },
+      { id: 'main', path: '/maps/index.html', label: 'Main' },
+      { id: 'layers-test', path: '/maps/layers-test.html', label: 'Layers' },
+      { id: 'scrolling', path: '/maps/scrolling.html', label: 'Scrolling' },
+      { id: 'centered', path: '/maps/centered.html', label: 'Providers' },
     ],
   },
   {
@@ -68,11 +67,5 @@ export const DEMO_SECTIONS = [
   },
 ];
 
-/** Interactive map host for packages/mcp open_map — smoke-tested, not in demo nav. */
-export const MCP_MAP_PAGE = '/mcp-map.html';
-
 /** @type {readonly string[]} */
-export const DEMO_PAGES = [
-  ...DEMO_SECTIONS.flatMap((section) => section.items.map((item) => item.path)),
-  MCP_MAP_PAGE,
-];
+export const DEMO_PAGES = DEMO_SECTIONS.flatMap((section) => section.items.map((item) => item.path));

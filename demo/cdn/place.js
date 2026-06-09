@@ -12,9 +12,9 @@ import {
   wireMapDemo,
 } from './shared.js';
 
-import { mountDemoNav } from '../nav.js';
+import { mountDemoNavFromDocument } from '../shared/nav.js';
 
-mountDemoNav('place');
+mountDemoNavFromDocument();
 const logEl = document.getElementById('log');
 const opts = getCdnOptions();
 let map;

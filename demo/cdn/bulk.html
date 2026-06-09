@@ -4,20 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CDN bulk demo</title>
-  <link rel="stylesheet" href="./cdn-demo.css">
+  <link rel="stylesheet" href="./cdn.css">
 </head>
-<body class="cdn-demo">
+<body class="cdn-demo" data-demo-active="bulk">
   <aside id="demo-nav" aria-label="Demo pages"></aside>
   <div class="cdn-shell">
-    <h1>bulk</h1>
-    <p class="subtitle">fetchCountiesBulkGeoJson · fetchStatesBulkGeoJson</p>
-    <div class="cdn-actions">
-      <button id="counties" type="button">Load counties</button>
-      <button id="states" type="button">Load states</button>
-      <button id="both" type="button">Prefetch both</button>
+    <div class="cdn-panel">
+      <h1>bulk</h1>
+      <p class="subtitle">fetchCountiesBulkGeoJson · fetchStatesBulkGeoJson</p>
+      <div class="cdn-actions">
+        <button id="counties" type="button">Load counties</button>
+        <button id="states" type="button">Load states</button>
+        <button id="both" type="button">Prefetch both</button>
+      </div>
+      <pre id="log" class="cdn-log"></pre>
     </div>
-    <pre id="log" class="cdn-log"></pre>
-    <div id="map" class="cdn-map"></div>
+    <div class="cdn-map-wrap"><div id="map" class="cdn-map"></div></div>
   </div>
   <script type="module" src="./bulk.js"></script>
 </body>

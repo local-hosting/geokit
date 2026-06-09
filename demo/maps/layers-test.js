@@ -1,9 +1,9 @@
 // geokit Layer Creation Test - Using Expression Builders
-import { mountDemoNav } from './nav.js';
-import '../src/ui/theme.css';
+import { mountDemoNavFromDocument } from '../shared/nav.js';
+import '../../src/ui/theme.css';
 
-mountDemoNav('layers-test');
-import { configure } from '../src/ui/index.ts';
+mountDemoNavFromDocument();
+import { configure } from '../../src/ui/index.ts';
 import { 
   createSharedPointLayers,
   getPointRadiusInterpolation,
@@ -14,7 +14,7 @@ import {
   buildCategoryRadiusScaleExpression,
   buildRatingOpacityExpression,
   multiplyRadiusExpression
-} from '../src/ui/utils/layer-styles.ts';
+} from '../../src/ui/utils/layer-styles.ts';
 
 // Configure API keys
 configure({

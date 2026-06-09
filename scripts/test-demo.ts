@@ -1,12 +1,12 @@
 /**
- * Smoke-test every page under demo/ via Playwright.
+ * Smoke-test every page in the demo app (demo/) via Playwright.
  * Starts the Vite demo server, loads each HTML page, and fails on HTTP or runtime errors.
  */
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, type Page } from 'playwright';
-import { DEMO_PAGES } from '../demo/pages.js';
+import { DEMO_PAGES } from '../demo/shared/pages.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -16,7 +16,6 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const IGNORED_CONSOLE_PATTERNS = [
   /Failed to register Mapbox API provider/i,
   /No Mapbox token found/i,
-  /\[mcp-map\] MAPTILER_KEY missing/i,
   /\[cdn-demo\] MAPTILER_KEY missing/i,
   /favicon\.ico/i,
 ];
@@ -146,14 +145,14 @@ async function main(): Promise<void> {
   }
 
   if (failures.length > 0) {
-    console.error('\nExample smoke tests failed:\n');
+    console.error('\nDemo smoke tests failed:\n');
     for (const failure of failures) {
       console.error(`• ${failure}\n`);
     }
     process.exit(1);
   }
 
-  console.log(`\nAll ${DEMO_PAGES.length} example pages passed.`);
+  console.log(`\nAll ${DEMO_PAGES.length} demo pages passed.`);
 }
 
 main().catch((err) => {
