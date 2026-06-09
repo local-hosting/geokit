@@ -61,10 +61,11 @@ export const POINT_SELECTION_RING_STROKE_WIDTH = 2;
 const POINT_SELECTION_RING_GAP_PX = 0.5;
 
 /**
- * Selection ring radius: hugs the point with a small gap (not the same radius as the fill).
+ * Selection ring radius: clears the point outline stroke, then a small gap, then the ring stroke.
+ * MapLibre draws circle-stroke outside circle-radius.
  */
-export function getSelectionRingRadiusExpression(size: number): unknown[] {
-  const offset = POINT_SELECTION_RING_GAP_PX + POINT_SELECTION_RING_STROKE_WIDTH / 2;
+export function getSelectionRingRadiusExpression(size: number, strokeWidth = 0): unknown[] {
+  const offset = strokeWidth + POINT_SELECTION_RING_GAP_PX + POINT_SELECTION_RING_STROKE_WIDTH / 2;
   return offsetRadiusInterpolation(getZoomRadiusExpression(size), offset);
 }
 

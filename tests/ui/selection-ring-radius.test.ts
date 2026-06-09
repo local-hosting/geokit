@@ -27,6 +27,21 @@ describe('selection ring radius', () => {
     expect(ring[0]).toBe('interpolate');
     expect((ring[4] as number) > (point[4] as number)).toBe(true);
   });
+
+  it('shared ring radius clears point outline stroke', () => {
+    const point = getPointRadiusInterpolation();
+    const ringNoStroke = getSelectionRingRadiusInterpolation();
+    const ringWithStroke = getSelectionRingRadiusInterpolation({}, 2);
+    expect((ringWithStroke[4] as number) - (ringNoStroke[4] as number)).toBe(2);
+    expect((ringWithStroke[4] as number) > (point[4] as number)).toBe(true);
+  });
+
+  it('gk-point ring radius clears point outline stroke', () => {
+    const size = 6;
+    const ringNoStroke = getSelectionRingRadiusExpression(size);
+    const ringWithStroke = getSelectionRingRadiusExpression(size, 2);
+    expect((ringWithStroke[4] as number) - (ringNoStroke[4] as number)).toBe(2);
+  });
 });
 
 describe('glow radius', () => {

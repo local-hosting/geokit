@@ -6,10 +6,11 @@
  * Usage:
  * <gk-h3 lat="40.7128" lng="-74.0060" resolution="8"></gk-h3>
  * <gk-h3 h3-index="8828308281fffff"></gk-h3>
+ * <gk-h3 lat="40.7128" lng="-74.0060" ring-k="2"></gk-h3>
  */
 
 import { MapChildElement } from '../map-child-element';
-import { coordinatesToH3, h3ToBoundary } from '../../../utils/h3';
+import { coordinatesToH3, h3DiskToFeatureCollection, h3GetResolution } from '../../../utils/h3';
 import { getCSSVariable } from '../../utils/theme';
 
 export interface H3Options {
@@ -21,6 +22,8 @@ export interface H3Options {
   opacity?: number;
   strokeColor?: string;
   strokeWidth?: number;
+  ringK?: number;
+  ringOpacity?: number;
 }
 
 export class H3Element extends MapChildElement {
@@ -33,6 +36,8 @@ export class H3Element extends MapChildElement {
     'opacity',
     'stroke-color',
     'stroke-width',
+    'ring-k',
+    'ring-opacity',
     'visible',
   ];
 
@@ -40,6 +45,7 @@ export class H3Element extends MapChildElement {
   private lineLayerId: string | null = null;
   private fillLayerId: string | null = null;
   private currentH3Index: string | null = null;
+  private currentRingK: number | null = null;
 
   constructor() {
     super();
@@ -86,7 +92,7 @@ export class H3Element extends MapChildElement {
 
       if (!isNaN(lat) && !isNaN(lng)) {
         try {
-          h3Index = coordinatesToH3(resolution)([lng, lat]);
+          h3Index = coordinatesToH3(resolution)([lat, lng]);
         } catch (error) {
           console.warn('Failed to create H3 index from coordinates:', error);
           return;
@@ -99,48 +105,24 @@ export class H3Element extends MapChildElement {
       return;
     }
 
-    // Skip if same H3 index
-    if (h3Index === this.currentH3Index) return;
+    const ringK = this.ringK;
+
+    if (h3Index === this.currentH3Index && ringK === this.currentRingK) return;
 
     this.currentH3Index = h3Index;
+    this.currentRingK = ringK;
 
-    // Convert H3 to polygon boundary
-    let boundary: number[][];
-    try {
-      boundary = h3ToBoundary(h3Index);
-    } catch (error) {
-      console.warn('Failed to convert H3 to boundary:', error);
+    const resolution = explicitH3 ? h3GetResolution(h3Index) : this.resolution;
+    const geojson = h3DiskToFeatureCollection(h3Index, ringK, {
+      properties: { resolution },
+    });
+
+    if (geojson.features.length === 0) {
+      console.warn('H3 to feature collection returned no features');
       return;
     }
 
-    if (!boundary || boundary.length === 0) {
-      console.warn('H3 to boundary conversion returned empty result');
-      return;
-    }
-
-    // Close the polygon by adding the first point at the end
-    const polygon = [...boundary, boundary[0]];
-
-    // Remove existing layers
     this.removeH3();
-
-    // Create GeoJSON
-    const geojson: GeoJSON.FeatureCollection = {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [polygon],
-          },
-          properties: {
-            h3Index: h3Index,
-            resolution: this.resolution,
-          },
-        },
-      ],
-    };
 
     // Add source
     if (this.map && this.sourceId) {
@@ -157,7 +139,15 @@ export class H3Element extends MapChildElement {
           source: this.sourceId,
           paint: {
             'fill-color': this.color,
-            'fill-opacity': this.opacity,
+            'fill-opacity':
+              ringK > 0
+                ? ([
+                    'case',
+                    ['boolean', ['get', 'isCenter'], false],
+                    this.opacity,
+                    this.ringOpacity,
+                  ] as unknown)
+                : this.opacity,
           },
         });
       }
@@ -249,6 +239,20 @@ export class H3Element extends MapChildElement {
 
   get strokeWidth(): number {
     return parseFloat(this.getAttribute('stroke-width') || '2') || 2;
+  }
+
+  get ringK(): number {
+    const parsed = parseInt(this.getAttribute('ring-k') || '0', 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  }
+
+  get ringOpacity(): number {
+    const attr = this.getAttribute('ring-opacity');
+    if (attr != null && attr !== '') {
+      const parsed = parseFloat(attr);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return this.opacity;
   }
 
   get visible(): boolean {

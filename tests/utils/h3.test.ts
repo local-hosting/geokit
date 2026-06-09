@@ -26,6 +26,8 @@ import {
   h3AreaToPolygon,
   h3PointNeighbors,
   h3AreaNeighbors,
+  h3ResolutionFromZoom,
+  h3DiskToFeatureCollection,
 } from '../../src/utils/h3';
 
 describe('h3', () => {
@@ -408,6 +410,38 @@ describe('h3', () => {
     });
   });
 
+  describe('h3ResolutionFromZoom', () => {
+    it('should map zoom to clamped H3 resolution', () => {
+      expect(h3ResolutionFromZoom(12)).toBe(8);
+      expect(h3ResolutionFromZoom(2)).toBe(6);
+      expect(h3ResolutionFromZoom(23)).toBe(15);
+    });
+
+    it('should respect custom min, max, and zoomFactor', () => {
+      expect(h3ResolutionFromZoom(10, { min: 0, max: 15, zoomFactor: 1 })).toBe(10);
+      expect(h3ResolutionFromZoom(99, { min: 0, max: 9, zoomFactor: 1 })).toBe(9);
+    });
+  });
+
+  describe('h3DiskToFeatureCollection', () => {
+    it('should return a single center feature when k is 0', () => {
+      const h3Index = coordinatesToH3(9)(nyc);
+      const fc = h3DiskToFeatureCollection(h3Index, 0);
+      expect(fc.type).toBe('FeatureCollection');
+      expect(fc.features).toHaveLength(1);
+      expect(fc.features[0]?.properties?.isCenter).toBe(true);
+      expect(fc.features[0]?.geometry.type).toBe('Polygon');
+    });
+
+    it('should include center and ring cells when k > 0', () => {
+      const h3Index = coordinatesToH3(9)(nyc);
+      const fc = h3DiskToFeatureCollection(h3Index, 2);
+      expect(fc.features.length).toBeGreaterThan(1);
+      const center = fc.features.find((f) => f.properties?.isCenter);
+      expect(center?.properties?.h3Index).toBe(h3Index);
+      expect(fc.features.some((f) => f.properties?.isCenter === false)).toBe(true);
+    });
+  });
   describe('h3SetToMultiPolygon', () => {
     it('should convert array of H3 indices to MultiPolygon', () => {
       const h3Index1 = coordinatesToH3(9)(nyc);
