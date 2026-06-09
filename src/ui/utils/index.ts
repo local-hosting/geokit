@@ -11,3 +11,7 @@ export * from './logger';
 export * from './theme';
 export * from './scroll-idle';
 export { getFeatureId } from '../../utils/geojson/get-feature-id';
+export * from './layer-stack';
+export * from './geojson-source-options';
+export * from './map-terrain-disable';
+export * from './fill-antialias';

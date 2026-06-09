@@ -26,6 +26,8 @@ export {
 
 export { fixPolygonRingOrder, filterTinyPolygons, cleanGeometry } from './polygon-utils';
 
+export { polygonsToBoundaryLines } from './boundary-lines';
+
 /**
  * Extract coordinates from a GeoJSON feature or geometry
  *

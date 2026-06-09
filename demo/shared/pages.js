@@ -20,7 +20,6 @@ export const DEMO_SECTIONS = [
     id: 'cdn',
     label: 'CDN',
     items: [
-      { id: 'cdn-hub', path: '/cdn/index.html', label: 'Hub' },
       {
         id: 'fetch',
         path: '/cdn/fetch.html',

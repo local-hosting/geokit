@@ -43,12 +43,17 @@ export { NavigationControlElement } from './components/controls/navigation-contr
 
 // Re-export element classes needed at startup (map only)
 export { MapElement } from './components/elements/map/map';
+export { parseUrlHashState } from './components/elements/map/map-url-sync';
 
 // Re-export only the lightweight utilities needed at startup.
 // Heavy modules (layer-styles ~312 KB, feature-state-hover) are excluded;
 // import them from their dedicated entry points:
 //   import { ... } from '@twinfile/geokit/ui/layer-styles';
 export * from './utils/map-utils';
+export * from './utils/map-terrain-disable';
+export * from './utils/layer-stack';
+export * from './utils/geojson-source-options';
+export * from './utils/fill-antialias';
 export * from './utils/theme';
 export * from './utils/logger';
 export { getFeatureId } from '../utils/geojson/get-feature-id';
