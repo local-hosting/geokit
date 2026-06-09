@@ -42,3 +42,6 @@ export {
 } from './type-safe';
 
 export { compactH3CellId, expandH3CellId } from './cell-id';
+
+export * from './cell-fade';
+export * from './viewport';

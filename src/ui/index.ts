@@ -29,6 +29,7 @@ export {
   onMapUnfreezeInContainer,
 } from './utils/map-utils';
 export { MapElement } from './components/elements/map/map';
+export { parseUrlHashState } from './components/elements/map/map-url-sync';
 
 // Auto-register all components (side-effects)
 import './components/controls/navigation-control';
