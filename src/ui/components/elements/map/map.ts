@@ -2941,16 +2941,20 @@ export class MapElement extends BaseElement {
     }
 
     let coords = lngLat ?? null;
+    let properties: Record<string, unknown> | undefined;
+    const feature = this.findFeatureById(sourceId, featureId, idProperties);
     if (!coords) {
-      const feature = this.findFeatureById(sourceId, featureId, idProperties);
       coords = this.pointCoordsFromFeature(feature);
+    }
+    if (feature?.properties && typeof feature.properties === 'object') {
+      properties = { ...(feature.properties as Record<string, unknown>) };
     }
     if (!coords) return false;
 
     setSharedPointSelection(
       map,
       sourceId,
-      { featureId, lngLat: coords },
+      { featureId, lngLat: coords, properties },
       { mapElement: this, dispatchEvent: true }
     );
     return true;
