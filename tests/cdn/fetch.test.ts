@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { resolveGlobeCdnRequestUrl } from '../../src/cdn/fetch';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  fetchGlobeCdnJson,
+  registerGlobeCdnBytesObserver,
+  resolveGlobeCdnRequestUrl,
+  syncPublishedCellLayerIds,
+} from '../../src/cdn/fetch';
 
 describe('resolveGlobeCdnRequestUrl', () => {
   const base = 'https://mapto.link';
@@ -25,5 +30,41 @@ describe('resolveGlobeCdnRequestUrl', () => {
     expect(resolveGlobeCdnRequestUrl('/__globe-cdn/markets/dma/regions/index.json', base)).toBe(
       '/__globe-cdn/markets/dma/regions/index.json'
     );
+  });
+});
+
+describe('fetchGlobeCdnJson bytes observer', () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockReset();
+    syncPublishedCellLayerIds(null);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('notifies observers with utf-8 payload size', async () => {
+    const observer = vi.fn();
+    const unregister = registerGlobeCdnBytesObserver(observer);
+    fetchMock.mockResolvedValue(
+      new Response('{"ok":true}', {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+
+    const result = await fetchGlobeCdnJson<{ ok: boolean }>(
+      'https://cdn.test/us/indexes/states.json'
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(observer).toHaveBeenCalledWith({
+      url: 'https://cdn.test/us/indexes/states.json',
+      bytes: 11,
+    });
+    unregister();
   });
 });
