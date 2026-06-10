@@ -17,5 +17,5 @@
     "noEmit": false
   },
   "include": ["../src/**/*"],
-  "exclude": ["../node_modules", "../dist", "../dist-cjs-temp", "../tests"]
+  "exclude": ["../node_modules", "../dist", "../dist-cjs-temp", "../tests", "../src/mcp"]
 }

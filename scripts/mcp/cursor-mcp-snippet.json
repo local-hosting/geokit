@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "geokit": {
+      "type": "stdio",
+      "command": "/opt/homebrew/bin/node",
+      "args": ["/Users/westlane/Documents/corio/packages/geokit/scripts/mcp/cursor-stdio.mjs"],
+      "cwd": "/Users/westlane/Documents/corio/packages/geokit",
+      "env": {
+        "MAPTILER_KEY": "your_maptiler_key_here",
+        "MAP_HOST_URL": "http://localhost:3002"
+      }
+    }
+  }
+}
