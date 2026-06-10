@@ -240,6 +240,13 @@ export class MapElement extends BaseElement {
     this._cleanupChildTracking();
     this._clearStuckCheck();
 
+    // Release WebGL when permanently removed from the document (skip brief disconnect during moves)
+    queueMicrotask(() => {
+      if (!this.isConnected && this.map && !this._isFrozen) {
+        void this.freeze().catch(() => {});
+      }
+    });
+
     // Don't call super.disconnectedCallback() because it resets this.map = null
     // We want to preserve the map instance for reuse in the map pool
     // Only clean up if we have a flag indicating permanent removal
@@ -253,6 +260,16 @@ export class MapElement extends BaseElement {
     if (this._isInitializing) {
       debug.warn('[gk-map] Already initializing, skipping duplicate call');
       return;
+    }
+
+    // Reuse a live map — creating another instance leaks WebGL contexts
+    if (this.map && this.isInitialized && !this._isFrozen) {
+      return;
+    }
+
+    // Tear down any stale/partial map before acquiring the init lock
+    if (this.map) {
+      await this.teardownMapInstance({ markFrozen: false });
     }
 
     this._isInitializing = true;
@@ -2278,25 +2295,29 @@ export class MapElement extends BaseElement {
   }
 
   /**
-   * Internal freeze implementation - destroy map and free WebGL context
-   * Browsers can only handle a few WebGL contexts, so we must destroy when frozen
-   * Returns a Promise that resolves after the context is released
+   * Remove map instance and release WebGL context.
+   * Shared by freeze, re-init, and failed-load cleanup paths.
    */
-  private async _freeze(): Promise<void> {
-    if (!this.map || this._isFrozen) {
+  private async teardownMapInstance(options: { markFrozen: boolean }): Promise<void> {
+    if (!this.map) {
+      if (options.markFrozen) {
+        this._isFrozen = true;
+      }
       return;
     }
 
     // Wait if currently initializing to avoid race condition
     if (this._isInitializing) {
-      debug.warn('[gk-map] Waiting for initialization to complete before freezing');
+      debug.warn('[gk-map] Waiting for initialization to complete before teardown');
       const maxWait = 5000;
       const startTime = Date.now();
       while (this._isInitializing && Date.now() - startTime < maxWait) {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      // Re-check if map still exists after waiting
-      if (!this.map || this._isFrozen) {
+      if (!this.map) {
+        if (options.markFrozen) {
+          this._isFrozen = true;
+        }
         return;
       }
     }
@@ -2309,7 +2330,7 @@ export class MapElement extends BaseElement {
       })
     );
 
-    // Remove all map listeners so no handler runs after we call map.remove() (avoids getLayer/queryRenderedFeatures on destroyed map)
+    // Remove all map listeners so no handler runs after we call map.remove()
     this.removeAllMapListeners();
 
     // Restore console if style-load filter was still active (e.g. theme toggle then immediate teardown)
@@ -2332,14 +2353,28 @@ export class MapElement extends BaseElement {
       }
     }
 
-    // Clear map reference
     this.map = null;
     this._mapCanvas = null;
     this.isInitialized = false;
     this.hasPainted = false;
-    this._isFrozen = true;
+    if (options.markFrozen) {
+      this._isFrozen = true;
+    }
 
     await delayForWebGLRelease();
+  }
+
+  /**
+   * Internal freeze implementation - destroy map and free WebGL context
+   * Browsers can only handle a few WebGL contexts, so we must destroy when frozen
+   * Returns a Promise that resolves after the context is released
+   */
+  private async _freeze(): Promise<void> {
+    if (!this.map || this._isFrozen) {
+      return;
+    }
+
+    await this.teardownMapInstance({ markFrozen: true });
   }
 
   /**
