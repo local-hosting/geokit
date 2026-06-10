@@ -39,6 +39,7 @@ export class H3Element extends MapChildElement {
     'ring-k',
     'ring-opacity',
     'visible',
+    'interactive',
   ];
 
   private sourceId: string | null = null;
@@ -46,6 +47,7 @@ export class H3Element extends MapChildElement {
   private fillLayerId: string | null = null;
   private currentH3Index: string | null = null;
   private currentRingK: number | null = null;
+  private interactiveBound = false;
 
   constructor() {
     super();
@@ -54,26 +56,32 @@ export class H3Element extends MapChildElement {
 
   protected override async onMapReady(): Promise<void> {
     await super.onMapReady();
-    this.waitForStyleLoaded(() => this.renderH3());
+    if (!this.map) return;
+    requestAnimationFrame(() => this.renderH3());
   }
 
   /** Re-add H3 layers after map style change (e.g. theme toggle). */
   protected override onStyleLoad(): void {
     if (!this.map) return;
-    this.waitForStyleLoaded(() => this.renderH3());
+    requestAnimationFrame(() => this.renderH3());
   }
 
-  override async connectedCallback() {
-    await super.connectedCallback();
-
-    if (this.isInitialized) return;
-
-    // Generate unique IDs
+  private ensureLayerIds(): void {
+    if (this.sourceId) return;
     this.sourceId = `h3-cell-${crypto.randomUUID()}`;
     this.lineLayerId = `h3-cell-line-${crypto.randomUUID()}`;
     this.fillLayerId = `h3-cell-fill-${crypto.randomUUID()}`;
+  }
 
-    this.isInitialized = true;
+  override async connectedCallback() {
+    // Generate layer ids before super — BaseElement.connectedCallback sets isInitialized.
+    this.ensureLayerIds();
+
+    await super.connectedCallback();
+
+    if (this.map) {
+      requestAnimationFrame(() => this.renderH3());
+    }
   }
 
   private renderH3(): void {
@@ -153,7 +161,7 @@ export class H3Element extends MapChildElement {
       }
 
       // Add line layer
-      if (this.lineLayerId) {
+      if (this.lineLayerId && this.strokeWidth > 0) {
         this.map.addLayer({
           id: this.lineLayerId,
           type: 'line',
@@ -163,6 +171,10 @@ export class H3Element extends MapChildElement {
             'line-width': this.strokeWidth,
           },
         });
+      }
+
+      if (this.interactive && this.fillLayerId) {
+        this.bindFillInteractivity(this.fillLayerId);
       }
 
       // Dispatch event
@@ -175,8 +187,36 @@ export class H3Element extends MapChildElement {
     }
   }
 
+  private bindFillInteractivity(layerId: string): void {
+    if (!this.map || this.interactiveBound) return;
+    this.interactiveBound = true;
+    this.setupLayerInteractivity(layerId, 'h3');
+
+    const baseOpacity = this.opacity;
+    const hoverOpacity = Math.min(baseOpacity + 0.18, 0.55);
+
+    this.map.on('mouseenter', layerId, () => {
+      if (this.fillLayerId) {
+        this.map?.setPaintProperty?.(this.fillLayerId, 'fill-opacity', hoverOpacity);
+      }
+    });
+    this.map.on('mouseleave', layerId, () => {
+      if (this.fillLayerId) {
+        this.map?.setPaintProperty?.(this.fillLayerId, 'fill-opacity', baseOpacity);
+      }
+    });
+  }
+
+  private unbindFillInteractivity(layerId: string | null): void {
+    if (!this.map || !layerId || !this.interactiveBound) return;
+    this.removeLayerInteractivity(layerId);
+    this.interactiveBound = false;
+  }
+
   private removeH3(): void {
     if (!this.map) return;
+
+    this.unbindFillInteractivity(this.fillLayerId);
 
     this.cleanupMapLayers(
       [this.lineLayerId, this.fillLayerId].filter(Boolean) as string[],
@@ -192,8 +232,11 @@ export class H3Element extends MapChildElement {
     if (this.isInitialized && oldValue !== newValue) {
       if (name === 'visible') {
         this.toggleVisibility();
+      } else if (name === 'interactive') {
+        this.removeH3();
+        requestAnimationFrame(() => this.renderH3());
       } else {
-        this.waitForStyleLoaded(() => this.renderH3());
+        requestAnimationFrame(() => this.renderH3());
       }
     }
   }
@@ -238,7 +281,12 @@ export class H3Element extends MapChildElement {
   }
 
   get strokeWidth(): number {
-    return parseFloat(this.getAttribute('stroke-width') || '2') || 2;
+    const attr = this.getAttribute('stroke-width');
+    if (attr != null && attr !== '') {
+      const parsed = parseFloat(attr);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return 2;
   }
 
   get ringK(): number {
@@ -257,6 +305,10 @@ export class H3Element extends MapChildElement {
 
   get visible(): boolean {
     return this.getAttribute('visible') !== 'false';
+  }
+
+  get interactive(): boolean {
+    return this.getAttribute('interactive') === 'true';
   }
 
   // Public API

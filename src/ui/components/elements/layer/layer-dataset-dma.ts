@@ -1,23 +1,21 @@
 /**
- * DMA CDN choropleth preset for gk-layer dataset mode.
+ * DMA CDN choropleth preset — `/cell/{cellId}.json` + per-market slugs.
  */
 
-import {
-  createDmaRegionClusterLoader,
-  dmaCatalogEntriesFromRegionIndex,
-  dmaFeaturesToCollection,
-  dmaRegionBySlugFromRegionIndex,
-  resolveRegionIdsForSlugs,
-  resolveRegionIdsForViewportBounds,
-} from '../../../../cdn/dma-regions';
+import { mergeDmaFeaturesBySlug, dmaFeaturesToCollection } from '../../../../cdn/dma-regions';
 import { resolveGlobeCdnBaseUrl } from '../../../../cdn/config';
+import { fetchGlobeCdnJson } from '../../../../cdn/fetch';
+import { dmaMarketShapeUrl } from '../../../../cdn/paths';
 import { mapViewportBounds } from '../../../../utils/h3/map-viewport';
+import { bindIncrementalViewportSync } from '../../../../cdn/viewport-shard-loader';
+import { createCellLayerLoader, fetchCellLayerCatalog } from '../../../../cdn/cell-layers';
 import { buildChoroplethFillPaint } from '../../../utils/choropleth-fill-paint';
 import { CHOROPLETH_BOUNDARY_GEOJSON_SOURCE_OPTIONS } from '../../../utils/geojson-source-options';
 import {
   buildDmaFillOpacityExpression,
   buildDmaHighlightOutlineColorExpression,
   buildDmaLineOpacityExpression,
+  buildDmaRegionColorExpression,
   buildDmaSlugColorExpression,
   type DmaMarketColorInput,
 } from '../../../utils/dma-colors';
@@ -28,7 +26,6 @@ import {
 import type { LayerDatasetContext, LayerDatasetHandle } from './layer-datasets';
 
 const TRANSPARENT_OUTLINE = 'rgba(0, 0, 0, 0)';
-const VIEWPORT_SYNC_DEBOUNCE_MS = 400;
 const DEFAULT_FILL_OPACITY = 0.28;
 const HIGHLIGHT_FILL_OPACITY = 0.38;
 const UNASSIGNED_FILL_OPACITY = 0.06;
@@ -52,6 +49,10 @@ export const DMA_DATASET_IDS = {
 } as const;
 
 type MapLike = NonNullable<LayerDatasetContext['map']>;
+
+function mapZoom(map: MapLike): number {
+  return (map as { getZoom?: () => number }).getZoom?.() ?? 0;
+}
 
 function waitForMapViewport(
   map: MapLike,
@@ -109,6 +110,48 @@ function fillOpacityExpression(visible: boolean, assignedOpacity: number): unkno
   });
 }
 
+function dmaSlugId(feature: GeoJSON.Feature): string | null {
+  const slug = String((feature.properties as { slug?: string })?.slug ?? feature.id ?? '')
+    .trim()
+    .toLowerCase();
+  return slug || null;
+}
+
+async function loadDmaMarketShapes(
+  slugs: readonly string[],
+  target: Map<string, GeoJSON.Feature>,
+  options: { cdnBase?: string; getRequestInit?: () => RequestInit }
+): Promise<number> {
+  let added = 0;
+  await Promise.all(
+    slugs.map(async (raw) => {
+      const slug = raw.trim().toLowerCase();
+      if (!slug) return;
+      const url = dmaMarketShapeUrl(resolveGlobeCdnBaseUrl(options.cdnBase), slug);
+      try {
+        const payload = await fetchGlobeCdnJson<GeoJSON.Feature | GeoJSON.FeatureCollection>(url, {
+          baseUrl: options.cdnBase,
+          init: options.getRequestInit?.(),
+        });
+        if (!payload) return;
+        if (payload.type === 'FeatureCollection') {
+          added += mergeDmaFeaturesBySlug(target, payload);
+          return;
+        }
+        if (payload.type === 'Feature') {
+          added += mergeDmaFeaturesBySlug(target, {
+            type: 'FeatureCollection',
+            features: [payload],
+          });
+        }
+      } catch {
+        /* market shard unavailable */
+      }
+    })
+  );
+  return added;
+}
+
 export async function mountDmaDataset(
   ctx: LayerDatasetContext
 ): Promise<LayerDatasetHandle | null> {
@@ -116,27 +159,25 @@ export async function mountDmaDataset(
   const mode = options.mode ?? 'viewport';
   const slugs = options.slugs;
   const baseUrl = resolveGlobeCdnBaseUrl(options.cdnBase);
-  const loader = createDmaRegionClusterLoader({
-    baseUrl,
-    getRequestInit,
+  const cellLoader = createCellLayerLoader({ baseUrl, getRequestInit });
+
+  const cellCatalog = await fetchCellLayerCatalog({
+    baseUrl: options.cdnBase,
+    init: options.getRequestInit?.() ?? options.init,
   });
+  const useCellLayers = cellCatalog != null && cellCatalog.count > 0;
+  if (!useCellLayers && mode === 'viewport') return null;
 
-  const index = await loader.fetchIndex();
-  if (!index?.entries?.length) return null;
-
-  const regionBySlug = dmaRegionBySlugFromRegionIndex(index);
   const features = new Map<string, GeoJSON.Feature>();
   const { sourceId, fillLayerId, lineLayerId } = DMA_DATASET_IDS;
 
   const catalog: DmaMarketColorInput[] =
     slugs?.length && mode === 'slugs'
-      ? slugs.map((slug) => ({
-          slug: slug.trim().toLowerCase(),
-          region: regionBySlug.get(slug.trim().toLowerCase()) ?? 'unknown',
-        }))
-      : dmaCatalogEntriesFromRegionIndex(index);
+      ? slugs.map((slug) => ({ slug: slug.trim().toLowerCase(), region: 'unknown' }))
+      : [];
 
-  const colorExpression = buildDmaSlugColorExpression(catalog);
+  const colorExpression =
+    catalog.length > 0 ? buildDmaSlugColorExpression(catalog) : buildDmaRegionColorExpression();
   const lineColor = options.lineColor ?? colorExpression;
   const lineWidth = options.lineWidth ?? DEFAULT_DMA_LINE_WIDTH;
   const showAllOutlines = Boolean(options.lineColor);
@@ -221,36 +262,44 @@ export async function mountDmaDataset(
 
   stackGkOutlineLayersAboveDmaFill(map);
 
-  const loadOptions = {
-    index,
-    onRegionMerged: (detail: { regionId: string; featureCount: number }) => {
-      flushFeatures();
-      element.dispatchEvent(new CustomEvent('gk-layer-shard', { detail, bubbles: true }));
-    },
-  };
+  const loadedCellIds = new Set<string>();
 
-  const runRegionLoad = async (regionIds: readonly string[], filterSlugs?: readonly string[]) => {
-    await loader.loadFeaturesForRegions(regionIds, features, {
-      ...loadOptions,
-      ...(filterSlugs ? { filterSlugs } : {}),
+  const loadViewportDma = async () => {
+    const viewport = mapViewportBounds(map) ?? (await waitForMapViewport(map));
+    if (!viewport?.bounds) return;
+
+    const zoom = mapZoom(map);
+
+    await cellLoader.loadLayerForViewport({
+      viewport: {
+        bounds: viewport.bounds,
+        centerLat: viewport.centerLat,
+        centerLng: viewport.centerLng,
+        zoom,
+      },
+      layer: 'dma',
+      target: features,
+      getFeatureId: dmaSlugId,
+      replace: false,
+      loadedCellIds,
+      onShardMerged: ({ cellId, featureCount }) => {
+        flushFeatures();
+        element.dispatchEvent(
+          new CustomEvent('gk-layer-shard', {
+            detail: { cellId, featureCount, layer: 'dma' as const },
+            bubbles: true,
+          })
+        );
+      },
     });
     flushFeaturesNow();
   };
 
   if (mode === 'slugs' && slugs?.length) {
-    const slugRegions = resolveRegionIdsForSlugs(index, slugs);
-    await runRegionLoad(slugRegions, slugs);
+    await loadDmaMarketShapes(slugs, features, { cdnBase: options.cdnBase, getRequestInit });
+    flushFeaturesNow();
   } else {
-    const viewport = mapViewportBounds(map) ?? (await waitForMapViewport(map));
-    const regionIds = viewport?.bounds
-      ? resolveRegionIdsForViewportBounds(index, viewport.bounds)
-      : [];
-    const toLoad =
-      regionIds.length > 0
-        ? regionIds
-        : [...new Set(index.entries.map((entry) => entry.regionId.toLowerCase()))];
-    // Do not block gk-layer-ready — shards may already be prefetching during basemap load.
-    void runRegionLoad(toLoad);
+    void loadViewportDma();
   }
 
   if (options.highlightSlug) {
@@ -264,32 +313,16 @@ export async function mountDmaDataset(
     }
   }
 
-  let viewportSyncTimer: ReturnType<typeof setTimeout> | null = null;
   let cleanupViewport: (() => void) | null = null;
 
   if (mode === 'viewport') {
-    const schedule = () => {
-      if (viewportSyncTimer) clearTimeout(viewportSyncTimer);
-      viewportSyncTimer = setTimeout(() => {
-        viewportSyncTimer = null;
-        void (async () => {
-          const viewport = mapViewportBounds(map);
-          if (!viewport) return;
-          const regionIds = resolveRegionIdsForViewportBounds(index, viewport.bounds);
-          if (regionIds.length === 0) return;
-          await loader.loadFeaturesForRegions(regionIds, features, loadOptions);
-        })();
-      }, VIEWPORT_SYNC_DEBOUNCE_MS);
-    };
-
-    map.on?.('moveend', schedule);
-    cleanupViewport = () => {
-      if (viewportSyncTimer) clearTimeout(viewportSyncTimer);
-      map.off?.('moveend', schedule);
-    };
+    cleanupViewport = bindIncrementalViewportSync({
+      map,
+      load: loadViewportDma,
+    });
   }
 
-  const handle: LayerDatasetHandle = {
+  return {
     sourceId,
     layerId: fillLayerId,
     hitLayerIds: [fillLayerId],
@@ -337,6 +370,4 @@ export async function mountDmaDataset(
       }
     },
   };
-
-  return handle;
 }

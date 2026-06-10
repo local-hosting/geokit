@@ -7,6 +7,47 @@ export {
   type GlobeCdnFetchOptions,
 } from './fetch';
 export { boundsFromFeature, boundsFromFeatures } from './bounds';
+export {
+  clearCountyViewportCache,
+  countyFeaturesToCollection,
+  createCountyViewportLoader,
+  mergeCountyFeaturesByFips,
+  resolveStateCodesForViewportBounds,
+  type CountyViewportLoaderOptions,
+} from './county-viewport';
+export {
+  clearCellLayerCache,
+  cellLayerResolutionForZoom,
+  dmaCellLayerResolutionForZoom,
+  DMA_CELL_LAYER_MAX_CELLS,
+  createCellLayerLoader,
+  pickLayersFromBundle,
+  fetchCellLayerCatalog,
+  probeCellLayerCatalog,
+  clearCellLayerCatalogCache,
+  registerCellLayerBundleRequestHook,
+  CELL_LAYER_MAX_CELLS,
+  type CellLayerLoaderOptions,
+  type CellLayerBundleRequestDetail,
+  type CellLayerBundleRequestHook,
+  type CellLayerBundleV1,
+  type CellLayerId,
+} from './cell-layers';
+export {
+  clearCountyH3ClusterCache,
+  countyH3ResolutionForZoom,
+  COUNTY_H3_MIN_ZOOM,
+  createCountyH3ClusterLoader,
+  COUNTY_H3_MAX_CELLS,
+  type CountyH3ClusterLoaderOptions,
+} from './county-h3-clusters';
+export {
+  h3CellIdsForViewportLoad,
+  loadFeatureCollectionShardsForH3Cells,
+  bindIncrementalViewportSync,
+  normalizeLoadedCellId,
+  type ViewportH3LoadOptions,
+} from './viewport-shard-loader';
 export { fetchCountyShapeFeature, fetchCountyShapesForFips, normalizeCountyFips } from './county';
 export {
   fetchStateCitiesGeoJson,
@@ -93,6 +134,12 @@ export {
   placeShapeUrl,
   statesBulkUrl,
   stateShapeUrl,
+  stateCountiesShardUrl,
+  countyClusterIndexUrl,
+  countyClusterShardUrl,
+  globeCountyClusterIndexUrl,
+  globeCountyClusterShardUrl,
+  globeStateCountiesShardUrl,
 } from './paths';
 export type {
   DmaCatalogEntry,
