@@ -26,6 +26,13 @@ export const ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS = {
   maxzoom: 14,
 } as const;
 
+/** Polygon ZIP sources (fill layers only). */
+export const ADMIN_ZIP_GEOJSON_SOURCE_OPTIONS = {
+  tolerance: 1,
+  buffer: 256,
+  maxzoom: 14,
+} as const;
+
 /** Choropleth / region polygon sources (DMA, dissolved regions). */
 export const CHOROPLETH_BOUNDARY_GEOJSON_SOURCE_OPTIONS = {
   tolerance: 0,

@@ -51,7 +51,19 @@ export {
   normalizeLoadedCellId,
   type ViewportH3LoadOptions,
 } from './viewport-shard-loader';
-export { fetchCountyShapeFeature, fetchCountyShapesForFips, normalizeCountyFips } from './county';
+export {
+  fetchCountyShapeFeature,
+  fetchCountyShapesForFips,
+  normalizeCountyFips,
+  normalizeCountyName,
+  resolveUsCountyShapeFeature,
+} from './county';
+export {
+  fetchStateShapeFeature,
+  normalizeStateCode,
+  resolveUsStateShapeFeature,
+  stateFeatureMatchesHint,
+} from './state';
 export {
   fetchStateCitiesGeoJson,
   fetchStatePlaceCatalog,
@@ -84,6 +96,7 @@ export {
   prefetchStateBoundaries,
 } from './bulk';
 export { canonicalDmaCdnSlug, isLegacyDmaSlug } from './dma-slug';
+export { dmaSlugFromQuery, fetchDmaMarketShapeFeature, resolveDmaShapeFromQuery } from './dma';
 export { validateDmaCdnJwt, validateIdentityJwt, type CdnJwtValidation } from './jwt';
 export {
   clearDmaRegionClusterCache,

@@ -153,3 +153,27 @@ export function bindIncrementalViewportSync(options: {
     options.map.off?.('zoomend', onSettled);
   };
 }
+
+/** Debounced moveend-only viewport sync (e.g. place CDN fetches). */
+export function bindDebouncedMapMoveend(
+  map: MapEventLike,
+  load: () => void | Promise<void>,
+  debounceMs: number
+): () => void {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const schedule = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      void load();
+    }, debounceMs);
+  };
+
+  map.on?.('moveend', schedule);
+
+  return () => {
+    if (timer) clearTimeout(timer);
+    map.off?.('moveend', schedule);
+  };
+}

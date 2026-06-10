@@ -6,7 +6,6 @@ import { mergeDmaFeaturesBySlug, dmaFeaturesToCollection } from '../../../../cdn
 import { resolveGlobeCdnBaseUrl } from '../../../../cdn/config';
 import { fetchGlobeCdnJson } from '../../../../cdn/fetch';
 import { dmaMarketShapeUrl } from '../../../../cdn/paths';
-import { mapViewportBounds } from '../../../../utils/h3/map-viewport';
 import { bindIncrementalViewportSync } from '../../../../cdn/viewport-shard-loader';
 import { createCellLayerLoader, fetchCellLayerCatalog } from '../../../../cdn/cell-layers';
 import { buildChoroplethFillPaint } from '../../../utils/choropleth-fill-paint';
@@ -19,11 +18,13 @@ import {
   buildDmaSlugColorExpression,
   type DmaMarketColorInput,
 } from '../../../utils/dma-colors';
-import {
-  findInsertBeforeLayer,
-  stackGkOutlineLayersAboveDmaFill,
-} from '../../../utils/layer-stack';
+import { stackGkOutlineLayersAboveDmaFill } from '../../../utils/layer-stack';
 import type { LayerDatasetContext, LayerDatasetHandle } from './layer-datasets';
+import {
+  dispatchLayerShardEvent,
+  findDatasetAnchorBeforeId,
+  loadCellLayerForViewport,
+} from './layer-dataset-shared';
 
 const TRANSPARENT_OUTLINE = 'rgba(0, 0, 0, 0)';
 const DEFAULT_FILL_OPACITY = 0.28;
@@ -47,54 +48,6 @@ export const DMA_DATASET_IDS = {
   fillLayerId: 'gk-dataset-dma-fill',
   lineLayerId: 'gk-dataset-dma-line',
 } as const;
-
-type MapLike = NonNullable<LayerDatasetContext['map']>;
-
-function mapZoom(map: MapLike): number {
-  return (map as { getZoom?: () => number }).getZoom?.() ?? 0;
-}
-
-function waitForMapViewport(
-  map: MapLike,
-  timeoutMs = 5000
-): Promise<ReturnType<typeof mapViewportBounds>> {
-  const immediate = mapViewportBounds(map);
-  if (immediate) return Promise.resolve(immediate);
-
-  return new Promise((resolve) => {
-    let settled = false;
-    const finish = (viewport: ReturnType<typeof mapViewportBounds>) => {
-      if (settled) return;
-      settled = true;
-      map.off?.('idle', onIdle);
-      map.off?.('render', onRender);
-      clearTimeout(timer);
-      resolve(viewport);
-    };
-
-    const tryViewport = () => {
-      const viewport = mapViewportBounds(map);
-      if (viewport) finish(viewport);
-    };
-
-    const onIdle = () => tryViewport();
-    const onRender = () => tryViewport();
-
-    map.once?.('idle', onIdle);
-    map.on?.('render', onRender);
-
-    const timer = setTimeout(() => finish(mapViewportBounds(map)), timeoutMs);
-  });
-}
-
-function findAnchorBeforeId(map: MapLike): string | undefined {
-  return findInsertBeforeLayer(map, {
-    matchLayer: (layer) => {
-      const id = layer.id ?? '';
-      return id.startsWith('venues') || id.startsWith('platform-') || id.startsWith('gk-dataset-');
-    },
-  });
-}
 
 function slugFilterExpression(slugs: readonly string[] | undefined): unknown[] | undefined {
   if (!slugs?.length) return undefined;
@@ -188,7 +141,7 @@ export async function mountDmaDataset(
   const fillOutlineColor = showAllOutlines
     ? TRANSPARENT_OUTLINE
     : buildDmaHighlightOutlineColorExpression(colorExpression);
-  const beforeLayerId = options.beforeLayerId ?? findAnchorBeforeId(map);
+  const beforeLayerId = options.beforeLayerId ?? findDatasetAnchorBeforeId(map);
   const slugFilter = mode === 'slugs' ? slugFilterExpression(slugs) : undefined;
   const assignedOpacity = options.fillOpacity ?? DEFAULT_FILL_OPACITY;
   const visible = options.visible !== false;
@@ -265,31 +218,16 @@ export async function mountDmaDataset(
   const loadedCellIds = new Set<string>();
 
   const loadViewportDma = async () => {
-    const viewport = mapViewportBounds(map) ?? (await waitForMapViewport(map));
-    if (!viewport?.bounds) return;
-
-    const zoom = mapZoom(map);
-
-    await cellLoader.loadLayerForViewport({
-      viewport: {
-        bounds: viewport.bounds,
-        centerLat: viewport.centerLat,
-        centerLng: viewport.centerLng,
-        zoom,
-      },
+    await loadCellLayerForViewport({
+      map,
+      cellLoader,
       layer: 'dma',
       target: features,
-      getFeatureId: dmaSlugId,
-      replace: false,
       loadedCellIds,
+      getFeatureId: dmaSlugId,
       onShardMerged: ({ cellId, featureCount }) => {
         flushFeatures();
-        element.dispatchEvent(
-          new CustomEvent('gk-layer-shard', {
-            detail: { cellId, featureCount, layer: 'dma' as const },
-            bubbles: true,
-          })
-        );
+        dispatchLayerShardEvent(element, { cellId, featureCount, layer: 'dma' });
       },
     });
     flushFeaturesNow();

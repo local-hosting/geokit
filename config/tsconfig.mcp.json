@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "lib": ["ES2022"],
     "strict": true,
     "esModuleInterop": true,
@@ -15,5 +15,5 @@
       "@twinfile/geokit/*": ["../dist/esm/*"]
     }
   },
-  "include": ["../src/mcp/**/*.ts", "../tests/mcp/**/*.ts"]
+  "include": ["../src/vite-env.d.ts", "../src/mcp/**/*.ts", "../tests/mcp/**/*.ts"]
 }
