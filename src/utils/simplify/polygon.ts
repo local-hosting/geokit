@@ -24,24 +24,21 @@ export function simplifyPolygonRing(tolerance: number) {
       return ring; // Need at least 3 points for a valid polygon (including closing point)
     }
 
-    // Check if ring is closed (first and last points are the same)
+    // Turf polygon rings must be closed (first and last positions equivalent).
     const isClosed =
       ring.length > 0 &&
       ring[0][0] === ring[ring.length - 1][0] &&
       ring[0][1] === ring[ring.length - 1][1];
 
-    // Remove closing point for simplification (Turf expects open rings)
-    const openRing = isClosed ? ring.slice(0, -1) : ring;
+    const closedRing = isClosed ? ring : [...ring, ring[0]];
+    const vertexCount = isClosed ? ring.length - 1 : ring.length;
 
-    if (openRing.length <= 2) {
-      return ring; // Too few points to simplify
+    if (vertexCount <= 2) {
+      return ring;
     }
 
     try {
-      // Convert from [lat, lon] to [lon, lat] for Turf
-      const coords = toLonLatArray(openRing);
-
-      // Create a closed polygon for Turf (it will handle the closing)
+      const coords = toLonLatArray(closedRing);
       const poly = turfPolygon([coords]);
 
       const simplified = simplifyTurf(poly, {
@@ -140,26 +137,29 @@ export function simplifyPolygonRingToMaxPoints(maxPoints: number) {
       return ring;
     }
 
-    // Binary search for tolerance that gives us approximately maxPoints
-    // Start with a reasonable tolerance range
+    // Binary search tolerance so point count is as close to maxPoints as possible (without exceeding it).
     let minTolerance = 0.0001;
     let maxTolerance = 1.0;
     let bestResult = ring;
+    let bestCount = openRingLength <= maxPoints ? openRingLength : 0;
 
-    // Try progressively larger tolerances until we get close to maxPoints
     for (let i = 0; i < 20; i++) {
       const tolerance = (minTolerance + maxTolerance) / 2;
       const simplified = simplifyPolygonRing(tolerance)(ring);
       const simplifiedLength = isClosed ? simplified.length - 1 : simplified.length;
 
-      if (simplifiedLength <= maxPoints) {
-        bestResult = simplified;
+      if (simplifiedLength > maxPoints) {
         minTolerance = tolerance;
-      } else {
-        maxTolerance = tolerance;
+        continue;
       }
 
-      // If we're close enough, break early
+      if (simplifiedLength > bestCount) {
+        bestResult = simplified;
+        bestCount = simplifiedLength;
+      }
+
+      maxTolerance = tolerance;
+
       if (Math.abs(simplifiedLength - maxPoints) <= 2) {
         break;
       }

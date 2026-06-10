@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { addStateBoundaries, applyStateLinePaint } from '../../src/ui/utils/state-boundaries';
+import { addStateBoundaries, applyStateLinePaint } from '../../src/ui/utils/admin-outline-preset';
 import { ADMIN_OUTLINE_HIT_FILL_OPACITY } from '../../src/ui/utils/admin-outline-layer';
 
 describe('state-boundaries', () => {

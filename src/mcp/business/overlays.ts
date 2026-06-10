@@ -1,0 +1,85 @@
+import turfBuffer from '@turf/buffer';
+import { point as turfPoint } from '@turf/helpers';
+import type { ResolvedMapStaticProvider } from '../../types/map-static-provider.js';
+import type { MapRegionPathStyle } from '../region-path.js';
+
+const MARKER_RADIUS_METERS = 80;
+const METERS_PER_KM = 1000;
+
+const OVERLAY_PALETTE: MapRegionPathStyle[] = [
+  { fill: '%233b82f6cc', stroke: '%231d4ed8', width: 4 },
+  { fill: '%2322c55ecc', stroke: '%2315803d', width: 4 },
+  { fill: '%23f97316cc', stroke: '%23c2410c', width: 4 },
+  { fill: '%23a855f7cc', stroke: '%237e22ce', width: 4 },
+];
+
+function bufferAroundPoint(
+  lat: number,
+  lng: number,
+  radiusMeters: number,
+  steps: number
+): GeoJSON.Polygon {
+  const buffered = turfBuffer(turfPoint([lng, lat]), radiusMeters / METERS_PER_KM, {
+    units: 'kilometers',
+    steps,
+  });
+  if (!buffered || buffered.geometry.type !== 'Polygon') {
+    throw new Error('Failed to build map overlay');
+  }
+  return buffered.geometry;
+}
+
+function paletteStyle(colorIndex: number, translucent = false): MapRegionPathStyle {
+  const base = OVERLAY_PALETTE[colorIndex % OVERLAY_PALETTE.length];
+  if (!translucent) {
+    return base;
+  }
+  return { ...base, fill: base.fill.replace('cc', '55') };
+}
+
+function geometryToProviderOverlays(
+  provider: ResolvedMapStaticProvider,
+  geometry: GeoJSON.Geometry,
+  style?: Partial<MapRegionPathStyle>
+): string[] {
+  return provider.adapter.geometryToOverlays(geometry, { style });
+}
+
+export function markerGeometry(lat: number, lng: number): GeoJSON.Polygon {
+  return bufferAroundPoint(lat, lng, MARKER_RADIUS_METERS, 12);
+}
+
+export function circleGeometry(lat: number, lng: number, radiusMeters: number): GeoJSON.Polygon {
+  return bufferAroundPoint(lat, lng, radiusMeters, 48);
+}
+
+export function markerOverlay(
+  provider: ResolvedMapStaticProvider,
+  lat: number,
+  lng: number,
+  colorIndex = 0
+): string[] {
+  return geometryToProviderOverlays(provider, markerGeometry(lat, lng), paletteStyle(colorIndex));
+}
+
+export function circleOverlay(
+  provider: ResolvedMapStaticProvider,
+  lat: number,
+  lng: number,
+  radiusMeters: number,
+  colorIndex = 0
+): string[] {
+  return geometryToProviderOverlays(
+    provider,
+    circleGeometry(lat, lng, radiusMeters),
+    paletteStyle(colorIndex, true)
+  );
+}
+
+export function polygonOverlay(
+  provider: ResolvedMapStaticProvider,
+  geometry: GeoJSON.Geometry,
+  colorIndex = 0
+): string[] {
+  return geometryToProviderOverlays(provider, geometry, paletteStyle(colorIndex, true));
+}

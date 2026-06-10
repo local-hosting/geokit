@@ -7,7 +7,7 @@ import {
   addStateBoundaries,
   applyStateLinePaint,
   refreshStateBoundaries,
-} from '../../src/ui/utils/state-boundaries.ts';
+} from '../../src/ui/utils/admin-outline-preset.ts';
 import {
   appendLog,
   fitBounds,

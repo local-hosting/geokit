@@ -18,6 +18,7 @@ export function buildMapHostUrl(args: {
   viewport: MapViewport;
   style?: MapStyleId;
   theme?: 'light' | 'dark';
+  provider?: string;
 }): string {
   const base = (args.hostBaseUrl ?? resolveMapHostBaseUrl()).replace(/\/$/, '');
   const url = new URL(`${base}${MAP_HOST_PATH}`);
@@ -29,6 +30,9 @@ export function buildMapHostUrl(args: {
   }
   if (args.theme) {
     url.searchParams.set('theme', args.theme);
+  }
+  if (args.provider) {
+    url.searchParams.set('provider', args.provider);
   }
   return url.toString();
 }

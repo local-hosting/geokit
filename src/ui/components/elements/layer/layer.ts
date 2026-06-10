@@ -42,6 +42,11 @@
 import { MapChildElement } from '../../map-child-element';
 import { findBeforeLayerId as findBeforeLayerIdFn } from './layer-order';
 import { setupLayerInteractions, type LayerInteractionsState } from './layer-interactions';
+export type {
+  LayerClickEventDetail,
+  LayerMouseEnterEventDetail,
+  LayerMouseLeaveEventDetail,
+} from './layer-interactions';
 import {
   isLayerDatasetId,
   mountLayerDataset,
@@ -95,29 +100,6 @@ export interface LayerOptions {
   cursor?: string;
   /** Additional layers to include when querying features on click (for hit areas) */
   hitLayers?: string[];
-}
-
-/** Event detail for gk-layer-click */
-export interface LayerClickEventDetail {
-  feature: GeoJSON.Feature;
-  lngLat: { lng: number; lat: number };
-  layerId: string;
-  sourceId: string;
-  originalEvent: MouseEvent | TouchEvent;
-}
-
-/** Event detail for gk-layer-mouseenter */
-export interface LayerMouseEnterEventDetail {
-  feature: GeoJSON.Feature;
-  lngLat: { lng: number; lat: number };
-  layerId: string;
-  sourceId: string;
-}
-
-/** Event detail for gk-layer-mouseleave */
-export interface LayerMouseLeaveEventDetail {
-  layerId: string;
-  sourceId: string;
 }
 
 /** Event detail for gk-layer-ready (dataset mode — CDN geo drawn) */

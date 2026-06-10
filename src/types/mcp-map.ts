@@ -2,6 +2,8 @@
  * Map view types for MCP static snapshots and optional interactive host URLs.
  */
 
+import type { ResolvedMapStaticProvider } from './map-static-provider.js';
+
 export type MapStaticFormat = 'png' | 'jpg' | 'webp';
 
 export type MapStyleId = 'dataviz-dark' | 'dataviz' | 'streets-v4' | 'satellite' | string;
@@ -43,9 +45,9 @@ export interface MapViewConfig extends MapViewport, MapRenderDimensions {
 }
 
 export interface MapMcpRenderOptions {
-  maptilerKey: string;
+  provider: ResolvedMapStaticProvider;
   fetchImage?: boolean;
-  /** Referer for MapTiler static fetch when keys are referrer-restricted. */
+  /** Referer override for static fetch when keys are referrer-restricted. */
   referer?: string;
   /** Globe CDN base for resolving region shapes (countyFips, state+place). */
   cdnBaseUrl?: string;
@@ -58,6 +60,7 @@ export interface MapMcpRenderResult {
   height: number;
   imageUrl: string;
   markdown: string;
+  provider: ResolvedMapStaticProvider['id'];
   imageBase64?: string;
   mimeType?: string;
 }

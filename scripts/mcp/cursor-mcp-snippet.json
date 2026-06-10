@@ -3,11 +3,15 @@
     "geokit": {
       "type": "stdio",
       "command": "/opt/homebrew/bin/node",
-      "args": ["/Users/westlane/Documents/corio/packages/geokit/scripts/mcp/cursor-stdio.mjs"],
-      "cwd": "/Users/westlane/Documents/corio/packages/geokit",
+      "args": ["/path/to/geokit/scripts/mcp/cursor-stdio.mjs"],
+      "cwd": "/path/to/geokit",
       "env": {
         "MAPTILER_KEY": "your_maptiler_key_here",
-        "MAP_HOST_URL": "http://localhost:3002"
+        "MAPBOX_TOKEN": "your_mapbox_token_here",
+        "FOURSQUARE_SERVICE_API_KEY": "your_foursquare_service_key_here",
+        "FOURSQUARE_API_KEY": "your_foursquare_key_here",
+        "GEOKIT_GEO_CDN_JWT_SECRET": "your_geo_cdn_jwt_secret_here",
+        "GEOKIT_GEO_CDN_URL": "https://geo.example.com"
       }
     }
   }

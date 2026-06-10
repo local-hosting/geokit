@@ -1,5 +1,6 @@
 const LEGACY_DMA_SLUG_ALIASES: Record<string, string> = {
   'grand-forks': 'great-falls',
+  hawaii: 'honolulu',
   jayess: 'columbus-tupelo-west-point',
   laurel: 'jackson-ms',
 };

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { addCountyBoundaries } from '../../src/ui/utils/county-boundaries';
+import { addCountyBoundaries } from '../../src/ui/utils/admin-outline-preset';
 import { ADMIN_OUTLINE_HIT_FILL_OPACITY } from '../../src/ui/utils/admin-outline-layer';
 
 describe('county-boundaries', () => {
