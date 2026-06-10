@@ -193,7 +193,7 @@ export class H3Element extends MapChildElement {
     this.setupLayerInteractivity(layerId, 'h3');
 
     const baseOpacity = this.opacity;
-    const hoverOpacity = Math.min(baseOpacity + 0.18, 0.55);
+    const hoverOpacity = baseOpacity <= 0 ? 0 : Math.min(baseOpacity + 0.18, 0.55);
 
     this.map.on('mouseenter', layerId, () => {
       if (this.fillLayerId) {
