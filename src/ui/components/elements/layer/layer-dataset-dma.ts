@@ -17,6 +17,7 @@ import {
   buildDmaSlugColorExpression,
   type DmaMarketColorInput,
 } from '../../../utils/dma-colors';
+import { fetchDmaColorCatalog } from '../../../utils/admin-color-mode';
 import { stackGkOutlineLayersAboveDmaFill } from '../../../utils/layer-stack';
 import type { LayerDatasetContext, LayerDatasetHandle } from './layer-datasets';
 import {
@@ -117,7 +118,7 @@ export async function mountDmaDataset(
   const { sourceId, fillLayerId, lineLayerId } = DMA_DATASET_IDS;
 
   const dmaRegion = options.dmaRegion?.trim().toLowerCase();
-  const catalog: DmaMarketColorInput[] =
+  let catalog: DmaMarketColorInput[] =
     slugs?.length && mode === 'slugs'
       ? slugs.map((slug) => ({
           slug: slug.trim().toLowerCase(),
@@ -125,13 +126,21 @@ export async function mountDmaDataset(
         }))
       : [];
 
+  if (catalog.length === 0 && mode === 'viewport') {
+    catalog = await fetchDmaColorCatalog({
+      cdnBase: options.cdnBase,
+      init: options.getRequestInit?.() ?? options.init,
+    });
+  }
+
+  const dmaColorOptions = options.darkVariant ? { darkVariant: true as const } : undefined;
   const colorExpression =
     catalog.length > 0
-      ? buildDmaSlugColorExpression(catalog, { solidColor: options.fillColor })
+      ? buildDmaSlugColorExpression(catalog, dmaColorOptions)
       : (options.fillColor ?? buildDmaRegionColorExpression());
+  const showAllOutlines = Boolean(options.lineColor);
   const lineColor = options.lineColor ?? colorExpression;
   const lineWidth = options.lineWidth ?? DEFAULT_DMA_LINE_WIDTH;
-  const showAllOutlines = Boolean(options.lineColor);
   const lineOpacity = buildDmaLineOpacityExpression({
     showAllOutlines,
     highlightOpacity: HIGHLIGHT_LINE_OPACITY,
@@ -222,6 +231,7 @@ export async function mountDmaDataset(
       layer: 'dma',
       target: features,
       loadedCellIds,
+      replace: true,
       getFeatureId: dmaSlugId,
       onShardMerged: ({ cellId, featureCount }) => {
         flushFeatures();
@@ -235,7 +245,7 @@ export async function mountDmaDataset(
     await loadDmaMarketShapes(slugs, features, { cdnBase: options.cdnBase, getRequestInit });
     flushFeaturesNow();
   } else {
-    void loadViewportDma();
+    await loadViewportDma();
   }
 
   if (options.highlightSlug) {

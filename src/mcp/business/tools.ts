@@ -144,6 +144,15 @@ export async function handleShowMap(
       regionLayer,
     });
 
+    if (
+      regionLayer?.dataset === 'dma' &&
+      'mode' in regionLayer &&
+      regionLayer.mode === 'viewport'
+    ) {
+      snapshot.summary =
+        'Continental US overview — open the interactive map for all Nielsen DMA colors.';
+    }
+
     return mcpMapResult(snapshot);
   });
 }

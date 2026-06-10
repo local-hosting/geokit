@@ -39,9 +39,13 @@ export function applyMapHostRegionLayerParams(
 
   switch (regionLayer.dataset) {
     case 'dma':
-      url.searchParams.set('regionSlug', regionLayer.slug.trim().toLowerCase());
-      if (regionLayer.region?.trim()) {
-        url.searchParams.set('dmaRegion', regionLayer.region.trim().toLowerCase());
+      if ('mode' in regionLayer && regionLayer.mode === 'viewport') {
+        url.searchParams.set('regionMode', 'viewport');
+      } else if ('slug' in regionLayer) {
+        url.searchParams.set('regionSlug', regionLayer.slug.trim().toLowerCase());
+        if (regionLayer.region?.trim()) {
+          url.searchParams.set('dmaRegion', regionLayer.region.trim().toLowerCase());
+        }
       }
       break;
     case 'state':
@@ -67,6 +71,8 @@ export function parseMapHostRegionLayer(
 ): MapHostRegionLayer | null {
   const dataset = params.get('regionDataset')?.trim().toLowerCase();
   if (dataset === 'dma') {
+    const regionMode = params.get('regionMode')?.trim().toLowerCase();
+    if (regionMode === 'viewport') return { dataset: 'dma', mode: 'viewport' };
     const slug = params.get('regionSlug')?.trim().toLowerCase();
     if (!slug) return null;
     const region = params.get('dmaRegion')?.trim().toLowerCase();

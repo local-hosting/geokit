@@ -123,12 +123,17 @@ function buildPropertyMatchColorExpression(
     marketSlug?: string | null;
     solidColor?: string;
     fallbackNeutral?: string;
+    darkVariant?: boolean;
     valueForMarket?: (slug: string, region: string) => string;
   }
 ): string | unknown[] {
   if (options?.solidColor) return options.solidColor;
 
   const fallback = options?.fallbackNeutral ?? DMA_FALLBACK_NEUTRAL;
+  const dmaColorOptions: DmaColorOptions = {
+    fallbackNeutral: fallback,
+    ...(options?.darkVariant ? { darkVariant: true } : {}),
+  };
   const match: unknown[] = ['match', ['get', property]];
   const seenKeys = new Set<string>();
 
@@ -143,7 +148,7 @@ function buildPropertyMatchColorExpression(
       ? options.valueForMarket(slug, region)
       : property === 'region'
         ? getRegionColor(region)
-        : getDMAColor(slug, region, { fallbackNeutral: fallback });
+        : getDMAColor(slug, region, dmaColorOptions);
     match.push(key, color);
   }
 
@@ -173,6 +178,7 @@ export function buildDmaSlugColorExpression(
     marketSlug?: string | null;
     solidColor?: string;
     fallbackNeutral?: string;
+    darkVariant?: boolean;
   }
 ): string | unknown[] {
   return buildPropertyMatchColorExpression('slug', markets, options);

@@ -34,6 +34,8 @@ export type LayerDatasetOptions = {
   outlineColor?: string;
   /** Nielsen georef region for DMA slug coloring (e.g. midwest). */
   dmaRegion?: string;
+  /** Dark-map DMA tint (matches MCP static snapshots). */
+  darkVariant?: boolean;
   /** outline (default), region tint (state), or dma tint (county/place). */
   colorMode?: AdminColorMode;
 };

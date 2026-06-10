@@ -4,6 +4,7 @@
 
 import { dmaRegionIndexUrl } from '../../cdn/paths.js';
 import { fetchGlobeCdnJson } from '../../cdn/fetch.js';
+import { fetchDmaMarketCatalog } from '../../cdn/dma-catalog.js';
 import { dmaCatalogEntriesFromRegionIndex } from '../../cdn/dma-regions.js';
 import type { DmaRegionClusterIndex } from '../../types/dma.js';
 import {
@@ -34,14 +35,26 @@ export type AdminFillPaint = {
   fillOpacity: number;
 };
 
-async function fetchDmaColorCatalog(options: {
+export async function fetchDmaColorCatalog(options: {
   cdnBase?: string;
   init?: RequestInit;
 }): Promise<DmaMarketColorInput[]> {
   const url = dmaRegionIndexUrl(options.cdnBase ?? '');
-  const index = await fetchGlobeCdnJson<DmaRegionClusterIndex>(url, options);
-  if (!index?.entries?.length) return [];
-  return dmaCatalogEntriesFromRegionIndex(index).map(({ slug, region }) => ({ slug, region }));
+  try {
+    const index = await fetchGlobeCdnJson<DmaRegionClusterIndex>(url, options);
+    if (index?.entries?.length) {
+      return dmaCatalogEntriesFromRegionIndex(index).map(({ slug, region }) => ({ slug, region }));
+    }
+  } catch {
+    /* fall through to market catalog */
+  }
+
+  const market = await fetchDmaMarketCatalog({ baseUrl: options.cdnBase, init: options.init });
+  if (!market?.entries?.length) return [];
+  return market.entries.map((entry) => ({
+    slug: entry.slug.trim().toLowerCase(),
+    region: entry.region?.trim().toLowerCase() || 'unknown',
+  }));
 }
 
 export async function resolveAdminFillPaint(args: {
