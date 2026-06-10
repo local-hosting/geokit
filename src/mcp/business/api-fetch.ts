@@ -1,4 +1,8 @@
 import type { FeatureCollection } from 'geojson';
+import {
+  foursquarePlacesApiKey,
+  searchFoursquarePlaces,
+} from '../../api/providers/foursquare-places.js';
 import type { PlaceSearchResult, ReverseGeocodeResult } from '../../types/mcp-business-api.js';
 
 function envTrim(key: string): string | undefined {
@@ -31,11 +35,7 @@ export const maptilerApiKey = geocodingApiKey;
 /** @deprecated use routingAccessToken */
 export const mapboxAccessToken = routingAccessToken;
 
-export function foursquareApiKey(): string | undefined {
-  return (
-    envTrim('FOURSQUARE_API_KEY') ?? envTrim('FSQ_API_KEY') ?? envTrim('GEOKIT_FOURSQUARE_KEY')
-  );
-}
+export { foursquarePlacesApiKey as foursquareApiKey } from '../../api/providers/foursquare-places.js';
 
 function requireKey(key: string | undefined, message: string): string {
   if (!key) throw new Error(message);
@@ -177,18 +177,6 @@ export async function fetchIsochrone(args: {
   return (await response.json()) as FeatureCollection;
 }
 
-function formatFoursquareAddress(location: {
-  address?: string;
-  locality?: string;
-  region?: string;
-  postcode?: string;
-}): string | undefined {
-  const parts = [location.address, location.locality, location.region, location.postcode].filter(
-    Boolean
-  );
-  return parts.length > 0 ? parts.join(', ') : undefined;
-}
-
 export async function fetchNearbyPlaces(args: {
   lat: number;
   lng: number;
@@ -197,51 +185,26 @@ export async function fetchNearbyPlaces(args: {
   limit: number;
 }): Promise<PlaceSearchResult[]> {
   const apiKey = requireKey(
-    foursquareApiKey(),
-    'Place search is not configured. Set FOURSQUARE_API_KEY for nearby.'
+    foursquarePlacesApiKey(),
+    'Place search is not configured. Set FOURSQUARE_SERVICE_API_KEY or FOURSQUARE_API_KEY for nearby.'
   );
 
-  const url = new URL('https://api.foursquare.com/v3/places/search');
-  url.searchParams.set('query', args.query);
-  url.searchParams.set('ll', `${args.lat},${args.lng}`);
-  url.searchParams.set('radius', String(Math.round(args.radiusMeters)));
-  url.searchParams.set('limit', String(Math.min(args.limit, 20)));
-  url.searchParams.set('sort', 'DISTANCE');
-  url.searchParams.set('fields', 'fsq_id,name,geocodes,location,categories,distance,rating');
-
-  const response = await fetch(url.toString(), {
-    headers: {
-      Authorization: apiKey,
-      Accept: 'application/json',
-    },
+  const results = await searchFoursquarePlaces(apiKey, {
+    query: args.query,
+    ll: [args.lng, args.lat],
+    radius: args.radiusMeters,
+    limit: Math.min(args.limit, 20),
+    sort: 'DISTANCE',
+    fields: 'fsq_place_id,name,location,latitude,longitude,categories,distance,rating',
   });
 
-  if (!response.ok) {
-    throw new Error(`Place search failed: ${response.status} ${response.statusText}`);
-  }
-
-  const data = (await response.json()) as {
-    results?: Array<{
-      fsq_id: string;
-      name: string;
-      geocodes?: { main?: { latitude: number; longitude: number } };
-      location?: { address?: string; locality?: string; region?: string; postcode?: string };
-      categories?: Array<{ name: string }>;
-      distance?: number;
-      rating?: number;
-    }>;
-  };
-
-  return (data.results ?? []).map((place) => {
-    const main = place.geocodes?.main;
-    return {
-      id: place.fsq_id,
-      name: place.name,
-      address: place.location ? formatFoursquareAddress(place.location) : undefined,
-      location: main ? [main.longitude, main.latitude] : [0, 0],
-      categories: place.categories?.map((c) => c.name),
-      distance: place.distance,
-      rating: place.rating,
-    };
-  });
+  return results.map(({ id, name, address, location, categories, distance, rating }) => ({
+    id,
+    name,
+    address,
+    location,
+    categories,
+    distance,
+    rating,
+  }));
 }

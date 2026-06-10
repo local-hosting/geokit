@@ -2,7 +2,13 @@
 
 import { describe, it, expect } from 'vitest';
 import { calculateCenterAndZoom } from '@twinfile/geokit/bounds';
-import { buildMapHostUrl } from '../../src/mcp/open-map.js';
+import type { Bounds } from '@twinfile/geokit/types';
+import {
+  buildMapHostUrl,
+  parseMapHostBounds,
+  parseMapHostRegionLayer,
+  serializeMapHostBounds,
+} from '../../src/mcp/open-map.js';
 import { mapboxStaticAdapter } from '../../src/mcp/providers/mapbox-static.js';
 import { maptilerStaticAdapter } from '../../src/mcp/providers/maptiler-static.js';
 import { resolveMapViewport } from '../../src/mcp/resolve-viewport.js';
@@ -184,6 +190,87 @@ describe('mcp static map', () => {
       expect(hostUrl).toBe(
         'http://localhost:3001/index.html?lat=38.2527&lng=-85.7585&zoom=10&style=dataviz-dark&theme=dark&provider=maptiler'
       );
+    });
+
+    it('includes dma slug for interactive dma layers', () => {
+      const hostUrl = buildMapHostUrl({
+        hostBaseUrl: 'http://localhost:3002',
+        viewport: { lat: 21.3, lng: -157.8, zoom: 6 },
+        dmaSlug: 'honolulu',
+      });
+
+      expect(hostUrl).toContain('dmaSlug=honolulu');
+    });
+
+    it('includes place state and slug for interactive city layers', () => {
+      const hostUrl = buildMapHostUrl({
+        hostBaseUrl: 'http://localhost:3002',
+        viewport: { lat: 42.36, lng: -71.06, zoom: 10 },
+        placeState: 'ma',
+        placeSlug: 'boston',
+      });
+
+      expect(hostUrl).toContain('placeState=ma');
+      expect(hostUrl).toContain('placeSlug=boston');
+    });
+
+    it('includes dma region group for interactive dma layers', () => {
+      const hostUrl = buildMapHostUrl({
+        hostBaseUrl: 'http://localhost:3002',
+        viewport: { lat: 41.1, lng: -96.15, zoom: 6 },
+        regionLayer: { dataset: 'dma', slug: 'omaha', region: 'midwest' },
+      });
+
+      expect(hostUrl).toContain('regionDataset=dma');
+      expect(hostUrl).toContain('regionSlug=omaha');
+      expect(hostUrl).toContain('dmaRegion=midwest');
+      expect(parseMapHostRegionLayer(new URL(hostUrl).searchParams)).toEqual({
+        dataset: 'dma',
+        slug: 'omaha',
+        region: 'midwest',
+      });
+    });
+
+    it('includes regionDataset params for interactive state layers', () => {
+      const hostUrl = buildMapHostUrl({
+        hostBaseUrl: 'http://localhost:3002',
+        viewport: { lat: 39.3, lng: -116.6, zoom: 5 },
+        regionLayer: { dataset: 'state', slug: 'nv' },
+      });
+
+      expect(hostUrl).toContain('regionDataset=state');
+      expect(hostUrl).toContain('regionSlug=nv');
+      expect(parseMapHostRegionLayer(new URL(hostUrl).searchParams)).toEqual({
+        dataset: 'state',
+        slug: 'nv',
+      });
+    });
+
+    it('includes bounds for interactive fit-to-shape', () => {
+      const bounds = [-71.2, 42.2, -70.9, 42.4] as const;
+      const hostUrl = buildMapHostUrl({
+        hostBaseUrl: 'http://localhost:3002',
+        viewport: { lat: 42.3, lng: -71.05, zoom: 10 },
+        bounds: [...bounds],
+      });
+
+      expect(hostUrl).toContain(
+        `bounds=${encodeURIComponent(serializeMapHostBounds([...bounds]))}`
+      );
+      expect(parseMapHostBounds(new URL(hostUrl).searchParams.get('bounds'))).toEqual([...bounds]);
+    });
+  });
+
+  describe('map host bounds params', () => {
+    it('round-trips bounds through serialize and parse', () => {
+      const bounds: Bounds = [-71.19123, 42.22791, -70.7488, 42.40021];
+      expect(parseMapHostBounds(serializeMapHostBounds(bounds))).toEqual(bounds);
+    });
+
+    it('returns null for invalid bounds strings', () => {
+      expect(parseMapHostBounds('')).toBeNull();
+      expect(parseMapHostBounds('1,2,3')).toBeNull();
+      expect(parseMapHostBounds('a,b,c,d')).toBeNull();
     });
   });
 

@@ -111,6 +111,62 @@ export function buildDmaRegionColorExpression(fallback = DMA_FALLBACK_NEUTRAL): 
   return match;
 }
 
+export type AdminColorProperty = 'slug' | 'dmaSlug' | 'region';
+
+export const ADMIN_DMA_FILL_OPACITY = 0.12;
+export const ADMIN_REGION_FILL_OPACITY = 0.08;
+
+function buildPropertyMatchColorExpression(
+  property: AdminColorProperty,
+  markets: readonly DmaMarketColorInput[],
+  options?: {
+    marketSlug?: string | null;
+    solidColor?: string;
+    fallbackNeutral?: string;
+    valueForMarket?: (slug: string, region: string) => string;
+  }
+): string | unknown[] {
+  if (options?.solidColor) return options.solidColor;
+
+  const fallback = options?.fallbackNeutral ?? DMA_FALLBACK_NEUTRAL;
+  const match: unknown[] = ['match', ['get', property]];
+  const seenKeys = new Set<string>();
+
+  for (const item of markets) {
+    const slug = normalizeDmaSlug(item.slug);
+    if (!slug) continue;
+    const region = item.region?.trim().toLowerCase() || 'unknown';
+    const key = property === 'region' ? region : slug;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    const color = options?.valueForMarket
+      ? options.valueForMarket(slug, region)
+      : property === 'region'
+        ? getRegionColor(region)
+        : getDMAColor(slug, region, { fallbackNeutral: fallback });
+    match.push(key, color);
+  }
+
+  if (property === 'slug') {
+    match.push(DMA_H2_UNASSIGNED_SLUG, DMA_H2_GRID_FILL);
+  }
+  match.push(fallback);
+  return match;
+}
+
+/** MapLibre fill expression keyed on feature dmaSlug (county/place shards). */
+export function buildAdminDmaSlugColorExpression(
+  markets: readonly DmaMarketColorInput[],
+  options?: { fallbackNeutral?: string; solidColor?: string }
+): string | unknown[] {
+  return buildPropertyMatchColorExpression('dmaSlug', markets, options);
+}
+
+/** MapLibre fill expression keyed on feature georef region (state shards). */
+export function buildAdminRegionColorExpression(fallback = DMA_FALLBACK_NEUTRAL): unknown[] {
+  return buildDmaRegionColorExpression(fallback);
+}
+
 export function buildDmaSlugColorExpression(
   markets: readonly DmaMarketColorInput[],
   options?: {
@@ -119,25 +175,7 @@ export function buildDmaSlugColorExpression(
     fallbackNeutral?: string;
   }
 ): string | unknown[] {
-  if (options?.solidColor) {
-    return options.solidColor;
-  }
-
-  const fallback = options?.fallbackNeutral ?? DMA_FALLBACK_NEUTRAL;
-  const match: unknown[] = ['match', ['get', 'slug']];
-  const seen = new Set<string>();
-
-  for (const item of markets) {
-    const slug = normalizeDmaSlug(item.slug);
-    if (!slug || seen.has(slug)) continue;
-    seen.add(slug);
-    const region = item.region?.trim().toLowerCase() || 'unknown';
-    match.push(slug, getDMAColor(slug, region, { fallbackNeutral: fallback }));
-  }
-
-  match.push(DMA_H2_UNASSIGNED_SLUG, DMA_H2_GRID_FILL);
-  match.push(fallback);
-  return match;
+  return buildPropertyMatchColorExpression('slug', markets, options);
 }
 
 export function buildDmaFillOpacityExpression(
@@ -191,4 +229,20 @@ export function createDMAColorMap(
     colorMap.set(slug, getDMAColor(slug, region));
   }
   return colorMap;
+}
+
+/** Golden-angle palette for charts or legends (not region-anchored DMA fills). */
+export function generateDMAColorPalette(dmaCount: number): string[] {
+  const colors: string[] = [];
+  const goldenAngle = 137.508;
+  let hue = 0;
+
+  for (let i = 0; i < dmaCount; i++) {
+    const saturation = 70 + (i % 4) * 7;
+    const lightness = 55 + (i % 5) * 5;
+    colors.push(hslToHex(hue, saturation, lightness));
+    hue = (hue + goldenAngle) % 360;
+  }
+
+  return colors;
 }

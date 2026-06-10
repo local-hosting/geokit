@@ -1,7 +1,7 @@
 /**
  * Foursquare API Provider
  *
- * Implements BaseAPIProvider for Foursquare Places API v3
+ * Implements BaseAPIProvider for Foursquare Places API (places-api.foursquare.com)
  * Provides place search capabilities
  *
  * Features:
@@ -21,6 +21,12 @@ import {
 import { ProviderCache, coordinateCacheKey } from './cache';
 import { RequestQueue } from './request-queue';
 import { requireAPIKey, assertResponseOk, retryOn429 } from './api-utils';
+import {
+  buildFoursquarePlacesSearchUrl,
+  foursquarePlacesHeaders,
+  normalizeFoursquarePlace,
+} from './foursquare-places';
+import type { FoursquarePlaceRaw } from '../../types/foursquare-places';
 
 const PROVIDER_NAME = 'Foursquare';
 
@@ -105,56 +111,23 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
     } = options;
 
     try {
-      // Build API URL - Foursquare Places API v3
-      const url = new URL('https://api.foursquare.com/v3/places/search');
-
-      if (query) {
-        url.searchParams.set('query', query);
-      }
-
-      if (ll) {
-        // Foursquare expects "lat,lng" format
-        url.searchParams.set('ll', `${ll[1]},${ll[0]}`);
-      }
-
-      if (radius) {
-        url.searchParams.set('radius', radius.toString());
-      }
-
-      if (categories && categories.length > 0) {
-        url.searchParams.set('categories', categories.join(','));
-      }
-
-      url.searchParams.set('limit', Math.min(limit, 50).toString()); // Foursquare max is 50
-
-      if (sort) {
-        url.searchParams.set('sort', sort);
-      }
-
-      if (openNow !== undefined) {
-        url.searchParams.set('open_now', openNow.toString());
-      }
-
-      if (minPrice !== undefined) {
-        url.searchParams.set('min_price', minPrice.toString());
-      }
-
-      if (maxPrice !== undefined) {
-        url.searchParams.set('max_price', maxPrice.toString());
-      }
-
-      // Add fields to get more details
-      url.searchParams.set(
-        'fields',
-        'fsq_id,name,geocodes,location,categories,distance,rating,price,hours,tel,website'
-      );
+      const url = buildFoursquarePlacesSearchUrl({
+        query,
+        ll,
+        radius,
+        categories,
+        limit,
+        sort,
+        openNow,
+        minPrice,
+        maxPrice,
+        fields:
+          'fsq_place_id,name,location,latitude,longitude,categories,distance,rating,price,hours,tel,website',
+      });
 
       const fetchFn = () =>
         fetch(url.toString(), {
-          headers: {
-            Authorization: this.apiKey!,
-            Accept: 'application/json',
-          },
+          headers: foursquarePlacesHeaders(this.apiKey!),
         });
 
       const response = await retryOn429(fetchFn, {
@@ -163,10 +136,24 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
 
       await assertResponseOk(response, PROVIDER_NAME);
 
-      const data = await response.json();
+      const data = (await response.json()) as { results?: unknown[] };
 
-      // Transform Foursquare response to normalized PlaceSearchResult[]
-      const results = this.transformResults(data.results || []);
+      const results = (data.results ?? []).map((place) => {
+        const normalized = normalizeFoursquarePlace(place as FoursquarePlaceRaw);
+        return {
+          id: normalized.id,
+          name: normalized.name,
+          address: normalized.address,
+          location: normalized.location,
+          categories: normalized.categories ?? [],
+          distance: normalized.distance,
+          rating: normalized.rating,
+          priceLevel: normalized.priceLevel,
+          hours: normalized.hours,
+          contact: normalized.contact,
+          raw: normalized.raw,
+        };
+      });
 
       // Store in cache
       this.cache.set(cacheKey, results);
@@ -178,62 +165,6 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
       }
       throw new Error('Failed to search places');
     }
-  }
-
-  /**
-   * Transform Foursquare API response to normalized PlaceSearchResult[]
-   */
-  private transformResults(results: any[]): PlaceSearchResult[] {
-    return results.map((place) => {
-      const geocodes = place.geocodes?.main;
-      const location = place.location;
-
-      return {
-        id: place.fsq_id,
-        name: place.name,
-        address: this.formatAddress(location),
-        location: geocodes ? [geocodes.longitude, geocodes.latitude] : [0, 0],
-        categories: place.categories?.map((cat: any) => cat.name) || [],
-        distance: place.distance,
-        rating: place.rating,
-        priceLevel: place.price,
-        hours: place.hours
-          ? {
-              openNow: place.hours.open_now,
-              display: place.hours.display,
-            }
-          : undefined,
-        contact: {
-          phone: place.tel,
-          website: place.website,
-        },
-        raw: place,
-      };
-    });
-  }
-
-  /**
-   * Format address from Foursquare location object
-   */
-  private formatAddress(location: any): string | undefined {
-    if (!location) return undefined;
-
-    const parts: string[] = [];
-
-    if (location.address) {
-      parts.push(location.address);
-    }
-    if (location.locality) {
-      parts.push(location.locality);
-    }
-    if (location.region) {
-      parts.push(location.region);
-    }
-    if (location.postcode) {
-      parts.push(location.postcode);
-    }
-
-    return parts.length > 0 ? parts.join(', ') : location.formatted_address;
   }
 
   /**

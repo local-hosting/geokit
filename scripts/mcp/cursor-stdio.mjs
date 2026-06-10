@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Cursor MCP entry — node + tsx.
- * Loads packages/geokit/.env, mints Globe CDN DMA JWT, then starts the server.
+ * Loads packages/geokit/.env, mints Globe CDN DMA JWT, starts map host, then MCP server.
  */
 
 import { spawn } from 'node:child_process';
@@ -10,6 +10,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadGeokitMcpEnv } from './load-mcp-env.mjs';
 import { mintGlobeCdnJwtForMcp } from './mint-cdn-jwt.mjs';
+import {
+  ensureMapHostRunning,
+  resolveMapHostBaseUrl,
+  stopMapHostProcess,
+} from './map-host-process.mjs';
 
 const geokitRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const monorepoRoot = join(geokitRoot, '..', '..');
@@ -30,7 +35,7 @@ if (!tsxCli) {
 const env = loadGeokitMcpEnv(geokitRoot);
 
 if (!env.MAP_HOST_URL?.trim() && !env.GEOKIT_MAP_HOST_URL?.trim()) {
-  env.MAP_HOST_URL = 'http://localhost:3002';
+  env.MAP_HOST_URL = resolveMapHostBaseUrl(env);
 }
 
 const cdnJwt = await mintGlobeCdnJwtForMcp(env);
@@ -42,6 +47,16 @@ if (cdnJwt) {
   );
 }
 
+const mapHost = await ensureMapHostRunning(geokitRoot, env);
+let mapHostChild = mapHost.child;
+
+function shutdownMapHost() {
+  if (mapHostChild) {
+    stopMapHostProcess(mapHostChild);
+    mapHostChild = null;
+  }
+}
+
 const child = spawn(process.execPath, [tsxCli, serverTs], {
   cwd: geokitRoot,
   env,
@@ -49,6 +64,18 @@ const child = spawn(process.execPath, [tsxCli, serverTs], {
 });
 
 child.on('exit', (code, signal) => {
-  if (signal) process.kill(process.pid, signal);
+  shutdownMapHost();
+  if (signal) {
+    process.kill(process.pid, signal);
+    return;
+  }
   process.exit(code ?? 1);
+});
+
+process.on('SIGINT', () => {
+  child.kill('SIGINT');
+});
+
+process.on('SIGTERM', () => {
+  child.kill('SIGTERM');
 });

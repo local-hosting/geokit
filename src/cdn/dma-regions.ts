@@ -14,7 +14,8 @@ import type {
 import { compactH3CellId } from '../utils/h3/cell-id';
 import type { CellLayerViewport } from '../utils/h3/viewport';
 import { resolveGlobeCdnBaseUrl } from './config';
-import { fetchGlobeCdnJson, type GlobeCdnFetchOptions } from './fetch';
+import type { GlobeCdnFetchOptions } from './fetch';
+import { fetchDmaMarketShapeFeature } from './dma.js';
 import { dmaMarketShapeUrl } from './paths';
 import {
   clearCellLayerCache,
@@ -218,29 +219,20 @@ async function loadDmaMarketShapesBySlug(
   const slugs = [...new Set(marketSlugs.map((slug) => normalizeDmaSlug(slug)).filter(Boolean))];
   await Promise.all(
     slugs.map(async (slug) => {
-      const url = dmaMarketShapeUrl(baseUrl, slug);
-      const resolved = options.resolveUrl?.(url) ?? url;
+      const url =
+        options.resolveUrl?.(dmaMarketShapeUrl(baseUrl, slug)) ?? dmaMarketShapeUrl(baseUrl, slug);
       try {
-        const payload = await fetchGlobeCdnJson<GeoJSON.Feature | GeoJSON.FeatureCollection>(
-          resolved,
-          {
-            baseUrl: options.baseUrl,
-            init: options.getRequestInit?.() ?? options.init,
-          }
-        );
-        if (!payload) return;
-        if (payload.type === 'FeatureCollection') {
-          addedFeatures += mergeDmaFeaturesBySlug(target, payload);
-          return;
-        }
-        if (payload.type === 'Feature') {
-          addedFeatures += mergeDmaFeaturesBySlug(target, {
-            type: 'FeatureCollection',
-            features: [payload],
-          });
-        }
+        const feature = await fetchDmaMarketShapeFeature(slug, {
+          baseUrl: options.baseUrl,
+          init: options.getRequestInit?.() ?? options.init,
+        });
+        if (!feature) return;
+        addedFeatures += mergeDmaFeaturesBySlug(target, {
+          type: 'FeatureCollection',
+          features: [feature],
+        });
       } catch {
-        options.onShardUnavailable?.({ regionId: slug, url: resolved });
+        options.onShardUnavailable?.({ regionId: slug, url });
       }
     })
   );

@@ -50,3 +50,11 @@ export function markdownTable(headers: string[], rows: string[][]): string {
   const body = rows.map((row) => `| ${row.join(' | ')} |`).join('\n');
   return [header, divider, body].join('\n');
 }
+
+export function formatInteractiveMapLink(hostUrl: string): string {
+  const link = `[Open interactive map](${hostUrl})`;
+  if (!/localhost|127\.0\.0\.1/i.test(hostUrl)) {
+    return link;
+  }
+  return `${link}\n\nRun \`yarn map-host\` in packages/geokit if the link does not open.`;
+}

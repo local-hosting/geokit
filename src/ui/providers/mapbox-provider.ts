@@ -5,6 +5,7 @@
  * Handles map rendering, controls, markers, and popups
  */
 
+import { wrapMapResize } from '../utils/map-utils';
 import { BaseUIProvider } from './types';
 import type {
   MapProviderConfig,
@@ -151,6 +152,7 @@ export class MapboxUIProvider extends BaseUIProvider {
     };
 
     const map = new this.sdk.Map(mapOptions);
+    wrapMapResize(map);
 
     // Restore console.warn
     console.warn = originalWarn;

@@ -2,6 +2,7 @@ import type { Bounds } from '@twinfile/geokit/types';
 import type { MapMcpRenderOptions, MapMcpRenderResult, MapViewInput } from '../types/mcp-map.js';
 import { resolveMapRegionFeature } from './resolve-region-feature.js';
 import { resolveMapViewport } from './resolve-viewport.js';
+import { resolveMcpRegionPathStyle } from './map-presentation.js';
 import {
   buildMapMarkdownImage,
   buildStaticSnapshotUrl,
@@ -13,7 +14,8 @@ function hasGeographyInput(input: MapViewInput): boolean {
   return Boolean(
     input.countyFips?.trim() ||
       (input.state?.trim() && input.place?.trim()) ||
-      input.bounds?.length === 4
+      input.bounds?.length === 4 ||
+      input.regionGeometry != null
   );
 }
 
@@ -36,9 +38,11 @@ export async function renderMapViewForMcp(
   const regionFeature = await resolveMapRegionFeature(input, {
     cdnBaseUrl: options.cdnBaseUrl,
   });
+  const regionGeometry = regionFeature?.geometry ?? input.regionGeometry;
+  const regionPathStyle = resolveMcpRegionPathStyle({ regionLayer: input.regionLayer });
   const overlays =
-    regionFeature?.geometry != null
-      ? provider.adapter.geometryToOverlays(regionFeature.geometry)
+    regionGeometry != null
+      ? provider.adapter.geometryToOverlays(regionGeometry, { style: regionPathStyle })
       : undefined;
 
   const fitGeography = hasGeographyInput(input) && input.zoom == null;

@@ -63,6 +63,7 @@ import {
   resizeAndRepaintMap as resizeAndRepaintMapFn,
   delayForWebGLRelease,
 } from './map-freeze';
+import { safeResizeMap } from '../../../utils/map-utils';
 import {
   filterPoints as filterPointsFn,
   filterPolygons as filterPolygonsFn,
@@ -2160,7 +2161,7 @@ export class MapElement extends BaseElement {
       // If map already exists and is initialized, no need to show placeholder (avoids flash when tabbing back to grid view)
       if (this.map && this.isInitialized) {
         this.hidePlaceholder();
-        resizeAndRepaintMapFn(this.map);
+        resizeAndRepaintMapFn(this.map, this);
         this.dispatchEvent(
           new CustomEvent('gk-map-unfreeze', {
             detail: { map: this.map, element: this },
@@ -2191,7 +2192,7 @@ export class MapElement extends BaseElement {
           this.hidePlaceholder();
         }
         // Resize and repaint so map fills container after scroll-back (container may have been zero-size when frozen)
-        resizeAndRepaintMapFn(this.map);
+        resizeAndRepaintMapFn(this.map, this);
         debug.log('[gk-map] active', { label: this.getMapLabel() });
         // Dispatch unfreeze event after reinitialization completes
         // Note: initializeMap() already dispatches gk-map-ready, but we also dispatch
@@ -2428,7 +2429,7 @@ export class MapElement extends BaseElement {
   }
 
   private resizeAndRepaintMap(): void {
-    resizeAndRepaintMapFn(this.map as any);
+    resizeAndRepaintMapFn(this.map as any, this);
   }
 
   /**
@@ -2480,9 +2481,7 @@ export class MapElement extends BaseElement {
     }
 
     // Resize map to ensure canvas dimensions are correct
-    if (typeof map.resize === 'function') {
-      map.resize();
-    }
+    safeResizeMap(map, this);
 
     // Wait a frame for resize to take effect
     await new Promise((resolve) => requestAnimationFrame(resolve));

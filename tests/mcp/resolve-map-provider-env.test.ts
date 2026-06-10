@@ -46,6 +46,7 @@ describe('resolveMapProviderIdFromEnv', () => {
 
     expect(config.providerId).toBe('mapbox');
     expect(config.mapboxAccessToken).toBe('mapbox-token');
-    expect(defaultInteractiveMapStyle(config.providerId)).toBe('dark-v11');
+    expect(defaultInteractiveMapStyle('maptiler')).toBe('dataviz-dark');
+    expect(defaultInteractiveMapStyle('mapbox')).toBe('dark-v11');
   });
 });

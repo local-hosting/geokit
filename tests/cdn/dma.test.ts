@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { dmaSlugFromQuery, fetchDmaMarketShapeFeature } from '../../src/cdn/dma';
+import { clearDmaMarketCatalogCache } from '../../src/cdn/dma-catalog';
+import {
+  dmaSlugFromQuery,
+  fetchDmaMarketShapeFeature,
+  resolveDmaShapeFromQuery,
+} from '../../src/cdn/dma';
 
 describe('cdn/dma', () => {
   it('parses DMA slugs from common query shapes', () => {
@@ -36,5 +41,54 @@ describe('cdn/dma', () => {
     expect(feature?.properties).toEqual({ slug: 'new-york', name: 'New York' });
 
     fetchSpy.mockRestore();
+  });
+
+  it('falls back to catalog prefix match when the short slug 404s', async () => {
+    clearDmaMarketCatalogCache();
+    const geometry: GeoJSON.Polygon = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [-83, 28],
+          [-82, 28],
+          [-82, 29],
+          [-83, 29],
+          [-83, 28],
+        ],
+      ],
+    };
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/markets/dma/index.json')) {
+        return new Response(
+          JSON.stringify({
+            entries: [
+              {
+                slug: 'tampa-st-petersburg-sarasota',
+                url: '/markets/dma/tampa-st-petersburg-sarasota.json',
+              },
+            ],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        );
+      }
+      if (url.includes('/markets/dma/tampa.json')) {
+        return new Response(null, { status: 404 });
+      }
+      if (url.includes('/markets/dma/tampa-st-petersburg-sarasota.json')) {
+        return new Response(
+          JSON.stringify({ slug: 'tampa-st-petersburg-sarasota', name: 'Tampa', geometry }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        );
+      }
+      return new Response(null, { status: 404 });
+    });
+
+    const feature = await resolveDmaShapeFromQuery('tampa dma');
+    expect(feature?.geometry).toEqual(geometry);
+
+    fetchSpy.mockRestore();
+    clearDmaMarketCatalogCache();
   });
 });
