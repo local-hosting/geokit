@@ -1,0 +1,6 @@
+# GitHub Packages Configuration
+# Copy this file to .npmrc and set your GITHUB_TOKEN
+# For CI/CD: Set GITHUB_TOKEN environment variable and create .npmrc during build
+
+@twinfile:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
