@@ -9,24 +9,15 @@ import {
 } from '../../../../cdn/place';
 import { resolveGlobeCdnBaseUrl } from '../../../../cdn/config';
 import { mapViewportBounds } from '../../../../utils/h3/map-viewport';
+import type { LayerDatasetContext, LayerDatasetHandle } from './layer-datasets';
 import {
-  addAdminOutlineLayer,
-  applyAdminOutlineLinePaint,
-  refreshAdminOutlineData,
-  removeAdminOutlineLayer,
-} from '../../../utils/admin-outline-layer';
-import {
-  findInsertBeforeLayer,
-  stackGkOutlineLayersAboveDmaFill,
-} from '../../../utils/layer-stack';
-import type {
-  LayerDatasetContext,
-  LayerDatasetHandle,
-  LayerDatasetOptions,
-} from './layer-datasets';
+  bindAdminOutlineViewportRefresh,
+  buildPresetAdminOutlineConfig,
+  mountAdminOutlineDatasetPreset,
+  type AdminOutlineDatasetPresetDef,
+} from './layer-dataset-shared';
 
-const PLACE_MIN_ZOOM = 7;
-const VIEWPORT_SYNC_DEBOUNCE_MS = 400;
+const PLACE_VIEWPORT_SYNC_DEBOUNCE_MS = 400;
 
 export const PLACE_DATASET_IDS = {
   polygonSourceId: 'gk-dataset-place',
@@ -35,31 +26,19 @@ export const PLACE_DATASET_IDS = {
   lineLayerId: 'gk-dataset-place-line',
 } as const;
 
-type MapLike = NonNullable<LayerDatasetContext['map']>;
+const PLACE_OUTLINE_PRESET: AdminOutlineDatasetPresetDef = {
+  kind: 'place',
+  ids: PLACE_DATASET_IDS,
+  style: {
+    lineColor: 'rgba(147, 197, 253, 0.55)',
+    lineWidth: 1,
+    minzoom: 7,
+  },
+};
 
-function findAnchorBeforeId(map: MapLike): string | undefined {
-  return findInsertBeforeLayer(map, {
-    matchLayer: (layer) => {
-      const id = layer.id ?? '';
-      return id.startsWith('gk-dataset-') || id.startsWith('venues') || id.startsWith('platform-');
-    },
-  });
-}
-
-function placeConfig(options: LayerDatasetOptions) {
-  const minzoom = options.minzoom ?? PLACE_MIN_ZOOM;
-  return {
-    ...PLACE_DATASET_IDS,
-    lineColor: options.lineColor ?? 'rgba(147, 197, 253, 0.55)',
-    lineWidth: options.lineWidth ?? 1,
-    minzoom,
-    lineMinzoom: minzoom,
-  };
-}
-
-export async function mountPlaceDataset(
+async function loadPlaceFeatures(
   ctx: LayerDatasetContext
-): Promise<LayerDatasetHandle | null> {
+): Promise<GeoJSON.FeatureCollection | null> {
   const { map, options, getRequestInit } = ctx;
   const state = options.state?.trim().toLowerCase();
   if (!state) {
@@ -67,13 +46,9 @@ export async function mountPlaceDataset(
     return null;
   }
 
-  const config = placeConfig(options);
   const mode = options.mode ?? 'viewport';
   const baseUrl = resolveGlobeCdnBaseUrl(options.cdnBase);
   const fetchOptions = { baseUrl, init: getRequestInit?.() ?? undefined };
-  const beforeLayerId = options.beforeLayerId ?? findAnchorBeforeId(map);
-
-  let places: GeoJSON.FeatureCollection | null = null;
 
   if (mode === 'slugs' && options.slugs?.length) {
     const features: GeoJSON.Feature[] = [];
@@ -81,63 +56,58 @@ export async function mountPlaceDataset(
       const feature = await fetchStatePlaceFeature(state, slug, fetchOptions);
       if (feature) features.push(feature);
     }
-    places = { type: 'FeatureCollection', features };
-  } else if (mode === 'viewport') {
+    return { type: 'FeatureCollection', features };
+  }
+
+  if (mode === 'viewport') {
     const viewport = mapViewportBounds(map);
     if (viewport?.bounds) {
       const { west, south, east, north } = viewport.bounds;
-      places = await fetchStatePlacesForViewport(state, west, south, east, north, fetchOptions);
+      return fetchStatePlacesForViewport(state, west, south, east, north, fetchOptions);
     }
-  } else {
-    places = await fetchStateCitiesGeoJson(state, fetchOptions);
+    return null;
   }
 
-  if (!places?.features?.length) return null;
+  return fetchStateCitiesGeoJson(state, fetchOptions);
+}
 
-  addAdminOutlineLayer(map, places, config, beforeLayerId);
-  applyAdminOutlineLinePaint(map, config);
-  stackGkOutlineLayersAboveDmaFill(map);
+function placeViewportLoader(
+  ctx: LayerDatasetContext
+): () => Promise<GeoJSON.FeatureCollection | null> {
+  const state = ctx.options.state!.trim().toLowerCase();
+  const baseUrl = resolveGlobeCdnBaseUrl(ctx.options.cdnBase);
+  const fetchOptions = { baseUrl, init: ctx.getRequestInit?.() ?? undefined };
 
-  let viewportSyncTimer: ReturnType<typeof setTimeout> | null = null;
-  let cleanupViewport: (() => void) | null = null;
-
-  if (mode === 'viewport') {
-    const schedule = () => {
-      if (viewportSyncTimer) clearTimeout(viewportSyncTimer);
-      viewportSyncTimer = setTimeout(() => {
-        viewportSyncTimer = null;
-        void (async () => {
-          const viewport = mapViewportBounds(map);
-          if (!viewport?.bounds) return;
-          const { west, south, east, north } = viewport.bounds;
-          const next = await fetchStatePlacesForViewport(
-            state,
-            west,
-            south,
-            east,
-            north,
-            fetchOptions
-          );
-          if (!next.features.length) return;
-          refreshAdminOutlineData(map, next, config);
-        })();
-      }, VIEWPORT_SYNC_DEBOUNCE_MS);
-    };
-
-    map.on?.('moveend', schedule);
-    cleanupViewport = () => {
-      if (viewportSyncTimer) clearTimeout(viewportSyncTimer);
-      map.off?.('moveend', schedule);
-    };
-  }
-
-  return {
-    sourceId: config.polygonSourceId,
-    layerId: config.fillLayerId,
-    hitLayerIds: options.interactive ? [config.fillLayerId] : undefined,
-    cleanup: () => {
-      cleanupViewport?.();
-      removeAdminOutlineLayer(map, config);
-    },
+  return async () => {
+    const viewport = mapViewportBounds(ctx.map);
+    if (!viewport?.bounds) return null;
+    const { west, south, east, north } = viewport.bounds;
+    return fetchStatePlacesForViewport(state, west, south, east, north, fetchOptions);
   };
+}
+
+export async function mountPlaceDataset(
+  ctx: LayerDatasetContext
+): Promise<LayerDatasetHandle | null> {
+  if (!ctx.options.state?.trim()) {
+    console.warn('[gk-layer] place dataset requires state attribute');
+    return null;
+  }
+
+  const config = buildPresetAdminOutlineConfig(PLACE_OUTLINE_PRESET, ctx.options);
+  const mode = ctx.options.mode ?? 'viewport';
+
+  return mountAdminOutlineDatasetPreset(ctx, PLACE_OUTLINE_PRESET, loadPlaceFeatures, {
+    hitLayerIds: (c) => (c.options.interactive ? [config.fillLayerId] : undefined),
+    afterMount:
+      mode === 'viewport'
+        ? (mountCtx, mountConfig) =>
+            bindAdminOutlineViewportRefresh(
+              mountCtx.map,
+              placeViewportLoader(mountCtx),
+              mountConfig,
+              PLACE_VIEWPORT_SYNC_DEBOUNCE_MS
+            )
+        : undefined,
+  });
 }

@@ -4,22 +4,12 @@
 
 import { fetchZipFeatures } from '../../../../cdn/zip';
 import { resolveGlobeCdnBaseUrl } from '../../../../cdn/config';
+import type { LayerDatasetContext, LayerDatasetHandle } from './layer-datasets';
 import {
-  addAdminOutlineLayer,
-  applyAdminOutlineLinePaint,
-  removeAdminOutlineLayer,
-} from '../../../utils/admin-outline-layer';
-import {
-  findInsertBeforeLayer,
-  stackGkOutlineLayersAboveDmaFill,
-} from '../../../utils/layer-stack';
-import type {
-  LayerDatasetContext,
-  LayerDatasetHandle,
-  LayerDatasetOptions,
-} from './layer-datasets';
-
-const ZIP_MIN_ZOOM = 10;
+  buildPresetAdminOutlineConfig,
+  mountAdminOutlineDatasetPreset,
+  type AdminOutlineDatasetPresetDef,
+} from './layer-dataset-shared';
 
 export const ZIP_DATASET_IDS = {
   polygonSourceId: 'gk-dataset-zip',
@@ -28,58 +18,40 @@ export const ZIP_DATASET_IDS = {
   lineLayerId: 'gk-dataset-zip-line',
 } as const;
 
-type MapLike = NonNullable<LayerDatasetContext['map']>;
-
-function findAnchorBeforeId(map: MapLike): string | undefined {
-  return findInsertBeforeLayer(map, {
-    matchLayer: (layer) => {
-      const id = layer.id ?? '';
-      return id.startsWith('gk-dataset-') || id.startsWith('venues') || id.startsWith('platform-');
-    },
-  });
-}
-
-function zipConfig(options: LayerDatasetOptions) {
-  const minzoom = options.minzoom ?? ZIP_MIN_ZOOM;
-  return {
-    ...ZIP_DATASET_IDS,
-    lineColor: options.lineColor ?? 'rgba(255, 255, 255, 0.18)',
-    lineWidth: options.lineWidth ?? 0.35,
-    minzoom,
-    lineMinzoom: minzoom,
-  };
-}
+const ZIP_OUTLINE_PRESET: AdminOutlineDatasetPresetDef = {
+  kind: 'zip',
+  ids: ZIP_DATASET_IDS,
+  style: {
+    lineColor: 'rgba(255, 255, 255, 0.18)',
+    lineWidth: 0.35,
+    minzoom: 10,
+  },
+};
 
 export async function mountZipDataset(
   ctx: LayerDatasetContext
 ): Promise<LayerDatasetHandle | null> {
-  const { map, options, getRequestInit } = ctx;
-  const zipSlugs = options.slugs;
+  const zipSlugs = ctx.options.slugs;
   if (!zipSlugs?.length) {
     console.warn('[gk-layer] zip dataset requires slugs (comma-separated ZIP codes)');
     return null;
   }
 
-  const config = zipConfig(options);
-  const baseUrl = resolveGlobeCdnBaseUrl(options.cdnBase);
-  const beforeLayerId = options.beforeLayerId ?? findAnchorBeforeId(map);
+  const baseUrl = resolveGlobeCdnBaseUrl(ctx.options.cdnBase);
+  const config = buildPresetAdminOutlineConfig(ZIP_OUTLINE_PRESET, ctx.options);
 
-  const zips = await fetchZipFeatures(zipSlugs, {
-    baseUrl,
-    init: getRequestInit?.() ?? undefined,
-  });
-  if (!zips.features.length) return null;
-
-  addAdminOutlineLayer(map, zips, config, beforeLayerId);
-  applyAdminOutlineLinePaint(map, config);
-  stackGkOutlineLayersAboveDmaFill(map);
-
-  return {
-    sourceId: config.polygonSourceId,
-    layerId: config.fillLayerId,
-    hitLayerIds: options.interactive ? [config.fillLayerId] : undefined,
-    cleanup: () => {
-      removeAdminOutlineLayer(map, config);
+  return mountAdminOutlineDatasetPreset(
+    ctx,
+    ZIP_OUTLINE_PRESET,
+    async ({ getRequestInit }) => {
+      const zips = await fetchZipFeatures(zipSlugs, {
+        baseUrl,
+        init: getRequestInit?.() ?? undefined,
+      });
+      return zips.features.length ? zips : null;
     },
-  };
+    {
+      hitLayerIds: (c) => (c.options.interactive ? [config.fillLayerId] : undefined),
+    }
+  );
 }

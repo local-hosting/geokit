@@ -26,7 +26,17 @@ export default defineConfig(({ mode }) => {
       },
     },
     define: {
+      'import.meta.env.GEOKIT_MAP_PROVIDER': JSON.stringify(geokitEnv.GEOKIT_MAP_PROVIDER || ''),
+      'import.meta.env.MAP_PROVIDER': JSON.stringify(geokitEnv.MAP_PROVIDER || ''),
+      'import.meta.env.GEOKIT_MAP_API_KEY': JSON.stringify(geokitEnv.GEOKIT_MAP_API_KEY || ''),
+      'import.meta.env.MAP_API_KEY': JSON.stringify(geokitEnv.MAP_API_KEY || ''),
       'import.meta.env.MAPTILER_KEY': JSON.stringify(geokitEnv.MAPTILER_KEY || ''),
+      'import.meta.env.GEOKIT_MAPTILER_KEY': JSON.stringify(geokitEnv.GEOKIT_MAPTILER_KEY || ''),
+      'import.meta.env.MAPBOX_TOKEN': JSON.stringify(
+        geokitEnv.MAPBOX_TOKEN || geokitEnv.MAPBOX_ACCESS_TOKEN || ''
+      ),
+      'import.meta.env.MAPBOX_ACCESS_TOKEN': JSON.stringify(geokitEnv.MAPBOX_ACCESS_TOKEN || ''),
+      'import.meta.env.GEOKIT_MAPBOX_KEY': JSON.stringify(geokitEnv.GEOKIT_MAPBOX_KEY || ''),
     },
   };
 });

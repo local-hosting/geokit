@@ -1,8 +1,11 @@
 import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { capPolygonCollectionForMapLibre } from '../../src/utils/geojson/boundary-lines';
 
-const statesPath = '/Users/westlane/Documents/corio/apps/cdn/build/us/indexes/states.json';
+const statesPath =
+  process.env.GEOKIT_TEST_STATES_JSON?.trim() ||
+  join(process.cwd(), '..', '..', 'apps', 'cdn', 'build', 'us', 'indexes', 'states.json');
 
 describe('capPolygonCollectionForMapLibre (TX)', () => {
   it.skipIf(!existsSync(statesPath))('preserves recognizable texas ring budget', () => {

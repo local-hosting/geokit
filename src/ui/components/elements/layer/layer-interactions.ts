@@ -29,6 +29,12 @@ export interface LayerInteractionsState {
   hoveredFeatureId: string | number | null;
 }
 
+type RenderedMapFeature = {
+  id?: string | number;
+  geometry?: GeoJSON.Geometry;
+  properties?: Record<string, unknown>;
+};
+
 type MapLike = {
   on(event: string, handler: (e: MapEvent) => void): void;
   on(event: string, handler: () => void): void;
@@ -37,11 +43,7 @@ type MapLike = {
   queryRenderedFeatures?(
     point: { x: number; y: number },
     options?: { layers: string[] }
-  ): Array<{
-    id?: string | number;
-    geometry?: GeoJSON.Geometry;
-    properties?: Record<string, unknown>;
-  }>;
+  ): RenderedMapFeature[];
   getCanvas?(): HTMLCanvasElement | undefined;
   setFeatureState?(state: { source: string; id: string | number }, props: { hover: boolean }): void;
 };
@@ -58,6 +60,21 @@ export interface LayerInteractionsContext {
   dispatchMouseEnter: (detail: LayerMouseEnterEventDetail) => void;
   dispatchMouseLeave: (detail: LayerMouseLeaveEventDetail) => void;
   element: HTMLElement;
+}
+
+export function mapRenderedFeatureToGeoJson(feature: RenderedMapFeature): GeoJSON.Feature {
+  const featureId = feature.id;
+  return {
+    type: 'Feature',
+    geometry: feature.geometry as GeoJSON.Geometry,
+    properties: feature.properties ?? {},
+    ...(featureId !== undefined && { id: featureId }),
+  };
+}
+
+function lngLatFromEvent(e: MapEvent): { lng: number; lat: number } {
+  const lngLat = e.lngLat ?? { lng: 0, lat: 0 };
+  return { lng: lngLat.lng, lat: lngLat.lat };
 }
 
 /**
@@ -79,18 +96,9 @@ export function setupLayerInteractions(ctx: LayerInteractionsContext): () => voi
     if (!e.point) return;
     const features = queryFeaturesAtPoint(e.point);
     if (features.length === 0) return;
-    const feature = features[0];
-    const lngLat = e.lngLat ?? { lng: 0, lat: 0 };
-    const featureId = feature.id as string | number | undefined;
-    const geoJsonFeature: GeoJSON.Feature = {
-      type: 'Feature',
-      geometry: feature.geometry as GeoJSON.Geometry,
-      properties: feature.properties ?? {},
-      ...(featureId !== undefined && { id: featureId }),
-    };
     ctx.dispatchClick({
-      feature: geoJsonFeature,
-      lngLat: { lng: lngLat.lng, lat: lngLat.lat },
+      feature: mapRenderedFeatureToGeoJson(features[0]!),
+      lngLat: lngLatFromEvent(e),
       layerId,
       sourceId,
       originalEvent: e.originalEvent as MouseEvent | TouchEvent,
@@ -120,8 +128,7 @@ export function setupLayerInteractions(ctx: LayerInteractionsContext): () => voi
     }
 
     if (featureId !== undefined && features.length > 0) {
-      const feature = features[0];
-      const lngLat = e.lngLat ?? { lng: 0, lat: 0 };
+      const feature = features[0]!;
       if (container) container.style.cursor = cursor;
       if (hoverState) {
         state.hoveredFeatureId = featureId;
@@ -131,15 +138,9 @@ export function setupLayerInteractions(ctx: LayerInteractionsContext): () => voi
           // Ignore
         }
       }
-      const geoJsonFeature: GeoJSON.Feature = {
-        type: 'Feature',
-        geometry: feature.geometry as GeoJSON.Geometry,
-        properties: feature.properties ?? {},
-        ...(featureId !== undefined && { id: featureId }),
-      };
       ctx.dispatchMouseEnter({
-        feature: geoJsonFeature,
-        lngLat: { lng: lngLat.lng, lat: lngLat.lat },
+        feature: mapRenderedFeatureToGeoJson(feature),
+        lngLat: lngLatFromEvent(e),
         layerId,
         sourceId,
       });

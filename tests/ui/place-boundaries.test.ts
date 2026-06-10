@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ensurePlaceBoundaries } from '../../src/ui/utils/place-boundaries';
+import { ensurePlaceBoundaries } from '../../src/ui/utils/admin-outline-preset';
 import {
   ADMIN_OUTLINE_HIT_FILL_OPACITY,
   ADMIN_OUTLINE_LINE_MIN_ZOOM,

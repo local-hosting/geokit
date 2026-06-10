@@ -4,21 +4,11 @@
 
 import { fetchStatesBulkGeoJson } from '../../../../cdn/bulk';
 import { resolveGlobeCdnBaseUrl } from '../../../../cdn/config';
+import type { LayerDatasetContext, LayerDatasetHandle } from './layer-datasets';
 import {
-  addStateBoundaries,
-  applyStateLinePaint,
-  removeStateBoundaries,
-  type StateBoundaryConfig,
-} from '../../../utils/state-boundaries';
-import {
-  findInsertBeforeLayer,
-  stackGkOutlineLayersAboveDmaFill,
-} from '../../../utils/layer-stack';
-import type {
-  LayerDatasetContext,
-  LayerDatasetHandle,
-  LayerDatasetOptions,
-} from './layer-datasets';
+  mountAdminOutlineDatasetPreset,
+  type AdminOutlineDatasetPresetDef,
+} from './layer-dataset-shared';
 
 const DEFAULT_STATE_LINE_WIDTH: unknown[] = [
   'interpolate',
@@ -39,50 +29,33 @@ export const STATE_DATASET_IDS = {
   lineLayerId: 'gk-dataset-state-line',
 } as const;
 
-type MapLike = NonNullable<LayerDatasetContext['map']>;
-
-function findAnchorBeforeId(map: MapLike): string | undefined {
-  return findInsertBeforeLayer(map, {
-    matchLayer: (layer) => {
-      const id = layer.id ?? '';
-      return id.startsWith('gk-dataset-') || id.startsWith('venues') || id.startsWith('platform-');
-    },
-  });
-}
-
-function stateConfig(options: LayerDatasetOptions): StateBoundaryConfig {
-  return {
-    ...STATE_DATASET_IDS,
-    lineColor: options.lineColor ?? 'rgba(255, 255, 255, 0.32)',
-    lineWidth: options.lineWidth ?? DEFAULT_STATE_LINE_WIDTH,
+const STATE_OUTLINE_PRESET: AdminOutlineDatasetPresetDef = {
+  kind: 'state',
+  ids: STATE_DATASET_IDS,
+  style: {
+    lineColor: 'rgba(255, 255, 255, 0.32)',
+    lineWidth: DEFAULT_STATE_LINE_WIDTH,
     lineMinzoom: 2,
-  };
-}
+  },
+};
 
 export async function mountStateDataset(
   ctx: LayerDatasetContext
 ): Promise<LayerDatasetHandle | null> {
-  const { map, options, getRequestInit } = ctx;
-  const config = stateConfig(options);
-  const baseUrl = resolveGlobeCdnBaseUrl(options.cdnBase);
-  const beforeLayerId = options.beforeLayerId ?? findAnchorBeforeId(map);
+  const baseUrl = resolveGlobeCdnBaseUrl(ctx.options.cdnBase);
 
-  const states = await fetchStatesBulkGeoJson({
-    baseUrl,
-    init: getRequestInit?.() ?? undefined,
-  });
-  if (!states?.features?.length) return null;
-
-  addStateBoundaries(map, states, config, beforeLayerId);
-  applyStateLinePaint(map, config);
-  stackGkOutlineLayersAboveDmaFill(map);
-
-  return {
-    sourceId: config.polygonSourceId,
-    layerId: config.fillLayerId,
-    hitLayerIds: [config.fillLayerId],
-    cleanup: () => {
-      removeStateBoundaries(map, config);
+  return mountAdminOutlineDatasetPreset(
+    ctx,
+    STATE_OUTLINE_PRESET,
+    async ({ getRequestInit }) => {
+      const states = await fetchStatesBulkGeoJson({
+        baseUrl,
+        init: getRequestInit?.() ?? undefined,
+      });
+      return states?.features?.length ? states : null;
     },
-  };
+    {
+      hitLayerIds: [STATE_DATASET_IDS.fillLayerId],
+    }
+  );
 }

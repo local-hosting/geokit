@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { simplify, simplifyMeters } from '../../src/utils/simplify';
+import { simplifyPolygonRingToMaxPoints } from '../../src/utils/simplify/polygon';
 
 describe('simplify', () => {
   describe('simplify', () => {
@@ -66,6 +67,22 @@ describe('simplify', () => {
       const simplified100 = simplifyMeters(100)(polyline);
       const simplified1000 = simplifyMeters(1000)(polyline);
       expect(simplified100.length).toBeGreaterThanOrEqual(simplified1000.length);
+    });
+  });
+
+  describe('simplifyPolygonRingToMaxPoints', () => {
+    it('simplifies closed rings for static map overlays', () => {
+      const openRing: [number, number][] = [];
+      for (let i = 0; i < 120; i++) {
+        const angle = (i / 120) * Math.PI * 2;
+        openRing.push([40.7 + Math.sin(angle) * 0.2, -74.0 + Math.cos(angle) * 0.2]);
+      }
+      const closedRing: [number, number][] = [...openRing, openRing[0]];
+
+      const simplified = simplifyPolygonRingToMaxPoints(40)(closedRing);
+      expect(simplified.length - 1).toBeLessThanOrEqual(40);
+      expect(simplified.length).toBeGreaterThan(4);
+      expect(simplified[0]).toEqual(simplified[simplified.length - 1]);
     });
   });
 });

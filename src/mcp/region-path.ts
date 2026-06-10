@@ -1,5 +1,5 @@
-import { simplifyPolygonRingToMaxPoints } from '@twinfile/geokit/simplify';
 import type { LatLon } from '@twinfile/geokit/types';
+import { simplifyPolygonRingToMaxPoints } from '../utils/simplify/polygon.js';
 import type { Position } from 'geojson';
 
 export type MapRegionPathStyle = {
@@ -8,7 +8,7 @@ export type MapRegionPathStyle = {
   width: number;
 };
 
-/** Hex colors — encoded as %23 in MapTiler path strings (literal # breaks URLs). */
+/** Hex colors — encoded as %23 in static path strings (literal # breaks URLs). */
 export const DEFAULT_REGION_PATH_STYLE: MapRegionPathStyle = {
   fill: '%2338bdf850',
   stroke: '%23ffffff',
@@ -16,6 +16,18 @@ export const DEFAULT_REGION_PATH_STYLE: MapRegionPathStyle = {
 };
 
 const DEFAULT_MAX_POINTS_PER_RING = 80;
+/** Spread across rings so multi-island DMAs stay under static map URL limits. */
+const STATIC_MAP_MULTI_RING_POINT_BUDGET = 96;
+const STATIC_MAP_MIN_POINTS_PER_RING = 8;
+
+function maxPointsPerRing(ringCount: number, requested?: number): number {
+  if (requested != null) return requested;
+  if (ringCount <= 1) return DEFAULT_MAX_POINTS_PER_RING;
+  return Math.max(
+    STATIC_MAP_MIN_POINTS_PER_RING,
+    Math.floor(STATIC_MAP_MULTI_RING_POINT_BUDGET / ringCount)
+  );
+}
 
 function extractExteriorRings(geometry: GeoJSON.Geometry): Position[][] {
   if (geometry.type === 'Polygon') {
@@ -35,26 +47,11 @@ function simplifyRing(ring: Position[], maxPoints: number): Position[] {
   return simplified.map(([lat, lon]: LatLon) => [lon, lat]);
 }
 
-function ringToMaptilerPath(ring: Position[], style: MapRegionPathStyle): string {
-  const pairs = ring.map(([lon, lat]) => `${lon},${lat}`);
-  const stylePrefix = [`fill:${style.fill}`, `stroke:${style.stroke}`, `width:${style.width}`].join(
-    '|'
-  );
-  return `${stylePrefix}|${pairs.join('|')}`;
-}
-
-export function geometryToMaptilerPaths(
+export function simplifyGeometryRings(
   geometry: GeoJSON.Geometry,
-  options?: {
-    maxPointsPerRing?: number;
-    style?: Partial<MapRegionPathStyle>;
-  }
-): string[] {
-  const maxPoints = options?.maxPointsPerRing ?? DEFAULT_MAX_POINTS_PER_RING;
-  const style = { ...DEFAULT_REGION_PATH_STYLE, ...options?.style };
-
-  return extractExteriorRings(geometry).map((ring) => {
-    const simplified = simplifyRing(ring, maxPoints);
-    return ringToMaptilerPath(simplified, style);
-  });
+  options?: { maxPointsPerRing?: number }
+): Position[][] {
+  const rings = extractExteriorRings(geometry);
+  const maxPoints = maxPointsPerRing(rings.length, options?.maxPointsPerRing);
+  return rings.map((ring) => simplifyRing(ring, maxPoints));
 }
