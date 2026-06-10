@@ -5,11 +5,13 @@ import {
   createCellLayerLoader,
   catalogCellIdsForViewport,
   catalogResolutionForLayer,
+  DMA_CELL_LAYER_MAX_CELLS,
   filterViewportCellIdsForCatalog,
   clearCellLayerCatalogCache,
   pickLayersFromBundle,
   registerCellLayerBundleRequestHook,
 } from '../../src/cdn/cell-layers';
+import { approximateViewportBoundsFromCenterZoom } from '../../src/utils/h3/map-viewport';
 
 describe('cell-layers', () => {
   it('maps zoom to resolution per layer', () => {
@@ -131,6 +133,71 @@ describe('cell-layers', () => {
       clearCellLayerCatalogCache();
       clearCellLayerCache('http://cdn.test');
     }
+  });
+
+  it('includes Alaska dma catalog cells at CONUS hero zoom within r1 cap', () => {
+    const catalog = {
+      version: 1 as const,
+      urlPattern: '/cell/{cellId}.json' as const,
+      queryLayers: ['county', 'dma'] as const,
+      layerKeys: ['county', 'dma'] as const,
+      resolutions: [1, 3, 4] as const,
+      countyMinZoom: 7,
+      count: 30,
+      cellIds: [
+        '8112',
+        '8126',
+        '81263',
+        '81267',
+        '8126b',
+        '81273',
+        '81277',
+        '8127b',
+        '8128',
+        '81283',
+        '8128b',
+        '81293',
+        '8129b',
+        '812a',
+        '812a3',
+        '812ab',
+        '812b3',
+        '812bb',
+        '8144',
+        '81443',
+        '81447',
+        '8144b',
+        '8148',
+        '8148b',
+        '810d7',
+        '811d3',
+        '810c7',
+        '810cb',
+        '81227',
+        '8147b',
+      ],
+    };
+    const bounds = approximateViewportBoundsFromCenterZoom(37.19326, -99.21257, 4.39, 1920, 1080);
+    const all = catalogCellIdsForViewport(catalog, bounds, {
+      layer: 'dma',
+      preferredResolution: 1,
+      centerLat: 37.19326,
+      centerLng: -99.21257,
+      maxCells: 9999,
+    });
+    const selected = catalogCellIdsForViewport(catalog, bounds, {
+      layer: 'dma',
+      preferredResolution: 1,
+      centerLat: 37.19326,
+      centerLng: -99.21257,
+      maxCells: DMA_CELL_LAYER_MAX_CELLS[1],
+    });
+
+    expect(selected).toContain('810d7');
+    expect(selected).toContain('811d3');
+    expect(selected).toContain('8128');
+    expect(selected.length).toBe(all.length);
+    expect(selected.length).toBeLessThanOrEqual(DMA_CELL_LAYER_MAX_CELLS[1]!);
   });
 
   it('aligns dma tessellation to coarsest catalog tier', () => {

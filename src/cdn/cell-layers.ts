@@ -18,7 +18,7 @@ import {
 import { resolveGlobeCdnUrl } from './paths';
 import { resolvePublishedCellLayerId } from './cell-catalog-alias';
 import type { CellLayerViewport, ViewportBounds } from '../utils/h3/viewport';
-import { prioritizeH3CellsNearCenter } from '../utils/h3/viewport';
+import { prioritizeH3CellsForViewport, prioritizeH3CellsNearCenter } from '../utils/h3/viewport';
 import {
   h3CellIdsForViewportLoad,
   loadFeatureCollectionShardsForH3Cells,
@@ -41,7 +41,7 @@ export type CellLayerBundleRequestHook = (detail: CellLayerBundleRequestDetail) 
 
 const cellLayerBundleRequestHooks = new Set<CellLayerBundleRequestHook>();
 
-/** Host apps (Fieldwise) can observe H3 cell bundle CDN requests. */
+/** Host apps can observe H3 cell bundle CDN requests. */
 export function registerCellLayerBundleRequestHook(hook: CellLayerBundleRequestHook): () => void {
   cellLayerBundleRequestHooks.add(hook);
   return () => cellLayerBundleRequestHooks.delete(hook);
@@ -95,7 +95,8 @@ export const CELL_LAYER_MAX_CELLS: Record<number, number> = {
 
 /** DMA loads use coarse platform cells and allow more shards per viewport. */
 export const DMA_CELL_LAYER_MAX_CELLS: Record<number, number> = {
-  1: 24,
+  /** r1 CONUS hero zoom intersects up to ~39 catalog cells on large viewports. */
+  1: 40,
   2: 40,
   3: 32,
   4: 48,
@@ -211,12 +212,21 @@ export function catalogCellIdsForViewport(
   candidates = candidates.filter((cellId) => cellBoundsIntersectViewport(cellId, bounds));
 
   if (options.maxCells != null && candidates.length > options.maxCells) {
-    candidates = prioritizeH3CellsNearCenter(
-      candidates,
-      options.centerLat,
-      options.centerLng,
-      options.maxCells
-    );
+    if (options.layer === 'dma') {
+      candidates = prioritizeH3CellsForViewport(candidates, {
+        bounds,
+        centerLat: options.centerLat,
+        centerLng: options.centerLng,
+        limit: options.maxCells,
+      });
+    } else {
+      candidates = prioritizeH3CellsNearCenter(
+        candidates,
+        options.centerLat,
+        options.centerLng,
+        options.maxCells
+      );
+    }
   }
 
   return candidates;

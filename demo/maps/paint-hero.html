@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>geokit — Paint hero</title>
+  <link rel="stylesheet" href="../shared/maps-shell.css">
+  <link rel="stylesheet" href="../cdn/cdn.css">
+  <style>
+    body.paint-hero-demo {
+      overflow: hidden;
+    }
+
+    .cdn-map-wrap #map-container {
+      position: absolute;
+      inset: 0;
+    }
+
+    .cdn-map-wrap gk-map {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .paint-hero-note {
+      margin: 0 0 12px;
+      font-size: 12px;
+      line-height: 1.45;
+      opacity: 0.75;
+    }
+  </style>
+</head>
+<body class="cdn-demo paint-hero-demo" data-demo-active="paint-hero">
+  <aside id="demo-nav" aria-label="Demo pages"></aside>
+  <div class="cdn-shell">
+    <div class="cdn-panel">
+      <h1>paint hero</h1>
+      <p class="subtitle">CONUS hero map — state + DMA viewport stack</p>
+      <p class="paint-hero-note">
+        Declarative <code>gk-layer</code> stack: county outlines (z≥5), state lines,
+        and DMA regional fill at CONUS zoom.
+      </p>
+      <div class="cdn-field">
+        <label for="jwt">Bearer JWT</label>
+        <input id="jwt" type="password" placeholder="eyJ… — dma claim required on production CDN" autocomplete="off" />
+      </div>
+      <div class="cdn-actions">
+        <button type="button" id="fetch-dev-token">Dev token</button>
+        <button type="button" class="secondary" id="reload">Reload layers</button>
+      </div>
+      <pre class="cdn-log" id="log"></pre>
+    </div>
+    <div class="cdn-map-wrap">
+      <div id="map-container">
+        <gk-map
+          id="paint-hero-map"
+          provider="maptiler"
+          lat="37.19326"
+          lng="-99.21257"
+          zoom="4.39"
+          min-zoom="2"
+          max-zoom="14"
+          map-style="dataviz-dark"
+          max-bearing="0"
+          terrain-enabled="false"
+          hillshade-enabled="false"
+          buildings-enabled="false"
+          max-pitch="0"
+          pitch="0">
+          <gk-layer
+            dataset="county"
+            minzoom="5"
+            line-color="rgba(255, 255, 255, 0.22)"></gk-layer>
+          <gk-layer
+            dataset="state"
+            line-color="rgba(255, 255, 255, 0.32)"
+            interactive></gk-layer>
+          <gk-layer
+            dataset="dma"
+            mode="viewport"
+            fill-opacity="0.28"
+            interactive></gk-layer>
+        </gk-map>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./paint-hero.js"></script>
+</body>
+</html>

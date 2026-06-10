@@ -8,10 +8,10 @@ Custom events use the `gk-*` prefix where they are part of the public API. This 
 
 Many map points (venues, POIs, fleet sites) share one **source + glow + point + hover + selection** layer set. Geokit owns **how** points render and update; apps own **what** each feature carries (`_color`, `brand`, ratings, etc.).
 
-| Concern                                                  | Owner                                    |
-| -------------------------------------------------------- | ---------------------------------------- |
-| Feature GeoJSON, `_color`, brand, ratings                | App (e.g. Fieldwise `buildVenueGeoJSON`) |
-| Layer ids, glow/point paint, source sync, selection ring | Geokit `shared-points`                   |
+| Concern                                                  | Owner                               |
+| -------------------------------------------------------- | ----------------------------------- |
+| Feature GeoJSON, `_color`, brand, ratings                | Host app (e.g. `buildVenueGeoJSON`) |
+| Layer ids, glow/point paint, source sync, selection ring | Geokit `shared-points`              |
 
 **Import:**
 

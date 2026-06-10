@@ -308,7 +308,7 @@ export class MapTilerUIProvider extends BaseUIProvider {
     }
 
     // Shared style object avoids N duplicate style.json fetches (Safari). When transformRequest is
-    // set (Fieldwise dev proxy), fetch once and rewrite embedded source URLs — workers otherwise
+    // set (host dev proxy), fetch once and rewrite embedded source URLs — workers otherwise
     // request api.maptiler.com TileJSON without Referer and referrer-locked keys return 403.
     let styleOption: string | Record<string, unknown> = style;
     if (typeof style === 'string' && isMapTilerStyleUrl(style)) {
