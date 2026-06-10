@@ -3,7 +3,10 @@ export {
   fetchGlobeCdn,
   fetchGlobeCdnJson,
   mergeGlobeCdnInit,
+  registerGlobeCdnBytesObserver,
   resolveGlobeCdnRequestUrl,
+  type GlobeCdnBytesDetail,
+  type GlobeCdnBytesObserver,
   type GlobeCdnFetchOptions,
 } from './fetch';
 export { boundsFromFeature, boundsFromFeatures } from './bounds';
