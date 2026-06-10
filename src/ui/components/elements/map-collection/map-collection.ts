@@ -9,6 +9,7 @@ import { BaseElement } from '../../base-element';
 import { type MapElement } from '../map/map';
 import { getProviderConfig } from '../../../providers/registry';
 import { debug } from '../../../utils/logger';
+import { delayForWebGLRelease, getMaxActiveMaps } from '../map/map-freeze';
 
 interface SlotInfo {
   slotElement: HTMLElement;
@@ -95,6 +96,8 @@ export class MapCollectionElement extends BaseElement {
   private intersectionChangeCount: number = 0; // Count rapid intersection changes (scroll detection)
   private isScrolling: boolean = false; // True when user is actively scrolling
   private suppressActivationUntil: number = 0; // Skip activation until this timestamp (e.g. during programmatic scroll)
+  /** Serialize pool slot reservation to avoid exceeding WebGL context budget under parallel activation. */
+  private _poolLock: Promise<void> = Promise.resolve();
 
   constructor() {
     super();
@@ -103,7 +106,7 @@ export class MapCollectionElement extends BaseElement {
   async connectedCallback(): Promise<void> {
     // HMR check: If already initialized, clean up first
     if (this.initialized) {
-      this.cleanup();
+      await this.cleanupAsync();
     }
 
     this.isInitialized = false;
@@ -125,7 +128,7 @@ export class MapCollectionElement extends BaseElement {
   }
 
   disconnectedCallback(): void {
-    this.cleanup();
+    void this.cleanupAsync();
     super.disconnectedCallback();
   }
 
@@ -168,6 +171,21 @@ export class MapCollectionElement extends BaseElement {
     if (this._maxZoom !== null) return this._maxZoom;
     const attr = this.getAttribute('max-zoom');
     return attr ? parseFloat(attr) : null;
+  }
+
+  /** Effective pool cap based on browser WebGL context budget (MapTiler uses ~2 contexts per map). */
+  private get effectivePoolSize(): number {
+    return getMaxActiveMaps(this.poolSize);
+  }
+
+  /** Run fn exclusively — prevents parallel activateSlot from oversubscribing the pool. */
+  private runPoolExclusive<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this._poolLock.then(fn);
+    this._poolLock = run.then(
+      () => undefined,
+      () => undefined
+    );
+    return run;
   }
 
   private async initialize(): Promise<void> {
@@ -325,6 +343,7 @@ export class MapCollectionElement extends BaseElement {
     slot.lastFailTime = 0;
     slot.isActivating = false;
     slot.activationStartTime = 0;
+    slot.mapElement.freeze().catch(() => {});
     setTimeout(() => this.activateSlot(slot), delayMs);
   }
 
@@ -423,30 +442,30 @@ export class MapCollectionElement extends BaseElement {
 
       if (sorted.length === 0) return;
 
-      let availableSlots = this.poolSize - this.activeCount;
+      let availableSlots = this.effectivePoolSize - this.activeCount;
       const needed = sorted.length - availableSlots;
       if (needed > 0) {
         await this.makeRoomFor(Math.min(needed, this.activeCount));
-        availableSlots = this.poolSize - this.activeCount;
+        availableSlots = this.effectivePoolSize - this.activeCount;
       }
 
       const toActivate = sorted.slice(0, Math.max(availableSlots, 0));
 
       for (let i = 0; i < toActivate.length; i += CONCURRENT_ACTIVATION_BATCH) {
         const batch = toActivate.slice(i, i + CONCURRENT_ACTIVATION_BATCH);
-        while (this.activeCount >= this.poolSize && batch.length > 0) {
+        while (this.activeCount >= this.effectivePoolSize && batch.length > 0) {
           const frozen = await this.deactivateOneInvisible();
           if (!frozen) break;
-          await new Promise((r) => setTimeout(r, 100));
+          await delayForWebGLRelease();
         }
         await Promise.all(batch.map((slot) => this.activateSlot(slot)));
         if (i + CONCURRENT_ACTIVATION_BATCH < toActivate.length) {
-          await new Promise((r) => setTimeout(r, 50));
+          await delayForWebGLRelease();
         }
       }
 
       const stillInactive = this.getManySlots((s) => s.isVisible && !s.isActive && !s.isActivating);
-      if (stillInactive.length > 0 && this.activeCount < this.poolSize) {
+      if (stillInactive.length > 0 && this.activeCount < this.effectivePoolSize) {
         setTimeout(() => this.processVisibilityChanges(), 0);
       }
     } finally {
@@ -505,32 +524,30 @@ export class MapCollectionElement extends BaseElement {
     slotInfo.activationStartTime = Date.now();
 
     try {
-      while (this.activeCount >= this.poolSize) {
+      let reserved = false;
+      await this.runPoolExclusive(async () => {
+        while (this.activeCount >= this.effectivePoolSize) {
+          if (!slotInfo.isVisible) return;
+          const frozen = await this.deactivateOneInvisible();
+          if (!frozen) {
+            mapCollectionDebug('activateSlot: pool full, cannot make room', {
+              activeCount: this.activeCount,
+              poolSize: this.effectivePoolSize,
+              visibleCount: this.getManySlots((s) => s.isVisible).length,
+            });
+            return;
+          }
+          await delayForWebGLRelease();
+        }
+
         if (!slotInfo.isVisible) return;
-        const frozen = await this.deactivateOneInvisible();
-        if (!frozen) {
-          mapCollectionDebug('activateSlot: pool full, cannot make room', {
-            activeCount: this.activeCount,
-            poolSize: this.poolSize,
-            visibleCount: this.getManySlots((s) => s.isVisible).length,
-          });
-          return;
-        }
-      }
 
-      if (!slotInfo.isVisible) return;
+        slotInfo.isActive = true;
+        this.activeCount++;
+        reserved = true;
+      });
 
-      slotInfo.isActive = true;
-      this.activeCount++;
-
-      if (this.activeCount > this.poolSize) {
-        const oldestActive = this.getOneSlot((s) => s.isActive && s !== slotInfo);
-        if (oldestActive) {
-          await oldestActive.mapElement.freeze().catch(() => {});
-          oldestActive.isActive = false;
-          this.activeCount--;
-        }
-      }
+      if (!reserved) return;
 
       this.ensureSlotAttributes(slotInfo);
       const success = await this.unfreezeSlot(slotInfo);
@@ -544,8 +561,11 @@ export class MapCollectionElement extends BaseElement {
         slotInfo.lastFailTime = 0;
         slotInfo.lastHealthCheckAttempt = 0;
       } else {
-        slotInfo.isActive = false;
-        this.activeCount--;
+        await this.runPoolExclusive(async () => {
+          slotInfo.isActive = false;
+          this.activeCount--;
+        });
+        await slotInfo.mapElement.freeze().catch(() => {});
         slotInfo.failCount++;
         slotInfo.lastFailTime = Date.now();
         mapCollectionDebug('activateSlot: rollback (unfreeze failed)', {
@@ -735,6 +755,9 @@ export class MapCollectionElement extends BaseElement {
       // Stop observing the removed element
       this.intersectionObserver?.unobserve(slot.slotElement);
 
+      // Release WebGL context for removed maps
+      slot.mapElement.freeze().catch(() => {});
+
       // Decrement active count if this slot was active
       if (slot.isActive) {
         this.activeCount--;
@@ -801,7 +824,13 @@ export class MapCollectionElement extends BaseElement {
     }
   }
 
-  private cleanup(): void {
+  private async cleanupAsync(): Promise<void> {
+    const mapsToFreeze = this.getAllSlots().map((s) => s.mapElement);
+    await Promise.all(mapsToFreeze.map((el) => el.freeze().catch(() => {})));
+    this.cleanupState();
+  }
+
+  private cleanupState(): void {
     if (this._unfreezeHandler) {
       this.removeEventListener('gk-map-unfreeze', this._unfreezeHandler);
       this._unfreezeHandler = null;
@@ -844,7 +873,7 @@ export class MapCollectionElement extends BaseElement {
     return {
       totalMaps: this.slots.length,
       inUse: this.activeCount,
-      available: Math.max(0, this.poolSize - this.activeCount),
+      available: Math.max(0, this.effectivePoolSize - this.activeCount),
     };
   }
 
