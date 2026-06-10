@@ -23,8 +23,13 @@ const ALIAS_GROUPS = [
     targets: ['MAPBOX_TOKEN', 'GEOKIT_ROUTING_TOKEN', 'ROUTING_TOKEN'],
   },
   {
-    sources: ['FOURSQUARE_API_KEY', 'FSQ_API_KEY', 'GEOKIT_FOURSQUARE_KEY'],
-    targets: ['FOURSQUARE_API_KEY', 'FSQ_API_KEY'],
+    sources: [
+      'FOURSQUARE_SERVICE_API_KEY',
+      'FOURSQUARE_API_KEY',
+      'FSQ_API_KEY',
+      'GEOKIT_FOURSQUARE_KEY',
+    ],
+    targets: ['FOURSQUARE_SERVICE_API_KEY', 'FOURSQUARE_API_KEY', 'FSQ_API_KEY'],
   },
   {
     sources: ['GLOBE_CDN_JWT', 'GEOKIT_GLOBE_CDN_JWT', 'FW_GLOBE_CDN_JWT'],

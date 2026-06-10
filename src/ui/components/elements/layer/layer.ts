@@ -57,6 +57,7 @@ import {
   type LayerDatasetOptions,
   type LayerDatasetReadyDetail,
 } from './layer-datasets';
+import { parseAdminColorMode } from '../../../utils/admin-color-mode.js';
 import { stackGkOutlineLayersAboveDmaFill } from '../../../utils/layer-stack';
 
 export type LayerType =
@@ -125,6 +126,9 @@ export class LayerElement extends MapChildElement {
     'slugs',
     'highlight-slug',
     'fill-opacity',
+    'fill-color',
+    'color-mode',
+    'outline-color',
     'cdn-base',
     'state',
   ];
@@ -385,7 +389,11 @@ export class LayerElement extends MapChildElement {
       slugs: parseLayerDatasetSlugs(this.safeGetAttribute('slugs')),
       highlightSlug: this.safeGetAttribute('highlight-slug') ?? undefined,
       fillOpacity: Number.isFinite(fillOpacity) ? fillOpacity : undefined,
+      fillColor: this.safeGetAttribute('fill-color') ?? undefined,
+      outlineColor: this.safeGetAttribute('outline-color') ?? undefined,
+      dmaRegion: this.safeGetAttribute('dma-region') ?? undefined,
       state: this.safeGetAttribute('state') ?? undefined,
+      colorMode: parseAdminColorMode(this.safeGetAttribute('color-mode')),
     };
   }
 
@@ -804,7 +812,14 @@ export class LayerElement extends MapChildElement {
         'minzoom',
         'slugs',
       ];
-      const patchAttrs = ['highlight-slug', 'fill-opacity', 'line-color'];
+      const patchAttrs = [
+        'highlight-slug',
+        'fill-opacity',
+        'fill-color',
+        'color-mode',
+        'outline-color',
+        'line-color',
+      ];
       if (remountAttrs.includes(name)) {
         void this.mountDatasetLayer();
       } else if (patchAttrs.includes(name)) {

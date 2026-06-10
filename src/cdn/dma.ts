@@ -1,8 +1,9 @@
-import { canonicalDmaCdnSlug } from './dma-slug';
-import type { GlobeCdnFetchOptions } from './fetch';
-import { fetchGlobeCdnJson } from './fetch';
-import { resolveGlobeCdnBaseUrl } from './config';
-import { dmaMarketShapeUrl } from './paths';
+import { resolveDmaCatalogSlug } from './dma-catalog.js';
+import { canonicalDmaCdnSlug } from './dma-slug.js';
+import type { GlobeCdnFetchOptions } from './fetch.js';
+import { fetchGlobeCdnJson } from './fetch.js';
+import { resolveGlobeCdnBaseUrl } from './config.js';
+import { dmaMarketShapeUrl } from './paths.js';
 
 function slugifyDmaHint(hint: string): string {
   return hint
@@ -103,5 +104,14 @@ export async function resolveDmaShapeFromQuery(
 ): Promise<GeoJSON.Feature | null> {
   const slug = dmaSlugFromQuery(query);
   if (!slug) return null;
-  return fetchDmaMarketShapeFeature(slug, options);
+
+  const direct = await fetchDmaMarketShapeFeature(slug, options);
+  if (direct) return direct;
+
+  const match = await resolveDmaCatalogSlug(slug, options);
+  if (match.kind === 'exact' || match.kind === 'prefix') {
+    return fetchDmaMarketShapeFeature(match.slug, options);
+  }
+
+  return null;
 }

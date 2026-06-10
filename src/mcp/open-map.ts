@@ -1,4 +1,7 @@
-import type { MapStyleId, MapViewport } from '../types/mcp-map.js';
+import type { Bounds } from '@twinfile/geokit/types';
+import { normalizeCountyFips } from '../cdn/county.js';
+import type { MapHostRegionLayer, MapStyleId, MapViewport } from '../types/mcp-map.js';
+import type { MapViewInput } from '../types/mcp-map.js';
 
 export const DEFAULT_MAP_HOST_URL = 'http://localhost:3002';
 
@@ -13,12 +16,113 @@ export function resolveMapHostBaseUrl(): string {
   return fromEnv.replace(/\/$/, '');
 }
 
+export function serializeMapHostBounds(bounds: Bounds): string {
+  return bounds.map((value) => String(value)).join(',');
+}
+
+export function parseMapHostBounds(raw: string | null | undefined): Bounds | null {
+  if (!raw?.trim()) return null;
+  const parts = raw.split(',').map((part) => Number(part.trim()));
+  if (parts.length !== 4 || parts.some((value) => !Number.isFinite(value))) {
+    return null;
+  }
+  return parts as Bounds;
+}
+
+export function applyMapHostRegionLayerParams(
+  url: URL,
+  regionLayer: MapHostRegionLayer | undefined
+): void {
+  if (!regionLayer) return;
+
+  url.searchParams.set('regionDataset', regionLayer.dataset);
+
+  switch (regionLayer.dataset) {
+    case 'dma':
+      url.searchParams.set('regionSlug', regionLayer.slug.trim().toLowerCase());
+      if (regionLayer.region?.trim()) {
+        url.searchParams.set('dmaRegion', regionLayer.region.trim().toLowerCase());
+      }
+      break;
+    case 'state':
+    case 'zip':
+      url.searchParams.set('regionSlug', regionLayer.slug.trim().toLowerCase());
+      break;
+    case 'place':
+      url.searchParams.set('regionState', regionLayer.state.trim().toLowerCase());
+      url.searchParams.set('regionSlug', regionLayer.slug.trim().toLowerCase());
+      break;
+    case 'county':
+      url.searchParams.set('regionFips', normalizeCountyFips(regionLayer.fips));
+      break;
+    default: {
+      const _exhaustive: never = regionLayer;
+      throw new Error(`Unsupported region dataset: ${String(_exhaustive)}`);
+    }
+  }
+}
+
+export function parseMapHostRegionLayer(
+  params: Pick<URLSearchParams, 'get'>
+): MapHostRegionLayer | null {
+  const dataset = params.get('regionDataset')?.trim().toLowerCase();
+  if (dataset === 'dma') {
+    const slug = params.get('regionSlug')?.trim().toLowerCase();
+    if (!slug) return null;
+    const region = params.get('dmaRegion')?.trim().toLowerCase();
+    return region ? { dataset: 'dma', slug, region } : { dataset: 'dma', slug };
+  }
+  if (dataset === 'state' || dataset === 'zip') {
+    const slug = params.get('regionSlug')?.trim().toLowerCase();
+    return slug ? { dataset, slug } : null;
+  }
+  if (dataset === 'place') {
+    const state = params.get('regionState')?.trim().toLowerCase();
+    const slug = params.get('regionSlug')?.trim().toLowerCase();
+    return state && slug ? { dataset: 'place', state, slug } : null;
+  }
+  if (dataset === 'county') {
+    const fips = params.get('regionFips')?.trim();
+    return fips ? { dataset: 'county', fips: normalizeCountyFips(fips) } : null;
+  }
+
+  const dmaSlug = params.get('dmaSlug')?.trim().toLowerCase();
+  if (dmaSlug) return { dataset: 'dma', slug: dmaSlug };
+
+  const placeState = params.get('placeState')?.trim().toLowerCase();
+  const placeSlug = params.get('placeSlug')?.trim().toLowerCase();
+  if (placeState && placeSlug) return { dataset: 'place', state: placeState, slug: placeSlug };
+
+  return null;
+}
+
+export function regionLayerFromMapViewInput(input: MapViewInput): MapHostRegionLayer | undefined {
+  if (input.regionLayer) return input.regionLayer;
+
+  if (input.countyFips?.trim()) {
+    return { dataset: 'county', fips: normalizeCountyFips(input.countyFips) };
+  }
+  if (input.state?.trim() && input.place?.trim()) {
+    return {
+      dataset: 'place',
+      state: input.state.trim().toLowerCase(),
+      slug: input.place.trim().toLowerCase(),
+    };
+  }
+  return undefined;
+}
+
 export function buildMapHostUrl(args: {
   hostBaseUrl?: string;
   viewport: MapViewport;
   style?: MapStyleId;
   theme?: 'light' | 'dark';
   provider?: string;
+  dmaSlug?: string;
+  placeState?: string;
+  placeSlug?: string;
+  bounds?: Bounds;
+  regionLayer?: MapHostRegionLayer;
 }): string {
   const base = (args.hostBaseUrl ?? resolveMapHostBaseUrl()).replace(/\/$/, '');
   const url = new URL(`${base}${MAP_HOST_PATH}`);
@@ -34,5 +138,16 @@ export function buildMapHostUrl(args: {
   if (args.provider) {
     url.searchParams.set('provider', args.provider);
   }
+  if (args.dmaSlug?.trim()) {
+    url.searchParams.set('dmaSlug', args.dmaSlug.trim());
+  }
+  if (args.placeState?.trim() && args.placeSlug?.trim()) {
+    url.searchParams.set('placeState', args.placeState.trim().toLowerCase());
+    url.searchParams.set('placeSlug', args.placeSlug.trim().toLowerCase());
+  }
+  if (args.bounds?.length === 4) {
+    url.searchParams.set('bounds', serializeMapHostBounds(args.bounds));
+  }
+  applyMapHostRegionLayerParams(url, args.regionLayer);
   return url.toString();
 }

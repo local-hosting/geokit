@@ -1,6 +1,7 @@
 import turfBuffer from '@turf/buffer';
 import { point as turfPoint } from '@turf/helpers';
 import type { ResolvedMapStaticProvider } from '../../types/map-static-provider.js';
+import { MCP_REGION_OVERLAY_STYLE } from '../map-presentation.js';
 import type { MapRegionPathStyle } from '../region-path.js';
 
 const MARKER_RADIUS_METERS = 80;
@@ -79,7 +80,10 @@ export function circleOverlay(
 export function polygonOverlay(
   provider: ResolvedMapStaticProvider,
   geometry: GeoJSON.Geometry,
-  colorIndex = 0
+  colorIndex = 0,
+  styleOverride?: Partial<MapRegionPathStyle>
 ): string[] {
-  return geometryToProviderOverlays(provider, geometry, paletteStyle(colorIndex, true));
+  const style =
+    styleOverride ?? (colorIndex === 0 ? MCP_REGION_OVERLAY_STYLE : paletteStyle(colorIndex, true));
+  return geometryToProviderOverlays(provider, geometry, style);
 }

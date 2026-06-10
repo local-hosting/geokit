@@ -3,6 +3,7 @@
  */
 
 import { createCellLayerLoader } from '../../../../cdn/cell-layers';
+import { fetchCountyShapeFeature } from '../../../../cdn/county';
 import { COUNTY_H3_MIN_ZOOM } from '../../../../cdn/county-h3-clusters';
 import { countyFeaturesToCollection } from '../../../../cdn/county-viewport';
 import { resolveGlobeCdnBaseUrl } from '../../../../cdn/config';
@@ -17,10 +18,12 @@ import type {
   LayerDatasetOptions,
 } from './layer-datasets';
 import {
+  mountAdminOutlineDatasetPreset,
   attachAdminOutlineLayers,
   buildAdminOutlineConfig,
   createAdminOutlineHandle,
   dispatchLayerShardEvent,
+  applyAdminColorModeToConfig,
   loadCellLayerForViewport,
   mapDatasetZoom,
   resolveDatasetBeforeLayerId,
@@ -48,7 +51,43 @@ export async function mountCountyDataset(
   ctx: LayerDatasetContext
 ): Promise<LayerDatasetHandle | null> {
   const { map, options, getRequestInit, element } = ctx;
-  const config = countyConfig(options);
+  const mode = options.mode ?? 'viewport';
+  const slugs = options.slugs;
+
+  if (mode === 'slugs' && slugs?.length) {
+    let config = countyConfig(options);
+    config = await applyAdminColorModeToConfig(config, options, 'dma', ctx);
+    const baseUrl = resolveGlobeCdnBaseUrl(options.cdnBase);
+    return mountAdminOutlineDatasetPreset(
+      ctx,
+      {
+        kind: 'county',
+        ids: COUNTY_DATASET_IDS,
+        style: {
+          lineColor: 'rgba(255, 255, 255, 0.22)',
+          lineWidth: 0.45,
+          minzoom: options.minzoom ?? COUNTY_H3_MIN_ZOOM,
+        },
+      },
+      async ({ getRequestInit: reqInit }) => {
+        const features: GeoJSON.Feature[] = [];
+        for (const fips of slugs) {
+          const feature = await fetchCountyShapeFeature(fips, {
+            baseUrl,
+            init: reqInit?.() ?? undefined,
+          });
+          if (feature) features.push(feature);
+        }
+        return features.length ? { type: 'FeatureCollection', features } : null;
+      },
+      {
+        hitLayerIds: options.interactive ? [config.fillLayerId] : undefined,
+      }
+    );
+  }
+
+  let config = countyConfig(options);
+  config = await applyAdminColorModeToConfig(config, options, 'dma', ctx);
   const baseUrl = resolveGlobeCdnBaseUrl(options.cdnBase);
   const beforeLayerId = resolveDatasetBeforeLayerId(map, options);
   const cellLoader = createCellLayerLoader({ baseUrl, getRequestInit });

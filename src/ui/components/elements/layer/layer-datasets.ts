@@ -6,6 +6,7 @@ import { mountCountyDataset } from './layer-dataset-county';
 import { mountPlaceDataset } from './layer-dataset-place';
 import { mountStateDataset } from './layer-dataset-state';
 import { mountZipDataset } from './layer-dataset-zip';
+import type { AdminColorMode } from '../../../utils/admin-color-mode.js';
 import { mountDmaDataset } from './layer-dataset-dma';
 
 export type LayerDatasetId = 'state' | 'county' | 'dma' | 'place' | 'city' | 'zip';
@@ -29,6 +30,12 @@ export type LayerDatasetOptions = {
   slugs?: string[];
   highlightSlug?: string | null;
   fillOpacity?: number;
+  fillColor?: string;
+  outlineColor?: string;
+  /** Nielsen georef region for DMA slug coloring (e.g. midwest). */
+  dmaRegion?: string;
+  /** outline (default), region tint (state), or dma tint (county/place). */
+  colorMode?: AdminColorMode;
 };
 
 export type LayerDatasetMap = {

@@ -2,6 +2,8 @@
  * Map freeze/unfreeze helpers (Single Responsibility: style ready, resize, WebGL release delay)
  */
 
+import { safeResizeMap } from '../../../utils/map-utils';
+
 type MapLike = {
   isStyleLoaded?: () => boolean;
   getStyle?: () => unknown;
@@ -106,15 +108,18 @@ export function waitForReady(map: MapLike | null, timeout: number = 10000): Prom
 
 /**
  * Resize map to container and trigger repaint.
+ * Skips resize when the host/container is hidden or zero-size to avoid MapTiler transformMat4 crashes.
  */
-export function resizeAndRepaintMap(map: MapLike | null): void {
+export function resizeAndRepaintMap(map: MapLike | null, hostElement?: HTMLElement | null): void {
   if (!map) return;
   requestAnimationFrame(() => {
-    if (typeof map.resize === 'function') {
-      map.resize();
-    }
+    safeResizeMap(map, hostElement);
     if (typeof map.triggerRepaint === 'function') {
-      map.triggerRepaint();
+      try {
+        map.triggerRepaint();
+      } catch {
+        // Repaint can fail when the map was torn down between scheduling and execution.
+      }
     }
   });
 }

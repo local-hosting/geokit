@@ -1,9 +1,11 @@
 import type { FeatureCollection } from 'geojson';
 import type { Bounds } from '@twinfile/geokit/types';
 import { dmaSlugFromQuery } from '../../cdn/dma.js';
-import { ensureGlobeCdnJwt } from '../resolve-globe-cdn-auth.js';
+import { formatDmaCatalogSuggestions, resolveDmaCatalogSlug } from '../../cdn/dma-catalog.js';
+import { ensureGlobeCdnJwt, isGlobeCdnAuthConfigured } from '../resolve-globe-cdn-auth.js';
 import { resolveGlobeCdnFetchOptions } from '../globe-cdn-fetch-options.js';
-import { resolveShowMapRegionContext } from './resolve-region-shape.js';
+import { resolveShowMapRegionContext, type ResolvedPlaceRef } from './resolve-region-shape.js';
+import type { MapHostRegionLayer } from '../../types/mcp-map.js';
 import type { ResolvedMapPlace, ResolvedPlace } from '../../types/mcp-business.js';
 import { fetchGeocode } from './api-fetch.js';
 
@@ -142,7 +144,12 @@ export async function geocodePlaceQuery(query: string): Promise<ResolvedPlace> {
 export async function resolveShowMapContext(
   query: string,
   options?: { cdnBaseUrl?: string }
-): Promise<{ place: ResolvedMapPlace; regionGeometry?: GeoJSON.Geometry }> {
+): Promise<{
+  place: ResolvedMapPlace;
+  regionGeometry?: GeoJSON.Geometry;
+  placeRef?: ResolvedPlaceRef;
+  regionLayer?: MapHostRegionLayer;
+}> {
   const trimmed = query.trim();
   if (!trimmed) {
     throw new Error('A place name or address is required.');
@@ -172,9 +179,24 @@ export async function resolveShowMapContext(
     bounds: CONUS_BOUNDS,
   };
   const context = await resolveShowMapRegionContext(trimmed, undefined, fallbackPlace, cdnOptions);
-  if (dmaSlugFromQuery(trimmed) && !context.regionGeometry) {
+  const dmaSlug = dmaSlugFromQuery(trimmed);
+  if (dmaSlug && !context.regionGeometry) {
+    if (!isGlobeCdnAuthConfigured()) {
+      throw new Error(
+        'Globe CDN DMA auth is not configured. Set GLOBE_CDN_JWT or GLOBE_CDN_JWT_SECRET (same secret as mapto.link) in packages/geokit/.env or apps/fieldwise/.env.'
+      );
+    }
+
+    const catalogMatch = await resolveDmaCatalogSlug(dmaSlug, cdnOptions);
+    const suggestions = formatDmaCatalogSuggestions(catalogMatch);
+    if (catalogMatch.kind === 'ambiguous' && suggestions.length > 0) {
+      throw new Error(
+        `DMA "${dmaSlug}" matches multiple markets. Try one of: ${suggestions.map((slug) => `${slug} dma`).join(', ')}.`
+      );
+    }
+
     throw new Error(
-      'Could not load DMA boundary from Globe CDN. Set GLOBE_CDN_JWT or GLOBE_CDN_JWT_SECRET (same secret as mapto.link) in packages/geokit/.env or apps/fieldwise/.env.'
+      `No DMA boundary for "${dmaSlug}". Use a full Nielsen slug from /markets/dma/index.json (e.g. tampa-st-petersburg-sarasota dma).`
     );
   }
   return context;

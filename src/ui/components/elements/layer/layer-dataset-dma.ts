@@ -2,10 +2,9 @@
  * DMA CDN choropleth preset — `/cell/{cellId}.json` + per-market slugs.
  */
 
+import { fetchDmaMarketShapeFeature } from '../../../../cdn/dma';
 import { mergeDmaFeaturesBySlug, dmaFeaturesToCollection } from '../../../../cdn/dma-regions';
 import { resolveGlobeCdnBaseUrl } from '../../../../cdn/config';
-import { fetchGlobeCdnJson } from '../../../../cdn/fetch';
-import { dmaMarketShapeUrl } from '../../../../cdn/paths';
 import { bindIncrementalViewportSync } from '../../../../cdn/viewport-shard-loader';
 import { createCellLayerLoader, fetchCellLayerCatalog } from '../../../../cdn/cell-layers';
 import { buildChoroplethFillPaint } from '../../../utils/choropleth-fill-paint';
@@ -80,23 +79,16 @@ async function loadDmaMarketShapes(
     slugs.map(async (raw) => {
       const slug = raw.trim().toLowerCase();
       if (!slug) return;
-      const url = dmaMarketShapeUrl(resolveGlobeCdnBaseUrl(options.cdnBase), slug);
       try {
-        const payload = await fetchGlobeCdnJson<GeoJSON.Feature | GeoJSON.FeatureCollection>(url, {
+        const feature = await fetchDmaMarketShapeFeature(slug, {
           baseUrl: options.cdnBase,
           init: options.getRequestInit?.(),
         });
-        if (!payload) return;
-        if (payload.type === 'FeatureCollection') {
-          added += mergeDmaFeaturesBySlug(target, payload);
-          return;
-        }
-        if (payload.type === 'Feature') {
-          added += mergeDmaFeaturesBySlug(target, {
-            type: 'FeatureCollection',
-            features: [payload],
-          });
-        }
+        if (!feature) return;
+        added += mergeDmaFeaturesBySlug(target, {
+          type: 'FeatureCollection',
+          features: [feature],
+        });
       } catch {
         /* market shard unavailable */
       }
@@ -124,13 +116,19 @@ export async function mountDmaDataset(
   const features = new Map<string, GeoJSON.Feature>();
   const { sourceId, fillLayerId, lineLayerId } = DMA_DATASET_IDS;
 
+  const dmaRegion = options.dmaRegion?.trim().toLowerCase();
   const catalog: DmaMarketColorInput[] =
     slugs?.length && mode === 'slugs'
-      ? slugs.map((slug) => ({ slug: slug.trim().toLowerCase(), region: 'unknown' }))
+      ? slugs.map((slug) => ({
+          slug: slug.trim().toLowerCase(),
+          region: dmaRegion ?? 'unknown',
+        }))
       : [];
 
   const colorExpression =
-    catalog.length > 0 ? buildDmaSlugColorExpression(catalog) : buildDmaRegionColorExpression();
+    catalog.length > 0
+      ? buildDmaSlugColorExpression(catalog, { solidColor: options.fillColor })
+      : (options.fillColor ?? buildDmaRegionColorExpression());
   const lineColor = options.lineColor ?? colorExpression;
   const lineWidth = options.lineWidth ?? DEFAULT_DMA_LINE_WIDTH;
   const showAllOutlines = Boolean(options.lineColor);
@@ -140,7 +138,7 @@ export async function mountDmaDataset(
   });
   const fillOutlineColor = showAllOutlines
     ? TRANSPARENT_OUTLINE
-    : buildDmaHighlightOutlineColorExpression(colorExpression);
+    : buildDmaHighlightOutlineColorExpression(options.outlineColor ?? colorExpression);
   const beforeLayerId = options.beforeLayerId ?? findDatasetAnchorBeforeId(map);
   const slugFilter = mode === 'slugs' ? slugFilterExpression(slugs) : undefined;
   const assignedOpacity = options.fillOpacity ?? DEFAULT_FILL_OPACITY;

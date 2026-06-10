@@ -31,8 +31,14 @@ export interface MapViewInput {
   countyFips?: string;
   /** US state code when using place slug */
   state?: string;
-  /** Place slug from CDN state cities catalog (e.g. new-york) */
+  /** Place slug from CDN state cities catalog (e.g. new-york) — with state */
   place?: string;
+  /** Free-text place, address, or DMA hint — geocoded when lat/lng and CDN fields are absent */
+  query?: string;
+  /** Region outline from geocode or DMA resolution (set by resolveMapViewInput) */
+  regionGeometry?: GeoJSON.Geometry;
+  /** Interactive host layer from geocode or DMA resolution (set by resolveMapViewInput) */
+  regionLayer?: MapHostRegionLayer;
   style?: MapStyleId;
   width?: number;
   height?: number;
@@ -68,3 +74,11 @@ export interface MapMcpRenderResult {
 export interface MapHostConfig extends MapViewConfig {
   theme?: 'light' | 'dark';
 }
+
+/** CDN outline layer for the interactive map host (show_map / open_map). */
+export type MapHostRegionLayer =
+  | { dataset: 'dma'; slug: string; region?: string }
+  | { dataset: 'place'; state: string; slug: string }
+  | { dataset: 'state'; slug: string }
+  | { dataset: 'zip'; slug: string }
+  | { dataset: 'county'; fips: string };

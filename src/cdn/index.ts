@@ -96,6 +96,17 @@ export {
   prefetchStateBoundaries,
 } from './bulk';
 export { canonicalDmaCdnSlug, isLegacyDmaSlug } from './dma-slug';
+export {
+  clearDmaMarketCatalogCache,
+  fetchDmaMarketCatalog,
+  formatDmaCatalogSuggestions,
+  matchDmaSlugInCatalog,
+  lookupDmaRegionForSlug,
+  resolveDmaCatalogSlug,
+  resolveDmaMarketFromCatalog,
+  type DmaCatalogSlugMatch,
+  type ResolvedDmaMarketCatalogEntry,
+} from './dma-catalog';
 export { dmaSlugFromQuery, fetchDmaMarketShapeFeature, resolveDmaShapeFromQuery } from './dma';
 export { validateDmaCdnJwt, validateIdentityJwt, type CdnJwtValidation } from './jwt';
 export {

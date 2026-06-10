@@ -1,4 +1,5 @@
 import type { MapStaticProviderId } from '../types/map-static-provider.js';
+import { defaultMcpMapStyle } from './map-presentation.js';
 
 export type MapProviderEnv = Record<string, string | undefined>;
 
@@ -106,5 +107,5 @@ export function resolveInteractiveMapCredentials(
 }
 
 export function defaultInteractiveMapStyle(providerId: MapStaticProviderId): string {
-  return providerId === 'mapbox' ? 'dark-v11' : 'basic';
+  return defaultMcpMapStyle(providerId);
 }

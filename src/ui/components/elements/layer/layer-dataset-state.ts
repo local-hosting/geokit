@@ -3,6 +3,7 @@
  */
 
 import { fetchStatesBulkGeoJson } from '../../../../cdn/bulk';
+import { fetchStateShapeFeature } from '../../../../cdn/state';
 import { resolveGlobeCdnBaseUrl } from '../../../../cdn/config';
 import type { LayerDatasetContext, LayerDatasetHandle } from './layer-datasets';
 import {
@@ -43,6 +44,29 @@ export async function mountStateDataset(
   ctx: LayerDatasetContext
 ): Promise<LayerDatasetHandle | null> {
   const baseUrl = resolveGlobeCdnBaseUrl(ctx.options.cdnBase);
+  const mode = ctx.options.mode ?? 'viewport';
+  const slugs = ctx.options.slugs;
+
+  if (mode === 'slugs' && slugs?.length) {
+    return mountAdminOutlineDatasetPreset(
+      ctx,
+      STATE_OUTLINE_PRESET,
+      async ({ getRequestInit }) => {
+        const features: GeoJSON.Feature[] = [];
+        for (const slug of slugs) {
+          const feature = await fetchStateShapeFeature(slug, {
+            baseUrl,
+            init: getRequestInit?.() ?? undefined,
+          });
+          if (feature) features.push(feature);
+        }
+        return features.length ? { type: 'FeatureCollection', features } : null;
+      },
+      {
+        hitLayerIds: [STATE_DATASET_IDS.fillLayerId],
+      }
+    );
+  }
 
   return mountAdminOutlineDatasetPreset(
     ctx,

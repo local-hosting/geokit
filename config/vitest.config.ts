@@ -39,6 +39,7 @@ export default defineConfig({
       MAPTILER_KEY: process.env.MAPTILER_KEY || '',
       MAPBOX_TOKEN: process.env.MAPBOX_TOKEN || '',
       FOURSQUARE_API_KEY: process.env.FOURSQUARE_API_KEY || '',
+      FOURSQUARE_SERVICE_API_KEY: process.env.FOURSQUARE_SERVICE_API_KEY || '',
     },
   },
 });

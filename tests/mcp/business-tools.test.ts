@@ -3,6 +3,7 @@
 import type { FeatureCollection } from 'geojson';
 import { describe, it, expect } from 'vitest';
 import {
+  formatInteractiveMapLink,
   formatStraightLineDistance,
   metersToMiles,
   milesToMeters,
@@ -15,6 +16,7 @@ import {
 } from '../../src/mcp/business/resolve-place.js';
 import {
   isUsCountyGeocode,
+  isUsPlaceGeocode,
   isUsStateGeocode,
   isUsZipGeocode,
   parseUsZipHint,
@@ -45,6 +47,12 @@ describe('business mcp helpers', () => {
       const table = markdownTable(['A', 'B'], [['1', '2']]);
       expect(table).toContain('| A | B |');
       expect(table).toContain('| 1 | 2 |');
+    });
+
+    it('formats interactive map links for localhost hosts', () => {
+      const link = formatInteractiveMapLink('http://localhost:3002/index.html');
+      expect(link).toContain('[Open interactive map](http://localhost:3002/index.html)');
+      expect(link).toContain('yarn map-host');
     });
   });
 
@@ -137,6 +145,25 @@ describe('business mcp helpers', () => {
       ).toBe(true);
       expect(parseUsZipHint('90210')).toBe('90210');
       expect(parseUsZipHint('90210, USA')).toBe('90210');
+    });
+
+    it('detects US city/place geocode features', () => {
+      expect(
+        isUsPlaceGeocode({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [-71.05, 42.36] },
+          place_type: ['place'],
+          properties: { country_code: 'us' },
+        })
+      ).toBe(true);
+      expect(
+        isUsPlaceGeocode({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [-71.05, 42.36] },
+          place_type: ['county'],
+          properties: { country_code: 'us', place_designation: 'county' },
+        })
+      ).toBe(false);
     });
   });
 

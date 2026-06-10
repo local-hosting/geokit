@@ -26,6 +26,16 @@ export type DmaCatalogEntry = {
   region: string;
 };
 
+/** Globe CDN `/markets/dma/index.json` — Nielsen market menu. */
+export type DmaMarketCatalogIndex = {
+  count?: number;
+  entries: Array<{
+    slug: string;
+    url?: string;
+    region?: string;
+  }>;
+};
+
 export type ViewportRegionResolveOptions = {
   bounds?: ViewportBounds;
   centerLat?: number;

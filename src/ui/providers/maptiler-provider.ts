@@ -13,6 +13,7 @@ import {
 } from '../dev-proxy/maptiler-dev-proxy';
 import { BaseUIProvider } from './types';
 import { getProviderConfig } from './registry';
+import { wrapMapResize } from '../utils/map-utils';
 
 function loadScriptAndGetGlobal(url: string, globalName: string): Promise<unknown> {
   return new Promise((resolve, reject) => {
@@ -365,6 +366,8 @@ export class MapTilerUIProvider extends BaseUIProvider {
     }
 
     const map = new this.sdk.Map(mapOptions);
+
+    wrapMapResize(map);
 
     if (typeof map.disableTerrain === 'function') {
       try {
