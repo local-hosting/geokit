@@ -313,6 +313,89 @@ export function isMapUsable(map: MapInstance | null | undefined): boolean {
 }
 
 // ============================================================================
+// Resize Utilities
+// ============================================================================
+
+type ResizeTargetMap = {
+  getContainer?: () => HTMLElement | null;
+};
+
+/**
+ * Resolve the element whose layout size should gate map.resize().
+ */
+export function getMapResizeTarget(
+  map: ResizeTargetMap | null | undefined,
+  hostElement?: HTMLElement | null
+): HTMLElement | null {
+  if (hostElement) return hostElement;
+  try {
+    return map?.getContainer?.() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * True when the map host/container has non-zero, visible layout.
+ * MapTiler/MapLibre throw in transformMat4 when resize runs on hidden or 0×0 containers.
+ */
+export function hasRenderableMapSize(element: HTMLElement | null | undefined): boolean {
+  if (!element || !element.isConnected) return false;
+
+  if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+    const style = window.getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden') {
+      return false;
+    }
+  }
+
+  const rect = element.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+}
+
+/**
+ * Resize only when the map container is visible and has dimensions.
+ * Returns true when resize ran without throwing.
+ */
+export function safeResizeMap(
+  map: (ResizeTargetMap & { resize?: () => void }) | null | undefined,
+  hostElement?: HTMLElement | null
+): boolean {
+  if (!map || typeof map.resize !== 'function') return false;
+
+  const target = getMapResizeTarget(map, hostElement);
+  if (!hasRenderableMapSize(target)) return false;
+
+  try {
+    map.resize();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Guard MapTiler/MapLibre internal ResizeObserver resize calls.
+ * Call once immediately after map construction.
+ */
+export function wrapMapResize(
+  map: (ResizeTargetMap & { resize?: () => void }) | null | undefined
+): void {
+  if (!map || typeof map.resize !== 'function') return;
+
+  const originalResize = map.resize.bind(map);
+  map.resize = () => {
+    const target = getMapResizeTarget(map);
+    if (!hasRenderableMapSize(target)) return;
+    try {
+      originalResize();
+    } catch {
+      // SDK can throw transformMat4 errors when resize races teardown or zero-size layout.
+    }
+  };
+}
+
+// ============================================================================
 // Source Data Utilities
 // ============================================================================
 

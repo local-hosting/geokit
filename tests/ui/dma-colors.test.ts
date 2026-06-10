@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDmaHighlightOutlineColorExpression,
   buildDmaLineOpacityExpression,
+  buildAdminDmaSlugColorExpression,
   buildDmaSlugColorExpression,
+  generateDMAColorPalette,
   getDMAColor,
   DMA_H2_GRID_FILL,
   DMA_H2_UNASSIGNED_SLUG,
@@ -35,6 +37,27 @@ describe('geokit/ui dma-colors', () => {
       getDMAColor('louisville', 'mid-south'),
       DMA_H2_UNASSIGNED_SLUG,
       DMA_H2_GRID_FILL,
+      DMA_FALLBACK_NEUTRAL,
+    ]);
+  });
+});
+
+describe('generateDMAColorPalette', () => {
+  it('returns one hex per requested DMA slot', () => {
+    const palette = generateDMAColorPalette(5);
+    expect(palette).toHaveLength(5);
+    expect(palette.every((color) => /^#[0-9a-f]{6}$/i.test(color))).toBe(true);
+  });
+});
+
+describe('admin dma colors', () => {
+  it('builds admin dmaSlug color expression', () => {
+    const expr = buildAdminDmaSlugColorExpression([{ slug: 'omaha', region: 'midwest' }]);
+    expect(expr).toEqual([
+      'match',
+      ['get', 'dmaSlug'],
+      'omaha',
+      getDMAColor('omaha', 'midwest'),
       DMA_FALLBACK_NEUTRAL,
     ]);
   });

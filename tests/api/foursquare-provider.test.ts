@@ -183,7 +183,9 @@ describe('FoursquareAPIProvider', () => {
       await provider.placeSearch({ query: 'coffee' });
 
       const fetchCall = (fetch as any).mock.calls[0];
-      expect(fetchCall[1].headers.Authorization).toBe('my-secret-key');
+      expect(fetchCall[0]).toContain('places-api.foursquare.com/places/search');
+      expect(fetchCall[1].headers.Authorization).toBe('Bearer my-secret-key');
+      expect(fetchCall[1].headers['X-Places-Api-Version']).toBe('2025-06-17');
     });
 
     it('should transform response to PlaceSearchResult format', async () => {
@@ -210,6 +212,42 @@ describe('FoursquareAPIProvider', () => {
         },
       });
       expect(results[0].raw).toBeDefined();
+    });
+
+    it('should transform new Places API response shape', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            results: [
+              {
+                fsq_place_id: 'new-place-456',
+                name: 'New API Coffee',
+                latitude: 41.2855,
+                longitude: -96.0712,
+                location: {
+                  formatted_address: '10196 Maple St, Omaha, NE 68134',
+                },
+                categories: [{ name: 'Coffee Shop' }],
+                distance: 722,
+                rating: 8.3,
+              },
+            ],
+          }),
+      } as Response);
+
+      await provider.initialize({ apiKey: 'test-api-key' });
+      const results = await provider.placeSearch({ query: 'coffee' });
+
+      expect(results[0]).toMatchObject({
+        id: 'new-place-456',
+        name: 'New API Coffee',
+        address: '10196 Maple St, Omaha, NE 68134',
+        location: [-96.0712, 41.2855],
+        categories: ['Coffee Shop'],
+        distance: 722,
+        rating: 8.3,
+      });
     });
   });
 

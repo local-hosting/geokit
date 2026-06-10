@@ -2,6 +2,7 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { haversineMeters } from '@twinfile/geokit/distance';
 import type { ResolvedMapStaticProvider } from '../../types/map-static-provider.js';
 import type { AreaComparisonRow, NearbyPlaceRow } from '../../types/mcp-business.js';
+import type { MapHostRegionLayer } from '../../types/mcp-map.js';
 import {
   fetchDirections,
   fetchIsochrone,
@@ -11,13 +12,19 @@ import {
 import {
   formatAreaSqMiles,
   formatDriveTime,
+  formatInteractiveMapLink,
   formatStraightLineDistance,
   markdownTable,
   metersToMiles,
   milesToMeters,
 } from './format.js';
 import { businessMapContent, renderBusinessMap } from './map-snapshot.js';
+import { resolveMcpMapTheme } from '../map-presentation.js';
+import { resolveMcpRegionPathStyle } from '../map-presentation.js';
 import { circleOverlay, markerOverlay, polygonOverlay } from './overlays.js';
+import { resolveDmaMarketFromCatalog } from '../../cdn/dma-catalog.js';
+import { dmaSlugFromQuery } from '../../cdn/dma.js';
+import { resolveGlobeCdnFetchOptions } from '../globe-cdn-fetch-options.js';
 import { geocodePlaceQuery, resolvePlaceInput, resolveShowMapContext } from './resolve-place.js';
 import {
   mcpError,
@@ -38,6 +45,9 @@ function mcpMapResult(snapshot: Awaited<ReturnType<typeof renderBusinessMap>>): 
       mimeType: mimeType ?? 'image/png',
     });
   }
+  if (snapshot.hostUrl) {
+    content.push({ type: 'text', text: formatInteractiveMapLink(snapshot.hostUrl) });
+  }
   return {
     content,
     structuredContent: {
@@ -47,6 +57,7 @@ function mcpMapResult(snapshot: Awaited<ReturnType<typeof renderBusinessMap>>): 
       zoom: snapshot.zoom,
       imageUrl: snapshot.imageUrl,
       hostUrl: snapshot.hostUrl,
+      interactiveMapUrl: snapshot.hostUrl,
     },
   };
 }
@@ -75,6 +86,7 @@ export async function handleShowMap(
 
     let resolved: Awaited<ReturnType<typeof resolveShowMapContext>>['place'];
     let regionGeometry: GeoJSON.Geometry | undefined;
+    let regionLayer: MapHostRegionLayer | undefined;
 
     if (lat != null && lng != null) {
       resolved = {
@@ -90,17 +102,32 @@ export async function handleShowMap(
       const context = await resolveShowMapContext(place ?? '', { cdnBaseUrl: options?.cdnBaseUrl });
       resolved = context.place;
       regionGeometry = context.regionGeometry;
+      regionLayer = context.regionLayer;
     }
 
     const frameRegion = resolved.scope === 'region' && resolved.bounds != null;
     const label = readOptionalString(raw, 'label') ?? resolved.label;
-    const zoom =
-      readOptionalNumber(raw, 'zoom') ?? (frameRegion && !regionGeometry ? undefined : 12);
-    const regionOverlays = regionGeometry ? polygonOverlay(provider, regionGeometry) : undefined;
+    const zoom = readOptionalNumber(raw, 'zoom') ?? (frameRegion ? undefined : 12);
+    const bounds = resolved.bounds;
+    const cdnOptions = resolveGlobeCdnFetchOptions({ cdnBaseUrl: options?.cdnBaseUrl });
+    if (!regionLayer && place != null && /\bdma\b/i.test(place)) {
+      const dmaSlug = dmaSlugFromQuery(place);
+      if (dmaSlug) {
+        const catalogMarket = await resolveDmaMarketFromCatalog(dmaSlug, cdnOptions);
+        regionLayer = {
+          dataset: 'dma',
+          slug: catalogMarket?.slug ?? dmaSlug,
+          region: catalogMarket?.region,
+        };
+      }
+    }
+    const regionStyle = resolveMcpRegionPathStyle({ regionLayer });
+    const regionOverlays = regionGeometry
+      ? polygonOverlay(provider, regionGeometry, 0, regionStyle)
+      : undefined;
     const overlays =
       regionOverlays ??
       (frameRegion ? undefined : markerOverlay(provider, resolved.lat, resolved.lng));
-    const bounds = resolved.bounds;
 
     const snapshot = await renderBusinessMap({
       provider,
@@ -113,7 +140,8 @@ export async function handleShowMap(
       fetchImage: true,
       includeHostUrl: raw.interactive !== false,
       hostBaseUrl,
-      theme: raw.theme === 'dark' ? 'dark' : 'light',
+      theme: resolveMcpMapTheme(raw.theme),
+      regionLayer,
     });
 
     return mcpMapResult(snapshot);
@@ -308,7 +336,7 @@ export async function handleDriveTimeArea(
       fetchImage: true,
       includeHostUrl: true,
       hostBaseUrl,
-      theme: raw.theme === 'dark' ? 'dark' : 'light',
+      theme: resolveMcpMapTheme(raw.theme),
     });
 
     const summary = `**${minutes}-minute ${mode} reach** from ${resolved.label}.`;
@@ -347,7 +375,7 @@ export async function handleDrawRadius(
       fetchImage: true,
       includeHostUrl: true,
       hostBaseUrl,
-      theme: raw.theme === 'dark' ? 'dark' : 'light',
+      theme: resolveMcpMapTheme(raw.theme),
     });
 
     const summary = `**${radiusMiles}-mile radius** around ${resolved.label} covers about ${formatAreaSqMiles(areaSqMiles)}.`;
@@ -431,7 +459,7 @@ export async function handleCompareAreas(
       fetchImage: true,
       includeHostUrl: true,
       hostBaseUrl,
-      theme: raw.theme === 'dark' ? 'dark' : 'light',
+      theme: resolveMcpMapTheme(raw.theme),
     });
 
     const table = markdownTable(

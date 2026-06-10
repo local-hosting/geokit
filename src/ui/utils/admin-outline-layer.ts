@@ -43,6 +43,8 @@ export type AdminOutlineLayerConfig = {
   minzoom?: number;
   /** Zoom at which CDN line paint becomes visible. Default 7. */
   lineMinzoom?: number;
+  fillColor?: string | unknown[];
+  fillOpacity?: number;
   polygonSourceOptions?: AdminOutlineSourceOptions;
   lineSourceOptions?: AdminOutlineSourceOptions;
 };
@@ -140,8 +142,8 @@ export function addAdminOutlineLayer(
       source: config.polygonSourceId,
       ...(config.minzoom != null ? { minzoom: config.minzoom } : {}),
       paint: {
-        'fill-color': 'rgba(0, 0, 0, 0)',
-        'fill-opacity': ADMIN_OUTLINE_HIT_FILL_OPACITY,
+        'fill-color': config.fillColor ?? 'rgba(0, 0, 0, 0)',
+        'fill-opacity': config.fillOpacity ?? ADMIN_OUTLINE_HIT_FILL_OPACITY,
         'fill-antialias': false,
       },
     },

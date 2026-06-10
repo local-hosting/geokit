@@ -53,6 +53,11 @@ function storeJwt(token: string): void {
   process.env.GEOKIT_GLOBE_CDN_JWT = token;
 }
 
+/** True when a bearer token or signing secret is available for DMA CDN fetches. */
+export function isGlobeCdnAuthConfigured(): boolean {
+  return Boolean(readConfiguredJwt() || resolveJwtSecret());
+}
+
 /** Mint or refresh Globe CDN DMA JWT when only the HS256 secret is configured. */
 export async function ensureGlobeCdnJwt(): Promise<string | undefined> {
   const configured = readConfiguredJwt();

@@ -30,7 +30,7 @@ import {
   handleShowMap,
   handleWhatsHere,
 } from './business/tools.js';
-import { buildMapHostUrl, resolveMapHostBaseUrl } from './open-map.js';
+import { buildMapHostUrl, regionLayerFromMapViewInput, resolveMapHostBaseUrl } from './open-map.js';
 import { renderMapViewForMcp } from './render-map-view.js';
 import { resolveMapViewInput } from './resolve-map-input.js';
 import {
@@ -70,7 +70,15 @@ const mapInputSchema = {
   place: z
     .string()
     .optional()
-    .describe('Place slug from CDN state catalog (e.g. new-york, brooklyn via borough alias)'),
+    .describe(
+      'CDN place slug with state (e.g. new-york with state=ny), or a free-text place/DMA hint when state is omitted'
+    ),
+  query: z
+    .string()
+    .optional()
+    .describe(
+      'Free-text place, address, or DMA hint (e.g. Omaha DMA, Austin TX) — alias for place'
+    ),
   style: z.string().optional().describe('Map style id (provider-specific default when omitted)'),
   width: z.number().min(1).max(2048).optional().describe('Snapshot width in pixels (default 600)'),
   height: z
@@ -95,6 +103,7 @@ function mapInputFromRaw(raw: Record<string, unknown>): MapViewInput {
     countyFips: typeof raw.countyFips === 'string' ? raw.countyFips : undefined,
     state: typeof raw.state === 'string' ? raw.state : undefined,
     place: typeof raw.place === 'string' ? raw.place : undefined,
+    query: typeof raw.query === 'string' ? raw.query : undefined,
     style: typeof raw.style === 'string' ? raw.style : undefined,
     width: typeof raw.width === 'number' ? raw.width : undefined,
     height: typeof raw.height === 'number' ? raw.height : undefined,
@@ -122,7 +131,7 @@ async function main(): Promise<void> {
     {
       capabilities: { tools: {} },
       instructions:
-        'Business-friendly geokit map tools. **show_map** renders a map image. **find_place** / **whats_here** resolve locations. **how_far**, **nearby**, **drive_time_area**, **draw_radius**, and **compare_areas** answer common reach and distance questions. Legacy **render_map** / **open_map** remain for GIS-style inputs. Requires GEOKIT_MAP_API_KEY for map images; routing token for drive times; FOURSQUARE_API_KEY for nearby. DMA outlines need GLOBE_CDN_JWT when the CDN requires auth.',
+        'Business-friendly geokit map tools. **show_map** renders a map image. **find_place** / **whats_here** resolve locations. **how_far**, **nearby**, **drive_time_area**, **draw_radius**, and **compare_areas** answer common reach and distance questions. Legacy **render_map** / **open_map** remain for GIS-style inputs. Requires GEOKIT_MAP_API_KEY for map images; routing token for drive times; FOURSQUARE_SERVICE_API_KEY (or FOURSQUARE_API_KEY) for nearby. DMA outlines need GLOBE_CDN_JWT when the CDN requires auth.',
     }
   );
 
@@ -154,7 +163,7 @@ async function main(): Promise<void> {
     'render_map',
     {
       description:
-        'Render a static map snapshot for inline chat display. Returns markdown + PNG image content. Provide lat/lng, bounds, countyFips, or state+place.',
+        'Render a static map snapshot for inline chat display. Returns markdown + PNG image content. Provide lat/lng, bounds, countyFips, state+place, or a place/query to geocode (including DMA hints).',
       inputSchema: mapInputSchema,
     },
     async (raw): Promise<CallToolResult> => {
@@ -239,7 +248,7 @@ async function main(): Promise<void> {
     'nearby',
     {
       description:
-        'Find places near a location (e.g. coffee shops, hospitals). Requires FOURSQUARE_API_KEY.',
+        'Find places near a location (e.g. coffee shops, hospitals). Requires FOURSQUARE_SERVICE_API_KEY or FOURSQUARE_API_KEY.',
       inputSchema: nearbySchema,
     },
     handleNearby
@@ -297,6 +306,8 @@ async function main(): Promise<void> {
           style: snapshot.style,
           theme: input.theme,
           provider: snapshot.provider,
+          bounds: input.bounds?.length === 4 ? input.bounds : undefined,
+          regionLayer: regionLayerFromMapViewInput(input),
         });
 
         const markdown = [

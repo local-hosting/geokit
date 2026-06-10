@@ -1,6 +1,8 @@
 import type { ResolvedMapStaticProvider } from '../../types/map-static-provider.js';
 import type { BusinessMapSnapshot } from '../../types/mcp-business.js';
+import type { MapHostRegionLayer } from '../../types/mcp-map.js';
 import { buildMapHostUrl } from '../open-map.js';
+import { defaultMcpMapStyle, resolveMcpMapTheme } from '../map-presentation.js';
 import {
   buildMapMarkdownImage,
   buildStaticSnapshotUrl,
@@ -21,8 +23,11 @@ export async function renderBusinessMap(args: {
   includeHostUrl?: boolean;
   hostBaseUrl?: string;
   theme?: 'light' | 'dark';
+  regionLayer?: MapHostRegionLayer;
 }): Promise<BusinessMapSnapshot> {
   const provider = args.provider;
+  const mapStyle = defaultMcpMapStyle(provider.id);
+  const theme = resolveMcpMapTheme(args.theme);
   const width = DEFAULT_MAP_DIMENSIONS.width;
   const height = DEFAULT_MAP_DIMENSIONS.height;
   const padding = DEFAULT_MAP_FIT_PADDING;
@@ -47,6 +52,7 @@ export async function renderBusinessMap(args: {
   const imageUrl = buildStaticSnapshotUrl({
     provider,
     viewport,
+    style: mapStyle,
     dimensions: { width, height },
     bounds: hasOverlays ? undefined : args.bounds,
     overlays: hasOverlays ? overlays : undefined,
@@ -81,9 +87,11 @@ export async function renderBusinessMap(args: {
       ? buildMapHostUrl({
           hostBaseUrl: args.hostBaseUrl,
           viewport,
-          style: provider.adapter.defaultStyle,
-          theme: args.theme,
+          style: mapStyle,
+          theme,
           provider: provider.id,
+          bounds: frameRegion ? args.bounds : undefined,
+          regionLayer: args.regionLayer,
         })
       : undefined;
 
@@ -95,12 +103,7 @@ export async function renderBusinessMap(args: {
       ? `Map centered on ${args.label}.`
       : `Map centered at ${args.lat.toFixed(4)}, ${args.lng.toFixed(4)}.`;
 
-  const markdown = [
-    args.label ? `### ${args.label}` : undefined,
-    summary,
-    markdownImage,
-    hostUrl ? `**Interactive map:** ${hostUrl}` : undefined,
-  ]
+  const markdown = [args.label ? `### ${args.label}` : undefined, summary, markdownImage]
     .filter(Boolean)
     .join('\n\n');
 

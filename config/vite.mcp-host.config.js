@@ -1,15 +1,22 @@
 import { defineConfig, loadEnv } from 'vite';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { demoCdnIdentityPlugin } from './demo-cdn-identity-plugin.js';
 
 const configDir = fileURLToPath(new URL('.', import.meta.url));
 const geokitRoot = resolve(configDir, '..');
 
 export default defineConfig(({ mode }) => {
   const geokitEnv = loadEnv(mode, geokitRoot, '');
+  const globeCdnUrl =
+    geokitEnv.GEOKIT_GLOBE_CDN_URL?.trim() ||
+    geokitEnv.GLOBE_CDN_URL?.trim() ||
+    geokitEnv.FW_GLOBE_CDN_URL?.trim() ||
+    'https://mapto.link';
 
   return {
     root: resolve(geokitRoot, 'host/mcp'),
+    plugins: [demoCdnIdentityPlugin(geokitEnv)],
     resolve: {
       alias: {
         '@geokit-src': resolve(geokitRoot, 'src'),
@@ -37,6 +44,10 @@ export default defineConfig(({ mode }) => {
       ),
       'import.meta.env.MAPBOX_ACCESS_TOKEN': JSON.stringify(geokitEnv.MAPBOX_ACCESS_TOKEN || ''),
       'import.meta.env.GEOKIT_MAPBOX_KEY': JSON.stringify(geokitEnv.GEOKIT_MAPBOX_KEY || ''),
+      'import.meta.env.GEOKIT_GLOBE_CDN_URL': JSON.stringify(globeCdnUrl),
+      'import.meta.env.GLOBE_CDN_URL': JSON.stringify(globeCdnUrl),
+      'process.env.GEOKIT_GLOBE_CDN_URL': JSON.stringify(globeCdnUrl),
+      'process.env.GLOBE_CDN_URL': JSON.stringify(globeCdnUrl),
     },
   };
 });
