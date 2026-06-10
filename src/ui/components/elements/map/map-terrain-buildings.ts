@@ -30,7 +30,7 @@ type RasterSourceSpec = {
   tileSize: number;
 };
 
-/** When transformRequest is set (e.g. Fieldwise dev proxy), use tile templates so DEM tiles are rewritten. */
+/** When transformRequest is set (e.g. host dev proxy), use tile templates so DEM tiles are rewritten. */
 function mapTilerTileTemplate(
   path: string,
   apiKey: string,

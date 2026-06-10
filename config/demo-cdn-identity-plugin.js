@@ -1,5 +1,5 @@
 /**
- * Geokit demo dev server — mint Globe CDN DMA JWT locally (no Fieldwise required).
+ * Geokit demo dev server — mint Globe CDN DMA JWT locally (no host app required).
  * Uses the same HS256 secret as mapto.link edge auth.
  */
 import { existsSync, readFileSync } from 'fs';
@@ -33,7 +33,7 @@ function resolveGlobeCdnJwtSecret(env) {
     env.GLOBE_CDN_JWT_SECRET?.trim() ||
     process.env.GLOBE_CDN_JWT_SECRET?.trim() ||
     readGlobeCdnSecretFromDotenv(resolve(process.cwd(), '.env')) ||
-    readGlobeCdnSecretFromDotenv(resolve(process.cwd(), '../../apps/fieldwise/.env'))
+    readGlobeCdnSecretFromDotenv(resolve(process.cwd(), '../../.env'))
   );
 }
 
@@ -60,7 +60,7 @@ export function demoCdnIdentityPlugin(env = {}) {
         if (!secret) {
           sendJson(res, 503, {
             error: 'CDN JWT secret not configured',
-            hint: 'set GLOBE_CDN_JWT_SECRET in packages/geokit/.env or apps/fieldwise/.env',
+            hint: 'set GLOBE_CDN_JWT_SECRET in packages/geokit/.env or the host app .env',
           });
           return;
         }

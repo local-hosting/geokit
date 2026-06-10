@@ -1,5 +1,5 @@
 /**
- * Globe CDN URL rewrite for apps that opt into a same-origin dev proxy (e.g. Fieldwise).
+ * Globe CDN URL rewrite for apps that opt into a same-origin dev proxy.
  * Geokit demos and gk-layer fetch mapto.link directly.
  */
 

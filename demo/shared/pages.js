@@ -13,6 +13,12 @@ export const DEMO_SECTIONS = [
       { id: 'main', path: '/maps/index.html', label: 'Main' },
       { id: 'scrolling', path: '/maps/scrolling.html', label: 'Scrolling' },
       { id: 'centered', path: '/maps/centered.html', label: 'Providers' },
+      {
+        id: 'h3-viewport',
+        path: '/maps/h3-viewport.html',
+        label: 'H3 viewport',
+        description: 'gk-h3 grid synced to viewport via h3CellsForViewportBounds',
+      },
     ],
   },
   {
@@ -60,6 +66,12 @@ export const DEMO_SECTIONS = [
         path: '/maps/dma.html',
         label: 'DMA',
         description: 'gk-layer dma — all (viewport) or one (slug)',
+      },
+      {
+        id: 'paint-hero',
+        path: '/maps/paint-hero.html',
+        label: 'Paint hero',
+        description: 'CONUS hero stack — state lines + DMA viewport on dataviz-dark',
       },
     ],
   },
