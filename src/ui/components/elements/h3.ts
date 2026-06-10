@@ -270,7 +270,12 @@ export class H3Element extends MapChildElement {
   }
 
   get opacity(): number {
-    return parseFloat(this.getAttribute('opacity') || '0.3') || 0.3;
+    const attr = this.getAttribute('opacity');
+    if (attr != null && attr !== '') {
+      const parsed = parseFloat(attr);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return 0.3;
   }
 
   get strokeColor(): string {
