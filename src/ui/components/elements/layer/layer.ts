@@ -392,6 +392,7 @@ export class LayerElement extends MapChildElement {
       fillColor: this.safeGetAttribute('fill-color') ?? undefined,
       outlineColor: this.safeGetAttribute('outline-color') ?? undefined,
       dmaRegion: this.safeGetAttribute('dma-region') ?? undefined,
+      darkVariant: this.hasAttribute('dark-variant'),
       state: this.safeGetAttribute('state') ?? undefined,
       colorMode: parseAdminColorMode(this.safeGetAttribute('color-mode')),
     };

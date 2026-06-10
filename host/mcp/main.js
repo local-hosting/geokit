@@ -6,6 +6,7 @@ import { configure } from '@geokit-src/ui/providers/registry.ts';
 import {
   defaultMcpMapStyle,
   MCP_DMA_LAYER_FILL_OPACITY,
+  MCP_DMA_VIEWPORT_FILL_OPACITY,
   MCP_DMA_LAYER_LINE_WIDTH,
   resolveMcpMapTheme,
   resolveMcpRegionHexColors,
@@ -51,7 +52,6 @@ configure({
 const mapStyle = params.get('style')?.trim() || defaultMcpMapStyle(providerId);
 const mapElement = document.getElementById('open-map');
 
-// Set credentials before gk-map upgrades — otherwise connectedCallback init fails and sticks on "Loading map..."
 if (mapElement) {
   mapElement.setAttribute('provider', providerId);
   mapElement.setAttribute('lat', String(lat));
@@ -95,14 +95,26 @@ function cdnRequestInit() {
 }
 
 function applyMcpRegionStyle(layer, layerRef) {
-  const { fill, stroke } = resolveMcpRegionHexColors(
-    layerRef ? { regionLayer: layerRef } : undefined
+  const isDma = layerRef?.dataset === 'dma';
+  const isDmaViewport = isDma && layerRef?.mode === 'viewport';
+  if (!isDma) {
+    const { fill, stroke } = resolveMcpRegionHexColors(
+      layerRef ? { regionLayer: layerRef } : undefined
+    );
+    layer.setAttribute('fill-color', fill);
+    layer.setAttribute('outline-color', stroke);
+    layer.setAttribute('line-color', stroke);
+  }
+  if (theme === 'dark' && isDma && !isDmaViewport) {
+    layer.setAttribute('dark-variant', '');
+  }
+  layer.setAttribute(
+    'fill-opacity',
+    String(isDmaViewport ? MCP_DMA_VIEWPORT_FILL_OPACITY : MCP_DMA_LAYER_FILL_OPACITY)
   );
-  layer.setAttribute('fill-color', fill);
-  layer.setAttribute('outline-color', stroke);
-  layer.setAttribute('line-color', stroke);
-  layer.setAttribute('fill-opacity', String(MCP_DMA_LAYER_FILL_OPACITY));
-  layer.setAttribute('line-width', String(MCP_DMA_LAYER_LINE_WIDTH));
+  if (!isDmaViewport) {
+    layer.setAttribute('line-width', String(MCP_DMA_LAYER_LINE_WIDTH));
+  }
   layer.getRequestInit = cdnRequestInit;
 }
 
@@ -114,11 +126,15 @@ function appendRegionLayer(layerRef) {
   switch (layerRef.dataset) {
     case 'dma':
       layer.setAttribute('dataset', 'dma');
-      layer.setAttribute('mode', 'slugs');
-      layer.setAttribute('slugs', layerRef.slug);
-      layer.setAttribute('highlight-slug', layerRef.slug);
-      if (layerRef.region?.trim()) {
-        layer.setAttribute('dma-region', layerRef.region.trim().toLowerCase());
+      if (layerRef.mode === 'viewport') {
+        layer.setAttribute('mode', 'viewport');
+      } else {
+        layer.setAttribute('mode', 'slugs');
+        layer.setAttribute('slugs', layerRef.slug);
+        layer.setAttribute('highlight-slug', layerRef.slug);
+        if (layerRef.region?.trim()) {
+          layer.setAttribute('dma-region', layerRef.region.trim().toLowerCase());
+        }
       }
       layer.setAttribute('interactive', '');
       break;
@@ -162,46 +178,103 @@ async function fitHostBounds() {
   await mapElement.setBounds(shapeBounds, { padding });
 }
 
-async function ensureMapReady() {
-  if (!mapElement || mapElement.isInitialized) return;
-  if (typeof mapElement.initializeMap === 'function') {
-    await mapElement.initializeMap();
+function showCdnAuthBanner() {
+  const banner = document.createElement('div');
+  banner.setAttribute('role', 'alert');
+  banner.textContent =
+    'DMA outlines need CDN auth — set GLOBE_CDN_JWT_SECRET in packages/geokit/.env and restart yarn map-host.';
+  Object.assign(banner.style, {
+    position: 'fixed',
+    top: '12px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: '9999',
+    maxWidth: '90vw',
+    padding: '10px 14px',
+    borderRadius: '8px',
+    background: '#7f1d1d',
+    color: '#fff',
+    font: '14px/1.4 system-ui, sans-serif',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+  });
+  document.body.appendChild(banner);
+}
+
+
+async function waitForMapSettled() {
+  const map = mapElement?.getMap?.();
+  if (!map) {
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return;
   }
+  await new Promise((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      map.off?.('idle', done);
+      map.off?.('moveend', done);
+      resolve();
+    };
+    if (typeof map.isMoving === 'function' && !map.isMoving()) {
+      requestAnimationFrame(() => requestAnimationFrame(done));
+      return;
+    }
+    map.once?.('idle', done);
+    map.once?.('moveend', done);
+    setTimeout(done, 750);
+  });
 }
 
-await fetchCdnIdentityToken();
-if (!cachedCdnJwt && regionLayer) {
-  console.warn(
-    '[map-host] Globe CDN JWT unavailable — DMA outlines need yarn map-host and GLOBE_CDN_JWT_SECRET in packages/geokit/.env'
-  );
+function waitForMapReady() {
+  if (!mapElement) return Promise.resolve();
+  if (mapElement.isInitialized) return Promise.resolve();
+  return new Promise((resolve) => {
+    mapElement.addEventListener('gk-map-ready', () => resolve(), { once: true });
+  });
 }
 
-if (mapElement) {
-  await ensureMapReady();
+function waitForLayerReady(layer) {
+  return new Promise((resolve) => {
+    layer.addEventListener('gk-layer-ready', () => resolve(), { once: true });
+  });
+}
+
+async function mountRegionLayerWhenReady() {
+  if (!mapElement) return;
+
+  await fetchCdnIdentityToken();
+  if (!cachedCdnJwt && regionLayer) {
+    console.warn(
+      '[map-host] Globe CDN JWT unavailable — DMA outlines need yarn map-host and GLOBE_CDN_JWT_SECRET in packages/geokit/.env'
+    );
+    showCdnAuthBanner();
+  }
+
+  if (!mapElement.isInitialized && typeof mapElement.initializeMap === 'function') {
+    void mapElement.initializeMap();
+  }
+  await waitForMapReady();
+
+  if (shapeBounds) {
+    await fitHostBounds();
+    await waitForMapSettled();
+  }
+
+  if (!regionLayer) {
+    return;
+  }
 
   const regionLayerEl = appendRegionLayer(regionLayer);
-
-  mapElement.addEventListener(
-    'gk-map-ready',
-    () => {
-      void fitHostBounds();
-    },
-    { once: true }
-  );
-
-  if (regionLayerEl) {
-    regionLayerEl.addEventListener(
-      'gk-layer-ready',
-      () => {
-        void fitHostBounds();
-      },
-      { once: true }
-    );
-    regionLayerEl.getRequestInit = cdnRequestInit;
-    if (typeof regionLayerEl.reloadDataset === 'function') {
-      void regionLayerEl.reloadDataset();
-    }
-  } else {
-    void fitHostBounds();
+  if (!regionLayerEl) {
+    return;
   }
+
+  regionLayerEl.getRequestInit = cdnRequestInit;
+
+  const layerReady = waitForLayerReady(regionLayerEl);
+  await regionLayerEl.reloadDataset();
+  await layerReady;
 }
+
+void mountRegionLayerWhenReady();
