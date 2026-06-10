@@ -7,6 +7,31 @@ export type GlobeCdnFetchOptions = {
   init?: RequestInit;
 };
 
+export type GlobeCdnBytesDetail = {
+  url: string;
+  bytes: number;
+};
+
+export type GlobeCdnBytesObserver = (detail: GlobeCdnBytesDetail) => void;
+
+const globeCdnBytesObservers = new Set<GlobeCdnBytesObserver>();
+
+/** Host apps can observe JSON payload sizes from fetchGlobeCdnJson. */
+export function registerGlobeCdnBytesObserver(observer: GlobeCdnBytesObserver): () => void {
+  globeCdnBytesObservers.add(observer);
+  return () => globeCdnBytesObservers.delete(observer);
+}
+
+function notifyGlobeCdnBytes(detail: GlobeCdnBytesDetail): void {
+  for (const observer of globeCdnBytesObservers) {
+    try {
+      observer(detail);
+    } catch {
+      /* host observer must not break loader */
+    }
+  }
+}
+
 const CELL_BUNDLE_PATH = /^\/cell\/([^/]+)\.json$/;
 
 let publishedCellIds: Set<string> | null | undefined;
@@ -97,7 +122,14 @@ export async function fetchGlobeCdnJson<T>(
     if (!res.ok) return null;
     const contentType = res.headers.get('content-type') ?? '';
     if (contentType.includes('text/html')) return null;
-    return (await res.json()) as T;
+    const text = await res.text();
+    if (text.length > 0) {
+      notifyGlobeCdnBytes({
+        url: pathOrUrl,
+        bytes: new TextEncoder().encode(text).byteLength,
+      });
+    }
+    return JSON.parse(text) as T;
   } catch {
     return null;
   }
