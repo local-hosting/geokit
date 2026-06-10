@@ -119,14 +119,26 @@ export function resizeAndRepaintMap(map: MapLike | null): void {
   });
 }
 
+/** MapTiler/MapLibre may allocate more than one WebGL context per map instance. */
+export const WEBGL_CONTEXTS_PER_MAP = 2;
+
+/** Conservative per-page budget (Safari/WebKit is often ~8). */
+export const WEBGL_CONTEXT_BUDGET = 8;
+
+/** Cap pool size so concurrent maps stay under typical WebGL limits. */
+export function getMaxActiveMaps(requestedPoolSize: number): number {
+  const budgetCap = Math.max(1, Math.floor(WEBGL_CONTEXT_BUDGET / WEBGL_CONTEXTS_PER_MAP));
+  return Math.min(Math.max(1, requestedPoolSize), budgetCap);
+}
+
 /**
- * Wait for WebGL context to be released (double rAF + 50ms). Call after map.remove().
+ * Wait for WebGL context to be released (double rAF + delay). Call after map.remove().
  */
-export function delayForWebGLRelease(): Promise<void> {
+export function delayForWebGLRelease(delayMs: number = 100): Promise<void> {
   return new Promise((resolve) => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        setTimeout(resolve, 50);
+        setTimeout(resolve, delayMs);
       });
     });
   });
