@@ -96,6 +96,60 @@ export function prioritizeH3CellsNearCenter(
     .slice(0, limit);
 }
 
+export type ViewportH3PrioritizeOptions = {
+  bounds: ViewportBounds;
+  centerLat: number;
+  centerLng: number;
+  limit: number;
+};
+
+/** Pin viewport corners first, then fill toward center — keeps edge DMA shards under a cap. */
+export function prioritizeH3CellsForViewport(
+  cells: string[],
+  options: ViewportH3PrioritizeOptions
+): string[] {
+  if (cells.length <= options.limit) return cells;
+
+  const corners: [number, number][] = [
+    [options.bounds.north, options.bounds.west],
+    [options.bounds.north, options.bounds.east],
+    [options.bounds.south, options.bounds.east],
+    [options.bounds.south, options.bounds.west],
+  ];
+
+  const picked = new Set<string>();
+
+  for (const [lat, lng] of corners) {
+    if (picked.size >= options.limit) break;
+    let best: string | null = null;
+    let bestDist = Infinity;
+    for (const cell of cells) {
+      if (picked.has(cell)) continue;
+      const dist = cellDistanceSq(cell, lat, lng);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = cell;
+      }
+    }
+    if (best) picked.add(best);
+  }
+
+  const remaining = cells
+    .filter((cell) => !picked.has(cell))
+    .sort(
+      (a, b) =>
+        cellDistanceSq(a, options.centerLat, options.centerLng) -
+        cellDistanceSq(b, options.centerLat, options.centerLng)
+    );
+
+  for (const cell of remaining) {
+    if (picked.size >= options.limit) break;
+    picked.add(cell);
+  }
+
+  return [...picked];
+}
+
 /** H3 cell(s) under a map point. */
 export function h3CellsAtPoint(lat: number, lng: number, resolution: number, diskK = 0): string[] {
   try {

@@ -8,6 +8,7 @@ const ELEMENT_LOADERS = {
   isochrone: () => import('../../src/ui/components/elements/isochrone/isochrone'),
   polygon: () => import('../../src/ui/components/elements/polygon.ts'),
   layer: () => import('../../src/ui/components/elements/layer/layer.ts'),
+  h3: () => import('../../src/ui/components/elements/h3.ts'),
   'navigation-control': () => import('../../src/ui/components/controls/navigation-control.ts'),
 };
 
