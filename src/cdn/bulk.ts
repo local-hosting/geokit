@@ -86,8 +86,10 @@ export function prefetchCountyBoundaries(options?: GlobeCdnFetchOptions): void {
   void fetchCountiesBulkGeoJson(options);
 }
 
-/** Start state + county outline downloads (module cache shared across callers). */
-export function prefetchBoundaryOutlines(options?: GlobeCdnFetchOptions): void {
+/** Start outline downloads (module cache shared across callers). */
+export function prefetchBoundaryOutlines(
+  options?: GlobeCdnFetchOptions & { counties?: boolean }
+): void {
   prefetchStateBoundaries(options);
-  prefetchCountyBoundaries(options);
+  if (options?.counties === true) prefetchCountyBoundaries(options);
 }

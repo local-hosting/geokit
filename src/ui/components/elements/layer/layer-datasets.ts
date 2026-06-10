@@ -14,6 +14,8 @@ export type LayerDatasetMode = 'viewport' | 'slugs';
 
 export type LayerDatasetOptions = {
   cdnBase?: string;
+  getRequestInit?: () => RequestInit;
+  init?: RequestInit;
   lineColor?: string;
   lineWidth?: number | unknown[];
   beforeLayerId?: string;

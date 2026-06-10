@@ -134,7 +134,7 @@ export function mergeH2CellFeatures(
   cellIds: readonly string[],
   options?: H3DmaCellFeatureOptions & { includeUnassignedGrid?: boolean }
 ): GeoJSON.FeatureCollection {
-  const resolution = options?.resolution ?? 2;
+  const resolution = options?.resolution ?? 1;
   const unassignedSlug = options?.unassignedSlug ?? H3_DMA_UNASSIGNED_SLUG;
   const includeUnassignedGrid = options?.includeUnassignedGrid ?? true;
 

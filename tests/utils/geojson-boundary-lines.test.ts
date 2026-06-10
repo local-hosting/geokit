@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { polygonsToBoundaryLines } from '../../src/utils/geojson/boundary-lines';
+import {
+  capPolygonCollectionForMapLibre,
+  MAPLIBRE_BOUNDARY_LINE_VERTEX_CHUNK,
+  polygonsToBoundaryLines,
+  ringToBoundaryLineChunks,
+} from '../../src/utils/geojson/boundary-lines';
 
 describe('polygonsToBoundaryLines', () => {
   it('emits one ring linestring per polygon', () => {
@@ -69,7 +74,7 @@ describe('polygonsToBoundaryLines', () => {
     expect(lines.features[0]!.geometry.coordinates.length).toBe(ring.length);
   });
 
-  it('splits rings above MapLibre line chunk size', () => {
+  it('caps uncapped state-sized rings before line emit', () => {
     const ring: GeoJSON.Position[] = [];
     for (let i = 0; i < 9000; i += 1) {
       ring.push([i * 0.0001, 0]);
@@ -86,8 +91,27 @@ describe('polygonsToBoundaryLines', () => {
       ],
     };
 
+    const capped = capPolygonCollectionForMapLibre(collection);
+    const outer = capped.features[0]!.geometry as GeoJSON.Polygon;
+    expect(outer.coordinates[0]!.length).toBeLessThanOrEqual(900);
+
     const lines = polygonsToBoundaryLines(collection);
-    expect(lines.features.length).toBeGreaterThan(1);
-    expect(lines.features.every((f) => f.geometry.coordinates.length <= 8192)).toBe(true);
+    expect(
+      lines.features.every(
+        (f) => f.geometry.coordinates.length <= MAPLIBRE_BOUNDARY_LINE_VERTEX_CHUNK
+      )
+    ).toBe(true);
+  });
+
+  it('splits rings above MapLibre line chunk size', () => {
+    const ring: GeoJSON.Position[] = [];
+    for (let i = 0; i < 5000; i += 1) {
+      ring.push([i * 0.0001, 0]);
+    }
+    ring.push([0.5, 0.01], [0, 0.01], [0, 0]);
+
+    const chunks = ringToBoundaryLineChunks(ring);
+    expect(chunks.length).toBeGreaterThan(1);
+    expect(chunks.every((chunk) => chunk.length <= MAPLIBRE_BOUNDARY_LINE_VERTEX_CHUNK)).toBe(true);
   });
 });

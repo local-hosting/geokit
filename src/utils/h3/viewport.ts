@@ -17,6 +17,13 @@ export type ViewportBounds = {
   north: number;
 };
 
+export type CellLayerViewport = {
+  bounds: ViewportBounds;
+  centerLat: number;
+  centerLng: number;
+  zoom: number;
+};
+
 export type H3CellsForViewportOptions = {
   resolution: number;
   centerLat?: number;

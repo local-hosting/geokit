@@ -6,6 +6,9 @@ import {
   globeStateCitiesCatalogUrl,
   globeStatesBulkUrl,
   globeStateShapeUrl,
+  globeStateCountiesShardUrl,
+  globeCountyClusterShardUrl,
+  globeCellBundleUrl,
   countiesBulkUrl,
   countyShapeUrl,
 } from '../../src/cdn/paths';
@@ -16,6 +19,9 @@ import {
   globeStateCitiesCatalogUrl as cdnStateCitiesCatalogUrl,
   globeStatesBulkUrl as cdnStatesBulkUrl,
   globeStateShapeUrl as cdnStateShapeUrl,
+  globeStateCountiesShardUrl as cdnStateCountiesShardUrl,
+  globeCountyClusterShardUrl as cdnCountyClusterShardUrl,
+  globeCellBundleUrl as cdnCellBundleUrl,
   resolveGlobeCdnUrl as cdnResolveGlobeCdnUrl,
 } from '@twinfile/cdn/paths';
 
@@ -27,6 +33,9 @@ describe('geokit/cdn paths parity with @twinfile/cdn/paths', () => {
     expect(globeCountiesBulkUrl()).toBe(cdnCountiesBulkUrl());
     expect(globeStatesBulkUrl()).toBe(cdnStatesBulkUrl());
     expect(globeStateShapeUrl('tx')).toBe(cdnStateShapeUrl('tx'));
+    expect(globeStateCountiesShardUrl('tx')).toBe(cdnStateCountiesShardUrl('tx'));
+    expect(globeCountyClusterShardUrl('84489e3', 4)).toBe(cdnCountyClusterShardUrl('84489e3', 4));
+    expect(globeCellBundleUrl('84489e3')).toBe(cdnCellBundleUrl('84489e3'));
     expect(globeStateCitiesBulkUrl('ny')).toBe(cdnStateCitiesBulkUrl('ny'));
     expect(globeStateCitiesCatalogUrl('ny')).toBe(cdnStateCitiesCatalogUrl('ny'));
   });

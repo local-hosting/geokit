@@ -86,7 +86,7 @@ describe('geokit/cdn dma-regions', () => {
     expect(resolveRegionIdsForSlugs(index, ['dallas'])).toEqual(['texas-la']);
   });
 
-  it('prefers bbox intersection over H3 tessellation', () => {
+  it('prefers H3 cell routing over bbox intersection', () => {
     const index: DmaRegionClusterIndex = {
       version: 1,
       regions: 'georef-us',
@@ -112,7 +112,7 @@ describe('geokit/cdn dma-regions', () => {
       resolveRegionIdsForViewport(index, ['822a107fffffffff'], {
         bounds: { west: -88, south: 38, east: -84, north: 42 },
       })
-    ).toEqual(['great-lakes']);
+    ).toEqual(['texas-la']);
   });
 
   it('returns regions whose shard bbox intersects the viewport', () => {
