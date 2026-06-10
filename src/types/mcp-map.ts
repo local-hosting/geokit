@@ -77,6 +77,7 @@ export interface MapHostConfig extends MapViewConfig {
 
 /** CDN outline layer for the interactive map host (show_map / open_map). */
 export type MapHostRegionLayer =
+  | { dataset: 'dma'; mode: 'viewport' }
   | { dataset: 'dma'; slug: string; region?: string }
   | { dataset: 'place'; state: string; slug: string }
   | { dataset: 'state'; slug: string }

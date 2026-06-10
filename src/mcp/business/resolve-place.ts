@@ -141,6 +141,15 @@ export async function geocodePlaceQuery(query: string): Promise<ResolvedPlace> {
   return place;
 }
 
+function isAllDmaQuery(query: string): boolean {
+  const normalized = query.trim().toLowerCase().replace(/\s+/g, ' ');
+  return (
+    /^(?:show\s+)?all\s+dmas?(?:\s+markets)?$/.test(normalized) ||
+    /^every\s+dma(s)?$/.test(normalized) ||
+    /^nielsen\s+dmas?$/.test(normalized)
+  );
+}
+
 export async function resolveShowMapContext(
   query: string,
   options?: { cdnBaseUrl?: string }
@@ -153,6 +162,19 @@ export async function resolveShowMapContext(
   const trimmed = query.trim();
   if (!trimmed) {
     throw new Error('A place name or address is required.');
+  }
+
+  if (isAllDmaQuery(trimmed)) {
+    return {
+      place: {
+        lat: 39.8283,
+        lng: -98.5795,
+        label: 'All Nielsen DMA markets',
+        scope: 'region',
+        bounds: CONUS_BOUNDS,
+      },
+      regionLayer: { dataset: 'dma', mode: 'viewport' },
+    };
   }
 
   await ensureGlobeCdnJwt();

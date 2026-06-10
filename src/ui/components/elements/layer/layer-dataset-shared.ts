@@ -300,6 +300,7 @@ export async function loadCellLayerForViewport(options: {
   loadedCellIds: Set<string>;
   getFeatureId: (feature: GeoJSON.Feature) => string | null;
   onShardMerged?: (detail: { cellId: string; featureCount: number }) => void;
+  replace?: boolean;
 }): Promise<{ requestedCells: number; loadedCells: number; features: number } | null> {
   const viewport = mapViewportBounds(options.map) ?? (await waitForDatasetMapViewport(options.map));
   if (!viewport?.bounds) return null;
@@ -314,7 +315,7 @@ export async function loadCellLayerForViewport(options: {
     },
     layer: options.layer,
     target: options.target,
-    replace: false,
+    replace: options.replace ?? false,
     loadedCellIds: options.loadedCellIds,
     getFeatureId: options.getFeatureId,
     onShardMerged: options.onShardMerged,

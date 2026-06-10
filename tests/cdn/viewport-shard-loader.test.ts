@@ -74,14 +74,15 @@ describe('viewport-shard-loader', () => {
     expect(handlers.has('move')).toBe(true);
     expect(handlers.has('moveend')).toBe(true);
     expect(handlers.has('zoomend')).toBe(true);
+    expect(load).toHaveBeenCalledTimes(1);
 
     for (const handler of handlers.get('move') ?? []) handler();
     await vi.advanceTimersByTimeAsync(100);
-    expect(load).toHaveBeenCalledTimes(1);
+    expect(load).toHaveBeenCalledTimes(2);
 
     for (const handler of handlers.get('moveend') ?? []) handler();
     await vi.advanceTimersByTimeAsync(50);
-    expect(load).toHaveBeenCalledTimes(2);
+    expect(load).toHaveBeenCalledTimes(3);
 
     cleanup();
     vi.useRealTimers();

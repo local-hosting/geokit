@@ -146,6 +146,8 @@ export function bindIncrementalViewportSync(options: {
   options.map.on?.('moveend', onSettled);
   options.map.on?.('zoomend', onSettled);
 
+  void runLoad();
+
   return () => {
     if (timer) clearTimeout(timer);
     options.map.off?.('move', onMove);

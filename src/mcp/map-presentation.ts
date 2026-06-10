@@ -21,10 +21,22 @@ export const MCP_REGION_OVERLAY_STYLE: MapRegionPathStyle = {
 export const MCP_DMA_LAYER_FILL_COLOR = '#3b82f6';
 export const MCP_DMA_LAYER_OUTLINE_COLOR = '#1d4ed8';
 export const MCP_DMA_LAYER_FILL_OPACITY = 0.33;
+/** All-DMA viewport — brighter fills on dark basemap. */
+export const MCP_DMA_VIEWPORT_FILL_OPACITY = 0.45;
+/** Single-DMA highlight stroke (static path + interactive slug mode). */
 export const MCP_DMA_LAYER_LINE_WIDTH = 4;
+/** All-DMA viewport — no heavy stroke; optional hairline if line layer is enabled. */
+export const MCP_DMA_VIEWPORT_LINE_WIDTH = 0.5;
 
 export function defaultMcpMapStyle(providerId: MapStaticProviderId): MapStyleId {
   return providerId === 'mapbox' ? MCP_MAP_STYLE_MAPBOX : MCP_MAP_STYLE_MAPTILER;
+}
+
+function dmaSlugLayerFromHost(
+  layer: MapHostRegionLayer | undefined
+): { slug: string; region?: string } | undefined {
+  if (!layer || layer.dataset !== 'dma' || !('slug' in layer)) return undefined;
+  return { slug: layer.slug, region: layer.region };
 }
 
 export function resolveMcpMapTheme(explicit?: unknown): 'light' | 'dark' {
@@ -44,12 +56,9 @@ export function resolveMcpRegionHexColors(args?: {
   dmaSlug?: string;
   region?: string;
 }): { fill: string; stroke: string } {
-  const slug =
-    args?.dmaSlug ?? (args?.regionLayer?.dataset === 'dma' ? args.regionLayer.slug : undefined);
-  const region =
-    args?.region ??
-    (args?.regionLayer?.dataset === 'dma' ? args.regionLayer.region : undefined) ??
-    'unknown';
+  const dmaLayer = dmaSlugLayerFromHost(args?.regionLayer);
+  const slug = args?.dmaSlug ?? dmaLayer?.slug;
+  const region = args?.region ?? dmaLayer?.region ?? 'unknown';
   if (slug) {
     const hex = getDMAColor(slug, region, { darkVariant: true });
     return { fill: hex, stroke: hex };
@@ -62,12 +71,9 @@ export function resolveMcpRegionPathStyle(args?: {
   dmaSlug?: string;
   region?: string;
 }): MapRegionPathStyle {
-  const slug =
-    args?.dmaSlug ?? (args?.regionLayer?.dataset === 'dma' ? args.regionLayer.slug : undefined);
-  const region =
-    args?.region ??
-    (args?.regionLayer?.dataset === 'dma' ? args.regionLayer.region : undefined) ??
-    'unknown';
+  const dmaLayer = dmaSlugLayerFromHost(args?.regionLayer);
+  const slug = args?.dmaSlug ?? dmaLayer?.slug;
+  const region = args?.region ?? dmaLayer?.region ?? 'unknown';
   const fillHex = slug ? getDMAColor(slug, region, { darkVariant: true }) : getRegionColor(region);
   const strokeHex = slug
     ? getDMAColor(slug, region, { darkVariant: true })
