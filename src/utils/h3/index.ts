@@ -41,7 +41,7 @@ export {
   h3AreaNeighbors,
 } from './type-safe';
 
-export { compactH3CellId, expandH3CellId } from './cell-id';
+export { compactH3CellId, expandH3CellId, normalizeH3CellToResolution } from './cell-id';
 
 export {
   h3ResolutionFromZoom,

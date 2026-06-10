@@ -5,7 +5,10 @@
  * DMA remains the only choropleth preset (fill color + optional line).
  */
 
-import { polygonsToBoundaryLines } from '../../utils/geojson/boundary-lines';
+import {
+  capPolygonCollectionForMapLibre,
+  polygonsToBoundaryLines,
+} from '../../utils/geojson/boundary-lines';
 import {
   ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS,
   ADMIN_STATE_GEOJSON_SOURCE_OPTIONS,
@@ -95,10 +98,11 @@ export function refreshAdminOutlineData(
   polygons: GeoJSON.FeatureCollection,
   config: Pick<AdminOutlineLayerConfig, 'polygonSourceId' | 'lineSourceId'>
 ): GeoJSON.FeatureCollection | null {
-  map?.getSource?.(config.polygonSourceId)?.setData?.(polygons);
+  const capped = capPolygonCollectionForMapLibre(polygons);
+  map?.getSource?.(config.polygonSourceId)?.setData?.(capped);
   const lines = polygonsToBoundaryLines(polygons);
   map?.getSource?.(lineSourceId(config))?.setData?.(lines);
-  return polygons;
+  return capped;
 }
 
 export function addAdminOutlineLayer(
@@ -109,6 +113,7 @@ export function addAdminOutlineLayer(
 ): GeoJSON.FeatureCollection {
   removeAdminOutlineLayer(map, config);
 
+  const capped = capPolygonCollectionForMapLibre(polygons);
   const polygonOptions = config.polygonSourceOptions ?? ADMIN_STATE_GEOJSON_SOURCE_OPTIONS;
   const lineOptions = config.lineSourceOptions ?? BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS;
   const lines = polygonsToBoundaryLines(polygons);
@@ -117,7 +122,7 @@ export function addAdminOutlineLayer(
 
   map.addSource?.(config.polygonSourceId, {
     type: 'geojson',
-    data: polygons,
+    data: capped,
     ...polygonOptions,
   });
 
@@ -162,7 +167,7 @@ export function addAdminOutlineLayer(
   // geojson-vt lines do not moiré/double-stroke against the basemap.
   suppressBasemapBorders(map);
 
-  return polygons;
+  return capped;
 }
 
 export const ADMIN_STATE_OUTLINE_SOURCE_OPTIONS = ADMIN_STATE_GEOJSON_SOURCE_OPTIONS;

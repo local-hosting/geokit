@@ -168,6 +168,7 @@ export class LayerElement extends MapChildElement {
   private _hitLayers?: string[];
   private _datasetHandle: LayerDatasetHandle | null = null;
   private _datasetMountGeneration = 0;
+  private _deferredZoomUnsub: (() => void) | null = null;
 
   // Track if we created the source (vs reusing existing)
   private _ownSource = false;
@@ -225,7 +226,7 @@ export class LayerElement extends MapChildElement {
   protected override async onMapReady(): Promise<void> {
     if (!this.map) return;
     if (this.datasetId) {
-      await this.mountDatasetLayer();
+      await this.scheduleDatasetMount();
     } else {
       this.addLayer();
     }
@@ -235,10 +236,45 @@ export class LayerElement extends MapChildElement {
   protected override onStyleLoad(): void {
     if (!this.map) return;
     if (this.datasetId) {
-      void this.mountDatasetLayer();
+      void this.scheduleDatasetMount();
     } else {
       this.addLayer();
     }
+  }
+
+  private mapZoom(): number {
+    const map = this.map as { getZoom?: () => number } | null | undefined;
+    return map?.getZoom?.() ?? 0;
+  }
+
+  private clearDeferredZoomMount(): void {
+    this._deferredZoomUnsub?.();
+    this._deferredZoomUnsub = null;
+  }
+
+  private async scheduleDatasetMount(): Promise<void> {
+    this.clearDeferredZoomMount();
+    const min = this.minzoom;
+    if (min != null && this.mapZoom() < min) {
+      const map = this.map as {
+        on?: (event: string, handler: () => void) => void;
+        off?: (event: string, handler: () => void) => void;
+      } | null;
+      const tryMount = (): void => {
+        if (this.mapZoom() >= min) {
+          this.clearDeferredZoomMount();
+          void this.mountDatasetLayer();
+        }
+      };
+      map?.on?.('zoomend', tryMount);
+      map?.on?.('moveend', tryMount);
+      this._deferredZoomUnsub = () => {
+        map?.off?.('zoomend', tryMount);
+        map?.off?.('moveend', tryMount);
+      };
+      return;
+    }
+    await this.mountDatasetLayer();
   }
 
   // ==========================================================================
@@ -436,6 +472,7 @@ export class LayerElement extends MapChildElement {
   }
 
   private removeDatasetLayer(): void {
+    this.clearDeferredZoomMount();
     this.removeInteractions();
     unmountLayerDataset(this._datasetHandle);
     this._datasetHandle = null;
@@ -801,6 +838,7 @@ export class LayerElement extends MapChildElement {
   }
 
   override disconnectedCallback(): void {
+    this.clearDeferredZoomMount();
     if (this.datasetId) {
       this.removeDatasetLayer();
     } else {

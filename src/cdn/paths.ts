@@ -29,6 +29,42 @@ export function globeStateShapeUrl(state: string, country: string = DEFAULT_COUN
   return globeCountryUrl(country, 'state', `${state.toLowerCase()}.json`);
 }
 
+export function globeStateCountiesShardUrl(
+  state: string,
+  country: string = DEFAULT_COUNTRY
+): string {
+  return globeCountryUrl(country, 'state', state.toLowerCase(), 'counties.json');
+}
+
+export function globeCountyClusterIndexUrl(
+  resolution: number,
+  country: string = DEFAULT_COUNTRY
+): string {
+  return globeCountryUrl(country, 'county', 'clusters', `r${resolution}`, 'index.json');
+}
+
+export function globeCountyClusterShardUrl(
+  cellId: string,
+  resolution: number,
+  country: string = DEFAULT_COUNTRY
+): string {
+  return globeCountryUrl(
+    country,
+    'county',
+    'clusters',
+    `r${resolution}`,
+    `${cellId.trim().toLowerCase()}.json`
+  );
+}
+
+export function globeCellBundleUrl(cellId: string): string {
+  return cdnUrl('cell', `${cellId.trim().toLowerCase()}.json`);
+}
+
+export function globeCellLayerCatalogUrl(): string {
+  return cdnUrl('cell', 'layers', 'index.json');
+}
+
 export function globeStateCitiesBulkUrl(state: string, country: string = DEFAULT_COUNTRY): string {
   return globeCountryUrl(country, 'state', state.toLowerCase(), 'cities');
 }
@@ -60,6 +96,18 @@ export function statesBulkUrl(baseUrl: string): string {
 
 export function stateShapeUrl(baseUrl: string, state: string): string {
   return resolveGlobeCdnUrl(baseUrl, globeStateShapeUrl(state));
+}
+
+export function stateCountiesShardUrl(baseUrl: string, state: string): string {
+  return resolveGlobeCdnUrl(baseUrl, globeStateCountiesShardUrl(state));
+}
+
+export function countyClusterIndexUrl(baseUrl: string, resolution: number): string {
+  return resolveGlobeCdnUrl(baseUrl, globeCountyClusterIndexUrl(resolution));
+}
+
+export function countyClusterShardUrl(baseUrl: string, cellId: string, resolution: number): string {
+  return resolveGlobeCdnUrl(baseUrl, globeCountyClusterShardUrl(cellId, resolution));
 }
 
 export function stateCitiesBulkUrl(baseUrl: string, state: string): string {
@@ -136,4 +184,12 @@ export function dmaRegionIndexUrl(baseUrl: string): string {
 
 export function dmaRegionShardUrl(baseUrl: string, regionId: string): string {
   return resolveGlobeCdnUrl(baseUrl, globeDmaRegionShardPath(regionId));
+}
+
+export function cellBundleUrl(baseUrl: string, cellId: string): string {
+  return resolveGlobeCdnUrl(baseUrl, globeCellBundleUrl(cellId));
+}
+
+export function cellLayerCatalogUrl(baseUrl: string): string {
+  return resolveGlobeCdnUrl(baseUrl, globeCellLayerCatalogUrl());
 }

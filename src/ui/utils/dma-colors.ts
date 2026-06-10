@@ -101,6 +101,16 @@ function normalizeDmaSlug(slug: string): string {
   return slug.trim().toLowerCase();
 }
 
+export function buildDmaRegionColorExpression(fallback = DMA_FALLBACK_NEUTRAL): unknown[] {
+  const match: unknown[] = ['match', ['get', 'region']];
+  for (const region of Object.keys(REGION_BASE_HUES)) {
+    if (region === 'unknown') continue;
+    match.push(region, getRegionColor(region));
+  }
+  match.push(fallback);
+  return match;
+}
+
 export function buildDmaSlugColorExpression(
   markets: readonly DmaMarketColorInput[],
   options?: {
