@@ -5,5 +5,6 @@ coverage
 *.log
 .env
 .env.local
+.npmrc
 tests/ui/**/__screenshots__
 .yarn/
