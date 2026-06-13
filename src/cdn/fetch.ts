@@ -2,10 +2,9 @@ import { isPublishedCellLayerId, resolvePublishedCellLayerId } from './cell-cata
 import { compactH3CellId } from '../utils/h3/cell-id';
 import { resolveGlobeCdnBaseUrl } from './config';
 
-export type GlobeCdnFetchOptions = {
-  baseUrl?: string;
-  init?: RequestInit;
-};
+import type { GlobeCdnFetchOptions } from '../types/env.js';
+
+export type { GlobeCdnFetchOptions };
 
 export type GlobeCdnBytesDetail = {
   url: string;

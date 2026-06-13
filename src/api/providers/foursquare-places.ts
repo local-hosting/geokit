@@ -8,18 +8,10 @@ import {
   type NormalizedFoursquarePlace,
 } from '../../types/foursquare-places.js';
 
-function envTrim(key: string): string | undefined {
-  const value = process.env[key]?.trim();
-  return value || undefined;
-}
+import { resolveFoursquareApiKey } from '../../config/env/index.js';
 
 export function foursquarePlacesApiKey(): string | undefined {
-  return (
-    envTrim('FOURSQUARE_SERVICE_API_KEY') ??
-    envTrim('FOURSQUARE_API_KEY') ??
-    envTrim('FSQ_API_KEY') ??
-    envTrim('GEOKIT_FOURSQUARE_KEY')
-  );
+  return resolveFoursquareApiKey();
 }
 
 /** @deprecated use foursquarePlacesApiKey */

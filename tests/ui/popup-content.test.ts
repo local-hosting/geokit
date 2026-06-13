@@ -22,6 +22,19 @@ describe('Popup content builders', () => {
     expect(tags).toContain('123 & 456');
   });
 
+  it('renders a visible listing link for url popups', () => {
+    const el = buildPopupContent('54 Ashland St', {
+      url: 'https://www.zillow.com/homes/54-Ashland-St-Newburyport-MA-01950_rb/',
+    });
+    const link = el.querySelector('.geokit-popup-action--listing');
+    expect(link?.getAttribute('href')).toContain('zillow.com');
+    expect(link?.getAttribute('title')).toBe('View on Zillow');
+    expect(link?.textContent).toContain('View on Zillow');
+    expect(link?.querySelector('svg')).toBeTruthy();
+    const titleLink = el.querySelector('.geokit-popup-title-link');
+    expect(titleLink?.getAttribute('href')).toContain('zillow.com');
+  });
+
   it('decodes numeric entities (e.g. &#x27;) in generic popup tags', () => {
     const el = buildPopupContentGeneric({
       headline: 'Store O&#x27;Dneal &amp; Sons',
@@ -32,10 +45,8 @@ describe('Popup content builders', () => {
     expect(title?.textContent).toContain("Store O'Dneal & Sons");
 
     const tag = el.querySelector('.geokit-popup-tag');
-    // Visible value is truncated (max 12 chars) but should still be decoded.
     expect(tag?.textContent).toContain("Louis O'Dnea");
     expect(tag?.textContent).toContain('…');
-    // Full decoded value should be preserved for hover/tooltips.
     expect(tag?.getAttribute('title')).toBe("Louis O'Dneal & Co");
   });
 });

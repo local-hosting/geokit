@@ -2455,8 +2455,23 @@ export class MapElement extends BaseElement {
     const map = this.map as any;
     const [minLng, minLat, maxLng, maxLat] = bbox;
 
+    if (
+      ![minLng, minLat, maxLng, maxLat].every(Number.isFinite) ||
+      minLng >= maxLng ||
+      minLat >= maxLat
+    ) {
+      console.warn('[gk-map] setBounds skipped: invalid bbox', bbox);
+      return;
+    }
+
     // Default padding
-    const padding = options.padding ?? { top: 40, bottom: 40, left: 40, right: 40 };
+    let padding = options.padding ?? { top: 40, bottom: 40, left: 40, right: 40 };
+    const rectForPad = this.getBoundingClientRect();
+    const minDim = Math.max(1, Math.min(rectForPad.width, rectForPad.height));
+    const maxUniformPad = Math.floor(minDim * 0.2);
+    if (typeof padding === 'number') {
+      padding = Math.max(8, Math.min(padding, maxUniformPad));
+    }
     const pitch = options.pitch ?? 0;
     const bearing = options.bearing ?? 0;
 
@@ -2486,21 +2501,42 @@ export class MapElement extends BaseElement {
     // Wait a frame for resize to take effect
     await new Promise((resolve) => requestAnimationFrame(resolve));
 
-    // Apply fitBounds
+    const corners: [[number, number], [number, number]] = [
+      [minLng, minLat],
+      [maxLng, maxLat],
+    ];
+    const paddingObj =
+      typeof padding === 'number'
+        ? { top: padding, bottom: padding, left: padding, right: padding }
+        : padding;
+
+    // Prefer cameraForBounds + jumpTo — MapTiler fitBounds can NaN when canvas layout is settling.
     try {
-      map.fitBounds(
-        [
-          [minLng, minLat],
-          [maxLng, maxLat],
-        ],
-        {
-          padding,
+      const camera = map.cameraForBounds?.(corners, {
+        padding: paddingObj,
+        maxZoom: options.maxZoom ?? 18,
+      });
+      if (
+        camera?.center?.length === 2 &&
+        camera.center.every(Number.isFinite) &&
+        Number.isFinite(camera.zoom)
+      ) {
+        map.jumpTo?.({
+          center: camera.center,
+          zoom: camera.zoom,
+          bearing: camera.bearing ?? bearing,
+          pitch: camera.pitch ?? pitch,
+          duration: 0,
+        });
+      } else {
+        map.fitBounds(corners, {
+          padding: paddingObj,
           pitch,
           bearing,
-          duration: 0, // Instant, no animation
+          duration: 0,
           maxZoom: options.maxZoom,
-        }
-      );
+        });
+      }
 
       // Force repaint
       if (typeof map.triggerRepaint === 'function') {

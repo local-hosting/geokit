@@ -24,7 +24,7 @@ import { resolveMcpRegionPathStyle } from '../map-presentation.js';
 import { circleOverlay, markerOverlay, polygonOverlay } from './overlays.js';
 import { resolveDmaMarketFromCatalog } from '../../cdn/dma-catalog.js';
 import { dmaSlugFromQuery } from '../../cdn/dma.js';
-import { resolveGlobeCdnFetchOptions } from '../globe-cdn-fetch-options.js';
+import { resolveGlobeCdnFetchOptions } from '../../config/env/index.js';
 import { geocodePlaceQuery, resolvePlaceInput, resolveShowMapContext } from './resolve-place.js';
 import {
   mcpError,

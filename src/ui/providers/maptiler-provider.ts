@@ -7,6 +7,7 @@
  * the script must set window.maptilersdk.
  */
 
+import { buildMaptilerStyleUrl } from '../../config/tile-cdn.js';
 import {
   inlineMapTilerTileJsonSources,
   rewriteMapTilerStyleResourceUrls,
@@ -50,9 +51,10 @@ function isMapTilerStyleUrl(url: string): boolean {
   return (
     typeof url === 'string' &&
     url.includes('/style.json') &&
-    (url.startsWith('https://api.maptiler.com/') ||
-      url.startsWith('http://api.maptiler.com/') ||
-      url.startsWith('/__maptiler-api/'))
+    (url.startsWith('https://') ||
+      url.startsWith('http://') ||
+      url.startsWith('/__maptiler-api/') ||
+      url.includes('/maps/'))
   );
 }
 
@@ -284,12 +286,15 @@ export class MapTilerUIProvider extends BaseUIProvider {
     const transformRequest =
       this.config?.transformRequest ?? getProviderConfig('maptiler')?.transformRequest;
 
-    const styleBase = (name: string) =>
-      `https://api.maptiler.com/maps/${name}/style.json?key=${apiKey}`;
+    const styleBase = (name: string) => buildMaptilerStyleUrl(name, apiKey);
 
-    // Style: full URL, or resolve known names to URLs (SDK accepts both; URLs avoid deprecated enum values)
+    const configuredStyleUrl = this.config?.styleUrl ?? getProviderConfig('maptiler')?.styleUrl;
+
+    // Style: configured URL, full URL, or resolve known names to URLs
     let style: string = options.style ?? '';
-    if (!style) {
+    if (!style && configuredStyleUrl) {
+      style = configuredStyleUrl;
+    } else if (!style) {
       style = styleBase('dataviz-dark');
     } else if (typeof style === 'string' && !style.startsWith('http')) {
       const styleMap: Record<string, string> = {
@@ -464,9 +469,11 @@ export class MapTilerUIProvider extends BaseUIProvider {
   }
 
   getStyleForTheme(styleName: string): string | null {
+    const configuredStyleUrl = this.config?.styleUrl ?? getProviderConfig('maptiler')?.styleUrl;
+    if (configuredStyleUrl) return configuredStyleUrl;
+
     if (!this.sdk || !this.config?.apiKey) return null;
     const key = styleName.toLowerCase();
-    // Theme names and MapTiler style names
     const themeToStyle: Record<string, string> = {
       light: 'dataviz',
       dark: 'dataviz-dark',
@@ -474,7 +481,6 @@ export class MapTilerUIProvider extends BaseUIProvider {
       'dataviz-dark': 'dataviz-dark',
     };
     const mapName = themeToStyle[key] ?? key;
-    const apiKey = this.config.apiKey;
-    return `https://api.maptiler.com/maps/${mapName}/style.json?key=${apiKey}`;
+    return buildMaptilerStyleUrl(mapName, this.config.apiKey);
   }
 }

@@ -3,7 +3,6 @@
  * Geokit MCP server — business-friendly map tools for Cursor chat.
  */
 
-import dotenv from 'dotenv';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -37,19 +36,20 @@ import {
   assertMapStaticProviderConfigured,
   resolveMapStaticProvider,
 } from './resolve-map-provider.js';
-import { ensureGlobeCdnJwt } from './resolve-globe-cdn-auth.js';
+import { isGeoCdnConfigured, resolveGlobeCdnBaseUrl } from '../cdn/config.js';
+import {
+  bootstrapGeokitMcpEnv,
+  ensureGlobeCdnJwt,
+  geoCdnStartupNote,
+} from '../config/env/index.js';
 import type { MapViewInput } from '../types/mcp-map.js';
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-dotenv.config({ path: join(packageRoot, '.env') });
+bootstrapGeokitMcpEnv(packageRoot);
 
 const mapProvider = resolveMapStaticProvider();
 const mapHostUrl = resolveMapHostBaseUrl();
-const globeCdnBaseUrl =
-  process.env.GEOKIT_GLOBE_CDN_URL?.trim() ||
-  process.env.GLOBE_CDN_URL?.trim() ||
-  process.env.FW_GLOBE_CDN_URL?.trim() ||
-  undefined;
+const geoCdnBaseUrl = isGeoCdnConfigured() ? resolveGlobeCdnBaseUrl() : undefined;
 
 const mapInputSchema = {
   lat: z.number().optional().describe('Center latitude'),
@@ -113,7 +113,7 @@ function mapInputFromRaw(raw: Record<string, unknown>): MapViewInput {
 }
 
 async function resolveInput(raw: Record<string, unknown>): Promise<MapViewInput> {
-  return resolveMapViewInput(mapInputFromRaw(raw), { cdnBaseUrl: globeCdnBaseUrl });
+  return resolveMapViewInput(mapInputFromRaw(raw), { cdnBaseUrl: geoCdnBaseUrl });
 }
 
 function mcpError(message: string): CallToolResult {
@@ -124,14 +124,16 @@ function mcpError(message: string): CallToolResult {
 }
 
 async function main(): Promise<void> {
-  await ensureGlobeCdnJwt();
+  if (geoCdnBaseUrl) {
+    await ensureGlobeCdnJwt();
+  }
 
   const mcp = new McpServer(
     { name: 'geokit', version: '0.1.0' },
     {
       capabilities: { tools: {} },
       instructions:
-        'Business-friendly geokit map tools. **show_map** renders a map image. **find_place** / **whats_here** resolve locations. **how_far**, **nearby**, **drive_time_area**, **draw_radius**, and **compare_areas** answer common reach and distance questions. Legacy **render_map** / **open_map** remain for GIS-style inputs. Requires GEOKIT_MAP_API_KEY for map images; routing token for drive times; FOURSQUARE_SERVICE_API_KEY (or FOURSQUARE_API_KEY) for nearby. DMA outlines need GLOBE_CDN_JWT when the CDN requires auth.',
+        'Business-friendly geokit map tools. **show_map** renders a map image. **find_place** / **whats_here** resolve locations. **how_far**, **nearby**, **drive_time_area**, **draw_radius**, and **compare_areas** answer common reach and distance questions. Legacy **render_map** / **open_map** remain for GIS-style inputs. Requires GEOKIT_MAP_API_KEY (or MAPTILER_KEY / MAPBOX_TOKEN) for map images; optional GEOKIT_MAP_STYLE_URL and GEOKIT_TILE_API_URL / GEOKIT_TILE_CDN_URL for self-hosted tiles; optional GEOKIT_GEO_CDN_URL for admin boundary overlays.',
     }
   );
 
@@ -152,7 +154,7 @@ async function main(): Promise<void> {
     async (raw: Record<string, unknown>): Promise<CallToolResult> => {
       try {
         const provider = assertMapStaticProviderConfigured(mapProvider);
-        return handler(raw, provider, mapHostUrl, { cdnBaseUrl: globeCdnBaseUrl });
+        return handler(raw, provider, mapHostUrl, { cdnBaseUrl: geoCdnBaseUrl });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return mcpError(message);
@@ -173,7 +175,7 @@ async function main(): Promise<void> {
         const result = await renderMapViewForMcp(input, {
           provider,
           fetchImage: true,
-          cdnBaseUrl: globeCdnBaseUrl,
+          cdnBaseUrl: geoCdnBaseUrl,
         });
 
         const content: CallToolResult['content'] = [{ type: 'text', text: result.markdown }];
@@ -298,7 +300,7 @@ async function main(): Promise<void> {
         const snapshot = await renderMapViewForMcp(input, {
           provider,
           fetchImage: false,
-          cdnBaseUrl: globeCdnBaseUrl,
+          cdnBaseUrl: geoCdnBaseUrl,
         });
         const hostUrl = buildMapHostUrl({
           hostBaseUrl: mapHostUrl,
@@ -347,12 +349,9 @@ async function main(): Promise<void> {
       '[geokit] WARNING: map API key is not set (GEOKIT_MAP_API_KEY / MAP_API_KEY); map tools will error until configured.'
     );
   }
-  if (!process.env.GLOBE_CDN_JWT?.trim() && !process.env.GEOKIT_GLOBE_CDN_JWT?.trim()) {
-    console.error(
-      '[geokit] WARNING: Globe CDN DMA JWT missing — set GLOBE_CDN_JWT_SECRET in packages/geokit/.env for DMA outlines.'
-    );
-  } else {
-    console.error('[geokit] Globe CDN DMA auth configured.');
+  const geoNote = geoCdnStartupNote();
+  if (geoNote) {
+    console.error(`[geokit] NOTE: ${geoNote}`);
   }
 }
 

@@ -1,6 +1,8 @@
 /**
  * Load packages/geokit/.env and mirror keys the MCP server expects.
  * MCP env from Cursor wins over .env when both are set.
+ *
+ * Alias groups are defined in src/types/env.ts (GEOKIT_ENV_ALIAS_GROUPS).
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -32,17 +34,39 @@ const ALIAS_GROUPS = [
     targets: ['FOURSQUARE_SERVICE_API_KEY', 'FOURSQUARE_API_KEY', 'FSQ_API_KEY'],
   },
   {
-    sources: ['GLOBE_CDN_JWT', 'GEOKIT_GLOBE_CDN_JWT', 'FW_GLOBE_CDN_JWT'],
+    sources: [
+      'GLOBE_CDN_JWT',
+      'GEOKIT_GLOBE_CDN_JWT',
+      'GEOKIT_GEO_CDN_JWT',
+      'FW_GLOBE_CDN_JWT',
+    ],
     targets: ['GLOBE_CDN_JWT', 'GEOKIT_GLOBE_CDN_JWT', 'FW_GLOBE_CDN_JWT'],
   },
   {
-    sources: ['GLOBE_CDN_JWT_SECRET', 'GEOKIT_GLOBE_CDN_JWT_SECRET'],
+    sources: ['GLOBE_CDN_JWT_SECRET', 'GEOKIT_GLOBE_CDN_JWT_SECRET', 'GEOKIT_GEO_CDN_JWT_SECRET'],
     targets: ['GLOBE_CDN_JWT_SECRET', 'GEOKIT_GLOBE_CDN_JWT_SECRET'],
   },
   {
-    sources: ['FW_GLOBE_CDN_URL', 'GLOBE_CDN_URL', 'GEOKIT_GLOBE_CDN_URL'],
-    targets: ['FW_GLOBE_CDN_URL', 'GLOBE_CDN_URL', 'GEOKIT_GLOBE_CDN_URL'],
+    sources: [
+      'FW_GLOBE_CDN_URL',
+      'GLOBE_CDN_URL',
+      'GEOKIT_GLOBE_CDN_URL',
+      'GEOKIT_GEO_CDN_URL',
+    ],
+    targets: [
+      'FW_GLOBE_CDN_URL',
+      'GLOBE_CDN_URL',
+      'GEOKIT_GLOBE_CDN_URL',
+      'GEOKIT_GEO_CDN_URL',
+    ],
   },
+];
+
+const GEO_CDN_URL_KEYS = [
+  'GEOKIT_GEO_CDN_URL',
+  'GEOKIT_GLOBE_CDN_URL',
+  'GLOBE_CDN_URL',
+  'FW_GLOBE_CDN_URL',
 ];
 
 function firstSet(env, keys) {
@@ -65,11 +89,6 @@ function applyAliasGroups(env) {
   }
 }
 
-/**
- * @param {string} geokitRoot
- * @param {NodeJS.ProcessEnv} [baseEnv]
- * @returns {NodeJS.ProcessEnv}
- */
 function mergeDotenvFile(env, dotenvPath) {
   if (!existsSync(dotenvPath)) return;
   const parsed = dotenv.parse(readFileSync(dotenvPath));
@@ -80,6 +99,11 @@ function mergeDotenvFile(env, dotenvPath) {
   }
 }
 
+/**
+ * @param {string} geokitRoot
+ * @param {NodeJS.ProcessEnv} [baseEnv]
+ * @returns {NodeJS.ProcessEnv}
+ */
 export function loadGeokitMcpEnv(geokitRoot, baseEnv = process.env) {
   const env = { ...baseEnv };
   const monorepoRoot = join(geokitRoot, '..', '..');
@@ -87,9 +111,6 @@ export function loadGeokitMcpEnv(geokitRoot, baseEnv = process.env) {
   mergeDotenvFile(env, join(geokitRoot, '.env'));
   mergeDotenvFile(env, join(monorepoRoot, '.env'));
 
-  if (!env.FW_GLOBE_CDN_URL?.trim() && !env.GLOBE_CDN_URL?.trim() && !env.GEOKIT_GLOBE_CDN_URL?.trim()) {
-    env.FW_GLOBE_CDN_URL = 'https://mapto.link';
-  }
 
   applyAliasGroups(env);
   return env;

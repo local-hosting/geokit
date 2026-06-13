@@ -99,19 +99,14 @@ export class MapChildElement extends BaseElement {
   private isMapStyleReady(): boolean {
     if (!this.map) return false;
 
-    // First check if style is already loaded - this is the common case
     const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
-    if (isStyleLoaded && isStyleLoaded.call(this.map)) {
-      return true; // Style already loaded
+    if (isStyleLoaded) {
+      return isStyleLoaded.call(this.map);
     }
 
-    // Also check if map has a style object (some SDKs don't expose isStyleLoaded)
-    const getStyle = (this.map as { getStyle?: () => unknown }).getStyle;
-    if (getStyle) {
-      const style = getStyle.call(this.map);
-      if (style) {
-        return true; // Style exists, assume it's ready
-      }
+    const loaded = (this.map as { loaded?: () => boolean }).loaded;
+    if (loaded) {
+      return loaded.call(this.map);
     }
 
     return false;
