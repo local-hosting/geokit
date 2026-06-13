@@ -2,7 +2,7 @@ import type { Polygon, MultiPolygon, LatLon } from '../../types';
 
 /**
  * Convert GeoJSON Polygon coordinates to [lat, lon] format
- * GeoJSON uses [lon, lat], this converts to [lat, lon] for mapi-polygon format
+ * GeoJSON uses [lon, lat], this converts to [lat, lon] for gk-polygon format
  * Handles both Polygon and MultiPolygon geometry types
  * Returns an array of polygons (single element for Polygon, multiple for MultiPolygon)
  *

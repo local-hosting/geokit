@@ -4,7 +4,7 @@
  * Displays markers on the map with optional popups
  *
  * Usage:
- * <mapi-marker lat="40.7128" lng="-74.006" popup="true" title="New York"></mapi-marker>
+ * <gk-marker lat="40.7128" lng="-74.006" popup="true" title="New York"></gk-marker>
  */
 
 import { MapChildElement } from '../map-child-element';
