@@ -3,6 +3,7 @@
  * Geokit MCP server — business-friendly map tools for Cursor chat.
  */
 
+import type { ChildProcess } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -43,9 +44,19 @@ import {
   geoCdnStartupNote,
 } from '../config/env/index.js';
 import type { MapViewInput } from '../types/mcp-map.js';
+import { ensureMapHostRunning, stopMapHostProcess } from './map-host-process.js';
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 bootstrapGeokitMcpEnv(packageRoot);
+
+let mapHostChild: ChildProcess | null = null;
+
+function shutdownMapHost(): void {
+  if (mapHostChild) {
+    stopMapHostProcess(mapHostChild);
+    mapHostChild = null;
+  }
+}
 
 const mapProvider = resolveMapStaticProvider();
 const mapHostUrl = resolveMapHostBaseUrl();
@@ -125,8 +136,17 @@ function mcpError(message: string): CallToolResult {
 
 async function main(): Promise<void> {
   if (geoCdnBaseUrl) {
-    await ensureGlobeCdnJwt();
+    const jwt = await ensureGlobeCdnJwt();
+    if (jwt) {
+      console.error('[geokit] Globe CDN DMA auth ready (JWT minted for MCP).');
+    }
   }
+
+  const mapHost = await ensureMapHostRunning(packageRoot);
+  mapHostChild = mapHost.child;
+
+  process.on('SIGINT', shutdownMapHost);
+  process.on('SIGTERM', shutdownMapHost);
 
   const mcp = new McpServer(
     { name: 'geokit', version: '0.1.0' },
@@ -355,7 +375,11 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
-  console.error('[geokit]', error);
-  process.exit(1);
-});
+main()
+  .catch((error) => {
+    console.error('[geokit]', error);
+    process.exit(1);
+  })
+  .finally(() => {
+    shutdownMapHost();
+  });

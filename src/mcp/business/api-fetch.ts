@@ -1,8 +1,4 @@
 import type { FeatureCollection } from 'geojson';
-import {
-  foursquarePlacesApiKey,
-  searchFoursquarePlaces,
-} from '../../api/providers/foursquare-places.js';
 import { resolveGeocodingApiKey, resolveRoutingAccessToken } from '../../config/env/index.js';
 import type { PlaceSearchResult, ReverseGeocodeResult } from '../../types/mcp-business-api.js';
 
@@ -20,77 +16,39 @@ export const mapboxAccessToken = routingAccessToken;
 
 export { foursquarePlacesApiKey as foursquareApiKey } from '../../api/providers/foursquare-places.js';
 
-function requireKey(key: string | undefined, message: string): string {
-  if (!key) throw new Error(message);
-  return key;
-}
-
 export async function fetchGeocode(query: string): Promise<FeatureCollection> {
-  const apiKey = requireKey(
-    resolveGeocodingApiKey(),
-    'Geocoding is not configured. Set GEOKIT_MAP_API_KEY.'
+  const { ensureGeocodingRouterReady } = await import(
+    '../../api/providers/setup-capability-routers.js'
   );
+  const { getProviderForCapability } = await import('../../api/providers/registry.js');
 
-  const encodedQuery = encodeURIComponent(query.trim());
-  const url = new URL(`https://api.maptiler.com/geocoding/${encodedQuery}.json`);
-  url.searchParams.set('key', apiKey);
-  url.searchParams.set('limit', '1');
-
-  const response = await fetch(url.toString());
-  if (!response.ok) {
-    throw new Error(`Geocoding failed: ${response.status} ${response.statusText}`);
+  await ensureGeocodingRouterReady();
+  const provider = getProviderForCapability('geocoding');
+  if (!provider?.geocode) {
+    throw new Error('Geocoding is not configured. Set GEOKIT_MAP_API_KEY or a routing token.');
   }
-  return (await response.json()) as FeatureCollection;
+
+  return provider.geocode({ query: query.trim(), limit: 1 });
 }
 
 export async function fetchReverseGeocode(
   lat: number,
   lng: number
 ): Promise<ReverseGeocodeResult | null> {
-  const apiKey = requireKey(
-    resolveGeocodingApiKey(),
-    'Reverse geocoding is not configured. Set GEOKIT_MAP_API_KEY.'
+  const { ensureGeocodingRouterReady } = await import(
+    '../../api/providers/setup-capability-routers.js'
   );
+  const { getProviderForCapability } = await import('../../api/providers/registry.js');
 
-  const url = new URL(`https://api.maptiler.com/geocoding/${lng},${lat}.json`);
-  url.searchParams.set('key', apiKey);
-  url.searchParams.set('limit', '1');
-
-  const response = await fetch(url.toString());
-  if (!response.ok) {
-    throw new Error(`Reverse geocoding failed: ${response.status} ${response.statusText}`);
+  await ensureGeocodingRouterReady();
+  const provider = getProviderForCapability('geocoding');
+  if (!provider?.reverseGeocode) {
+    throw new Error(
+      'Reverse geocoding is not configured. Set GEOKIT_MAP_API_KEY or a routing token.'
+    );
   }
 
-  const data = (await response.json()) as FeatureCollection;
-  const feature = data.features?.[0] as
-    | {
-        place_name?: string;
-        text?: string;
-        context?: Array<{ id?: string; text?: string; short_code?: string }>;
-        place_type?: string[];
-      }
-    | undefined;
-
-  if (!feature) return null;
-
-  const context = feature.context ?? [];
-  const findContext = (prefix: string): string | undefined => {
-    if (feature.place_type?.includes(prefix)) return feature.text;
-    return context.find((c) => c.id?.startsWith(`${prefix}.`))?.text;
-  };
-
-  return {
-    address: feature.place_name,
-    streetAddress: findContext('street') || findContext('address'),
-    city: findContext('municipality') || findContext('place') || findContext('locality'),
-    state: findContext('region'),
-    postcode: findContext('postal_code'),
-    country: findContext('country'),
-    countryCode: context.find((c) => c.id?.startsWith('country.'))?.short_code?.toUpperCase(),
-    neighborhood: findContext('neighbourhood') || findContext('neighborhood'),
-    coordinates: [lng, lat],
-    raw: feature,
-  };
+  return (await provider.reverseGeocode({ lat, lng, limit: 1 })) as ReverseGeocodeResult | null;
 }
 
 export async function fetchDirections(args: {
@@ -132,32 +90,25 @@ export async function fetchIsochrone(args: {
   minutes: number;
   mode: 'driving' | 'walking' | 'cycling' | 'driving-traffic';
 }): Promise<FeatureCollection> {
-  const token = requireKey(
-    resolveRoutingAccessToken(),
-    'Drive-time areas need a routing API token (GEOKIT_ROUTING_TOKEN or ROUTING_TOKEN).'
+  const { ensureIsochroneRouterReady } = await import(
+    '../../api/providers/setup-capability-routers.js'
   );
+  const { getProviderForCapability } = await import('../../api/providers/registry.js');
 
-  const modeMap: Record<string, string> = {
-    driving: 'driving',
-    walking: 'walking',
-    cycling: 'cycling',
-    'driving-traffic': 'driving-traffic',
-  };
-  const profile = modeMap[args.mode] ?? 'driving';
-
-  const url = new URL(
-    `https://api.mapbox.com/isochrone/v1/mapbox/${profile}/${args.lng},${args.lat}`
-  );
-  url.searchParams.set('contours_minutes', String(args.minutes));
-  url.searchParams.set('polygons', 'true');
-  url.searchParams.set('denoise', '1');
-  url.searchParams.set('access_token', token);
-
-  const response = await fetch(url.toString());
-  if (!response.ok) {
-    throw new Error(`Isochrone request failed: ${response.status} ${response.statusText}`);
+  await ensureIsochroneRouterReady();
+  const provider = getProviderForCapability('isochrone');
+  if (!provider?.fetchIsochrone) {
+    throw new Error(
+      'Drive-time areas need a routing API token (GEOKIT_ROUTING_TOKEN or ROUTING_TOKEN).'
+    );
   }
-  return (await response.json()) as FeatureCollection;
+
+  return provider.fetchIsochrone({
+    lat: args.lat,
+    lng: args.lng,
+    minutes: [args.minutes],
+    mode: args.mode,
+  });
 }
 
 export async function fetchNearbyPlaces(args: {
@@ -167,27 +118,24 @@ export async function fetchNearbyPlaces(args: {
   radiusMeters: number;
   limit: number;
 }): Promise<PlaceSearchResult[]> {
-  const apiKey = requireKey(
-    foursquarePlacesApiKey(),
-    'Place search is not configured. Set FOURSQUARE_SERVICE_API_KEY or FOURSQUARE_API_KEY for nearby.'
+  const { ensurePlaceSearchRouterReady } = await import(
+    '../../api/providers/setup-capability-routers.js'
   );
+  const { getProviderForCapability } = await import('../../api/providers/registry.js');
 
-  const results = await searchFoursquarePlaces(apiKey, {
+  await ensurePlaceSearchRouterReady();
+  const provider = getProviderForCapability('placeSearch');
+  if (!provider?.placeSearch) {
+    throw new Error(
+      'Place search is not configured. Set FOURSQUARE_SERVICE_API_KEY or GOOGLE_PLACES_API_KEY for nearby.'
+    );
+  }
+
+  return (await provider.placeSearch({
     query: args.query,
     ll: [args.lng, args.lat],
     radius: args.radiusMeters,
     limit: Math.min(args.limit, 20),
     sort: 'DISTANCE',
-    fields: 'fsq_place_id,name,location,latitude,longitude,categories,distance,rating',
-  });
-
-  return results.map(({ id, name, address, location, categories, distance, rating }) => ({
-    id,
-    name,
-    address,
-    location,
-    categories,
-    distance,
-    rating,
-  }));
+  })) as PlaceSearchResult[];
 }

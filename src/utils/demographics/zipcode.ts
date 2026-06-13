@@ -19,6 +19,7 @@ import { latLngToCell } from 'h3-js';
 import { haversineMeters } from '../distance/haversine';
 import { pointInGeometry } from '../containment/point-in-geometry';
 import { getProviderForCapability } from '../../api/providers/registry';
+import { ensureGeocodingRouterReady } from '../../api/providers/setup-capability-routers';
 import { polygonToH3 } from '../h3';
 import { getBounds } from '../bounds';
 
@@ -68,20 +69,6 @@ export function loadDemographicsData(data: Record<string, any>): void {
 /**
  * Load demographics data from URL
  */
-export async function loadDemographicsDataFromUrl(url: string): Promise<void> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    const data = await response.json();
-    loadDemographicsData(data);
-  } catch (error) {
-    console.warn(`[Demographics] Failed to load from ${url}:`, error);
-    throw error;
-  }
-}
-
 /**
  * Check if any demographics data is loaded
  */
@@ -124,7 +111,6 @@ export function findZipsFromEmbeddedH3(h3Cells: Set<string>): string[] | null {
 }
 
 // Legacy aliases for backward compatibility
-export const loadDemographicsCache = loadDemographicsData;
 export const getCachedDemographics = getLocalDemographics;
 export const isDemographicsCacheLoaded = isDemographicsDataLoaded;
 
@@ -359,7 +345,7 @@ const zipCache = new GeoCache<ZipCentroid[]>({
  */
 export async function getZipForPoint(lat: number, lng: number): Promise<string | null> {
   try {
-    // Get a provider that supports geocoding (Mapbox has reverseGeocode)
+    await ensureGeocodingRouterReady();
     const provider = getProviderForCapability('geocoding');
 
     if (!provider) {

@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
   const tileCdnUrl = envValue(geokitEnv, 'GEOKIT_TILE_CDN_URL', 'TILE_CDN_URL');
 
   return {
-    root: resolve(geokitRoot, 'host/mcp'),
+    root: resolve(geokitRoot, 'src/mcp/host'),
     plugins: [demoCdnIdentityPlugin(geokitEnv)],
     resolve: {
       alias: {

@@ -126,3 +126,7 @@ export type {
   ViewportRegionResolveOptions,
 } from './dma';
 export { H3_DMA_UNASSIGNED_SLUG } from './dma';
+
+export * from './api-composite.js';
+
+export type { DemographicField, DemographicsOptions, DemographicsResult } from './demographics';

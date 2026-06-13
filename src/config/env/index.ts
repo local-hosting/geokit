@@ -2,6 +2,7 @@ export type { GeokitEnv, GlobeCdnFetchOptions } from '../../types/env.js';
 export {
   CDN_TOKEN_SUB_KEYS,
   FOURSQUARE_KEY_KEYS,
+  GOOGLE_PLACES_KEY_KEYS,
   GEO_CDN_JWT_KEYS,
   GEO_CDN_JWT_SECRET_KEYS,
   GEO_CDN_URL_KEYS,
@@ -57,6 +58,7 @@ export {
 export {
   DEFAULT_MAP_HOST_URL,
   resolveFoursquareApiKey,
+  resolveGooglePlacesApiKey,
   resolveGeocodingApiKey,
   resolveMapHostBaseUrlFromEnv,
   resolveRoutingAccessToken,

@@ -1,5 +1,6 @@
 import {
   FOURSQUARE_KEY_KEYS,
+  GOOGLE_PLACES_KEY_KEYS,
   MAP_HOST_URL_KEYS,
   MAPTILER_KEY_KEYS,
   MAPBOX_KEY_KEYS,
@@ -17,6 +18,10 @@ export function resolveGeocodingApiKey(env: GeokitEnv = readRuntimeEnv()): strin
 
 export function resolveRoutingAccessToken(env: GeokitEnv = readRuntimeEnv()): string | undefined {
   return firstEnv(env, ROUTING_TOKEN_KEYS) ?? firstEnv(env, MAPBOX_KEY_KEYS);
+}
+
+export function resolveGooglePlacesApiKey(env: GeokitEnv = readRuntimeEnv()): string | undefined {
+  return firstEnv(env, GOOGLE_PLACES_KEY_KEYS);
 }
 
 export function resolveFoursquareApiKey(env: GeokitEnv = readRuntimeEnv()): string | undefined {
