@@ -210,7 +210,7 @@ describe('PointElement Lifecycle', () => {
   });
 
   describe('Event Details', () => {
-    it('should include element in mapi-ready event', () => {
+    it('should include element in gk-map-ready event', () => {
       const mockMapElement = {
         map: { loaded: () => true },
       };
@@ -242,9 +242,9 @@ describe('PointElement Lifecycle', () => {
     it('should have getChildCounts method available', () => {
       const mockMapElement = {
         children: [
-          { tagName: 'MAPI-POINT' },
-          { tagName: 'MAPI-POINT' },
-          { tagName: 'MAPI-POLYGON' },
+          { tagName: 'GK-POINT' },
+          { tagName: 'GK-POINT' },
+          { tagName: 'GK-POLYGON' },
         ] as any[],
         getChildCounts() {
           const counts: Record<string, number> = {};
@@ -257,8 +257,8 @@ describe('PointElement Lifecycle', () => {
       };
 
       const counts = mockMapElement.getChildCounts();
-      expect(counts['mapi-point']).toBe(2);
-      expect(counts['mapi-polygon']).toBe(1);
+      expect(counts['gk-point']).toBe(2);
+      expect(counts['gk-polygon']).toBe(1);
     });
   });
 });
@@ -292,7 +292,7 @@ describe('Bug Regression Tests', () => {
     });
   });
 
-  describe('Issue: mapi-ready event missing element property', () => {
+  describe('Issue: gk-map-ready event missing element property', () => {
     it('should include element property in event detail', () => {
       const mapElement = { id: 'test-map' };
       const mapInstance = { loaded: () => true };

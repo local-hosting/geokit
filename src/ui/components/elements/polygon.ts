@@ -4,7 +4,7 @@
  * Displays polygon shapes on the map
  *
  * Usage:
- * <mapi-polygon points="[[40.7,-74],[40.8,-74],[40.8,-73.9]]" fill-color="#ff0000"></mapi-polygon>
+ * <gk-polygon points="[[40.7,-74],[40.8,-74],[40.8,-73.9]]" fill-color="#ff0000"></gk-polygon>
  */
 
 import { MapChildElement } from '../map-child-element';
