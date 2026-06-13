@@ -5,7 +5,14 @@ import { join } from 'node:path';
 import dotenv from 'dotenv';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import * as resolvePlace from '../../src/mcp/business/resolve-place.js';
+import { GEO_CDN_URL_KEYS } from '../../src/types/env.js';
 import { resolveMapViewInput } from '../../src/mcp/resolve-map-input.js';
+
+function clearGeoCdnEnv(): void {
+  for (const key of GEO_CDN_URL_KEYS) {
+    delete process.env[key];
+  }
+}
 
 const geokitEnv = join(process.cwd(), '.env');
 
@@ -46,15 +53,14 @@ describe('resolveMapViewInput', () => {
     await expect(resolveMapViewInput({})).rejects.toThrow(/place\/query to geocode/);
   });
 
-  it('geocodes a free-text query via show_map resolution', async () => {
-    const resolved = await resolveMapViewInput({ query: 'Omaha DMA' });
+  it('geocodes a free-text query when geo CDN is not configured', async () => {
+    clearGeoCdnEnv();
+
+    const resolved = await resolveMapViewInput({ query: 'Omaha NE' }, { cdnBaseUrl: '' });
     expect(resolved.lat).toBeTypeOf('number');
     expect(resolved.lng).toBeTypeOf('number');
-    expect(resolved.bounds?.length).toBe(4);
-    expect(resolved.regionGeometry).toBeTruthy();
-    expect(resolved.regionLayer).toEqual(
-      expect.objectContaining({ dataset: 'dma', slug: 'omaha' })
-    );
+    expect(resolved.regionGeometry).toBeUndefined();
+    expect(resolved.regionLayer).toBeUndefined();
   });
 
   it('treats place without state as a geocode hint', async () => {

@@ -4,7 +4,7 @@
  * Displays a distance scale on the map
  *
  * Usage:
- * <mapi-control-scale position="bottom-left" unit="metric"></mapi-control-scale>
+ * <gk-control-scale position="bottom-left" unit="metric"></gk-control-scale>
  */
 
 import { BaseControl } from '../base-control';

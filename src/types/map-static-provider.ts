@@ -49,5 +49,7 @@ export interface ResolvedMapStaticProvider {
   id: MapStaticProviderId;
   apiKey: string;
   referer?: string;
+  /** Full MapLibre style URL when GEOKIT_MAP_STYLE_URL is set. */
+  styleUrl?: string;
   adapter: MapStaticSnapshotAdapter;
 }

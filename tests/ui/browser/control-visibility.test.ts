@@ -116,7 +116,7 @@ describe('Control Visibility Toggle', () => {
     expect(container.classList.contains('map-active')).toBe(false);
   });
 
-  it('should dispatch mapi-control-visibility-toggle event', async () => {
+  it('should dispatch gk-control-visibility-toggle event', async () => {
     let eventFired = false;
     let eventDetail: { active: boolean; map: unknown } | null = null;
 

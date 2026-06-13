@@ -6,12 +6,14 @@ import type {
 import { mapboxStaticAdapter } from './providers/mapbox-static.js';
 import { maptilerStaticAdapter } from './providers/maptiler-static.js';
 import { resolveMapHostBaseUrl } from './open-map.js';
+import { resolveMapStyleUrlFromEnv } from '../config/tile-cdn.js';
 import {
   resolveMapApiKeyFromEnv,
   resolveMapProviderIdFromEnv,
   resolveMapRefererFromEnv,
   type MapProviderEnv,
-} from './resolve-map-provider-env.js';
+} from '../config/env/index.js';
+import { readProcessEnv } from '../config/env/primitives.js';
 
 const PROVIDER_ADAPTERS: Record<MapStaticProviderId, MapStaticSnapshotAdapter> = {
   maptiler: maptilerStaticAdapter,
@@ -19,7 +21,7 @@ const PROVIDER_ADAPTERS: Record<MapStaticProviderId, MapStaticSnapshotAdapter> =
 };
 
 function processEnv(): MapProviderEnv {
-  return { ...process.env };
+  return { ...readProcessEnv() };
 }
 
 export function resolveMapStaticProviderFromEnv(
@@ -33,6 +35,7 @@ export function resolveMapStaticProviderFromEnv(
     id,
     apiKey,
     referer: resolveMapRefererFromEnv(env, resolveMapHostBaseUrl()),
+    styleUrl: resolveMapStyleUrlFromEnv(env),
     adapter,
   };
 }

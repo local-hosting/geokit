@@ -15,8 +15,9 @@ type MapStyleLike = {
   hasImage?: (id: string) => boolean;
 };
 
-const VALID_STYLE_URL = (apiKey: string) =>
-  `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${apiKey}`;
+import { buildMaptilerStyleUrl } from '../../../../config/tile-cdn.js';
+
+const defaultStyleUrl = (apiKey: string) => buildMaptilerStyleUrl('dataviz-dark', apiKey);
 
 /**
  * Check current style and replace if deprecated/invalid. Safe to call repeatedly.
@@ -45,7 +46,7 @@ export function checkAndUpdateStyle(map: MapStyleLike | null, apiKey: string): v
 
     if (!needsReplacement) return;
 
-    const validStyle = VALID_STYLE_URL(apiKey);
+    const validStyle = defaultStyleUrl(apiKey);
     if (typeof map.isStyleLoaded === 'function' && !map.isStyleLoaded()) {
       map.once?.('load', () => {
         try {

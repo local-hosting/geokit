@@ -1,4 +1,4 @@
-export { resolveGlobeCdnBaseUrl } from './config';
+export { isGeoCdnConfigured, resolveGeoCdnBaseUrl, resolveGlobeCdnBaseUrl } from './config';
 export {
   fetchGlobeCdn,
   fetchGlobeCdnJson,

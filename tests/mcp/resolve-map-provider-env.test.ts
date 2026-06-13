@@ -46,7 +46,13 @@ describe('resolveMapProviderIdFromEnv', () => {
 
     expect(config.providerId).toBe('mapbox');
     expect(config.mapboxAccessToken).toBe('mapbox-token');
-    expect(defaultInteractiveMapStyle('maptiler')).toBe('dataviz-dark');
-    expect(defaultInteractiveMapStyle('mapbox')).toBe('dark-v11');
+    expect(defaultInteractiveMapStyle('maptiler', {})).toBe('dataviz-dark');
+    expect(defaultInteractiveMapStyle('mapbox', {})).toBe('dark-v11');
+    expect(
+      resolveInteractiveMapCredentials(
+        { GEOKIT_MAP_STYLE_URL: 'https://tiles.example.com/style.json' },
+        { providerHint: 'maptiler' }
+      ).styleUrl
+    ).toBe('https://tiles.example.com/style.json');
   });
 });

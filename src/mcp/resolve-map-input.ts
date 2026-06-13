@@ -1,8 +1,9 @@
-import { resolvePlaceOrBoroughBounds, resolveShapeBounds } from '@twinfile/geokit/cdn';
-import type { Bounds } from '@twinfile/geokit/types';
+import { isGeoCdnConfigured } from '../cdn/config.js';
+import { resolvePlaceOrBoroughBounds, resolveShapeBounds } from '../cdn/resolve-shape.js';
+import type { Bounds } from '../types/index.js';
 import type { MapViewInput } from '../types/mcp-map.js';
 import { resolveShowMapContext } from './business/resolve-place.js';
-import { ensureGlobeCdnJwt } from './resolve-globe-cdn-auth.js';
+import { ensureGlobeCdnJwt } from '../config/env/index.js';
 
 export type ResolveMapViewInputOptions = {
   cdnBaseUrl?: string;
@@ -28,6 +29,10 @@ function geocodeQueryFromInput(input: MapViewInput): string | null {
   return null;
 }
 
+function geoCdnRequiredMessage(): string {
+  return 'Set GEOKIT_GEO_CDN_URL to frame maps from county, place, or DMA boundaries.';
+}
+
 export async function resolveMapViewInput(
   input: MapViewInput,
   options?: ResolveMapViewInputOptions
@@ -35,12 +40,19 @@ export async function resolveMapViewInput(
   if (hasBoundsInput(input)) return input;
   if (hasPointInput(input)) return input;
 
+  const geoCdnConfigured = isGeoCdnConfigured(options?.cdnBaseUrl);
   const cdnOptions = { baseUrl: options?.cdnBaseUrl, init: options?.fetchInit };
   let bounds: Bounds | null = null;
 
   if (input.countyFips?.trim()) {
+    if (!geoCdnConfigured) {
+      throw new Error(geoCdnRequiredMessage());
+    }
     bounds = await resolveShapeBounds({ countyFips: input.countyFips.trim() }, cdnOptions);
   } else if (input.state?.trim() && input.place?.trim()) {
+    if (!geoCdnConfigured) {
+      throw new Error(geoCdnRequiredMessage());
+    }
     bounds = await resolvePlaceOrBoroughBounds(input.state.trim(), input.place.trim(), cdnOptions);
   }
 
@@ -53,7 +65,9 @@ export async function resolveMapViewInput(
 
   const geocodeQuery = geocodeQueryFromInput(input);
   if (geocodeQuery) {
-    await ensureGlobeCdnJwt();
+    if (geoCdnConfigured) {
+      await ensureGlobeCdnJwt();
+    }
     const context = await resolveShowMapContext(geocodeQuery, { cdnBaseUrl: options?.cdnBaseUrl });
     const resolved = context.place;
 
@@ -71,6 +85,6 @@ export async function resolveMapViewInput(
   }
 
   throw new Error(
-    'Map view requires lat/lng, bounds, countyFips, state+place (CDN shape), or a place/query to geocode'
+    'Map view requires lat/lng, bounds, countyFips, state+place (geo CDN shape), or a place/query to geocode'
   );
 }

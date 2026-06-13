@@ -1,7 +1,9 @@
 import { resolveGlobeCdnBaseUrl } from './config';
 
-export function globeCdnOriginFromBaseUrl(baseUrl?: string): string {
-  return new URL(resolveGlobeCdnBaseUrl(baseUrl)).origin;
+export function globeCdnOriginFromBaseUrl(baseUrl?: string): string | null {
+  const resolved = resolveGlobeCdnBaseUrl(baseUrl);
+  if (!resolved) return null;
+  return new URL(resolved).origin;
 }
 
 /** Safari can stall on cross-origin HTTPS preconnect from http://localhost. */
@@ -16,7 +18,7 @@ export function shouldInjectCrossOriginPreconnect(
 
 export function injectGlobeCdnPreconnect(baseUrl?: string): void {
   const origin = globeCdnOriginFromBaseUrl(baseUrl);
-  if (typeof document === 'undefined') return;
+  if (!origin || typeof document === 'undefined') return;
   if (document.querySelector(`link[rel="preconnect"][href="${origin}"]`)) return;
 
   const link = document.createElement('link');

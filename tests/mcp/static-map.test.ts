@@ -5,6 +5,7 @@ import { calculateCenterAndZoom } from '@twinfile/geokit/bounds';
 import type { Bounds } from '@twinfile/geokit/types';
 import {
   buildMapHostUrl,
+  parseMapHostPoints,
   parseMapHostBounds,
   parseMapHostRegionLayer,
   serializeMapHostBounds,
@@ -283,6 +284,39 @@ describe('mcp static map', () => {
       });
 
       expect(md).toBe('![Louisville](https://example.com/map.png)');
+    });
+
+    it('derives zillow url from listing name when points omit u', () => {
+      const raw =
+        'W3sibGEiOjQyLjgwNSwibG4iOi03MC44NjE3NDgsIm4iOiI3IEhhbmNvY2sgU3QsIFVuaXQgMSwgTmV3YnVyeXBvcnQsIE1BIDAxOTUwIC0gJDg3NSwwMDAgLSAzIGJkIn1d';
+      const parsed = parseMapHostPoints(raw);
+      expect(parsed).toHaveLength(1);
+      expect(parsed[0]?.url).toBe(
+        'https://www.zillow.com/homes/7-Hancock-St-Unit-1-Newburyport-MA-01950_rb/'
+      );
+    });
+
+    it('round-trips map host points for gk-point layers', () => {
+      const points = [
+        {
+          lat: 42.81,
+          lng: -70.87,
+          id: 'a',
+          name: '30 Water St · $765k',
+          color: '#f97316',
+          url: 'https://www.zillow.com/homes/30-Water-St-Newburyport-MA-01950_rb/',
+        },
+        { lat: 43.07, lng: -70.78, id: 'b', name: '115 Bluefish · $365k', color: '#3b82f6' },
+      ];
+      const hostUrl = buildMapHostUrl({
+        hostBaseUrl: 'http://localhost:3002',
+        viewport: { lat: 42.9, lng: -70.8, zoom: 8 },
+        bounds: [-71.2, 42.2, -70.6, 43.2],
+        points,
+      });
+      const params = new URL(hostUrl).searchParams;
+      expect(params.get('points')).toBeTruthy();
+      expect(parseMapHostPoints(params.get('points'))).toEqual(points);
     });
   });
 });

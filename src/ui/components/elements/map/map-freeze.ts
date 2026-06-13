@@ -26,11 +26,8 @@ export function whenStyleReady(map: MapLike | null, timeout: number = 2000): Pro
   if (typeof map.isStyleLoaded === 'function' && map.isStyleLoaded()) {
     return Promise.resolve();
   }
-  if (typeof map.getStyle === 'function') {
-    const style = map.getStyle();
-    if (style && typeof style === 'object') {
-      return Promise.resolve();
-    }
+  if (typeof map.loaded === 'function' && map.loaded()) {
+    return Promise.resolve();
   }
 
   return new Promise((resolve) => {

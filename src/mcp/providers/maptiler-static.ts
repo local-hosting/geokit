@@ -12,15 +12,18 @@ import {
   simplifyGeometryRings,
   type MapRegionPathStyle,
 } from '../region-path.js';
+import { resolveMaptilerStaticMapsBase } from '../../config/tile-cdn.js';
 import {
   staticMapDimensions,
   staticMapImageSuffix,
   staticMapRefererHeaders,
 } from '../static-map-dimensions.js';
 
-const MAPTILER_STATIC_BASE = 'https://api.maptiler.com/maps';
-
 export const MAPTILER_DEFAULT_STYLE: MapStyleId = 'dataviz-dark';
+
+function maptilerStaticMapsBase(): string {
+  return resolveMaptilerStaticMapsBase();
+}
 
 export type { MapRegionPathStyle };
 
@@ -58,7 +61,7 @@ function buildCenterUrl(args: MapStaticSnapshotArgs): string {
   const style = args.style ?? MAPTILER_DEFAULT_STYLE;
   const dims = staticMapDimensions(args.dimensions);
   const { lng, lat, zoom } = args.viewport;
-  const base = `${MAPTILER_STATIC_BASE}/${style}/static/${lng},${lat},${zoom}/${staticMapImageSuffix(dims)}?key=${encodeURIComponent(args.apiKey)}`;
+  const base = `${maptilerStaticMapsBase()}/${style}/static/${lng},${lat},${zoom}/${staticMapImageSuffix(dims)}?key=${encodeURIComponent(args.apiKey)}`;
   return appendPathOverlays(base, args.overlays ?? []);
 }
 
@@ -67,7 +70,7 @@ function buildBoundsUrl(args: MapStaticBoundsSnapshotArgs): string {
   const dims = staticMapDimensions(args.dimensions);
   const [minLon, minLat, maxLon, maxLat] = args.bounds as Bounds;
   const padding = args.padding ?? 0.06;
-  const base = `${MAPTILER_STATIC_BASE}/${style}/static/${minLon},${minLat},${maxLon},${maxLat}/${staticMapImageSuffix(dims)}?key=${encodeURIComponent(args.apiKey)}&padding=${padding}`;
+  const base = `${maptilerStaticMapsBase()}/${style}/static/${minLon},${minLat},${maxLon},${maxLat}/${staticMapImageSuffix(dims)}?key=${encodeURIComponent(args.apiKey)}&padding=${padding}`;
   return appendPathOverlays(base, args.overlays ?? []);
 }
 
@@ -75,7 +78,7 @@ function buildAutoUrl(args: MapStaticAutoSnapshotArgs): string {
   const style = args.style ?? MAPTILER_DEFAULT_STYLE;
   const dims = staticMapDimensions(args.dimensions);
   const padding = args.padding ?? 0.06;
-  const base = `${MAPTILER_STATIC_BASE}/${style}/static/auto/${staticMapImageSuffix(dims)}?key=${encodeURIComponent(args.apiKey)}&padding=${padding}`;
+  const base = `${maptilerStaticMapsBase()}/${style}/static/auto/${staticMapImageSuffix(dims)}?key=${encodeURIComponent(args.apiKey)}&padding=${padding}`;
   return appendPathOverlays(base, args.overlays);
 }
 

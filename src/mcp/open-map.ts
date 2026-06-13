@@ -1,7 +1,76 @@
 import type { Bounds } from '@twinfile/geokit/types';
 import { normalizeCountyFips } from '../cdn/county.js';
-import type { MapHostRegionLayer, MapStyleId, MapViewport } from '../types/mcp-map.js';
+import { resolveMapHostBaseUrlFromEnv } from '../config/env/index.js';
+import type {
+  MapHostPoint,
+  MapHostRegionLayer,
+  MapStyleId,
+  MapViewport,
+} from '../types/mcp-map.js';
 import type { MapViewInput } from '../types/mcp-map.js';
+import { zillowUrlFromListingName } from './listing-zillow-url.js';
+
+function encodeBase64Url(value: string): string {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(value, 'utf8').toString('base64url');
+  }
+  const bytes = new TextEncoder().encode(value);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function decodeBase64Url(value: string): string {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(value, 'base64url').toString('utf8');
+  }
+  const padded = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padLen = (4 - (padded.length % 4)) % 4;
+  const binary = atob(padded + '='.repeat(padLen));
+  const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+type CompactMapHostPoint = {
+  la: number;
+  ln: number;
+  i?: string;
+  n?: string;
+  c?: string;
+  u?: string;
+};
+
+export function serializeMapHostPoints(points: MapHostPoint[]): string {
+  const compact: CompactMapHostPoint[] = points.map((point) => ({
+    la: point.lat,
+    ln: point.lng,
+    ...(point.id ? { i: point.id } : {}),
+    ...(point.name ? { n: point.name } : {}),
+    ...(point.color ? { c: point.color } : {}),
+    ...(point.url ? { u: point.url } : {}),
+  }));
+  return encodeBase64Url(JSON.stringify(compact));
+}
+
+export function parseMapHostPoints(raw: string | null | undefined): MapHostPoint[] {
+  if (!raw?.trim()) return [];
+  try {
+    const parsed = JSON.parse(decodeBase64Url(raw.trim())) as CompactMapHostPoint[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((row) => Number.isFinite(row.la) && Number.isFinite(row.ln))
+      .map((row) => ({
+        lat: row.la,
+        lng: row.ln,
+        id: row.i,
+        name: row.n,
+        color: row.c,
+        url: row.u?.trim() || zillowUrlFromListingName(row.n),
+      }));
+  } catch {
+    return [];
+  }
+}
 
 export const DEFAULT_MAP_HOST_URL = 'http://localhost:3002';
 
@@ -9,11 +78,7 @@ export const DEFAULT_MAP_HOST_URL = 'http://localhost:3002';
 export const MAP_HOST_PATH = '/index.html';
 
 export function resolveMapHostBaseUrl(): string {
-  const fromEnv =
-    process.env.MAP_HOST_URL?.trim() ||
-    process.env.GEOKIT_MAP_HOST_URL?.trim() ||
-    DEFAULT_MAP_HOST_URL;
-  return fromEnv.replace(/\/$/, '');
+  return resolveMapHostBaseUrlFromEnv();
 }
 
 export function serializeMapHostBounds(bounds: Bounds): string {
@@ -129,6 +194,7 @@ export function buildMapHostUrl(args: {
   placeSlug?: string;
   bounds?: Bounds;
   regionLayer?: MapHostRegionLayer;
+  points?: MapHostPoint[];
 }): string {
   const base = (args.hostBaseUrl ?? resolveMapHostBaseUrl()).replace(/\/$/, '');
   const url = new URL(`${base}${MAP_HOST_PATH}`);
@@ -155,5 +221,8 @@ export function buildMapHostUrl(args: {
     url.searchParams.set('bounds', serializeMapHostBounds(args.bounds));
   }
   applyMapHostRegionLayerParams(url, args.regionLayer);
+  if (args.points?.length) {
+    url.searchParams.set('points', serializeMapHostPoints(args.points));
+  }
   return url.toString();
 }

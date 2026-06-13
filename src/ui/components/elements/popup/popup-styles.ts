@@ -127,6 +127,20 @@ export function getPopupStylesCss(): string {
     min-width: 0;
   }
 
+  a.geokit-popup-title-link {
+    color: var(--gk-popup-link-color, #58a6ff);
+    text-decoration: underline;
+    font: inherit;
+  }
+
+  a.geokit-popup-title-link:hover {
+    filter: brightness(1.15);
+  }
+
+  .geokit-popup-content--listing {
+    overflow: visible;
+  }
+
   .geokit-popup-title-text {
     min-width: 0;
     max-width: 280px;
@@ -254,6 +268,27 @@ export function getPopupStylesCss(): string {
   .geokit-popup-action--text:hover {
     filter: brightness(1.2);
     text-decoration: underline;
+  }
+
+  .geokit-popup-actions--listing {
+    margin-top: 8px;
+    padding-top: 0;
+    border-top: none;
+    justify-content: flex-start;
+  }
+
+  .geokit-popup-action--listing {
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 0;
+    color: var(--gk-popup-link-color, #58a6ff);
+  }
+
+  .geokit-popup-action--listing svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
   }
 
   .geokit-popup-footer-label {

@@ -5,6 +5,7 @@
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
 import { HOVER_CONFIG } from '../../../utils/feature-state-hover';
 import { debug } from '../../../utils/logger';
+import { POINT_GEOJSON_SOURCE_OPTIONS } from '../../../utils/geojson-source-options';
 import {
   getZoomRadiusExpression,
   getShadowRadiusExpression,
@@ -92,6 +93,7 @@ export function createPointLayers(
       type: 'geojson',
       data: pointData,
       promoteId: 'point-id',
+      ...POINT_GEOJSON_SOURCE_OPTIONS,
     });
   } catch (error) {
     console.error('[Point] Failed to add source:', error);
@@ -101,7 +103,11 @@ export function createPointLayers(
   const emptyHover: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
   if (hoverSourceId) {
     try {
-      map.addSource(hoverSourceId, { type: 'geojson', data: emptyHover });
+      map.addSource(hoverSourceId, {
+        type: 'geojson',
+        data: emptyHover,
+        ...POINT_GEOJSON_SOURCE_OPTIONS,
+      });
     } catch (error) {
       console.error('[Point] Failed to add hover source:', error);
     }
