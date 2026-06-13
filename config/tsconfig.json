@@ -6,7 +6,6 @@
     "moduleResolution": "bundler",
     "declaration": true,
     "declarationMap": true,
-    "outDir": "../dist/esm",
     "rootDir": "../src",
     "strict": true,
     "esModuleInterop": true,
@@ -14,8 +13,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": false
+    "noEmit": true
   },
   "include": ["../src/**/*"],
-  "exclude": ["../node_modules", "../dist", "../dist-cjs-temp", "../tests"]
+  "exclude": ["../node_modules", "../dist", "../tests"]
 }

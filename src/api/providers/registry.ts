@@ -1,6 +1,6 @@
 /**
  * API Provider Registry
- * 
+ *
  * Manages API providers with capability-based routing
  * Multiple API providers can be active simultaneously
  */
@@ -16,6 +16,12 @@ const apiProviders = new Map<string, BaseAPIProvider>();
  * Capability Index - maps capabilities to providers that support them
  */
 const capabilityIndex = new Map<APICapability, BaseAPIProvider[]>();
+
+/**
+ * Explicit capability routers (composite / fallback chains).
+ * Take precedence over the first registered provider in capabilityIndex.
+ */
+const capabilityRouters = new Map<APICapability, BaseAPIProvider>();
 
 /**
  * Register an API provider (for services)
@@ -76,6 +82,7 @@ export function getAPIProvider(name: string): BaseAPIProvider | null {
 export function _resetRegistries(): void {
   apiProviders.clear();
   capabilityIndex.clear();
+  capabilityRouters.clear();
 }
 
 /**
@@ -84,9 +91,19 @@ export function _resetRegistries(): void {
  * @param capability - The capability to look for
  * @returns Provider instance or null if no provider supports the capability
  */
-export function getProviderForCapability(
-  capability: APICapability
-): BaseAPIProvider | null {
+export function registerCapabilityRouter(capability: APICapability, router: BaseAPIProvider): void {
+  capabilityRouters.set(capability, router);
+}
+
+export function getCapabilityRouter(capability: APICapability): BaseAPIProvider | null {
+  return capabilityRouters.get(capability) ?? null;
+}
+
+export function getProviderForCapability(capability: APICapability): BaseAPIProvider | null {
+  const router = capabilityRouters.get(capability);
+  if (router) {
+    return router;
+  }
   const providers = capabilityIndex.get(capability);
   return providers && providers.length > 0 ? providers[0] : null;
 }
@@ -96,9 +113,7 @@ export function getProviderForCapability(
  * @param capability - The capability to look for
  * @returns Array of providers (empty if none found)
  */
-export function getProvidersForCapability(
-  capability: APICapability
-): BaseAPIProvider[] {
+export function getProvidersForCapability(capability: APICapability): BaseAPIProvider[] {
   return capabilityIndex.get(capability) || [];
 }
 
@@ -134,5 +149,5 @@ export function getSupportedCapabilities(): APICapability[] {
 export function clearAPIProviders(): void {
   apiProviders.clear();
   capabilityIndex.clear();
+  capabilityRouters.clear();
 }
-

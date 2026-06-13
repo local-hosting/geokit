@@ -2,7 +2,7 @@
  * Mapbox API Provider
  *
  * Implements BaseAPIProvider for Mapbox services
- * Provides isochrone, directions, and matrix capabilities
+ * Provides isochrone, directions, and geocoding capabilities
  *
  * Features:
  * - LRU cache with 30-minute TTL
@@ -60,7 +60,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
   }
 
   getCapabilities(): APICapability[] {
-    return ['isochrone', 'directions', 'matrix', 'geocoding'];
+    return ['isochrone', 'directions', 'geocoding'];
   }
 
   async fetchIsochrone(options: IsochroneOptions): Promise<FeatureCollection> {
