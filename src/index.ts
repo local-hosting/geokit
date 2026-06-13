@@ -387,11 +387,9 @@ export {
   findZipsInPolygonLocal,
   // Local demographics data (instant lookups, no API calls)
   loadDemographicsData,
-  loadDemographicsDataFromUrl,
   isDemographicsDataLoaded,
   getLocalDemographics,
   // Legacy aliases
-  loadDemographicsCache,
   getCachedDemographics,
   isDemographicsCacheLoaded,
   // ZIP lookup functions

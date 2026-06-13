@@ -66,23 +66,24 @@ export function prefetchMapTilerSdk(apiKey?: string): Promise<MapTilerSdkModule>
   return mapTilerSdkPromise;
 }
 
-async function initMapboxProvider(accessToken?: string): Promise<void> {
+async function initMapboxProvider(accessToken?: string, maptilerApiKey?: string): Promise<void> {
   try {
-    const { registerAPIProvider, initAPIProvider } = await import('../../api/providers/registry');
-    const { MapboxAPIProvider } = await import('../../api/providers/mapbox-provider');
-    registerAPIProvider('mapbox', new MapboxAPIProvider());
-    if (accessToken) {
-      await initAPIProvider('mapbox', { accessToken });
-    }
+    const { ensureCapabilityRoutersReady } = await import(
+      '../../api/providers/setup-capability-routers'
+    );
+    await ensureCapabilityRoutersReady({
+      mapboxAccessToken: accessToken,
+      maptilerApiKey,
+    });
   } catch (err) {
-    console.warn('[geokit] Failed to initialize Mapbox API provider:', err);
+    console.warn('[geokit] Failed to initialize API capability routers:', err);
   }
 }
 
 /** Ensure Mapbox API provider is ready (needed for live isochrones). */
-export function ensureMapboxApiReady(accessToken?: string): Promise<void> {
+export function ensureMapboxApiReady(accessToken?: string, maptilerApiKey?: string): Promise<void> {
   if (!mapboxReadyPromise) {
-    mapboxReadyPromise = initMapboxProvider(accessToken);
+    mapboxReadyPromise = initMapboxProvider(accessToken, maptilerApiKey);
   }
   return mapboxReadyPromise;
 }
@@ -151,7 +152,7 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
   if (mapbox?.defer !== false) {
     const idleTimeout = mapbox?.idleTimeoutMs ?? 5000;
     const runMapbox = () => {
-      void ensureMapboxApiReady(mapbox?.accessToken);
+      void ensureMapboxApiReady(mapbox?.accessToken, apiKey ?? undefined);
     };
     if (typeof requestIdleCallback === 'function') {
       requestIdleCallback(runMapbox, { timeout: idleTimeout });
@@ -159,7 +160,7 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
       setTimeout(runMapbox, 0);
     }
   } else {
-    await ensureMapboxApiReady(mapbox?.accessToken);
+    await initMapboxProvider(mapbox?.accessToken, apiKey ?? undefined);
   }
 
   phase(options.onPhase, 'init done', totalStart);

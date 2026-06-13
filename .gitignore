@@ -6,5 +6,5 @@ coverage
 .env
 .env.local
 .npmrc
-tests/ui/**/__screenshots__
+tests/unit/**/__screenshots__
 .yarn/

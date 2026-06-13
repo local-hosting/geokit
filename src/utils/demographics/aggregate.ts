@@ -5,7 +5,7 @@
  * Useful for querying demographics for polygons/bounds (map views)
  */
 
-import type { DemographicsResult } from '../../api/providers/types';
+import type { DemographicsResult } from '../../types/demographics';
 import type { Polygon, MultiPolygon, Position, Geometry } from 'geojson';
 import { pointInGeometry } from '../containment/point-in-geometry';
 import { getBounds } from '../bounds';

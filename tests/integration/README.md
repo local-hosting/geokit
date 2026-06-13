@@ -57,11 +57,13 @@ But works fine from:
 yarn test:integration
 ```
 
-### Run All Tests (Unit + Integration)
+### Run Unit Tests Only
 
 ```bash
 yarn test
 ```
+
+Unit tests live under `tests/unit/` (by source area). Shared setup and mocks are in `tests/`.
 
 ### Skip Integration Tests
 

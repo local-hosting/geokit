@@ -74,7 +74,7 @@ export function parseMapHostPoints(raw: string | null | undefined): MapHostPoint
 
 export const DEFAULT_MAP_HOST_URL = 'http://localhost:3002';
 
-/** Path served by `yarn map-host` (Vite root: host/mcp/). */
+/** Path served by `yarn map-host` (Vite root: src/mcp/host/). */
 export const MAP_HOST_PATH = '/index.html';
 
 export function resolveMapHostBaseUrl(): string {

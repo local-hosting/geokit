@@ -15,5 +15,5 @@
       "@twinfile/geokit/*": ["../dist/esm/*"]
     }
   },
-  "include": ["../src/vite-env.d.ts", "../src/mcp/**/*.ts", "../tests/mcp/**/*.ts"]
+  "include": ["../src/vite-env.d.ts", "../src/mcp/**/*.ts", "../tests/unit/mcp/**/*.ts"]
 }

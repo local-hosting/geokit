@@ -9,7 +9,17 @@ if (existsSync(envPath)) {
   dotenv.config({ path: envPath });
 }
 
+const geokitRoot = path.resolve(__dirname, '..');
+
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@twinfile/geokit/bounds': path.join(geokitRoot, 'src/utils/bounds/index.ts'),
+      '@twinfile/geokit/types': path.join(geokitRoot, 'src/types/index.ts'),
+      '@twinfile/geokit/distance': path.join(geokitRoot, 'src/utils/distance/index.ts'),
+      '@twinfile/geokit/cdn': path.join(geokitRoot, 'src/cdn/index.ts'),
+    },
+  },
   test: {
     globals: true,
     environment: 'happy-dom', // Happy-DOM has better Custom Elements support than jsdom
@@ -20,19 +30,14 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
-      '**/tests/ui/browser/**',
+      '**/tests/unit/ui/browser/**',
       '**/tests/integration/**',
     ],
-    pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: true,
-      },
-    },
+    pool: 'forks',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'dist/', '**/*.test.ts', '**/*.config.*', 'scripts/'],
+      exclude: ['node_modules/', 'dist/', '**/*.test.ts', '**/*.config.*'],
     },
     env: {
       // Pass through environment variables to tests
