@@ -4,7 +4,7 @@
  * Main map container component
  *
  * Usage:
- * <mapi-map lat="40.7128" lng="-74.006" zoom="10" style="streets"></mapi-map>
+ * <gk-map lat="40.7128" lng="-74.006" zoom="10" style="streets"></gk-map>
  */
 
 import { BaseElement } from '../../base-element';
