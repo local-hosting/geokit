@@ -1,11 +1,10 @@
 // @vitest-environment node
 
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import dotenv from 'dotenv';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { ensureGlobeCdnJwt } from '../../src/mcp/resolve-globe-cdn-auth.js';
-import { resolveGlobeCdnFetchOptions } from '../../src/mcp/globe-cdn-fetch-options.js';
+import { ensureGlobeCdnJwt, resolveGlobeCdnFetchOptions } from '../../src/config/env/index.js';
 
 const geokitEnv = join(process.cwd(), '.env');
 
@@ -31,11 +30,10 @@ afterEach(() => {
 });
 
 describe('resolve-globe-cdn-auth', () => {
-  it('mints JWT from GLOBE_CDN_JWT_SECRET when no bearer token is set', async () => {
+  it('mints JWT from GEOKIT_GEO_CDN_JWT_SECRET when no bearer token is set', async () => {
+    process.env.GEOKIT_GEO_CDN_JWT = '';
     process.env.GLOBE_CDN_JWT = '';
-    process.env.GEOKIT_GLOBE_CDN_JWT = '';
-    process.env.FW_GLOBE_CDN_JWT = '';
-    process.env.GLOBE_CDN_JWT_SECRET = 'test-secret-for-mint';
+    process.env.GEOKIT_GEO_CDN_JWT_SECRET = 'test-secret-for-mint';
 
     const token = await ensureGlobeCdnJwt();
     expect(token).toBeTruthy();
@@ -45,23 +43,26 @@ describe('resolve-globe-cdn-auth', () => {
     });
   });
 
-  it('loads new-york DMA shape when secret is configured', async () => {
-    const secret = process.env.GLOBE_CDN_JWT_SECRET?.trim();
-    if (!secret) {
+  it('loads new-york DMA shape when secret and geo CDN URL are configured', async () => {
+    const secret =
+      process.env.GEOKIT_GEO_CDN_JWT_SECRET?.trim() || process.env.GLOBE_CDN_JWT_SECRET?.trim();
+    const geoCdnUrl =
+      process.env.GEOKIT_GEO_CDN_URL?.trim() ||
+      process.env.GEOKIT_GLOBE_CDN_URL?.trim() ||
+      process.env.GLOBE_CDN_URL?.trim();
+    if (!secret || !geoCdnUrl) {
       return;
     }
 
     vi.resetModules();
-    const { ensureGlobeCdnJwt: ensureJwt } = await import(
-      '../../src/mcp/resolve-globe-cdn-auth.js'
-    );
+    const { ensureGlobeCdnJwt: ensureJwt } = await import('../../src/config/env/index.js');
     const { fetchDmaMarketShapeFeature: fetchDma } = await import('../../src/cdn/dma.js');
     const { resolveGlobeCdnFetchOptions: resolveCdnOptions } = await import(
-      '../../src/mcp/globe-cdn-fetch-options.js'
+      '../../src/config/env/index.js'
     );
 
     await ensureJwt();
-    const feature = await fetchDma('new-york', resolveCdnOptions());
+    const feature = await fetchDma('new-york', resolveCdnOptions({ cdnBaseUrl: geoCdnUrl }));
     expect(feature?.geometry).toBeTruthy();
   });
 });

@@ -3,6 +3,7 @@
  */
 
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
+import { POINT_GEOJSON_SOURCE_OPTIONS } from '../../../utils/geojson-source-options';
 import {
   getHoverGlowRadiusExpression,
   getSelectionRingRadiusExpression,
@@ -57,18 +58,27 @@ export function applySelectedVisual(
   };
 
   try {
+    if (map.getLayer?.(selectedShadowLayerId)) map.removeLayer(selectedShadowLayerId);
+    if (map.getLayer?.(selectedLayerId)) map.removeLayer(selectedLayerId);
     if (map.getSource?.(selectedSourceId)) {
       map.removeSource(selectedSourceId);
     }
-    map.addSource(selectedSourceId, { type: 'geojson', data: selectedData });
 
-    if (map.getLayer?.(selectedShadowLayerId)) map.removeLayer(selectedShadowLayerId);
-    if (map.getLayer?.(selectedLayerId)) map.removeLayer(selectedLayerId);
+    map.addSource(selectedSourceId, {
+      type: 'geojson',
+      data: selectedData,
+      ...POINT_GEOJSON_SOURCE_OPTIONS,
+    });
 
-    const selectedShadowColor = getCSSVariable(mapElement, '--gk-focus-shadow-color', '');
-    const selectedRingColor = getCSSVariable(mapElement, '--gk-focus-ring-color', '');
+    const selectedShadowColor = getCSSVariable(
+      mapElement,
+      '--gk-focus-shadow-color',
+      'rgba(0, 0, 0, 0.4)'
+    );
+    const selectedRingColor = getCSSVariable(mapElement, '--gk-focus-ring-color', '#ffffff');
     const focusHaloColor = options.pointColor || selectedShadowColor;
     const focusHaloBlur = getCSSVariableNumber(mapElement, '--gk-glow-blur', 0.5);
+    const focusHaloOpacity = getCSSVariableNumber(mapElement, '--gk-point-glow-focus-opacity', 0.4);
 
     map.addLayer(
       {
@@ -78,7 +88,7 @@ export function applySelectedVisual(
         paint: {
           'circle-radius': getHoverGlowRadiusExpression(size),
           'circle-color': focusHaloColor,
-          'circle-opacity': getCSSVariableNumber(mapElement, '--gk-point-glow-focus-opacity', 0),
+          'circle-opacity': focusHaloOpacity,
           'circle-blur': focusHaloBlur,
           'circle-stroke-width': 0,
         },
@@ -93,7 +103,7 @@ export function applySelectedVisual(
         source: selectedSourceId,
         paint: {
           'circle-radius': getSelectionRingRadiusExpression(size, options.strokeWidth ?? 0),
-          'circle-color': 'transparent',
+          'circle-color': 'rgba(0,0,0,0)',
           'circle-opacity': 1,
           'circle-stroke-width': POINT_SELECTION_RING_STROKE_WIDTH,
           'circle-stroke-color': selectedRingColor,
@@ -102,6 +112,15 @@ export function applySelectedVisual(
       },
       layerId
     );
+
+    const moveLayer = (map as { moveLayer?: (id: string) => void }).moveLayer;
+    if (moveLayer) {
+      try {
+        moveLayer(selectedLayerId);
+      } catch {
+        /* ring z-order best-effort */
+      }
+    }
 
     return {
       layerId: selectedLayerId,

@@ -3,31 +3,14 @@ import {
   foursquarePlacesApiKey,
   searchFoursquarePlaces,
 } from '../../api/providers/foursquare-places.js';
+import { resolveGeocodingApiKey, resolveRoutingAccessToken } from '../../config/env/index.js';
 import type { PlaceSearchResult, ReverseGeocodeResult } from '../../types/mcp-business-api.js';
 
-function envTrim(key: string): string | undefined {
-  const value = process.env[key]?.trim();
-  return value || undefined;
-}
+/** @deprecated use resolveGeocodingApiKey */
+export const geocodingApiKey = resolveGeocodingApiKey;
 
-export function geocodingApiKey(): string | undefined {
-  return (
-    envTrim('GEOKIT_MAP_API_KEY') ??
-    envTrim('MAP_API_KEY') ??
-    envTrim('MAPTILER_KEY') ??
-    envTrim('GEOKIT_MAPTILER_KEY')
-  );
-}
-
-export function routingAccessToken(): string | undefined {
-  return (
-    envTrim('GEOKIT_ROUTING_TOKEN') ??
-    envTrim('ROUTING_TOKEN') ??
-    envTrim('MAPBOX_TOKEN') ??
-    envTrim('MAPBOX_ACCESS_TOKEN') ??
-    envTrim('GEOKIT_MAPBOX_KEY')
-  );
-}
+/** @deprecated use resolveRoutingAccessToken */
+export const routingAccessToken = resolveRoutingAccessToken;
 
 /** @deprecated use geocodingApiKey */
 export const maptilerApiKey = geocodingApiKey;
@@ -44,7 +27,7 @@ function requireKey(key: string | undefined, message: string): string {
 
 export async function fetchGeocode(query: string): Promise<FeatureCollection> {
   const apiKey = requireKey(
-    geocodingApiKey(),
+    resolveGeocodingApiKey(),
     'Geocoding is not configured. Set GEOKIT_MAP_API_KEY.'
   );
 
@@ -65,7 +48,7 @@ export async function fetchReverseGeocode(
   lng: number
 ): Promise<ReverseGeocodeResult | null> {
   const apiKey = requireKey(
-    geocodingApiKey(),
+    resolveGeocodingApiKey(),
     'Reverse geocoding is not configured. Set GEOKIT_MAP_API_KEY.'
   );
 
@@ -117,7 +100,7 @@ export async function fetchDirections(args: {
   toLng: number;
   mode?: 'driving' | 'walking' | 'cycling';
 }): Promise<{ distanceMeters: number; durationSeconds: number } | null> {
-  const token = routingAccessToken();
+  const token = resolveRoutingAccessToken();
   if (!token) return null;
 
   const modeMap = {
@@ -150,7 +133,7 @@ export async function fetchIsochrone(args: {
   mode: 'driving' | 'walking' | 'cycling' | 'driving-traffic';
 }): Promise<FeatureCollection> {
   const token = requireKey(
-    routingAccessToken(),
+    resolveRoutingAccessToken(),
     'Drive-time areas need a routing API token (GEOKIT_ROUTING_TOKEN or ROUTING_TOKEN).'
   );
 

@@ -1,9 +1,13 @@
 import type { FeatureCollection } from 'geojson';
-import type { Bounds } from '@twinfile/geokit/types';
+import type { Bounds } from '../../types/index.js';
+import { isGeoCdnConfigured } from '../../cdn/config.js';
 import { dmaSlugFromQuery } from '../../cdn/dma.js';
 import { formatDmaCatalogSuggestions, resolveDmaCatalogSlug } from '../../cdn/dma-catalog.js';
-import { ensureGlobeCdnJwt, isGlobeCdnAuthConfigured } from '../resolve-globe-cdn-auth.js';
-import { resolveGlobeCdnFetchOptions } from '../globe-cdn-fetch-options.js';
+import {
+  ensureGlobeCdnJwt,
+  isGlobeCdnAuthConfigured,
+  resolveGlobeCdnFetchOptions,
+} from '../../config/env/index.js';
 import { resolveShowMapRegionContext, type ResolvedPlaceRef } from './resolve-region-shape.js';
 import type { MapHostRegionLayer } from '../../types/mcp-map.js';
 import type { ResolvedMapPlace, ResolvedPlace } from '../../types/mcp-business.js';
@@ -150,6 +154,21 @@ function isAllDmaQuery(query: string): boolean {
   );
 }
 
+async function geocodeShowMapContext(query: string): Promise<{
+  place: ResolvedMapPlace;
+  regionGeometry?: GeoJSON.Geometry;
+  placeRef?: ResolvedPlaceRef;
+  regionLayer?: MapHostRegionLayer;
+}> {
+  const result = await fetchGeocode(query);
+  const feature = result.features?.[0] as GeocodeFeature | undefined;
+  const place = placeFromGeocodeFeature(feature ?? ({} as GeocodeFeature), query);
+  if (!place) {
+    throw new Error(`Could not find a location for "${query}".`);
+  }
+  return { place: applyRegionalFallback(place, query) };
+}
+
 export async function resolveShowMapContext(
   query: string,
   options?: { cdnBaseUrl?: string }
@@ -165,6 +184,9 @@ export async function resolveShowMapContext(
   }
 
   if (isAllDmaQuery(trimmed)) {
+    if (!isGeoCdnConfigured(options?.cdnBaseUrl)) {
+      return geocodeShowMapContext(trimmed);
+    }
     return {
       place: {
         lat: 39.8283,
@@ -177,12 +199,15 @@ export async function resolveShowMapContext(
     };
   }
 
-  await ensureGlobeCdnJwt();
-  const cdnOptions = resolveGlobeCdnFetchOptions(options);
+  const geoCdnConfigured = isGeoCdnConfigured(options?.cdnBaseUrl);
   const zipOnly = /^\d{5}(?:-\d{4})?$/.test(trimmed);
   const dmaOnly = /\bdma\b/i.test(trimmed);
 
-  if (!zipOnly && !dmaOnly) {
+  if (!geoCdnConfigured || (!zipOnly && !dmaOnly)) {
+    if (geoCdnConfigured) {
+      await ensureGlobeCdnJwt();
+    }
+    const cdnOptions = resolveGlobeCdnFetchOptions(options);
     const result = await fetchGeocode(trimmed);
     const feature = result.features?.[0] as GeocodeFeature | undefined;
     const place = placeFromGeocodeFeature(feature ?? ({} as GeocodeFeature), trimmed);
@@ -190,8 +215,14 @@ export async function resolveShowMapContext(
       throw new Error(`Could not find a location for "${trimmed}".`);
     }
     const resolved = applyRegionalFallback(place, trimmed);
-    return resolveShowMapRegionContext(trimmed, feature, resolved, cdnOptions);
+    if (geoCdnConfigured) {
+      return resolveShowMapRegionContext(trimmed, feature, resolved, cdnOptions);
+    }
+    return { place: resolved };
   }
+
+  await ensureGlobeCdnJwt();
+  const cdnOptions = resolveGlobeCdnFetchOptions(options);
 
   const fallbackPlace: ResolvedMapPlace = {
     lat: 39.8283,
@@ -205,7 +236,7 @@ export async function resolveShowMapContext(
   if (dmaSlug && !context.regionGeometry) {
     if (!isGlobeCdnAuthConfigured()) {
       throw new Error(
-        'Globe CDN DMA auth is not configured. Set GLOBE_CDN_JWT or GLOBE_CDN_JWT_SECRET (same secret as mapto.link) in packages/geokit/.env or apps/fieldwise/.env.'
+        'Geo CDN auth is not configured. Set GEOKIT_GEO_CDN_JWT or GEOKIT_GEO_CDN_JWT_SECRET when your geo CDN requires a bearer token.'
       );
     }
 

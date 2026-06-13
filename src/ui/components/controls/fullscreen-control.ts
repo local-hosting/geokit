@@ -4,7 +4,7 @@
  * Provides a button to toggle fullscreen mode
  *
  * Usage:
- * <mapi-control-fullscreen position="top-right"></mapi-control-fullscreen>
+ * <gk-control-fullscreen position="top-right"></gk-control-fullscreen>
  */
 
 import { BaseControl } from '../base-control';

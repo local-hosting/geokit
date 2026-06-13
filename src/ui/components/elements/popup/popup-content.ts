@@ -4,6 +4,9 @@
 
 import type { PointPopupProperties, PopupContentOptions, PopupTag } from '../../../../types/popup';
 
+const EXTERNAL_LINK_ICON_SVG =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+
 function decodeHtmlEntitiesForText(value: unknown): string {
   if (value == null) return '';
   const raw = String(value);
@@ -23,13 +26,29 @@ function decodeHtmlEntitiesForText(value: unknown): string {
  * Build popup content DOM with title and ID tags (native DOM only, safe from Vue reactivity).
  */
 export function buildPopupContent(title?: string, properties?: PointPopupProperties): HTMLElement {
+  const listingUrl =
+    typeof properties?.url === 'string' && properties.url.trim() ? properties.url.trim() : '';
   const container = document.createElement('div');
-  container.setAttribute('class', 'geokit-popup-content');
+  container.setAttribute(
+    'class',
+    listingUrl ? 'geokit-popup-content geokit-popup-content--listing' : 'geokit-popup-content'
+  );
 
   if (title) {
     const titleEl = document.createElement('h4');
     titleEl.setAttribute('class', 'geokit-popup-title');
-    titleEl.textContent = decodeHtmlEntitiesForText(title);
+    const titleText = decodeHtmlEntitiesForText(title);
+    if (listingUrl) {
+      const titleLink = document.createElement('a');
+      titleLink.setAttribute('class', 'geokit-popup-title-link');
+      titleLink.setAttribute('href', listingUrl);
+      titleLink.setAttribute('target', '_blank');
+      titleLink.setAttribute('rel', 'noopener noreferrer');
+      titleLink.textContent = titleText;
+      titleEl.appendChild(titleLink);
+    } else {
+      titleEl.textContent = titleText;
+    }
     container.appendChild(titleEl);
   }
 
@@ -69,6 +88,25 @@ export function buildPopupContent(title?: string, properties?: PointPopupPropert
       hasTags = true;
     }
     if (hasTags) container.appendChild(tagsContainer);
+  }
+
+  if (listingUrl) {
+    const linkLabel = listingUrl.includes('zillow.com') ? 'View on Zillow' : 'View listing';
+    const actionsContainer = document.createElement('div');
+    actionsContainer.setAttribute('class', 'geokit-popup-actions geokit-popup-actions--listing');
+    const linkEl = document.createElement('a');
+    linkEl.setAttribute(
+      'class',
+      'geokit-popup-action geokit-popup-action--text geokit-popup-action--listing'
+    );
+    linkEl.setAttribute('href', listingUrl);
+    linkEl.setAttribute('target', '_blank');
+    linkEl.setAttribute('rel', 'noopener noreferrer');
+    linkEl.setAttribute('title', linkLabel);
+    linkEl.setAttribute('aria-label', linkLabel);
+    linkEl.innerHTML = `${linkLabel}${EXTERNAL_LINK_ICON_SVG}`;
+    actionsContainer.appendChild(linkEl);
+    container.appendChild(actionsContainer);
   }
 
   return container;

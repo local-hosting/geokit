@@ -1,29 +1,23 @@
-const DEFAULT_GLOBE_CDN_URL = 'https://mapto.link';
+import { isGeoCdnConfiguredFromEnv, resolveGeoCdnBaseUrlFromEnv } from '../config/env/geo-cdn.js';
+import type { GeokitEnv } from '../types/env.js';
+import { readRuntimeEnv } from '../config/env/primitives.js';
 
-function envGlobeCdnUrl(): string | undefined {
-  if (typeof process !== 'undefined' && process.env) {
-    const fromProcess =
-      process.env.GEOKIT_GLOBE_CDN_URL?.trim() ||
-      process.env.GLOBE_CDN_URL?.trim() ||
-      process.env.FW_GLOBE_CDN_URL?.trim();
-    if (fromProcess !== undefined) return fromProcess.replace(/\/$/, '');
-  }
-
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    const meta = import.meta.env as Record<string, string | undefined>;
-    const fromMeta = meta.GEOKIT_GLOBE_CDN_URL?.trim() || meta.GLOBE_CDN_URL?.trim();
-    if (fromMeta !== undefined) return fromMeta.replace(/\/$/, '');
-  }
-
-  return undefined;
+/**
+ * Geo boundary CDN base (county/DMA/zip shapes — not basemap tiles).
+ * Returns empty string when unset so callers skip boundary layers.
+ */
+export function resolveGlobeCdnBaseUrl(baseUrl?: string): string {
+  return resolveGeoCdnBaseUrlFromEnv(readRuntimeEnv(), baseUrl);
 }
 
-export function resolveGlobeCdnBaseUrl(baseUrl?: string): string {
-  const fromArg = baseUrl?.trim();
-  if (fromArg !== undefined) return fromArg.replace(/\/$/, '');
+/** Alias — geo shape CDN, optional. */
+export const resolveGeoCdnBaseUrl = resolveGlobeCdnBaseUrl;
 
-  const fromEnv = envGlobeCdnUrl();
-  if (fromEnv !== undefined) return fromEnv;
+export function isGeoCdnConfigured(baseUrl?: string): boolean {
+  return isGeoCdnConfiguredFromEnv(readRuntimeEnv(), baseUrl);
+}
 
-  return DEFAULT_GLOBE_CDN_URL;
+/** Resolve geo CDN base from an explicit env snapshot (tests). */
+export function resolveGlobeCdnBaseUrlFromEnvSnapshot(env: GeokitEnv, baseUrl?: string): string {
+  return resolveGeoCdnBaseUrlFromEnv(env, baseUrl);
 }

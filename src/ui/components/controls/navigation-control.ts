@@ -4,7 +4,7 @@
  * Provides zoom and compass controls for map navigation
  *
  * Usage:
- * <mapi-control-navigation position="top-right" show-compass="true" show-zoom="true"></mapi-control-navigation>
+ * <gk-control-navigation position="top-right" show-compass="true" show-zoom="true"></gk-control-navigation>
  */
 
 import { BaseControl } from '../base-control';

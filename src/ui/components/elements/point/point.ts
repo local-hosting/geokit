@@ -20,6 +20,7 @@ import type { MapEvent, MapRenderedFeature } from '../../../providers/types';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
 import { debug } from '../../../utils/logger';
 import { PopupElement } from '../popup/popup';
+import { readFirstPointCoordinatesFromGeoJsonSource } from '../../../utils/geojson-source-options';
 import { applyPointPaintProperties } from './point-style';
 import { createPointLayers as createPointLayersFn, type PointMapLike } from './point-layers';
 import {
@@ -306,6 +307,16 @@ export class PointElement extends MapChildElement {
   /**
    * When inside a gk-point-layer, the parent owns the shared layers; this point only contributes data.
    */
+  private listingPopupProperties(): Record<string, unknown> {
+    const extra = (this as { _dataProperties?: Record<string, unknown> })._dataProperties;
+    if (!extra || typeof extra !== 'object') return {};
+    const out: Record<string, unknown> = {};
+    if (typeof extra.url === 'string' && extra.url.trim()) out.url = extra.url.trim();
+    if (typeof extra.city === 'string' && extra.city.trim()) out.city = extra.city.trim();
+    if (typeof extra.state === 'string' && extra.state.trim()) out.state = extra.state.trim();
+    return out;
+  }
+
   private get isInsidePointLayer(): boolean {
     return this.parentElement?.tagName?.toLowerCase() === 'gk-point-layer';
   }
@@ -363,6 +374,7 @@ export class PointElement extends MapChildElement {
             'point-id': featureId,
             ...(pointId && { id: pointId }),
             ...(pointName && { 'point-name': pointName }),
+            ...this.listingPopupProperties(),
           },
         },
       ],
@@ -532,6 +544,7 @@ export class PointElement extends MapChildElement {
         this.safeGetAttribute('point-id');
       const pointName =
         (feature.properties as Record<string, unknown>)?.['point-name'] ||
+        (feature.properties as Record<string, unknown>)?.['name'] ||
         this._propPointName ||
         this.safeGetAttribute('point-name');
 
@@ -638,10 +651,30 @@ export class PointElement extends MapChildElement {
     this.setHoverAt(null);
   }
 
-  /** Feature geometry from lat/lng attributes — selection ring stays centered on the dot. */
+  /** Feature geometry aligned with the main point source — keeps ring/shadow centered on the dot. */
   private canonicalPointFeature(fallback: GeoJSON.Feature): GeoJSON.Feature | null {
-    const lat = parseFloat(this.safeGetAttribute('lat') || '');
-    const lng = parseFloat(this.safeGetAttribute('lng') || '');
+    const properties = { ...(fallback.properties as Record<string, unknown>) };
+
+    if (this.map && this.sourceId) {
+      const source = this.map.getSource?.(this.sourceId) as
+        | {
+            _data?: GeoJSON.FeatureCollection;
+            _geojson?: GeoJSON.FeatureCollection;
+            data?: GeoJSON.FeatureCollection;
+          }
+        | undefined;
+      const fromSource = readFirstPointCoordinatesFromGeoJsonSource(source);
+      if (fromSource) {
+        return {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: fromSource },
+          properties,
+        };
+      }
+    }
+
+    const lat = this._propLat ?? parseFloat(this.safeGetAttribute('lat') || '');
+    const lng = this._propLng ?? parseFloat(this.safeGetAttribute('lng') || '');
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       return fallback.geometry?.type === 'Point' ? fallback : null;
     }
@@ -650,7 +683,7 @@ export class PointElement extends MapChildElement {
     return {
       type: 'Feature',
       geometry: { type: 'Point', coordinates: [normLng, normLat] },
-      properties: { ...(fallback.properties as Record<string, unknown>) },
+      properties,
     };
   }
 
@@ -691,10 +724,16 @@ export class PointElement extends MapChildElement {
       title = pointId;
     }
 
-    // Show popup if we have a title
-    if (title && this.map) {
+    const popupProperties = {
+      ...((feature.properties as Record<string, unknown>) || {}),
+      ...this.listingPopupProperties(),
+    };
+    const listingUrl = typeof popupProperties.url === 'string' ? popupProperties.url.trim() : '';
+
+    // Show popup when we have a title or an external listing link
+    if ((title || listingUrl) && this.map) {
       try {
-        const properties = (feature.properties as Record<string, any>) || {};
+        const properties = popupProperties as Record<string, any>;
         this._lastPopupProperties = { ...properties };
         // Get provider from parent map element
         const provider = this.getUIProvider();

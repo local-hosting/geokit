@@ -83,3 +83,13 @@ export type MapHostRegionLayer =
   | { dataset: 'state'; slug: string }
   | { dataset: 'zip'; slug: string }
   | { dataset: 'county'; fips: string };
+
+/** Point marker for interactive map host (gk-point). */
+export interface MapHostPoint {
+  lat: number;
+  lng: number;
+  id?: string;
+  name?: string;
+  color?: string;
+  url?: string;
+}

@@ -4,7 +4,7 @@
  * Provides user location tracking and display
  *
  * Usage:
- * <mapi-control-geolocate position="top-left" track-user-location="false"></mapi-control-geolocate>
+ * <gk-control-geolocate position="top-left" track-user-location="false"></gk-control-geolocate>
  */
 
 import { BaseControl } from '../base-control';
