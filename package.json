@@ -335,7 +335,8 @@
     "format:check": "prettier --config config/.prettierrc.json --ignore-path config/.prettierignore --check \"**/*.{ts,json,md}\"",
     "prepare": "husky",
     "prepublishOnly": "yarn build && yarn test",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "export:parity-fixtures": "node scripts/export-parity-fixtures.mjs > ../geokit-swift/Tests/GeoKitCoreTests/Fixtures/parity-fixtures.json"
   },
   "keywords": [
     "geospatial",
