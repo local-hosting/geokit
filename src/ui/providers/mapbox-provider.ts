@@ -6,6 +6,7 @@
  */
 
 import { wrapMapResize } from '../utils/map-utils';
+import { getProviderConfig } from './registry.js';
 import { BaseUIProvider } from './types';
 import type {
   MapProviderConfig,
@@ -103,21 +104,31 @@ export class MapboxUIProvider extends BaseUIProvider {
       throw new Error('Mapbox access token is required. Call initialize() with accessToken first.');
     }
 
-    // Build style: support theme names (light/dark) and MapTiler-style names for consistency
+    const configuredStyleUrl =
+      this.config?.styleUrl?.trim() || getProviderConfig('mapbox')?.styleUrl?.trim();
+
+    // Build style: configured Corio/product style wins over stock Mapbox theme names.
     let style = options.style;
-    if (!style || (typeof style === 'string' && !style.startsWith('mapbox://'))) {
-      const key = (style || 'streets').toLowerCase();
-      const styleMap: Record<string, string> = {
-        light: 'mapbox://styles/mapbox/light-v11',
-        dark: 'mapbox://styles/mapbox/dark-v11',
-        dataviz: 'mapbox://styles/mapbox/light-v11',
-        'dataviz-dark': 'mapbox://styles/mapbox/dark-v11',
-        streets: 'mapbox://styles/mapbox/streets-v12',
-        satellite: 'mapbox://styles/mapbox/satellite-v9',
-        'satellite-streets': 'mapbox://styles/mapbox/satellite-streets-v12',
-        outdoors: 'mapbox://styles/mapbox/outdoors-v12',
-      };
-      style = styleMap[key] ?? 'mapbox://styles/mapbox/streets-v12';
+    if (
+      !style ||
+      (typeof style === 'string' && !style.startsWith('mapbox://') && !style.startsWith('http'))
+    ) {
+      if (configuredStyleUrl) {
+        style = configuredStyleUrl;
+      } else {
+        const key = (style || 'streets').toLowerCase();
+        const styleMap: Record<string, string> = {
+          light: 'mapbox://styles/mapbox/light-v11',
+          dark: 'mapbox://styles/mapbox/dark-v11',
+          dataviz: 'mapbox://styles/mapbox/light-v11',
+          'dataviz-dark': 'mapbox://styles/mapbox/dark-v11',
+          streets: 'mapbox://styles/mapbox/streets-v12',
+          satellite: 'mapbox://styles/mapbox/satellite-v9',
+          'satellite-streets': 'mapbox://styles/mapbox/satellite-streets-v12',
+          outdoors: 'mapbox://styles/mapbox/outdoors-v12',
+        };
+        style = styleMap[key] ?? 'mapbox://styles/mapbox/streets-v12';
+      }
     }
 
     const mapOptions = {
@@ -222,6 +233,11 @@ export class MapboxUIProvider extends BaseUIProvider {
   }
 
   getStyleForTheme(styleName: string): string | null {
+    const configuredStyleUrl =
+      this.config?.styleUrl?.trim() || getProviderConfig('mapbox')?.styleUrl?.trim();
+    if (configuredStyleUrl) {
+      return configuredStyleUrl;
+    }
     const key = styleName.toLowerCase();
     const themeToStyle: Record<string, string> = {
       light: 'mapbox://styles/mapbox/light-v11',
