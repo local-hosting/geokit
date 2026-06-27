@@ -18,10 +18,7 @@ export default [
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
-        project: [
-          resolve(projectRoot, 'config/tsconfig.json'),
-          resolve(projectRoot, 'config/tsconfig.mcp.json'),
-        ],
+        project: [resolve(projectRoot, 'config/tsconfig.json')],
         tsconfigRootDir: projectRoot,
       },
     },
