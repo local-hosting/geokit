@@ -293,11 +293,65 @@
       "require": "./dist/cjs/ui/debug/layer-draw-profiler.cjs",
       "default": "./dist/esm/ui/debug/layer-draw-profiler.js"
     },
-    "./mcp": {
-      "source": "./src/mcp/index.ts",
-      "types": "./dist/esm/mcp/index.d.ts",
-      "import": "./dist/esm/mcp/index.js",
-      "default": "./dist/esm/mcp/index.js"
+    "./config/env": {
+      "source": "./src/config/env/index.ts",
+      "types": "./dist/esm/config/env/index.d.ts",
+      "import": "./dist/esm/config/env/index.js",
+      "require": "./dist/cjs/config/env/index.cjs",
+      "default": "./dist/esm/config/env/index.js"
+    },
+    "./config/tile-cdn": {
+      "source": "./src/config/tile-cdn.ts",
+      "types": "./dist/esm/config/tile-cdn.d.ts",
+      "import": "./dist/esm/config/tile-cdn.js",
+      "require": "./dist/cjs/config/tile-cdn.cjs",
+      "default": "./dist/esm/config/tile-cdn.js"
+    },
+    "./types/map-provider": {
+      "source": "./src/types/map-provider.ts",
+      "types": "./dist/esm/types/map-provider.d.ts",
+      "import": "./dist/esm/types/map-provider.js",
+      "require": "./dist/cjs/types/map-provider.cjs",
+      "default": "./dist/esm/types/map-provider.js"
+    },
+    "./api/providers/foursquare-places": {
+      "source": "./src/api/providers/foursquare-places.ts",
+      "types": "./dist/esm/api/providers/foursquare-places.d.ts",
+      "import": "./dist/esm/api/providers/foursquare-places.js",
+      "require": "./dist/cjs/api/providers/foursquare-places.cjs",
+      "default": "./dist/esm/api/providers/foursquare-places.js"
+    },
+    "./api/setup-capability-routers": {
+      "source": "./src/api/providers/setup-capability-routers.ts",
+      "types": "./dist/esm/api/providers/setup-capability-routers.d.ts",
+      "import": "./dist/esm/api/providers/setup-capability-routers.js",
+      "require": "./dist/cjs/api/providers/setup-capability-routers.cjs",
+      "default": "./dist/esm/api/providers/setup-capability-routers.js"
+    },
+    "./config/map-style": {
+      "source": "./src/config/map-style.ts",
+      "types": "./dist/esm/config/map-style.d.ts",
+      "import": "./dist/esm/config/map-style.js",
+      "require": "./dist/esm/config/map-style.cjs",
+      "default": "./dist/esm/config/map-style.js"
+    },
+    "./config/env/map-credentials": {
+      "source": "./src/config/env/map-credentials.ts",
+      "types": "./dist/esm/config/env/map-credentials.d.ts",
+      "import": "./dist/esm/config/env/map-credentials.js",
+      "default": "./dist/esm/config/env/map-credentials.js"
+    },
+    "./config/env/service-keys": {
+      "source": "./src/config/env/service-keys.ts",
+      "types": "./dist/esm/config/env/service-keys.d.ts",
+      "import": "./dist/esm/config/env/service-keys.js",
+      "default": "./dist/esm/config/env/service-keys.js"
+    },
+    "./config/env/primitives": {
+      "source": "./src/config/env/primitives.ts",
+      "types": "./dist/esm/config/env/primitives.d.ts",
+      "import": "./dist/esm/config/env/primitives.js",
+      "default": "./dist/esm/config/env/primitives.js"
     }
   },
   "sideEffects": [
@@ -326,9 +380,7 @@
     "test:all": "vitest run --config config/vitest.config.ts && vitest run --config config/vitest.integration.config.ts",
     "test:browser": "vitest run --config config/vitest.browser.config.ts",
     "test:demo": "tsx tests/integration/demo-smoke.ts",
-    "mcp:serve": "tsx src/mcp/server.ts",
-    "map-host": "vite --config config/vite.mcp-host.config.js",
-    "typecheck": "tsc -p config/tsconfig.json --noEmit && tsc -p config/tsconfig.mcp.json --noEmit",
+    "typecheck": "tsc -p config/tsconfig.json --noEmit",
     "lint": "eslint --config config/eslint.config.mjs . --ext .ts",
     "lint:fix": "eslint --config config/eslint.config.mjs . --ext .ts --fix",
     "format": "prettier --config config/.prettierrc.json --ignore-path config/.prettierignore --write \"**/*.{ts,json,md}\"",

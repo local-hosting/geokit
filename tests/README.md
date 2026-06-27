@@ -2,15 +2,15 @@
 
 ## Layout
 
-| Path                              | Purpose                                                                                          |
-| --------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `tests/unit/`                     | Fast unit tests (happy-dom). Mirrors `src/` areas: `api`, `cdn`, `config`, `mcp`, `ui`, `utils`. |
-| `tests/unit/ui/browser/`          | Playwright browser tests (`yarn test:browser`) — real WebGL for map controls.                    |
-| `tests/integration/`              | Live API smoke tests (`yarn test:integration`). Skips when env keys are missing.                 |
-| `tests/integration/demo-smoke.ts` | Playwright smoke test for `demo/` pages (`yarn test:demo`).                                      |
-| `tests/fixtures/`                 | Reusable GeoJSON, coordinates, and map boot helpers.                                             |
-| `tests/mocks/`                    | Provider stubs and fetch helpers.                                                                |
-| `tests/setup/`                    | Vitest setup (polyfills) and shared test hooks.                                                  |
+| Path                              | Purpose                                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------------------------- |
+| `tests/unit/`                     | Fast unit tests (happy-dom). Mirrors `src/` areas: `api`, `cdn`, `config`, `ui`, `utils`. |
+| `tests/unit/ui/browser/`          | Playwright browser tests (`yarn test:browser`) — real WebGL for map controls.             |
+| `tests/integration/`              | Live API smoke tests (`yarn test:integration`). Skips when env keys are missing.          |
+| `tests/integration/demo-smoke.ts` | Playwright smoke test for `demo/` pages (`yarn test:demo`).                               |
+| `tests/fixtures/`                 | Reusable GeoJSON, coordinates, and map boot helpers.                                      |
+| `tests/mocks/`                    | Provider stubs and fetch helpers.                                                         |
+| `tests/setup/`                    | Vitest setup (polyfills) and shared test hooks.                                           |
 
 ## Shared modules
 

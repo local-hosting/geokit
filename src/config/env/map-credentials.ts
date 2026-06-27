@@ -1,4 +1,4 @@
-import type { MapStaticProviderId } from '../../types/map-static-provider.js';
+import type { MapStaticProviderId } from '../../types/map-provider.js';
 import type { GeokitEnv } from '../../types/env.js';
 import {
   MAPBOX_KEY_KEYS,
@@ -62,13 +62,12 @@ export function resolveMapApiKeyFromEnv(
   providerId: MapStaticProviderId
 ): string {
   const generic = resolveMapGenericApiKeyFromEnv(env);
-  if (generic) return generic;
 
   if (providerId === 'maptiler') {
-    return resolveMaptilerKeyFromEnv(env) ?? '';
+    return resolveMaptilerKeyFromEnv(env) ?? generic ?? '';
   }
 
-  return resolveMapboxKeyFromEnv(env) ?? '';
+  return resolveMapboxKeyFromEnv(env) ?? generic ?? '';
 }
 
 export function resolveMapRefererFromEnv(
