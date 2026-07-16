@@ -3,7 +3,7 @@
  *
  * Lazy-loads the H3-to-ZIP crosswalk instead of embedding it (~690KB).
  * Apps typically fetch the index from Globe CDN or Loro pack and call
- * `loadZipIndexData` / `loadH3ZipIndex` — see `@twinfile/cdn/client`.
+ * `loadZipIndexData` / `loadH3ZipIndex` — fetch from Globe CDN or Loro pack in the host app.
  *
  * Usage:
  *   import { initializeZipIndex, loadZipIndexData } from '@twinfile/geokit';
