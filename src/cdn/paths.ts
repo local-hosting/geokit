@@ -1,6 +1,6 @@
 /**
  * Globe CDN path helpers for geokit fetch.
- * Canonical schema: @twinfile/cdn/paths — parity tested in tests/unit/cdn/paths.test.ts.
+ * Canonical schema: geokit path builders — tested in tests/unit/cdn/paths.test.ts.
  */
 
 const DEFAULT_COUNTRY = 'us';

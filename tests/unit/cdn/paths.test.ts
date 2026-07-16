@@ -9,41 +9,34 @@ import {
   globeStateCountiesShardUrl,
   globeCountyClusterShardUrl,
   globeCellBundleUrl,
+  globeCellLayerCatalogUrl,
   countiesBulkUrl,
   countyShapeUrl,
+  resolveGlobeCdnUrl,
 } from '../../../src/cdn/paths';
-import {
-  globeCountiesBulkUrl as cdnCountiesBulkUrl,
-  globeCountyShapeUrl as cdnCountyShapeUrl,
-  globeStateCitiesBulkUrl as cdnStateCitiesBulkUrl,
-  globeStateCitiesCatalogUrl as cdnStateCitiesCatalogUrl,
-  globeStatesBulkUrl as cdnStatesBulkUrl,
-  globeStateShapeUrl as cdnStateShapeUrl,
-  globeStateCountiesShardUrl as cdnStateCountiesShardUrl,
-  globeCountyClusterShardUrl as cdnCountyClusterShardUrl,
-  globeCellBundleUrl as cdnCellBundleUrl,
-  resolveGlobeCdnUrl as cdnResolveGlobeCdnUrl,
-} from '@twinfile/cdn/paths';
 
-describe('geokit/cdn paths parity with @twinfile/cdn/paths', () => {
+describe('geokit/cdn paths', () => {
   const base = 'https://cdn.test';
 
-  it('matches county and bulk path builders', () => {
-    expect(globeCountyShapeUrl('36047')).toBe(cdnCountyShapeUrl('36047'));
-    expect(globeCountiesBulkUrl()).toBe(cdnCountiesBulkUrl());
-    expect(globeStatesBulkUrl()).toBe(cdnStatesBulkUrl());
-    expect(globeStateShapeUrl('tx')).toBe(cdnStateShapeUrl('tx'));
-    expect(globeStateCountiesShardUrl('tx')).toBe(cdnStateCountiesShardUrl('tx'));
-    expect(globeCountyClusterShardUrl('84489e3', 4)).toBe(cdnCountyClusterShardUrl('84489e3', 4));
-    expect(globeCellBundleUrl('84489e3')).toBe(cdnCellBundleUrl('84489e3'));
-    expect(globeStateCitiesBulkUrl('ny')).toBe(cdnStateCitiesBulkUrl('ny'));
-    expect(globeStateCitiesCatalogUrl('ny')).toBe(cdnStateCitiesCatalogUrl('ny'));
+  it('builds canonical Globe CDN path segments', () => {
+    expect(globeCountyShapeUrl('36047')).toBe('/us/county/36047');
+    expect(globeCountiesBulkUrl()).toBe('/us/indexes/counties.json');
+    expect(globeStatesBulkUrl()).toBe('/us/indexes/states.json');
+    expect(globeStateShapeUrl('tx')).toBe('/us/state/tx.json');
+    expect(globeStateCountiesShardUrl('tx')).toBe('/us/state/tx/counties.json');
+    expect(globeCountyClusterShardUrl('84489e3', 4)).toBe('/us/county/clusters/r4/84489e3.json');
+    expect(globeCellBundleUrl('84489e3')).toBe('/cell/84489e3.json');
+    expect(globeCellLayerCatalogUrl()).toBe('/cell/layers/index.json');
+    expect(globeStateCitiesBulkUrl('ny')).toBe('/us/state/ny/cities');
+    expect(globeStateCitiesCatalogUrl('ny')).toBe('/us/state/ny/cities-index.json');
   });
 
-  it('matches resolved URLs', () => {
+  it('resolves absolute CDN URLs', () => {
     expect(countyShapeUrl(base, '36047')).toBe(
-      cdnResolveGlobeCdnUrl(base, cdnCountyShapeUrl('36047'))
+      resolveGlobeCdnUrl(base, globeCountyShapeUrl('36047'))
     );
-    expect(countiesBulkUrl(base)).toBe(cdnResolveGlobeCdnUrl(base, cdnCountiesBulkUrl()));
+    expect(countiesBulkUrl(base)).toBe(resolveGlobeCdnUrl(base, globeCountiesBulkUrl()));
+    expect(countyShapeUrl(base, '36047')).toBe('https://cdn.test/us/county/36047');
+    expect(countiesBulkUrl(base)).toBe('https://cdn.test/us/indexes/counties.json');
   });
 });

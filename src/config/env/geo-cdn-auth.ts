@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
-import { mintGlobeCdnIdentityJwt } from '@twinfile/cdn/edge/dma-auth';
+import { mintGlobeCdnIdentityJwt } from '../../cdn/dma-auth.js';
 import { GEO_CDN_JWT_KEYS, GEO_CDN_JWT_SECRET_KEYS } from '../../types/env.js';
 import type { GeokitEnv } from '../../types/env.js';
 import {

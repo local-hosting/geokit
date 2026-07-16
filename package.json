@@ -387,7 +387,7 @@
     "format:check": "prettier --config config/.prettierrc.json --ignore-path config/.prettierignore --check \"**/*.{ts,json,md}\"",
     "prepare": "husky",
     "prepublishOnly": "yarn build && yarn test",
-    "postinstall": "patch-package",
+    "postinstall": "patch-package || true",
     "export:parity-fixtures": "node scripts/export-parity-fixtures.mjs > ../geokit-swift/Tests/GeoKitCoreTests/Fixtures/parity-fixtures.json"
   },
   "keywords": [
@@ -413,7 +413,6 @@
     "@twinfile:registry": "https://npm.pkg.github.com"
   },
   "devDependencies": {
-    "@twinfile/cdn": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",

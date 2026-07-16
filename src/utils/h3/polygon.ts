@@ -20,8 +20,10 @@ export function h3SetToMultiPolygon(h3Indices: string[]): {
   // - Without flag: returns [lat, lng] (H3 native format)
   // - With formatAsGeoJson=true: returns [lng, lat] (GeoJSON format)
   // We need GeoJSON format, so pass true
-  const coords = cellsToMultiPolygon(h3Indices, true);
-  
+  // h3-js rejects duplicate cell ids in cellsToMultiPolygon.
+  const uniqueIndices = [...new Set(h3Indices)];
+  const coords = cellsToMultiPolygon(uniqueIndices, true);
+
   return {
     type: 'MultiPolygon',
     coordinates: coords,
