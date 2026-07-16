@@ -4,7 +4,7 @@
  */
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
-import { mintGlobeCdnIdentityJwt } from '@twinfile/cdn/edge/dma-auth';
+import { mintGlobeCdnIdentityJwt } from '../src/cdn/dma-auth.ts';
 
 function readGlobeCdnSecretFromDotenv(path) {
   if (!existsSync(path)) return undefined;

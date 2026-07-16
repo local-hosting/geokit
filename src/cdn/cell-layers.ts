@@ -6,8 +6,8 @@ import type {
   CellLayerBundleV1,
   CellLayerCatalogV1,
   CellLayerId,
-} from '@twinfile/cdn/types/cell-layers';
-import { globeCellBundleUrl, globeCellLayerCatalogUrl } from '@twinfile/cdn/paths';
+} from '../types/cell-layers.types.js';
+import { globeCellBundleUrl, globeCellLayerCatalogUrl } from './paths.js';
 import { resolveGlobeCdnBaseUrl } from './config';
 import {
   clearPublishedCellLayerIdsCache,
