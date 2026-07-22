@@ -11,6 +11,7 @@ import { getFeatureId } from '../../utils/geojson/get-feature-id';
 import { getCSSVariable, getCSSVariableNumber } from './theme';
 import { debug } from './logger';
 import { HOVER_CONFIG, type HoverStateHandlers } from './feature-state-hover';
+import { buildSharedPointFeatureStateHoverPaint } from './shared-point-paint';
 
 // ============================================================================
 // Types
@@ -21,6 +22,8 @@ export interface CircleStyleOptions {
   scale?: number;
   /** Exponential interpolation factor (default: 1.5) */
   exponent?: number;
+  /** Minimum circle radius in px (default: MIN_POINT_RADIUS_PX). Use lower values for dense compact embeds. */
+  minRadiusPx?: number;
 }
 
 export interface GlowPointLayerConfig {
@@ -417,7 +420,11 @@ function offsetRadiusInterpolation(
   return result;
 }
 
-function scaleRadiusInterpolation(interpolate: unknown[], scale: number): unknown[] {
+function scaleRadiusInterpolation(
+  interpolate: unknown[],
+  scale: number,
+  minRadiusPx: number = MIN_POINT_RADIUS_PX
+): unknown[] {
   if (
     !Array.isArray(interpolate) ||
     interpolate[0] !== 'interpolate' ||
@@ -430,7 +437,7 @@ function scaleRadiusInterpolation(interpolate: unknown[], scale: number): unknow
   const scaled = [...interpolate];
   for (let i = 4; i < scaled.length; i += 2) {
     if (typeof scaled[i] === 'number') {
-      scaled[i] = Math.max(MIN_POINT_RADIUS_PX, (scaled[i] as number) * scale);
+      scaled[i] = Math.max(minRadiusPx, (scaled[i] as number) * scale);
     }
   }
   return scaled;
@@ -456,14 +463,20 @@ function defaultScaleFromMatchExpression(scaleExpression: unknown[]): number {
  */
 export function multiplyRadiusExpression(
   baseRadius: unknown[],
-  scaleExpression: unknown[] | number
+  scaleExpression: unknown[] | number,
+  options: Pick<CircleStyleOptions, 'minRadiusPx'> = {}
 ): unknown[] {
+  const minRadiusPx = options.minRadiusPx ?? MIN_POINT_RADIUS_PX;
   if (typeof scaleExpression === 'number') {
-    return scaleRadiusInterpolation(baseRadius, scaleExpression);
+    return scaleRadiusInterpolation(baseRadius, scaleExpression, minRadiusPx);
   }
 
   if (Array.isArray(scaleExpression) && scaleExpression[0] === 'match') {
-    return scaleRadiusInterpolation(baseRadius, defaultScaleFromMatchExpression(scaleExpression));
+    return scaleRadiusInterpolation(
+      baseRadius,
+      defaultScaleFromMatchExpression(scaleExpression),
+      minRadiusPx
+    );
   }
 
   return ['*', baseRadius, scaleExpression];
@@ -489,18 +502,18 @@ export function multiplyRadiusExpression(
  * ```
  */
 export function getPointRadiusInterpolation(options: CircleStyleOptions = {}): unknown[] {
-  const { scale = 1, exponent = 1.5 } = options;
+  const { scale = 1, exponent = 1.5, minRadiusPx = MIN_POINT_RADIUS_PX } = options;
   // Point radius never below 2px so Safari reliably renders when zoomed out (1px can vanish)
   return [
     'interpolate',
     ['exponential', exponent],
     ['zoom'],
     0,
-    Math.max(MIN_POINT_RADIUS_PX, 1.2 * scale),
+    Math.max(minRadiusPx, 1.2 * scale),
     2,
-    Math.max(MIN_POINT_RADIUS_PX, 1.4 * scale),
+    Math.max(minRadiusPx, 1.4 * scale),
     3,
-    Math.max(MIN_POINT_RADIUS_PX, 1.75 * scale),
+    Math.max(minRadiusPx, 1.75 * scale),
     6,
     2.8 * scale, // Country view
     8,
@@ -873,6 +886,30 @@ export function getSelectionRingRadiusFromPointRadius(
   return ['+', offsetRadiusInterpolation(getPointRadiusInterpolation(), gapAndRing), stroke];
 }
 
+function resolveSharedPointFeatureStateHoverPaint(
+  useFeatureStateHover: boolean,
+  glowRadius: unknown[],
+  glowOpacity: number | unknown[],
+  glowHoverOpacity: number | unknown[],
+  circleOpacity: number | unknown[]
+) {
+  if (!useFeatureStateHover || Array.isArray(glowOpacity)) {
+    return null;
+  }
+
+  const numGlowOpacity = typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
+  const numGlowHoverOpacity =
+    typeof glowHoverOpacity === 'number' ? glowHoverOpacity : HOVER_CONFIG.glowOpacity;
+  const numPointOpacity = typeof circleOpacity === 'number' ? circleOpacity : 1;
+
+  return buildSharedPointFeatureStateHoverPaint({
+    glowRadius,
+    glowOpacity: numGlowOpacity,
+    pointOpacity: numPointOpacity,
+    glowHoverOpacity: numGlowHoverOpacity,
+  });
+}
+
 /**
  * Create GK point shared layers: one source, glow layer, and point layer for many features.
  * Layers use feature-state (hover/selected) so apps can wire hover via createHoverStateHandlers
@@ -907,6 +944,14 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   const themeElement =
     container && typeof container.closest === 'function' ? container.closest('gk-map') : null;
   const resolvedGlowColor = resolveSharedGlowColor(glowColor, circleColor, themeElement);
+  const baseGlowRadius = glowRadius ?? getGlowRadiusInterpolation({ scale: 1 });
+  const hoverPaint = resolveSharedPointFeatureStateHoverPaint(
+    useFeatureStateHover,
+    baseGlowRadius,
+    glowOpacity,
+    glowHoverOpacity,
+    _circleOpacity
+  );
 
   const maptilerHelpers =
     typeof window !== 'undefined' ? (window as any).maptilersdk?.helpers : undefined;
@@ -997,13 +1042,27 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       // Apply base stroke width. Selection ring is handled by a dedicated layer (not the point stroke).
       if (map.setPaintProperty) {
         try {
-          const baseStrokeWidth = _circleStrokeWidth ?? 0;
-          map.setPaintProperty(pointLayerId, 'circle-stroke-width', baseStrokeWidth as any);
-          const strokeColorVal =
-            _circleStrokeColor ??
-            selectionRingColor ??
-            resolveDefaultStrokeColor(document.documentElement);
-          map.setPaintProperty(pointLayerId, 'circle-stroke-color', strokeColorVal as any);
+          if (hoverPaint) {
+            map.setPaintProperty(pointLayerId, 'circle-opacity', hoverPaint.pointOpacity as any);
+            map.setPaintProperty(
+              pointLayerId,
+              'circle-stroke-width',
+              hoverPaint.pointStrokeWidth as any
+            );
+            map.setPaintProperty(
+              pointLayerId,
+              'circle-stroke-color',
+              hoverPaint.pointStrokeColor as any
+            );
+          } else {
+            const baseStrokeWidth = _circleStrokeWidth ?? 0;
+            map.setPaintProperty(pointLayerId, 'circle-stroke-width', baseStrokeWidth as any);
+            const strokeColorVal =
+              _circleStrokeColor ??
+              selectionRingColor ??
+              resolveDefaultStrokeColor(document.documentElement);
+            map.setPaintProperty(pointLayerId, 'circle-stroke-color', strokeColorVal as any);
+          }
         } catch (strokeErr) {
           console.warn(
             `[geokit] setPaintProperty circle-stroke failed for ${pointLayerId}:`,
@@ -1035,32 +1094,19 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   if (helperSucceeded) {
     // Add glow layer below the point layer (same source created by the helper)
     if (!map.getLayer?.(glowLayerId)) {
-      const glowRadiusVal = glowRadius ?? getGlowRadiusInterpolation({ scale: 1 });
+      const glowRadiusVal = baseGlowRadius;
       const glowColorVal = resolvedGlowColor;
       const glowBlurVal = glowBlur ?? resolveGlowBlur();
       let glowOpacityExpression: unknown[] | number;
-      if (Array.isArray(glowOpacity)) {
+      if (hoverPaint) {
+        glowOpacityExpression = hoverPaint.glowOpacity;
+      } else if (Array.isArray(glowOpacity)) {
         glowOpacityExpression = glowOpacity;
       } else {
-        const numOpacity = typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
-        if (!useFeatureStateHover) {
-          glowOpacityExpression = numOpacity;
-        } else {
-          const hoverOpacity =
-            typeof glowHoverOpacity === 'number' ? glowHoverOpacity : HOVER_CONFIG.glowOpacity;
-          const selectedOpacity = Math.min(hoverOpacity * 1.3, 1);
-          glowOpacityExpression = [
-            'case',
-            ['boolean', ['feature-state', 'selected'], false],
-            selectedOpacity,
-            ['boolean', ['feature-state', 'hover'], false],
-            hoverOpacity,
-            numOpacity,
-          ];
-        }
+        glowOpacityExpression = typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
       }
       const glowPaint: Record<string, unknown> = {
-        'circle-radius': glowRadiusVal,
+        'circle-radius': hoverPaint?.glowRadius ?? glowRadiusVal,
         'circle-color': glowColorVal,
         'circle-opacity': glowOpacityExpression,
         'circle-blur': glowBlurVal,
@@ -1105,7 +1151,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
 
     // Setup automatic hover layers (same pattern as non-helper path)
     setupHoverLayers(map, sourceId, glowLayerId, pointLayerId, {
-      glowRadius: glowRadius ?? getGlowRadiusInterpolation({ scale: 1 }),
+      glowRadius: baseGlowRadius,
       glowColor: resolvedGlowColor,
       glowBlur: glowBlur ?? resolveGlowBlur(),
       glowHoverOpacity,
@@ -1125,34 +1171,21 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       sourceId,
       beforeLayerId: beforeLayerId ?? undefined,
     });
-    const glowRadiusVal = glowRadius ?? getGlowRadiusInterpolation({ scale: 1 });
+    const glowRadiusVal = baseGlowRadius;
     const glowColorVal = resolvedGlowColor;
     const glowBlurVal = glowBlur ?? resolveGlowBlur();
 
     let glowOpacityExpression: unknown[] | number;
-    if (Array.isArray(glowOpacity)) {
+    if (hoverPaint) {
+      glowOpacityExpression = hoverPaint.glowOpacity;
+    } else if (Array.isArray(glowOpacity)) {
       glowOpacityExpression = glowOpacity;
     } else {
-      const numOpacity = typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
-      if (!useFeatureStateHover) {
-        glowOpacityExpression = numOpacity;
-      } else {
-        const hoverOpacity =
-          typeof glowHoverOpacity === 'number' ? glowHoverOpacity : HOVER_CONFIG.glowOpacity;
-        const selectedOpacity = Math.min(hoverOpacity * 1.3, 1);
-        glowOpacityExpression = [
-          'case',
-          ['boolean', ['feature-state', 'selected'], false],
-          selectedOpacity,
-          ['boolean', ['feature-state', 'hover'], false],
-          hoverOpacity,
-          numOpacity,
-        ];
-      }
+      glowOpacityExpression = typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
     }
 
     const glowPaint: Record<string, unknown> = {
-      'circle-radius': glowRadiusVal,
+      'circle-radius': hoverPaint?.glowRadius ?? glowRadiusVal,
       'circle-color': glowColorVal,
       'circle-opacity': glowOpacityExpression,
       'circle-blur': glowBlurVal,
@@ -1190,15 +1223,19 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     const pointPaint: Record<string, unknown> = {
       'circle-radius': radiusVal,
       'circle-color': circleColorVal,
-      'circle-opacity': 1,
+      'circle-opacity': hoverPaint?.pointOpacity ?? (typeof _circleOpacity === 'number' ? _circleOpacity : 1),
       'circle-blur': 0,
     };
-    // Base stroke width. Selection ring is handled by a dedicated layer (not the point stroke).
-    pointPaint['circle-stroke-width'] = _circleStrokeWidth ?? 0;
-    pointPaint['circle-stroke-color'] =
-      _circleStrokeColor ??
-      selectionRingColor ??
-      resolveDefaultStrokeColor(document.documentElement);
+    if (hoverPaint) {
+      pointPaint['circle-stroke-width'] = hoverPaint.pointStrokeWidth;
+      pointPaint['circle-stroke-color'] = hoverPaint.pointStrokeColor;
+    } else {
+      pointPaint['circle-stroke-width'] = _circleStrokeWidth ?? 0;
+      pointPaint['circle-stroke-color'] =
+        _circleStrokeColor ??
+        selectionRingColor ??
+        resolveDefaultStrokeColor(document.documentElement);
+    }
     const pointLayerSpec: Record<string, unknown> = {
       id: pointLayerId,
       type: 'circle',
@@ -1249,7 +1286,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
 
   // Setup automatic hover layers using dedicated source (avoids feature-state issues)
   setupHoverLayers(map, sourceId, glowLayerId, pointLayerId, {
-    glowRadius: glowRadius ?? getGlowRadiusInterpolation({ scale: 1 }),
+    glowRadius: baseGlowRadius,
     glowColor: resolvedGlowColor,
     glowBlur: glowBlur ?? resolveGlowBlur(),
     glowHoverOpacity,
