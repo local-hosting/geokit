@@ -18,6 +18,8 @@ export type EnsureMapReadyOptions = {
     defer?: boolean;
     idleTimeoutMs?: number;
   };
+  /** Geocoding/isochrone API routers — false for map-only embeds (skips node-only env in browser). */
+  apiRouters?: boolean | 'defer';
   importThemeCss?: boolean;
   onPhase?: MapReadyPhaseHandler;
 };
@@ -148,19 +150,22 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
   }
   phase(options.onPhase, 'maptiler provider', providerStep);
 
-  const mapbox = options.mapbox;
-  if (mapbox?.defer !== false) {
-    const idleTimeout = mapbox?.idleTimeoutMs ?? 5000;
-    const runMapbox = () => {
-      void ensureMapboxApiReady(mapbox?.accessToken, apiKey ?? undefined);
-    };
-    if (typeof requestIdleCallback === 'function') {
-      requestIdleCallback(runMapbox, { timeout: idleTimeout });
+  const apiRouters = options.apiRouters ?? 'defer';
+  if (apiRouters !== false) {
+    const mapbox = options.mapbox;
+    if (apiRouters === 'defer' && mapbox?.defer !== false) {
+      const idleTimeout = mapbox?.idleTimeoutMs ?? 5000;
+      const runMapbox = () => {
+        void ensureMapboxApiReady(mapbox?.accessToken, apiKey ?? undefined);
+      };
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(runMapbox, { timeout: idleTimeout });
+      } else {
+        setTimeout(runMapbox, 0);
+      }
     } else {
-      setTimeout(runMapbox, 0);
+      await initMapboxProvider(mapbox?.accessToken, apiKey ?? undefined);
     }
-  } else {
-    await initMapboxProvider(mapbox?.accessToken, apiKey ?? undefined);
   }
 
   phase(options.onPhase, 'init done', totalStart);
