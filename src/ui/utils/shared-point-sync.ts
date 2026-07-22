@@ -21,8 +21,23 @@ import {
 } from './shared-point-paint';
 import {
   applyEmbedScaleToSharedPointLayerOptions,
+  COMPACT_EMBED_GLOW_BLUR,
   COMPACT_EMBED_MIN_RADIUS_PX,
 } from './embed-point-scale';
+
+function resolveCompactGlowBlur(compactPoints?: boolean, glowBlur?: number): number | undefined {
+  if (glowBlur != null) return glowBlur;
+  return compactPoints ? COMPACT_EMBED_GLOW_BLUR : undefined;
+}
+
+function applySharedPointGlowBlur(map: MapInstance, glowLayerId: string, glowBlur: number): void {
+  if (!map.getLayer?.(glowLayerId)) return;
+  try {
+    map.setPaintProperty?.(glowLayerId, 'circle-blur', glowBlur);
+  } catch {
+    // ignore
+  }
+}
 
 /** Layer paint config passed through to createSharedPointLayers (layer-styles). */
 export interface SharedPointLayerPaintConfig {
@@ -184,7 +199,7 @@ export async function updateSharedPointSourceData(
 function buildFeatureStateHoverOptions(
   glowRadius: unknown[] | number,
   glowOpacity: number,
-  pointOpacity: number,
+  pointOpacity: number | unknown[],
   glowHoverOpacity: number
 ): SharedPointFeatureStateHoverOptions {
   return { glowRadius, glowOpacity, pointOpacity, glowHoverOpacity };
@@ -241,9 +256,11 @@ export interface SyncExistingSharedPointLayersOptions {
   useFeatureStateHover?: boolean;
   glowHoverOpacity?: number;
   glowHitAreaScale?: number;
-  pointOpacity?: number;
+  pointOpacity?: number | unknown[];
   compactPoints?: boolean;
   embedPointScale?: number;
+  referenceHeightPx?: number;
+  glowBlur?: number;
 }
 
 /** Update data + paint on an existing shared point layer set. */
@@ -262,6 +279,8 @@ export async function syncExistingSharedPointLayers(
     pointOpacity = 0.95,
     compactPoints,
     embedPointScale,
+    referenceHeightPx,
+    glowBlur,
   } = options;
   const scaled = applyEmbedScaleToSharedPointLayerOptions({
     map,
@@ -269,7 +288,9 @@ export async function syncExistingSharedPointLayers(
     glowHitAreaScale,
     compactPoints,
     embedPointScale,
+    referenceHeightPx,
   });
+  const resolvedGlowBlur = resolveCompactGlowBlur(compactPoints, glowBlur);
   const ok = await updateSharedPointSourceData(map, ids.sourceId, geojson, updateOptions);
   if (ok) {
     let featureStateHover: SharedPointFeatureStateHoverOptions | undefined;
@@ -286,6 +307,9 @@ export async function syncExistingSharedPointLayers(
       );
     }
     applySharedPointLayerPaint(map, { ...scaled.paint, featureStateHover });
+    if (resolvedGlowBlur != null) {
+      applySharedPointGlowBlur(map, ids.glowLayerId, resolvedGlowBlur);
+    }
   }
   return ok;
 }
@@ -333,6 +357,7 @@ export interface CreateSharedPointLayersFromPaintOptions {
   compactPoints?: boolean;
   /** Explicit embed scale multiplier (overrides height detection). */
   embedPointScale?: number;
+  referenceHeightPx?: number;
 }
 
 /**
@@ -349,7 +374,7 @@ export async function createSharedPointLayersFromPaint(
     paint,
     circleOpacity = 0.95,
     glowHoverOpacity = SHARED_POINT_DEFAULT_GLOW_HOVER_OPACITY,
-    glowBlur = SHARED_POINT_GLOW_BLUR,
+    glowBlur,
     glowHitAreaScale = SHARED_POINT_GLOW_HIT_AREA_SCALE,
     selectionRingColor,
     promoteId,
@@ -358,6 +383,7 @@ export async function createSharedPointLayersFromPaint(
     useFeatureStateHover = true,
     compactPoints,
     embedPointScale,
+    referenceHeightPx,
   } = options;
 
   const scaled = applyEmbedScaleToSharedPointLayerOptions({
@@ -366,16 +392,22 @@ export async function createSharedPointLayersFromPaint(
     glowHitAreaScale,
     compactPoints,
     embedPointScale,
+    referenceHeightPx,
   });
+  const resolvedGlowBlur =
+    resolveCompactGlowBlur(compactPoints, glowBlur) ?? SHARED_POINT_GLOW_BLUR;
 
   const { getGlowRadiusInterpolation } = await getLayerStylesModule();
   const glowRadius = getGlowRadiusInterpolation({
     scale: scaled.glowHitAreaScale,
     ...(compactPoints ? { minRadiusPx: COMPACT_EMBED_MIN_RADIUS_PX } : {}),
   });
-  const resolvedPointOpacity = typeof circleOpacity === 'number' ? circleOpacity : 0.95;
-  const strokeWidthExpression = scaled.paint.strokeWidthExpression ?? sharedPointStrokeWidthExpression();
-  const strokeColorExpression = scaled.paint.strokeColorExpression ?? sharedPointStrokeColorExpression();
+  const resolvedPointOpacity =
+    typeof circleOpacity === 'number' || Array.isArray(circleOpacity) ? circleOpacity : 0.95;
+  const strokeWidthExpression =
+    scaled.paint.strokeWidthExpression ?? sharedPointStrokeWidthExpression();
+  const strokeColorExpression =
+    scaled.paint.strokeColorExpression ?? sharedPointStrokeColorExpression();
   const glowColorExpression = scaled.paint.glowColorExpression ?? paintColorFromProperty();
 
   await createSharedPointLayerSet(map, {
@@ -392,7 +424,7 @@ export async function createSharedPointLayersFromPaint(
     glowColor: glowColorExpression,
     glowOpacity: scaled.paint.glowOpacity ?? SHARED_POINT_UNIFORM_GLOW_OPACITY,
     glowHoverOpacity,
-    glowBlur,
+    glowBlur: resolvedGlowBlur,
     pointRadius: scaled.paint.pointRadiusExpression,
     glowRadius,
     selectionRingColor,
