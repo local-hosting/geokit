@@ -125,8 +125,8 @@ export function getHoverPointPaint(baseColor: string | unknown[]): Record<string
  * defaultOpacity can be a number or a data-driven expression (e.g. rating-based opacity).
  */
 export function buildOpacityWithHoverExpression(
-  defaultOpacity: number | unknown[],
-  hoverOpacity: number
+  defaultOpacity: number | unknown[] | string,
+  hoverOpacity: number | string
 ): unknown[] {
   return ['case', ['boolean', ['feature-state', 'hover'], false], hoverOpacity, defaultOpacity];
 }

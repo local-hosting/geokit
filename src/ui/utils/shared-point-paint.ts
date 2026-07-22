@@ -7,6 +7,11 @@
  */
 
 import type { MapInstance } from '../providers/types';
+import {
+  buildOpacityWithHoverExpression,
+  HOVER_CONFIG,
+  scaleRadiusForHover,
+} from './feature-state-hover';
 
 /** Min point radius (px). Safari needs ≥2px or circles can vanish when zoomed out. */
 export const SHARED_POINT_MIN_RADIUS_PX = 2.8;
@@ -131,6 +136,38 @@ export interface SharedPointLayerIds {
   pointLayerId: string;
 }
 
+export interface SharedPointFeatureStateHoverOptions {
+  glowRadius: unknown[] | number;
+  glowOpacity: number;
+  pointOpacity: number;
+  glowHoverOpacity: number;
+}
+
+export interface SharedPointFeatureStateHoverPaint {
+  glowRadius: unknown[] | number;
+  glowOpacity: unknown[];
+  pointOpacity: unknown[];
+  pointStrokeWidth: unknown[];
+  pointStrokeColor: unknown[];
+}
+
+/** Build MapLibre paint values for shared point feature-state hover. */
+export function buildSharedPointFeatureStateHoverPaint(
+  options: SharedPointFeatureStateHoverOptions
+): SharedPointFeatureStateHoverPaint {
+  const { glowRadius, glowOpacity, pointOpacity, glowHoverOpacity } = options;
+  return {
+    glowRadius: scaleRadiusForHover(glowRadius),
+    glowOpacity: buildOpacityWithHoverExpression(glowOpacity, glowHoverOpacity),
+    pointOpacity: buildOpacityWithHoverExpression(pointOpacity, HOVER_CONFIG.pointOpacity),
+    pointStrokeWidth: buildOpacityWithHoverExpression(0, HOVER_CONFIG.pointStrokeWidth),
+    pointStrokeColor: buildOpacityWithHoverExpression(
+      'rgba(0,0,0,0)',
+      HOVER_CONFIG.pointStrokeColor
+    ),
+  };
+}
+
 export interface ApplySharedPointPaintOptions {
   ids: SharedPointLayerIds;
   pointColorExpression: unknown[];
@@ -141,6 +178,8 @@ export interface ApplySharedPointPaintOptions {
   primarySortValue?: string;
   strokeWidthExpression?: unknown[];
   strokeColorExpression?: unknown[];
+  /** When set, glow/point layers use feature-state hover paint expressions. */
+  featureStateHover?: SharedPointFeatureStateHoverOptions;
 }
 
 /** Apply paint/layout overrides to an existing shared point layer set. */
@@ -158,20 +197,35 @@ export function applySharedPointLayerPaint(
     primarySortValue,
     strokeWidthExpression = sharedPointStrokeWidthExpression(),
     strokeColorExpression = sharedPointStrokeColorExpression(),
+    featureStateHover,
   } = options;
 
   const glowColor = glowColorExpression ?? paintColorFromProperty();
+  const hoverPaint = featureStateHover
+    ? buildSharedPointFeatureStateHoverPaint(featureStateHover)
+    : null;
 
   if (map.getLayer?.(glowLayerId)) {
     map.setPaintProperty?.(glowLayerId, 'circle-color', glowColor);
-    map.setPaintProperty?.(glowLayerId, 'circle-opacity', glowOpacity);
+    if (hoverPaint) {
+      map.setPaintProperty?.(glowLayerId, 'circle-radius', hoverPaint.glowRadius);
+      map.setPaintProperty?.(glowLayerId, 'circle-opacity', hoverPaint.glowOpacity);
+    } else {
+      map.setPaintProperty?.(glowLayerId, 'circle-opacity', glowOpacity);
+    }
   }
 
   if (map.getLayer?.(pointLayerId)) {
     map.setPaintProperty?.(pointLayerId, 'circle-color', pointColorExpression);
     map.setPaintProperty?.(pointLayerId, 'circle-radius', pointRadiusExpression);
-    map.setPaintProperty?.(pointLayerId, 'circle-stroke-width', strokeWidthExpression);
-    map.setPaintProperty?.(pointLayerId, 'circle-stroke-color', strokeColorExpression);
+    if (hoverPaint) {
+      map.setPaintProperty?.(pointLayerId, 'circle-opacity', hoverPaint.pointOpacity);
+      map.setPaintProperty?.(pointLayerId, 'circle-stroke-width', hoverPaint.pointStrokeWidth);
+      map.setPaintProperty?.(pointLayerId, 'circle-stroke-color', hoverPaint.pointStrokeColor);
+    } else {
+      map.setPaintProperty?.(pointLayerId, 'circle-stroke-width', strokeWidthExpression);
+      map.setPaintProperty?.(pointLayerId, 'circle-stroke-color', strokeColorExpression);
+    }
 
     if (primarySortProperty && primarySortValue && map.setLayoutProperty) {
       try {

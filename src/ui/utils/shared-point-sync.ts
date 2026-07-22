@@ -16,8 +16,13 @@ import {
   SHARED_POINT_GLOW_HIT_AREA_SCALE,
   SHARED_POINT_UNIFORM_GLOW_OPACITY,
   type ApplySharedPointPaintOptions,
+  type SharedPointFeatureStateHoverOptions,
   type SharedPointLayerIds,
 } from './shared-point-paint';
+import {
+  applyEmbedScaleToSharedPointLayerOptions,
+  COMPACT_EMBED_MIN_RADIUS_PX,
+} from './embed-point-scale';
 
 /** Layer paint config passed through to createSharedPointLayers (layer-styles). */
 export interface SharedPointLayerPaintConfig {
@@ -176,11 +181,22 @@ export async function updateSharedPointSourceData(
   return updateSourceData(map, sourceId, payload);
 }
 
+function buildFeatureStateHoverOptions(
+  glowRadius: unknown[] | number,
+  glowOpacity: number,
+  pointOpacity: number,
+  glowHoverOpacity: number
+): SharedPointFeatureStateHoverOptions {
+  return { glowRadius, glowOpacity, pointOpacity, glowHoverOpacity };
+}
+
 export interface CreateSharedPointLayerSetOptions extends SharedPointLayerPaintConfig {
   ids: SharedPointLayerIds;
   geojson: FeatureCollection;
   mapProvider?: string | null;
   useMapTilerPointHelper?: boolean;
+  /** When true, glow/point layers respond to feature-state hover from setupHoverLayers. Default true. */
+  useFeatureStateHover?: boolean;
 }
 
 /**
@@ -196,6 +212,7 @@ export async function createSharedPointLayerSet(
     geojson,
     mapProvider,
     useMapTilerPointHelper,
+    useFeatureStateHover = true,
     ...layerConfig
   } = options;
 
@@ -209,7 +226,7 @@ export async function createSharedPointLayerSet(
     sourceId,
     glowLayerId,
     pointLayerId,
-    useFeatureStateHover: false,
+    useFeatureStateHover,
     ...(useHelper ? { useMapTilerPointHelper: true, geojson } : {}),
     ...layerConfig,
   });
@@ -221,16 +238,54 @@ export interface SyncExistingSharedPointLayersOptions {
   geojson: FeatureCollection;
   paint: ApplySharedPointPaintOptions;
   updateOptions?: UpdateSharedPointSourceOptions;
+  useFeatureStateHover?: boolean;
+  glowHoverOpacity?: number;
+  glowHitAreaScale?: number;
+  pointOpacity?: number;
+  compactPoints?: boolean;
+  embedPointScale?: number;
 }
 
 /** Update data + paint on an existing shared point layer set. */
 export async function syncExistingSharedPointLayers(
   options: SyncExistingSharedPointLayersOptions
 ): Promise<boolean> {
-  const { map, ids, geojson, paint, updateOptions } = options;
+  const {
+    map,
+    ids,
+    geojson,
+    paint,
+    updateOptions,
+    useFeatureStateHover = true,
+    glowHoverOpacity = SHARED_POINT_DEFAULT_GLOW_HOVER_OPACITY,
+    glowHitAreaScale = SHARED_POINT_GLOW_HIT_AREA_SCALE,
+    pointOpacity = 0.95,
+    compactPoints,
+    embedPointScale,
+  } = options;
+  const scaled = applyEmbedScaleToSharedPointLayerOptions({
+    map,
+    paint,
+    glowHitAreaScale,
+    compactPoints,
+    embedPointScale,
+  });
   const ok = await updateSharedPointSourceData(map, ids.sourceId, geojson, updateOptions);
   if (ok) {
-    applySharedPointLayerPaint(map, paint);
+    let featureStateHover: SharedPointFeatureStateHoverOptions | undefined;
+    if (useFeatureStateHover) {
+      const { getGlowRadiusInterpolation } = await getLayerStylesModule();
+      featureStateHover = buildFeatureStateHoverOptions(
+        getGlowRadiusInterpolation({
+          scale: scaled.glowHitAreaScale,
+          ...(compactPoints ? { minRadiusPx: COMPACT_EMBED_MIN_RADIUS_PX } : {}),
+        }),
+        scaled.paint.glowOpacity ?? SHARED_POINT_UNIFORM_GLOW_OPACITY,
+        pointOpacity,
+        glowHoverOpacity
+      );
+    }
+    applySharedPointLayerPaint(map, { ...scaled.paint, featureStateHover });
   }
   return ok;
 }
@@ -273,6 +328,11 @@ export interface CreateSharedPointLayersFromPaintOptions {
   promoteId?: string;
   mapProvider?: string | null;
   useMapTilerPointHelper?: boolean;
+  useFeatureStateHover?: boolean;
+  /** Shrink point/glow radii when the map container is shorter than the reference height. */
+  compactPoints?: boolean;
+  /** Explicit embed scale multiplier (overrides height detection). */
+  embedPointScale?: number;
 }
 
 /**
@@ -295,32 +355,58 @@ export async function createSharedPointLayersFromPaint(
     promoteId,
     mapProvider,
     useMapTilerPointHelper,
+    useFeatureStateHover = true,
+    compactPoints,
+    embedPointScale,
   } = options;
 
+  const scaled = applyEmbedScaleToSharedPointLayerOptions({
+    map,
+    paint,
+    glowHitAreaScale,
+    compactPoints,
+    embedPointScale,
+  });
+
   const { getGlowRadiusInterpolation } = await getLayerStylesModule();
-  const glowRadius = getGlowRadiusInterpolation({ scale: glowHitAreaScale });
-  const strokeWidthExpression = paint.strokeWidthExpression ?? sharedPointStrokeWidthExpression();
-  const strokeColorExpression = paint.strokeColorExpression ?? sharedPointStrokeColorExpression();
-  const glowColorExpression = paint.glowColorExpression ?? paintColorFromProperty();
+  const glowRadius = getGlowRadiusInterpolation({
+    scale: scaled.glowHitAreaScale,
+    ...(compactPoints ? { minRadiusPx: COMPACT_EMBED_MIN_RADIUS_PX } : {}),
+  });
+  const resolvedPointOpacity = typeof circleOpacity === 'number' ? circleOpacity : 0.95;
+  const strokeWidthExpression = scaled.paint.strokeWidthExpression ?? sharedPointStrokeWidthExpression();
+  const strokeColorExpression = scaled.paint.strokeColorExpression ?? sharedPointStrokeColorExpression();
+  const glowColorExpression = scaled.paint.glowColorExpression ?? paintColorFromProperty();
 
   await createSharedPointLayerSet(map, {
     ids,
     geojson,
     mapProvider,
     useMapTilerPointHelper,
+    useFeatureStateHover,
     promoteId,
-    circleColor: paint.pointColorExpression,
+    circleColor: scaled.paint.pointColorExpression,
     circleOpacity,
     circleStrokeColor: strokeColorExpression,
     circleStrokeWidth: strokeWidthExpression,
     glowColor: glowColorExpression,
-    glowOpacity: paint.glowOpacity ?? SHARED_POINT_UNIFORM_GLOW_OPACITY,
+    glowOpacity: scaled.paint.glowOpacity ?? SHARED_POINT_UNIFORM_GLOW_OPACITY,
     glowHoverOpacity,
     glowBlur,
-    pointRadius: paint.pointRadiusExpression,
+    pointRadius: scaled.paint.pointRadiusExpression,
     glowRadius,
     selectionRingColor,
   });
 
-  applySharedPointLayerPaint(map, paint);
+  applySharedPointLayerPaint(map, {
+    ...scaled.paint,
+    featureStateHover: useFeatureStateHover
+      ? buildFeatureStateHoverOptions(
+          glowRadius,
+          scaled.paint.glowOpacity ?? SHARED_POINT_UNIFORM_GLOW_OPACITY,
+          resolvedPointOpacity,
+          glowHoverOpacity
+        )
+      : undefined,
+  });
 }
