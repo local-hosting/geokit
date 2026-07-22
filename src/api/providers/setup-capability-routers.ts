@@ -5,7 +5,7 @@ import {
   resolveGeocodingApiKey,
   resolveGooglePlacesApiKey,
   resolveRoutingAccessToken,
-} from '../../config/env/index.js';
+} from '../../config/env/service-keys.js';
 import { createCompositeAPIProvider } from './composite-provider.js';
 import { FoursquareAPIProvider } from './foursquare-provider.js';
 import { GooglePlacesAPIProvider } from './google-places-provider.js';
