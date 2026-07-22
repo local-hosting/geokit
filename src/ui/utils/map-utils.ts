@@ -318,6 +318,8 @@ export function isMapUsable(map: MapInstance | null | undefined): boolean {
 
 type ResizeTargetMap = {
   getContainer?: () => HTMLElement | null;
+  getPixelRatio?: () => number;
+  setPixelRatio?: (ratio: number) => void;
 };
 
 /**
@@ -357,6 +359,19 @@ export function hasRenderableMapSize(element: HTMLElement | null | undefined): b
  * Resize only when the map container is visible and has dimensions.
  * Returns true when resize ran without throwing.
  */
+
+/** Match MapLibre canvas backing store to devicePixelRatio (avoids blurry upscale on Retina). */
+export function syncMapDevicePixelRatio(map: ResizeTargetMap | null | undefined): void {
+  if (!map || typeof window === 'undefined') return;
+  const dpr = window.devicePixelRatio || 1;
+  if (typeof map.getPixelRatio !== 'function' || typeof map.setPixelRatio !== 'function') return;
+  try {
+    if (map.getPixelRatio() !== dpr) map.setPixelRatio(dpr);
+  } catch {
+    // Map may be mid-teardown.
+  }
+}
+
 export function safeResizeMap(
   map: (ResizeTargetMap & { resize?: () => void }) | null | undefined,
   hostElement?: HTMLElement | null
@@ -367,6 +382,7 @@ export function safeResizeMap(
   if (!hasRenderableMapSize(target)) return false;
 
   try {
+    syncMapDevicePixelRatio(map);
     map.resize();
     return true;
   } catch {
@@ -388,6 +404,7 @@ export function wrapMapResize(
     const target = getMapResizeTarget(map);
     if (!hasRenderableMapSize(target)) return;
     try {
+      syncMapDevicePixelRatio(map);
       originalResize();
     } catch {
       // SDK can throw transformMat4 errors when resize races teardown or zero-size layout.

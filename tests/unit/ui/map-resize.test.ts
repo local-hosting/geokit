@@ -3,6 +3,7 @@ import {
   getMapResizeTarget,
   hasRenderableMapSize,
   safeResizeMap,
+  syncMapDevicePixelRatio,
   wrapMapResize,
 } from '../../../src/ui/utils/map-utils';
 
@@ -79,5 +80,13 @@ describe('map resize guards', () => {
 
     expect(getMapResizeTarget(map, host)).toBe(host);
     expect(getMapResizeTarget(map)).toBe(container);
+  });
+
+  it('syncMapDevicePixelRatio updates map when DPR differs', () => {
+    const setPixelRatio = vi.fn();
+    const map = { getPixelRatio: () => 1, setPixelRatio };
+    Object.defineProperty(window, 'devicePixelRatio', { value: 2, configurable: true });
+    syncMapDevicePixelRatio(map);
+    expect(setPixelRatio).toHaveBeenCalledWith(2);
   });
 });

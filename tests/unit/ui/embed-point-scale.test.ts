@@ -48,15 +48,7 @@ describe('scaleSharedPointPaintForEmbed', () => {
     const paint: ApplySharedPointPaintOptions = {
       ids: { sourceId: 's', glowLayerId: 'g', pointLayerId: 'p' },
       pointColorExpression: ['literal', '#fff'],
-      pointRadiusExpression: [
-        'interpolate',
-        ['exponential', 1.5],
-        ['zoom'],
-        0,
-        3,
-        10,
-        4,
-      ],
+      pointRadiusExpression: ['interpolate', ['exponential', 1.5], ['zoom'], 0, 3, 10, 4],
     };
 
     const scaled = scaleSharedPointPaintForEmbed(paint, 0.5);
@@ -65,9 +57,9 @@ describe('scaleSharedPointPaintForEmbed', () => {
       ['exponential', 1.5],
       ['zoom'],
       0,
-      1.5,
-      10,
       2,
+      10,
+      4,
     ]);
   });
 });
@@ -93,5 +85,28 @@ describe('applyEmbedScaleToSharedPointLayerOptions', () => {
     expect(result.embedScale).toBe(0.5);
     expect(result.glowHitAreaScale).toBe(1);
     expect(result.paint.pointRadiusExpression).toEqual(['literal', 2]);
+  });
+});
+
+describe('scaleSharedPointPaintForEmbed zoom growth', () => {
+  it('only shrinks low-zoom stops so points grow when zoomed in', () => {
+    const paint: ApplySharedPointPaintOptions = {
+      ids: { sourceId: 's', glowLayerId: 'g', pointLayerId: 'p' },
+      pointColorExpression: ['literal', '#fff'],
+      pointRadiusExpression: ['interpolate', ['exponential', 1.5], ['zoom'], 0, 3, 8, 4, 12, 6],
+    };
+
+    const scaled = scaleSharedPointPaintForEmbed(paint, 0.5);
+    expect(scaled.pointRadiusExpression).toEqual([
+      'interpolate',
+      ['exponential', 1.5],
+      ['zoom'],
+      0,
+      2,
+      8,
+      4,
+      12,
+      6,
+    ]);
   });
 });
