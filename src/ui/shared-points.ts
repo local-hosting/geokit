@@ -39,8 +39,11 @@ export {
   sharedPointStrokeColorExpression,
   applySharedPointLayerPaint,
   attachSharedPointHoverGlowRadiusSync,
+  buildSharedPointFeatureStateHoverPaint,
   type SharedPointLayerIds,
   type ApplySharedPointPaintOptions,
+  type SharedPointFeatureStateHoverOptions,
+  type SharedPointFeatureStateHoverPaint,
 } from './utils/shared-point-paint';
 
 export {
@@ -61,3 +64,16 @@ export {
   type CreateSharedPointLayersFromPaintOptions,
   type SyncExistingSharedPointLayersOptions,
 } from './utils/shared-point-sync';
+
+export {
+  DEFAULT_EMBED_MIN_SCALE,
+  DEFAULT_EMBED_REFERENCE_HEIGHT_PX,
+  applyEmbedScaleToSharedPointLayerOptions,
+  COMPACT_EMBED_MIN_RADIUS_PX,
+  embedPointScaleFromHeight,
+  resolveEmbedPointScale,
+  scaleSharedPointPaintForEmbed,
+  type EmbedPointScaleFromHeightOptions,
+  type ResolveEmbedPointScaleOptions,
+  type SharedPointEmbedLayerOptions,
+} from './utils/embed-point-scale';
