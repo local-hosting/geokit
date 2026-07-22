@@ -8,9 +8,16 @@ import { multiplyRadiusExpression } from './layer-styles';
 import type { ApplySharedPointPaintOptions } from './shared-point-paint';
 
 export const DEFAULT_EMBED_REFERENCE_HEIGHT_PX = 400;
+/** Reference height for short sidebar strips (~180px) so embed scale shrinks further. */
+export const COMPACT_SIDEBAR_REFERENCE_HEIGHT_PX = 528;
 export const DEFAULT_EMBED_MIN_SCALE = 0.35;
 /** Lower floor for compact embed maps so dense continental views can shrink below 3px. */
-export const COMPACT_EMBED_MIN_RADIUS_PX = 1.5;
+/** Safari and dense sidebar maps need ≥2px or circles vanish. */
+export const COMPACT_EMBED_MIN_RADIUS_PX = 2;
+/** No blur on compact embed glow — circle-blur softens tiny points into fuzzy halos. */
+export const COMPACT_EMBED_GLOW_BLUR = 0;
+/** Above this zoom, embed shrink is not applied — points grow with zoom when inspecting stores. */
+export const COMPACT_EMBED_ZOOM_GROWTH_THRESHOLD = 8;
 
 export interface EmbedPointScaleFromHeightOptions {
   referenceHeightPx?: number;
@@ -57,12 +64,61 @@ export function resolveEmbedPointScale(options: ResolveEmbedPointScaleOptions = 
 
   const container =
     options.container ??
-    ((options.map as { getContainer?: () => HTMLElement })?.getContainer?.() ?? null);
+    (options.map as { getContainer?: () => HTMLElement })?.getContainer?.() ??
+    null;
 
   const height = readContainerHeight(container);
   if (height <= 0) return 1;
 
   return embedPointScaleFromHeight(height, options);
+}
+
+function scaleCompactEmbedRadiusInterpolation(
+  interpolate: unknown[],
+  embedScale: number,
+  minRadiusPx: number
+): unknown[] {
+  if (
+    !Array.isArray(interpolate) ||
+    interpolate[0] !== 'interpolate' ||
+    typeof embedScale !== 'number' ||
+    embedScale === 1
+  ) {
+    return interpolate;
+  }
+
+  const scaled = [...interpolate];
+  for (let i = 4; i < scaled.length; i += 2) {
+    const zoom = scaled[i - 1];
+    if (typeof zoom !== 'number' || typeof scaled[i] !== 'number') continue;
+    if (zoom < COMPACT_EMBED_ZOOM_GROWTH_THRESHOLD) {
+      scaled[i] = Math.max(minRadiusPx, (scaled[i] as number) * embedScale);
+    }
+  }
+  return scaled;
+}
+
+function scalePointRadiusExpressionForCompactEmbed(expr: unknown[], embedScale: number): unknown[] {
+  if (expr[0] === 'literal' && typeof expr[1] === 'number') {
+    return ['literal', Math.max(COMPACT_EMBED_MIN_RADIUS_PX, expr[1] * embedScale)];
+  }
+  if (expr[0] === 'interpolate') {
+    return scaleCompactEmbedRadiusInterpolation(expr, embedScale, COMPACT_EMBED_MIN_RADIUS_PX);
+  }
+  if (expr[0] === '*' && Array.isArray(expr[1]) && (expr[1] as unknown[])[0] === 'interpolate') {
+    return [
+      '*',
+      scaleCompactEmbedRadiusInterpolation(
+        expr[1] as unknown[],
+        embedScale,
+        COMPACT_EMBED_MIN_RADIUS_PX
+      ),
+      ...expr.slice(2),
+    ];
+  }
+  return multiplyRadiusExpression(expr, embedScale, {
+    minRadiusPx: COMPACT_EMBED_MIN_RADIUS_PX,
+  });
 }
 
 /** Apply embed scale to shared point paint (radius only). */
@@ -72,21 +128,10 @@ export function scaleSharedPointPaintForEmbed(
 ): ApplySharedPointPaintOptions {
   if (embedScale === 1) return paint;
   const expr = paint.pointRadiusExpression;
-  if (Array.isArray(expr) && expr[0] === 'literal' && typeof expr[1] === 'number') {
-    return {
-      ...paint,
-      pointRadiusExpression: [
-        'literal',
-        Math.max(COMPACT_EMBED_MIN_RADIUS_PX, expr[1] * embedScale),
-      ],
-    };
-  }
-  const pointRadiusExpression = multiplyRadiusExpression(expr as unknown[], embedScale, {
-    minRadiusPx: COMPACT_EMBED_MIN_RADIUS_PX,
-  });
+  if (!Array.isArray(expr)) return paint;
   return {
     ...paint,
-    pointRadiusExpression: pointRadiusExpression as unknown[],
+    pointRadiusExpression: scalePointRadiusExpressionForCompactEmbed(expr as unknown[], embedScale),
   };
 }
 
@@ -101,9 +146,7 @@ export interface SharedPointEmbedLayerOptions {
 }
 
 /** Resolve embed scale and return scaled paint + glow hit scale. */
-export function applyEmbedScaleToSharedPointLayerOptions(
-  options: SharedPointEmbedLayerOptions
-): {
+export function applyEmbedScaleToSharedPointLayerOptions(options: SharedPointEmbedLayerOptions): {
   paint: ApplySharedPointPaintOptions;
   glowHitAreaScale: number;
   embedScale: number;
