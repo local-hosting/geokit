@@ -64,6 +64,7 @@ import {
   delayForWebGLRelease,
 } from './map-freeze';
 import { safeResizeMap } from '../../../utils/map-utils';
+import { resolveEmbedPointScale } from '../../../utils/embed-point-scale';
 import {
   filterPoints as filterPointsFn,
   filterPolygons as filterPolygonsFn,
@@ -104,6 +105,8 @@ export class MapElement extends BaseElement {
     'buildings-enabled',
     'hillshade-enabled',
     'hillshade-opacity',
+    'compact-points',
+    'point-scale',
   ];
 
   private _controlsVisible: boolean = true;
@@ -1313,6 +1316,30 @@ export class MapElement extends BaseElement {
   // Public API
   public getMap(): MapInstance | null {
     return this.map;
+  }
+
+  /**
+   * Embed scale for shared point layers (1 = full size).
+   * Enabled with `compact-points` or explicit `point-scale="0.5"`.
+   */
+  public getEmbedPointScale(): number {
+    const pointScaleAttr = this.getAttribute('point-scale');
+    if (pointScaleAttr) {
+      const explicit = parseFloat(pointScaleAttr);
+      if (Number.isFinite(explicit) && explicit > 0) {
+        return resolveEmbedPointScale({ embedPointScale: explicit });
+      }
+    }
+
+    const compactAttr = this.getAttribute('compact-points');
+    const compactPoints = compactAttr !== null && compactAttr !== 'false';
+    if (!compactPoints) return 1;
+
+    return resolveEmbedPointScale({
+      map: this.map,
+      container: this,
+      compactPoints: true,
+    });
   }
 
   public setCenter(lat: number, lng: number): void {
