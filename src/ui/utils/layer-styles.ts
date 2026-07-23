@@ -105,6 +105,10 @@ export interface SharedPointLayersConfig {
   useFeatureStateHover?: boolean;
   /** Selection ring stroke color (default #ffffff). Use dark color for light-themed maps. */
   selectionRingColor?: string;
+  /** Soft drop shadow under the selected point (same selection source as the ring). */
+  selectionShadowColor?: string;
+  /** Point outline width used to size the selection ring/shadow (px). */
+  selectionPointStrokeWidth?: number;
 }
 
 export interface CircleLayerConfig {
@@ -938,6 +942,8 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     promoteId,
     useFeatureStateHover = true,
     selectionRingColor = '#ffffff',
+    selectionShadowColor,
+    selectionPointStrokeWidth = 0,
   } = config;
 
   const container = (map as any).getContainer?.();
@@ -1103,7 +1109,8 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       } else if (Array.isArray(glowOpacity)) {
         glowOpacityExpression = glowOpacity;
       } else {
-        glowOpacityExpression = typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
+        glowOpacityExpression =
+          typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
       }
       const glowPaint: Record<string, unknown> = {
         'circle-radius': hoverPaint?.glowRadius ?? glowRadiusVal,
@@ -1146,8 +1153,18 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       pointLayerId,
       selectionRingColor,
       effectivePointRadius,
-      _circleStrokeWidth ?? 0
+      selectionPointStrokeWidth || (_circleStrokeWidth ?? 0)
     );
+    if (selectionShadowColor) {
+      setupSelectionShadowLayer(
+        map,
+        sourceId,
+        pointLayerId,
+        selectionShadowColor,
+        effectivePointRadius,
+        selectionPointStrokeWidth || (_circleStrokeWidth ?? 0)
+      );
+    }
 
     // Setup automatic hover layers (same pattern as non-helper path)
     setupHoverLayers(map, sourceId, glowLayerId, pointLayerId, {
@@ -1223,7 +1240,8 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     const pointPaint: Record<string, unknown> = {
       'circle-radius': radiusVal,
       'circle-color': circleColorVal,
-      'circle-opacity': hoverPaint?.pointOpacity ?? (typeof _circleOpacity === 'number' ? _circleOpacity : 1),
+      'circle-opacity':
+        hoverPaint?.pointOpacity ?? (typeof _circleOpacity === 'number' ? _circleOpacity : 1),
       'circle-blur': 0,
     };
     if (hoverPaint) {
@@ -1280,8 +1298,18 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       pointLayerId,
       selectionRingColor,
       radiusVal,
-      _circleStrokeWidth ?? 0
+      selectionPointStrokeWidth || (_circleStrokeWidth ?? 0)
     );
+    if (selectionShadowColor) {
+      setupSelectionShadowLayer(
+        map,
+        sourceId,
+        pointLayerId,
+        selectionShadowColor,
+        radiusVal,
+        selectionPointStrokeWidth || (_circleStrokeWidth ?? 0)
+      );
+    }
   }
 
   // Setup automatic hover layers using dedicated source (avoids feature-state issues)
@@ -1327,6 +1355,61 @@ interface GeoJSONSourceWithSetData {
  * Uses a single-feature source (0-1 features) so no data-driven expressions
  * are evaluated on all venue features. Same pattern as hover layers.
  */
+
+/** Shadow halo radius: slightly larger than the point for a raised look. */
+export function getSelectionShadowRadiusFromPointRadius(
+  pointRadius: unknown,
+  pointStrokeWidth: unknown = 0
+): unknown {
+  const stroke = typeof pointStrokeWidth === 'number' ? pointStrokeWidth : 0;
+  const shadowPad = 0.85;
+  if (typeof pointRadius === 'number') return pointRadius + stroke + shadowPad;
+  if (Array.isArray(pointRadius) && pointRadius[0] === 'interpolate') {
+    return offsetRadiusInterpolation(pointRadius, stroke + shadowPad);
+  }
+  if (Array.isArray(pointRadius)) return ['+', pointRadius, stroke + shadowPad];
+  return offsetRadiusInterpolation(getPointRadiusInterpolation(), stroke + shadowPad);
+}
+
+function setupSelectionShadowLayer(
+  map: MapInstance,
+  sourceId: string,
+  pointLayerId: string,
+  selectionShadowColor: string,
+  pointRadius?: unknown,
+  pointStrokeWidth?: unknown
+): void {
+  const selectionSourceId = `${sourceId}-selection`;
+  const shadowLayerId = `${pointLayerId}-selection-shadow`;
+
+  if (!map.getLayer?.(shadowLayerId)) {
+    try {
+      map.addLayer(
+        {
+          id: shadowLayerId,
+          type: 'circle',
+          source: selectionSourceId,
+          minzoom: 0,
+          paint: {
+            'circle-radius': getSelectionShadowRadiusFromPointRadius(
+              pointRadius ?? getPointRadiusInterpolation(),
+              pointStrokeWidth ?? 0
+            ),
+            'circle-color': selectionShadowColor,
+            'circle-opacity': 0.42,
+            'circle-blur': 0.7,
+            'circle-stroke-width': 0,
+          },
+        } as any,
+        pointLayerId
+      );
+      debug.log('[layer-styles] selection shadow layer ADD', { shadowLayerId });
+    } catch (err) {
+      console.error(`[geokit] Failed to add selection shadow ${shadowLayerId}:`, err);
+    }
+  }
+}
+
 function setupSelectionRingLayer(
   map: MapInstance,
   sourceId: string,
