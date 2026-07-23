@@ -55,6 +55,8 @@ export interface SharedPointLayerPaintConfig {
   beforeLayerId?: string;
   promoteId?: string;
   selectionRingColor?: string;
+  selectionShadowColor?: string;
+  selectionPointStrokeWidth?: number;
 }
 
 export type { SharedPointLayerIds, ApplySharedPointPaintOptions };
@@ -105,6 +107,7 @@ export function getSharedPointRelatedLayerIds(ids: SharedPointLayerIds): string[
   return [
     glowLayerId,
     pointLayerId,
+    `${pointLayerId}-selection-shadow`,
     `${pointLayerId}-selection-ring`,
     `${glowLayerId}-hover`,
     `${pointLayerId}-hover`,
@@ -349,6 +352,8 @@ export interface CreateSharedPointLayersFromPaintOptions {
   glowBlur?: number;
   glowHitAreaScale?: number;
   selectionRingColor?: string;
+  selectionShadowColor?: string;
+  selectionPointStrokeWidth?: number;
   promoteId?: string;
   mapProvider?: string | null;
   useMapTilerPointHelper?: boolean;
@@ -377,6 +382,8 @@ export async function createSharedPointLayersFromPaint(
     glowBlur,
     glowHitAreaScale = SHARED_POINT_GLOW_HIT_AREA_SCALE,
     selectionRingColor,
+    selectionShadowColor,
+    selectionPointStrokeWidth,
     promoteId,
     mapProvider,
     useMapTilerPointHelper,
@@ -428,6 +435,8 @@ export async function createSharedPointLayersFromPaint(
     pointRadius: scaled.paint.pointRadiusExpression,
     glowRadius,
     selectionRingColor,
+    selectionShadowColor,
+    selectionPointStrokeWidth,
   });
 
   applySharedPointLayerPaint(map, {
