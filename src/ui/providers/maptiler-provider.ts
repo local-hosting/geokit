@@ -131,32 +131,7 @@ function isValidStyleForSetStyle(style: unknown): boolean {
   return false;
 }
 
-/**
- * Suppress MapTiler SDK version banner ("❖❖❖ MapTiler SDK JS vX.X.X ❖❖❖") from console.
- * Call once per session; idempotent.
- */
-function suppressMaptilerBanner(): void {
-  if (typeof window === 'undefined') return;
-  if ((window as any).__geokitMaptilerBannerSuppressed) return;
-  (window as any).__geokitMaptilerBannerSuppressed = true;
-
-  const bannerPattern = /maptiler\s+sdk\s+js|v\d+\.\d+\.\d+/i;
-  const wrap = (original: typeof console.log, _method: 'log' | 'warn') => {
-    return function (this: typeof console, ...args: unknown[]) {
-      try {
-        const msg = Array.isArray(args)
-          ? args.map((x) => String(x)).join(' ')
-          : String(args?.[0] ?? '');
-        if (typeof msg === 'string' && bannerPattern.test(msg)) return;
-      } catch {
-        /* ignore */
-      }
-      original.apply(this, args);
-    };
-  };
-  console.log = wrap(console.log.bind(console), 'log');
-  console.warn = wrap(console.warn.bind(console), 'warn');
-}
+import { withSuppressedMaptilerConsole } from './maptiler-console-suppress.js';
 
 export class MapTilerUIProvider extends BaseUIProvider {
   protected sdk: any = null;
@@ -180,9 +155,6 @@ export class MapTilerUIProvider extends BaseUIProvider {
   async initialize(config: MapProviderConfig): Promise<void> {
     this.config = { ...(this.config ?? {}), ...config };
 
-    // Suppress banner early - before any SDK method might log it
-    suppressMaptilerBanner();
-
     // Return existing promise if already loading
     if (this.sdkLoadPromise) {
       return this.sdkLoadPromise;
@@ -205,35 +177,20 @@ export class MapTilerUIProvider extends BaseUIProvider {
     // Load SDK dynamically: optional script URL (CDN) or dynamic import
     this.sdkLoadPromise = (async () => {
       try {
-        // Suppress API key warning if no key provided yet
-        const originalWarn = console.warn;
-        let warningSuppressed = false;
-
-        if (!config?.apiKey) {
-          console.warn = (...args: any[]) => {
-            const message = args.join(' ');
-            if (message.includes('MapTiler Cloud API key is not set')) {
-              warningSuppressed = true;
-              return;
-            }
-            originalWarn.apply(console, args);
-          };
-        }
-
         let maptilerModule: any;
 
-        if (typeof window !== 'undefined' && config?.sdkScriptUrl) {
-          // Load from CDN/script URL (script must set window.maptilersdk)
-          maptilerModule = await loadScriptAndGetGlobal(config.sdkScriptUrl, 'maptilersdk');
-        } else {
-          // Dynamic import of MapTiler SDK from bundle
-          maptilerModule = await import('@maptiler/sdk');
-        }
-
-        // Restore console.warn
-        if (warningSuppressed) {
-          console.warn = originalWarn;
-        }
+        await withSuppressedMaptilerConsole(
+          async () => {
+            if (typeof window !== 'undefined' && config?.sdkScriptUrl) {
+              // Load from CDN/script URL (script must set window.maptilersdk)
+              maptilerModule = await loadScriptAndGetGlobal(config.sdkScriptUrl, 'maptilersdk');
+            } else {
+              // Dynamic import of MapTiler SDK from bundle
+              maptilerModule = await import('@maptiler/sdk');
+            }
+          },
+          { suppressApiKeyWarning: !config?.apiKey }
+        );
 
         // Set API key if provided
         if (config?.apiKey && maptilerModule.config) {
