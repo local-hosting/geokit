@@ -1,6 +1,6 @@
-/** H3 cell layer bundle schema (Globe CDN `/cell/{cellId}.json`). */
+/** H3 cell layer bundle schema (H3 cell bundle `/cell/{cellId}.json`). */
 
-export type CellLayerId = 'county' | 'dma';
+export type CellLayerId = string;
 
 export type CellLayerCatalogV1 = {
   version: 1;

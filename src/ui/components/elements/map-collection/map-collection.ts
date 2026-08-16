@@ -628,7 +628,7 @@ export class MapCollectionElement extends BaseElement {
       const id = parentCard.getAttribute('data-map-id');
       if (id) return id;
     }
-    return element.id || element.getAttribute('data-dma-slug') || 'unknown';
+    return element.id || element.getAttribute('data-layer-key') || 'unknown';
   }
 
   private setupMutationObserver(): void {
