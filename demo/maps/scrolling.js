@@ -18,12 +18,12 @@ const activeMapsNamesEl = document.getElementById('active-maps-names');
 
 function updateStats() {
   if (!collection) {
-    console.warn('[Demo] Collection element not found');
+    console.warn('[gk-demo] Collection element not found');
     return;
   }
 
   if (!collection.getStats) {
-    console.warn('[Demo] getStats method not available on collection');
+    console.warn('[gk-demo] getStats method not available on collection');
     return;
   }
 

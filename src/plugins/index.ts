@@ -44,7 +44,7 @@ class PluginManager {
     }
 
     if (this.installed.has(name)) {
-      console.warn(`Plugin "${name}" is already installed`);
+      console.warn(`[gk-plugin] Plugin "${name}" is already installed`);
       return;
     }
 
@@ -61,7 +61,7 @@ class PluginManager {
     await plugin.install(this.geokit);
     this.installed.add(name);
     
-    console.log(`Plugin "${name}" v${plugin.version} installed successfully`);
+    console.log(`[gk-plugin] Plugin "${name}" v${plugin.version} installed successfully`);
   }
 
   /**
@@ -74,7 +74,7 @@ class PluginManager {
     }
 
     if (!this.installed.has(name)) {
-      console.warn(`Plugin "${name}" is not installed`);
+      console.warn(`[gk-plugin] Plugin "${name}" is not installed`);
       return;
     }
 
@@ -92,7 +92,7 @@ class PluginManager {
     }
     this.installed.delete(name);
     
-    console.log(`Plugin "${name}" uninstalled successfully`);
+    console.log(`[gk-plugin] Plugin "${name}" uninstalled successfully`);
   }
 
   /**
@@ -156,7 +156,7 @@ export const AdvancedRoutingPlugin: Plugin = {
     geokit.routing = {
       optimizeMultipleRoutes: async (waypoints: any[], options: any) => {
         // Implementation would integrate with routing service
-        console.log('Advanced routing installed');
+        console.log('[gk-plugin] Advanced routing installed');
         return [];
       },
       calculateTrafficAwareRoute: async (start: any, end: any) => {
@@ -182,7 +182,7 @@ export const MLClusteringPlugin: Plugin = {
     geokit.ml = {
       dbscanCluster: (points: any[], options: any) => {
         // Implementation would use DBSCAN algorithm
-        console.log('ML clustering installed');
+        console.log('[gk-plugin] ML clustering installed');
         return [];
       },
       kmeansCluster: (points: any[], k: number) => {
@@ -206,9 +206,9 @@ export const RealTimeTrackingPlugin: Plugin = {
   install: async (geokit) => {
     geokit.tracking = {
       startTracking: (options: any) => {
-        console.log('Real-time tracking started');
+        console.log('[gk-plugin] Real-time tracking started');
         return {
-          stop: () => console.log('Tracking stopped'),
+          stop: () => console.log('[gk-plugin] Tracking stopped'),
           getPosition: () => ({ lat: 0, lng: 0 })
         };
       }

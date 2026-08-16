@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>geokit — Fit bounds</title>
+  <link rel="stylesheet" href="../shared/maps-shell.css">
+  <link rel="stylesheet" href="../shared/sdk-demo.css">
+</head>
+<body class="cdn-demo" data-demo-active="fit-bounds">
+  <aside id="demo-nav" aria-label="Demo pages"></aside>
+  <div class="cdn-shell">
+    <div class="cdn-panel">
+      <h1>Fit bounds</h1>
+      <p class="subtitle">calculateFitBoundsViewport + flyTo</p>
+      <p class="demo-note">Pick a preset bbox, then fit the map viewport to those bounds.</p>
+      <div class="cdn-field">
+        <label for="preset">Bounds preset</label>
+        <select id="preset">
+          <option value="nyc">NYC metro</option>
+          <option value="boston">Boston metro</option>
+          <option value="conus">Continental US</option>
+        </select>
+      </div>
+      <div class="cdn-field">
+        <label for="width">Viewport width (px)</label>
+        <input id="width" type="number" min="200" max="2000" value="900" />
+      </div>
+      <div class="cdn-field">
+        <label for="height">Viewport height (px)</label>
+        <input id="height" type="number" min="200" max="2000" value="600" />
+      </div>
+      <div class="cdn-actions">
+        <button type="button" id="fit">Fit bounds</button>
+        <button type="button" class="secondary" id="show-box">Show bbox</button>
+      </div>
+      <pre id="log" class="cdn-log">Select a preset and click Fit bounds.</pre>
+    </div>
+    <div class="cdn-map-wrap">
+      <div id="map-container">
+        <gk-map
+          id="fit-bounds-map"
+          provider="maptiler"
+          lat="39.5"
+          lng="-98.35"
+          zoom="3.5"
+          map-style="dataviz-dark"
+          terrain-enabled="false"
+          hillshade-enabled="false"
+          buildings-enabled="false">
+        </gk-map>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./fit-bounds.js"></script>
+</body>
+</html>

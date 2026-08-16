@@ -11,7 +11,7 @@ const declarativePoint = document.getElementById('declarative-point');
 
 /** @param {string} message */
 function logEvent(message) {
-  console.log(`[Selection] ${message}`);
+  console.log(`[gk-selection] ${message}`);
 }
 
 function formatSelection() {

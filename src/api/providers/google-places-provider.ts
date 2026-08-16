@@ -48,7 +48,7 @@ export class GooglePlacesAPIProvider extends BaseAPIProvider {
     if (config?.apiKey) {
       this.apiKey = config.apiKey;
     } else {
-      console.warn('Google Places API Provider: No API key provided. API calls will not work.');
+      console.warn('[gk-api-google-places]  No API key provided. API calls will not work.');
     }
   }
 

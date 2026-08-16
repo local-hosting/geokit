@@ -168,7 +168,7 @@ export async function loadH3ZipIndexFromUrl(url: string): Promise<void> {
     const indexData = await response.json();
     loadH3ZipIndex(indexData);
   } catch (error) {
-    console.warn(`[H3 Index] Failed to load from ${url}:`, error);
+    console.warn(`[gk-h3] Failed to load from ${url}:`, error);
     throw error;
   }
 }
@@ -373,7 +373,7 @@ export async function getZipForPoint(
     const provider = getProviderForCapability('geocoding');
 
     if (!provider) {
-      console.warn('[ZIP] No geocoding provider available');
+      console.warn('[gk-demographics] No geocoding provider available');
       return null;
     }
 
@@ -395,7 +395,7 @@ export async function getZipForPoint(
 
     return null;
   } catch (error) {
-    console.warn('[ZIP] Error getting ZIP for point:', error);
+    console.warn('[gk-demographics] Error getting ZIP for point:', error);
     return null;
   }
 }

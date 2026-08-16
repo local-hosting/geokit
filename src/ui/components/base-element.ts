@@ -247,7 +247,7 @@ export class BaseElement extends HTMLElement {
 
       this.isInitialized = true;
     } catch (error) {
-      console.error(`${this.constructor.name}: Failed to initialize:`, error);
+      console.error(`[gk-element] ${this.constructor.name}: Failed to initialize:`, error);
     }
   }
 
@@ -327,7 +327,7 @@ export class BaseElement extends HTMLElement {
         }
       } catch (error) {
         console.error(
-          `${this.constructor.name}: Failed to create control:`,
+          `[gk-element] ${this.constructor.name}: Failed to create control:`,
           error,
           '\nThis may indicate a provider SDK version mismatch or initialization issue.'
         );
@@ -510,7 +510,7 @@ export class BaseElement extends HTMLElement {
       addControlMethod.call(this.map, this.control, position);
       this._controlAddedToMap = true;
     } catch (error) {
-      console.error(`${this.constructor.name}: Failed to add control:`, error);
+      console.error(`[gk-element] ${this.constructor.name}: Failed to add control:`, error);
     }
   }
 
@@ -534,7 +534,7 @@ export class BaseElement extends HTMLElement {
         this._controlAddedToMap = true;
       }
     } catch (error) {
-      console.error(`${this.constructor.name}: Failed to update position:`, error);
+      console.error(`[gk-element] ${this.constructor.name}: Failed to update position:`, error);
     }
   }
 
@@ -571,7 +571,7 @@ export class BaseElement extends HTMLElement {
         this.addControlToMap();
       }
     } catch (error) {
-      console.error(`${this.constructor.name}: Failed to recreate control:`, error);
+      console.error(`[gk-element] ${this.constructor.name}: Failed to recreate control:`, error);
     }
   }
 
@@ -785,7 +785,7 @@ export class BaseElement extends HTMLElement {
         }
       });
     } catch (error) {
-      console.warn(`Failed to update paint properties for ${layerId}:`, error);
+      console.warn(`[gk-element] Failed to update paint properties for ${layerId}:`, error);
     }
   }
 

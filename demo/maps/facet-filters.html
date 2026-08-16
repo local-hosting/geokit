@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>geokit — Facet filters</title>
+  <link rel="stylesheet" href="../shared/maps-shell.css">
+  <link rel="stylesheet" href="../shared/sdk-demo.css">
+</head>
+<body class="cdn-demo" data-demo-active="facet-filters">
+  <aside id="demo-nav" aria-label="Demo pages"></aside>
+  <div class="cdn-shell">
+    <div class="cdn-panel">
+      <h1>Facet filters</h1>
+      <p class="subtitle">buildFacetFilterExpression on points</p>
+      <p class="demo-note">Toggle categories to update the MapLibre layer filter.</p>
+      <div class="facet-list">
+        <label><input type="checkbox" id="cat-alpha" checked /> alpha</label>
+        <label><input type="checkbox" id="cat-beta" checked /> beta</label>
+        <label><input type="checkbox" id="cat-gamma" checked /> gamma</label>
+      </div>
+      <div class="cdn-actions">
+        <button type="button" id="apply">Apply filter</button>
+      </div>
+      <pre id="log" class="cdn-log">Waiting for map…</pre>
+    </div>
+    <div class="cdn-map-wrap">
+      <div id="map-container">
+        <gk-map
+          id="facet-filters-map"
+          provider="maptiler"
+          lat="40.73"
+          lng="-73.99"
+          zoom="11"
+          map-style="dataviz-dark"
+          terrain-enabled="false"
+          hillshade-enabled="false"
+          buildings-enabled="false">
+        </gk-map>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./facet-filters.js"></script>
+</body>
+</html>

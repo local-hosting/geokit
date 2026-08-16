@@ -79,7 +79,7 @@ export class MapboxUIProvider extends BaseUIProvider {
         this.sdk = mapboxgl;
         return this.sdk;
       } catch (error) {
-        console.error('Failed to load Mapbox GL JS:', error);
+        console.error('[gk-mapbox] Failed to load Mapbox GL JS:', error);
         throw error;
       }
     })();

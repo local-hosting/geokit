@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>geokit — H3 coverage</title>
+  <link rel="stylesheet" href="../shared/maps-shell.css">
+  <link rel="stylesheet" href="../shared/sdk-demo.css">
+</head>
+<body class="cdn-demo" data-demo-active="h3-coverage">
+  <aside id="demo-nav" aria-label="Demo pages"></aside>
+  <div class="cdn-shell">
+    <div class="cdn-panel">
+      <h1>H3 coverage</h1>
+      <p class="subtitle">Filter viewport cells against a fake coverage index</p>
+      <p class="demo-note">
+        Builds a parent-cell index from NYC, Chicago, and LA. At res 3 you should see up to three large hexes when the viewport includes those metros, then uses
+        <code>viewportCoverageCells</code> so only indexed cells render.
+      </p>
+      <div class="cdn-field">
+        <label for="resolution">Resolution</label>
+        <input id="resolution" type="number" min="1" max="5" value="3" />
+      </div>
+      <div class="cdn-actions">
+        <button type="button" id="resync">Resync grid</button>
+        <button type="button" class="secondary" id="rebuild-index">Rebuild index</button>
+      </div>
+      <pre id="log" class="cdn-log">Waiting for map…</pre>
+    </div>
+    <div class="cdn-map-wrap">
+      <div id="map-container">
+        <gk-map
+          id="h3-coverage-map"
+          provider="maptiler"
+          lat="39.5"
+          lng="-98.35"
+          zoom="4"
+          min-zoom="2"
+          max-zoom="10"
+          map-style="dataviz-dark"
+          terrain-enabled="false"
+          hillshade-enabled="false"
+          buildings-enabled="false"
+          max-pitch="0"
+          pitch="0">
+        </gk-map>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./h3-coverage.js"></script>
+</body>
+</html>

@@ -4,61 +4,59 @@
  * Factory for creating debug loggers with per-library window flags.
  * Framework-agnostic — usable in any JS/TS project.
  *
- * @example
- * ```typescript
- * // In geokit
- * const { debug, setDebugEnabled, isDebugEnabled } = createLogger({
- *   windowFlag: '__GEOKIT_DEBUG__',
- * });
- *
- * // In geoview (or any consumer)
- * const { debug, setDebugEnabled, isDebugEnabled } = createLogger({
- *   windowFlag: '__GEOVIEW_DEBUG__',
- * });
- * ```
+ * Geokit scopes use `[gk-<scope>]` prefixes (see {@link geokitTag}).
  */
 
-/**
- * Options for creating a debug logger
- */
 export interface LoggerOptions {
-  /** Name of the `window` property that toggles debug output (default: '__DEBUG__') */
   windowFlag?: string;
+  /** Geokit scope — prefixes messages with `[gk-<scope>]` when set */
+  scope?: string;
 }
 
-/**
- * Debug logger instance returned by {@link createLogger}
- */
 export interface DebugLogger {
-  /** Log a message (only when debug is enabled) */
   log: (message: string, ...args: unknown[]) => void;
-  /** Log a warning (only when debug is enabled) */
   warn: (message: string, ...args: unknown[]) => void;
-  /** Log an error (always logged, regardless of debug flag) */
   error: (message: string, ...args: unknown[]) => void;
 }
 
-/**
- * Full return value from {@link createLogger}
- */
 export interface Logger {
-  /** Debug log/warn/error methods */
   debug: DebugLogger;
-  /** Enable or disable debug logging */
   setDebugEnabled: (enabled: boolean) => void;
-  /** Check whether debug logging is currently enabled */
   isDebugEnabled: () => boolean;
 }
 
-/**
- * Create a debug logger bound to a specific `window` flag.
- *
- * Debug output is **off** by default. Enable it by:
- * - calling `setDebugEnabled(true)`, or
- * - setting `window[windowFlag] = true` in the browser console.
- */
+const GEOKIT_TAG_PATTERN = /^\[gk-[^\]]+\]/;
+
+/** @example geokitTag('h3') // '[gk-h3]' */
+export function geokitTag(scope: string): string {
+  const normalized = scope.startsWith('gk-') ? scope : `gk-${scope}`;
+  return `[${normalized}]`;
+}
+
+/** Prefix a message with a geokit scope tag when not already tagged. */
+export function formatGeokitMessage(scope: string | undefined, message: string): string {
+  if (!scope) return message;
+  const tag = geokitTag(scope);
+  if (message.startsWith(tag) || GEOKIT_TAG_PATTERN.test(message)) {
+    return message;
+  }
+  return `${tag} ${message}`;
+}
+
+/** Create a geokit-scoped logger using the standard `__GEOKIT_DEBUG__` flag. */
+export function createGeokitLogger(
+  scope: string,
+  options?: Omit<LoggerOptions, 'scope'>
+): Logger {
+  return createLogger({
+    windowFlag: '__GEOKIT_DEBUG__',
+    ...options,
+    scope,
+  });
+}
+
 export function createLogger(options?: LoggerOptions): Logger {
-  const { windowFlag = '__DEBUG__' } = options || {};
+  const { windowFlag = '__DEBUG__', scope } = options || {};
 
   const isBrowser = typeof window !== 'undefined';
 
@@ -82,16 +80,19 @@ export function createLogger(options?: LoggerOptions): Logger {
     return enabled;
   }
 
+  function format(message: string): string {
+    return formatGeokitMessage(scope, message);
+  }
+
   const debug: DebugLogger = {
     log(message: string, ...args: unknown[]): void {
-      if (isDebugEnabled()) console.log(message, ...args);
+      if (isDebugEnabled()) console.log(format(message), ...args);
     },
     warn(message: string, ...args: unknown[]): void {
-      if (isDebugEnabled()) console.warn(message, ...args);
+      if (isDebugEnabled()) console.warn(format(message), ...args);
     },
     error(message: string, ...args: unknown[]): void {
-      // Errors are always logged
-      console.error(message, ...args);
+      console.error(format(message), ...args);
     },
   };
 
