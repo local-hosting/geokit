@@ -147,6 +147,20 @@ export {
 // Normalization utilities
 export { slugify, normalize, normalizeName } from './utils/normalize';
 
+// Color utilities
+export {
+  hslToHex,
+  hexToHsl,
+  hexToRgb,
+  createPaletteCycler,
+  type Rgb,
+  type Hsl,
+  type PaletteCycler,
+} from './utils/color';
+
+// Easing utilities
+export { easeInOutCubic, easeLinear } from './utils/easing';
+
 // Bounds utilities
 export {
   getBounds,
@@ -169,6 +183,8 @@ export {
   destinationMeters,
   destinationKm,
   destinationMiles,
+  randomPointInCircle,
+  randomPointInCircleKm,
 } from './utils/bearing';
 
 // Containment utilities
@@ -203,6 +219,7 @@ export {
 export {
   interpolate,
   interpolateMeters,
+  interpolateAlongPath,
   nearestPointOnLine,
   nearestPointOnPolyline,
   pointToLineDistance,

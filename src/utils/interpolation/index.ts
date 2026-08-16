@@ -4,6 +4,7 @@
  */
 
 export { interpolate, interpolateMeters } from './along';
+export { interpolateAlongPath } from './along-path';
 export { nearestPointOnLine, nearestPointOnPolyline } from './nearest';
 export {
   pointToLineDistance,
