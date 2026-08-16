@@ -7,19 +7,11 @@ await setupMapsDemo({ elements: ['point'] });
 const SOURCE_ID = 'demo-venues';
 const mapElement = document.getElementById('selection-map');
 const stateEl = document.getElementById('selection-state');
-const logEl = document.getElementById('event-log');
 const declarativePoint = document.getElementById('declarative-point');
 
-/** @param {string} message @param {'info'|'selected'|'click'|'point'} [kind] */
-function logEvent(message, kind = 'info') {
-  const line = document.createElement('div');
-  line.className = `evt evt-${kind}`;
-  const time = new Date().toLocaleTimeString([], { hour12: false });
-  line.textContent = `[${time}] ${message}`;
-  logEl.prepend(line);
-  while (logEl.children.length > 40) {
-    logEl.lastElementChild?.remove();
-  }
+/** @param {string} message */
+function logEvent(message) {
+  console.log(`[Selection] ${message}`);
 }
 
 function formatSelection() {
@@ -66,7 +58,7 @@ const testVenues = {
 mapElement.addEventListener('gk-map-ready', () => {
   const map = mapElement.getMap();
   if (!map) {
-    logEvent('gk-map-ready but no map instance', 'info');
+    logEvent('gk-map-ready but no map instance');
     return;
   }
 
@@ -94,18 +86,17 @@ mapElement.addEventListener('gk-map-ready', () => {
     selectionRingColor: '#ffffff',
   });
 
-  logEvent('Shared venue layers ready — click a dot', 'info');
+  logEvent('Shared venue layers ready — click a dot');
   formatSelection();
 });
 
 mapElement.addEventListener('gk-shared-point-selected', (e) => {
   const { sourceId, featureId, previousFeatureId, lngLat } = e.detail;
   logEvent(
-    `gk-shared-point-selected ${previousFeatureId ?? '∅'} → ${featureId ?? '∅'} (${sourceId})`,
-    'selected'
+    `gk-shared-point-selected ${previousFeatureId ?? '∅'} → ${featureId ?? '∅'} (${sourceId})`
   );
   if (lngLat) {
-    logEvent(`  ring @ ${lngLat.lng.toFixed(4)}, ${lngLat.lat.toFixed(4)}`, 'selected');
+    logEvent(`  ring @ ${lngLat.lng.toFixed(4)}, ${lngLat.lat.toFixed(4)}`);
   }
   formatSelection();
 });
@@ -113,16 +104,16 @@ mapElement.addEventListener('gk-shared-point-selected', (e) => {
 mapElement.addEventListener('gk-point-click', (e) => {
   const { featureId, sourceId, features } = e.detail;
   const name = features?.[0]?.properties?.name ?? featureId ?? '?';
-  logEvent(`gk-point-click "${name}" featureId=${featureId ?? '∅'} (${sourceId})`, 'click');
+  logEvent(`gk-point-click "${name}" featureId=${featureId ?? '∅'} (${sourceId})`);
 });
 
 mapElement.addEventListener('gk-point-focus', (e) => {
   const { pointId, title } = e.detail;
-  logEvent(`gk-point-focus ${pointId} (${title ?? 'no title'})`, 'point');
+  logEvent(`gk-point-focus ${pointId} (${title ?? 'no title'})`);
 });
 
 mapElement.addEventListener('gk-point-blur', () => {
-  logEvent('gk-point-blur', 'point');
+  logEvent('gk-point-blur');
 });
 
 document.querySelectorAll('[data-select]').forEach((btn) => {
@@ -130,20 +121,20 @@ document.querySelectorAll('[data-select]').forEach((btn) => {
     const featureId = btn.getAttribute('data-select');
     if (!featureId) return;
     const ok = mapElement.setSelectedPoint(SOURCE_ID, featureId);
-    logEvent(`setSelectedPoint("${featureId}") → ${ok ? 'ok' : 'failed'}`, 'info');
+    logEvent(`setSelectedPoint("${featureId}") → ${ok ? 'ok' : 'failed'}`);
     formatSelection();
   });
 });
 
 document.getElementById('btn-clear')?.addEventListener('click', () => {
   mapElement.clearSelectedPoint(SOURCE_ID);
-  logEvent('clearSelectedPoint()', 'info');
+  logEvent('clearSelectedPoint()');
   formatSelection();
 });
 
 document.getElementById('btn-read')?.addEventListener('click', () => {
   const selected = mapElement.getSelectedPoint(SOURCE_ID);
-  logEvent(`getSelectedPoint → ${JSON.stringify(selected)}`, 'info');
+  logEvent(`getSelectedPoint → ${JSON.stringify(selected)}`);
   formatSelection();
 });
 
@@ -155,8 +146,4 @@ document.getElementById('btn-blur-point')?.addEventListener('click', () => {
   declarativePoint?.blur?.();
 });
 
-document.getElementById('btn-clear-log')?.addEventListener('click', () => {
-  logEl.innerHTML = '';
-});
-
-logEvent('Waiting for gk-map-ready…', 'info');
+logEvent('Waiting for gk-map-ready…');

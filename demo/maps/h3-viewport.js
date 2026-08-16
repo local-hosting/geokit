@@ -1,14 +1,11 @@
 import { setupMapsDemo } from '../shared/bootstrap-maps.js';
 import {
-  compactH3CellId,
-  expandH3CellId,
   h3CellsForViewportBounds,
   prioritizeH3CellsNearCenter,
 } from '../../src/utils/h3/viewport.ts';
+import { compactH3CellId, expandH3CellId } from '../../src/utils/h3/cell-id.ts';
 import { mapViewportBounds } from '../../src/utils/h3/map-viewport.ts';
-import { appendLog } from '../cdn/shared.js';
 
-const logEl = document.getElementById('log');
 const mapElement = document.getElementById('h3-viewport-map');
 const resolutionInput = document.getElementById('resolution');
 const maxCellsInput = document.getElementById('max-cells');
@@ -16,8 +13,13 @@ const maxCellsInput = document.getElementById('max-cells');
 /** @type {Map<string, HTMLElement>} */
 const mounted = new Map();
 
+/** @param {string} message @param {unknown} [detail] */
 function log(message, detail) {
-  appendLog(logEl, message, detail);
+  if (detail === undefined) {
+    console.log(`[H3Viewport] ${message}`);
+    return;
+  }
+  console.log(`[H3Viewport] ${message}`, detail);
 }
 
 function readResolution() {
@@ -105,7 +107,7 @@ function bindMapEvents() {
   syncViewportGrid();
 }
 
-await setupMapsDemo({ elements: ['h3', 'layer'] });
+await setupMapsDemo({ elements: ['h3'] });
 
 document.getElementById('resync').addEventListener('click', () => {
   syncViewportGrid();

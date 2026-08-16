@@ -16,9 +16,7 @@ export default defineConfig({
     alias: {
       '@twinfile/geokit/bounds': path.join(geokitRoot, 'src/utils/bounds/index.ts'),
       '@twinfile/geokit/types': path.join(geokitRoot, 'src/types/index.ts'),
-      '@twinfile/geokit/distance': path.join(geokitRoot, 'src/utils/distance/index.ts'),
-      '@twinfile/geokit/cdn': path.join(geokitRoot, 'src/cdn/index.ts'),
-    },
+      '@twinfile/geokit/distance': path.join(geokitRoot, 'src/utils/distance/index.ts'),    },
   },
   test: {
     globals: true,
