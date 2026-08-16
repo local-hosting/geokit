@@ -1,20 +1,17 @@
 /**
- * gk-layer dataset registry — CDN geo presets (state, county, place, zip, dma).
+ * gk-layer dataset registry — host app registers mounts via registerLayerDatasetMount() at boot.
  */
 
-import { mountCountyDataset } from './layer-dataset-county';
-import { mountPlaceDataset } from './layer-dataset-place';
-import { mountStateDataset } from './layer-dataset-state';
-import { mountZipDataset } from './layer-dataset-zip';
-import type { AdminColorMode } from '../../../utils/admin-color-mode.js';
-import { mountDmaDataset } from './layer-dataset-dma';
+import { resolveLayerDatasetMount } from '../../../../utils/geojson-loader/registry.js';
 
-export type LayerDatasetId = 'state' | 'county' | 'dma' | 'place' | 'city' | 'zip';
+/** Opaque dataset id — apps register mounts (e.g. custom id) at bootstrap. */
+export type LayerDatasetId = string;
 
 export type LayerDatasetMode = 'viewport' | 'slugs';
 
 export type LayerDatasetOptions = {
-  cdnBase?: string;
+  /** Fetch origin override — app-defined (app-defined). */
+  baseUrl?: string;
   getRequestInit?: () => RequestInit;
   init?: RequestInit;
   lineColor?: string;
@@ -23,21 +20,14 @@ export type LayerDatasetOptions = {
   minzoom?: number;
   interactive?: boolean;
   visible?: boolean;
-  /** Place preset — two-letter state code (e.g. tx). */
-  state?: string;
-  /** DMA only */
   mode?: LayerDatasetMode;
   slugs?: string[];
   highlightSlug?: string | null;
   fillOpacity?: number;
   fillColor?: string;
   outlineColor?: string;
-  /** Nielsen georef region for DMA slug coloring (e.g. midwest). */
-  dmaRegion?: string;
-  /** Dark-map DMA tint (matches MCP static snapshots). */
-  darkVariant?: boolean;
-  /** outline (default), region tint (state), or dma tint (county/place). */
-  colorMode?: AdminColorMode;
+  /** App-specific attrs from gk-layer markup (app attrs, dark-variant, …). */
+  attrs?: Record<string, string>;
 };
 
 export type LayerDatasetMap = {
@@ -90,43 +80,26 @@ export type LayerDatasetReadyDetail = {
   featureCount?: number;
 };
 
-type LayerDatasetRunner = {
-  mount: (ctx: LayerDatasetContext) => Promise<LayerDatasetHandle | null>;
+const DATASET_ATTR_ALIASES: Record<string, string> = {
+  city: 'place',
 };
 
-const REGISTRY: Record<'state' | 'county' | 'dma' | 'place' | 'zip', LayerDatasetRunner> = {
-  state: { mount: mountStateDataset },
-  county: { mount: mountCountyDataset },
-  dma: { mount: mountDmaDataset },
-  place: { mount: mountPlaceDataset },
-  zip: { mount: mountZipDataset },
-};
-
-export function isLayerDatasetId(value: string | null | undefined): value is LayerDatasetId {
-  return (
-    value === 'state' ||
-    value === 'county' ||
-    value === 'dma' ||
-    value === 'place' ||
-    value === 'city' ||
-    value === 'zip'
-  );
+export function normalizeLayerDatasetId(
+  value: string | null | undefined
+): LayerDatasetId | null {
+  const trimmed = value?.trim().toLowerCase();
+  if (!trimmed) return null;
+  return DATASET_ATTR_ALIASES[trimmed] ?? trimmed;
 }
 
-export function resolveLayerDatasetId(
-  value: string | null | undefined
-): 'state' | 'county' | 'dma' | 'place' | 'zip' | null {
-  if (value === 'city') return 'place';
-  if (
-    value === 'state' ||
-    value === 'county' ||
-    value === 'dma' ||
-    value === 'place' ||
-    value === 'zip'
-  ) {
-    return value;
-  }
-  return null;
+/** @deprecated use normalizeLayerDatasetId */
+export function resolveLayerDatasetId(value: string | null | undefined): LayerDatasetId | null {
+  return normalizeLayerDatasetId(value);
+}
+
+/** @deprecated use normalizeLayerDatasetId */
+export function isLayerDatasetId(value: string | null | undefined): value is LayerDatasetId {
+  return normalizeLayerDatasetId(value) !== null;
 }
 
 export function parseLayerDatasetSlugs(raw: string | null | undefined): string[] | undefined {
@@ -141,13 +114,24 @@ export function parseLayerDatasetSlugs(raw: string | null | undefined): string[]
 export async function mountLayerDataset(
   ctx: LayerDatasetContext
 ): Promise<LayerDatasetHandle | null> {
-  const resolved = resolveLayerDatasetId(ctx.dataset);
+  const resolved = normalizeLayerDatasetId(ctx.dataset);
   if (!resolved) return null;
-  const runner = REGISTRY[resolved];
-  if (!runner) return null;
-  return runner.mount({ ...ctx, dataset: resolved });
+  const mount = resolveLayerDatasetMount(resolved);
+  if (!mount) {
+    console.warn(
+      `[gk-layer] no dataset mount registered for "${resolved}" — call registerLayerDatasetMount() from your app bootstrap`
+    );
+    return null;
+  }
+  return mount({ ...ctx, dataset: resolved });
 }
 
 export function unmountLayerDataset(handle: LayerDatasetHandle | null | undefined): void {
   handle?.cleanup();
 }
+
+export {
+  registerLayerDatasetMount,
+  unregisterLayerDatasetMount,
+  clearLayerDatasetMounts,
+} from '../../../../utils/geojson-loader/registry.js';

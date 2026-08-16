@@ -1,25 +1,10 @@
-/**
- * Shared helpers for gk-layer CDN dataset mounts.
- */
-
+import type { CellLayerId } from '../../../../types/cell-layers.types.js';
+import { bindDebouncedMapMoveend } from '../../../../utils/geojson-loader/viewport-sync.js';
 import { mapViewportBounds } from '../../../../utils/h3/map-viewport';
-import type { CellLayerId } from '../../../../cdn/cell-layers';
-import { bindDebouncedMapMoveend } from '../../../../cdn/viewport-shard-loader';
 import {
-  adminOutlinePreset,
-  refreshAdminOutlineForPreset,
-  type AdminOutlinePresetKind,
-} from '../../../utils/admin-outline-preset';
-import {
-  stackGkOutlineLayersAboveDmaFill,
+  stackGkOutlineLayersAboveDatasetFill,
   findInsertBeforeLayer,
 } from '../../../utils/layer-stack';
-import type { AdminOutlineLayerConfig } from '../../../utils/admin-outline-layer';
-import {
-  defaultAdminColorMode,
-  resolveAdminFillPaint,
-  type AdminColorMode,
-} from '../../../utils/admin-color-mode.js';
 import type {
   LayerDatasetContext,
   LayerDatasetHandle,
@@ -27,6 +12,19 @@ import type {
 } from './layer-datasets';
 
 export type LayerDatasetMap = NonNullable<LayerDatasetContext['map']>;
+
+export type OutlineLayerConfig = {
+  polygonSourceId: string;
+  lineSourceId: string;
+  fillLayerId: string;
+  lineLayerId: string;
+  lineColor?: string | unknown[];
+  lineWidth?: number | unknown[];
+  minzoom?: number;
+  lineMinzoom?: number;
+  fillColor?: string | unknown[];
+  fillOpacity?: number;
+};
 
 const DATASET_ANCHOR_PREFIXES = ['gk-dataset-', 'venues', 'platform-'] as const;
 
@@ -91,30 +89,8 @@ export function dispatchLayerShardEvent(
   element.dispatchEvent(new CustomEvent('gk-layer-shard', { detail, bubbles: true }));
 }
 
-export type AdminOutlineLayerIds = Pick<
-  AdminOutlineLayerConfig,
-  'polygonSourceId' | 'lineSourceId' | 'fillLayerId' | 'lineLayerId'
->;
-
-export async function applyAdminColorModeToConfig(
-  config: AdminOutlineLayerConfig,
-  options: LayerDatasetOptions,
-  defaultMode: AdminColorMode | undefined,
-  ctx: Pick<LayerDatasetContext, 'options' | 'getRequestInit'>
-): Promise<AdminOutlineLayerConfig> {
-  const colorMode = options.colorMode ?? defaultMode;
-  const fill = await resolveAdminFillPaint({
-    colorMode,
-    fillOpacity: options.fillOpacity,
-    cdnBase: options.cdnBase,
-    getRequestInit: ctx.getRequestInit,
-  });
-  if (!fill) return config;
-  return { ...config, fillColor: fill.fillColor, fillOpacity: fill.fillOpacity };
-}
-
-export function buildAdminOutlineConfig(
-  ids: AdminOutlineLayerIds,
+export function buildOutlineLayerConfig(
+  ids: Pick<OutlineLayerConfig, 'polygonSourceId' | 'lineSourceId' | 'fillLayerId' | 'lineLayerId'>,
   options: LayerDatasetOptions,
   defaults: {
     lineColor: string;
@@ -122,7 +98,7 @@ export function buildAdminOutlineConfig(
     minzoom?: number;
     lineMinzoom?: number;
   }
-): AdminOutlineLayerConfig {
+): OutlineLayerConfig {
   const minzoom = defaults.minzoom ?? options.minzoom;
   const lineMinzoom = defaults.lineMinzoom ?? minzoom;
   return {
@@ -136,78 +112,62 @@ export function buildAdminOutlineConfig(
   };
 }
 
-export type AdminOutlineLayerOps = {
+export type OutlineLayerOps = {
   add: (
     map: LayerDatasetMap,
     features: GeoJSON.FeatureCollection,
-    config: AdminOutlineLayerConfig,
+    config: OutlineLayerConfig,
     beforeLayerId?: string
   ) => void;
-  applyPaint: (map: LayerDatasetMap, config: AdminOutlineLayerConfig) => void;
-  remove: (map: LayerDatasetMap, config: AdminOutlineLayerIds) => void;
+  applyPaint: (map: LayerDatasetMap, config: OutlineLayerConfig) => void;
+  remove: (
+    map: LayerDatasetMap,
+    ids: Pick<OutlineLayerConfig, 'polygonSourceId' | 'lineSourceId' | 'fillLayerId' | 'lineLayerId'>
+  ) => void;
+  refresh?: (
+    map: LayerDatasetMap,
+    features: GeoJSON.FeatureCollection,
+    config: Pick<OutlineLayerConfig, 'polygonSourceId' | 'lineSourceId'>
+  ) => void;
 };
 
-export type AdminOutlineDatasetPresetDef = {
-  kind: AdminOutlinePresetKind;
-  ids: AdminOutlineLayerIds;
-  style: {
-    lineColor: string;
-    lineWidth: number | unknown[];
-    minzoom?: number;
-    lineMinzoom?: number;
-  };
-};
-
-export type MountAdminOutlineHandleOptions = {
-  hitLayerIds?: string[] | ((ctx: LayerDatasetContext) => string[] | undefined);
-  cleanupExtra?: () => void;
-  afterMount?: (ctx: LayerDatasetContext, config: AdminOutlineLayerConfig) => (() => void) | void;
-};
-
-export function buildPresetAdminOutlineConfig(
-  preset: AdminOutlineDatasetPresetDef,
-  options: LayerDatasetOptions
-): AdminOutlineLayerConfig {
-  return buildAdminOutlineConfig(preset.ids, options, preset.style);
-}
-
-export function bindAdminOutlineViewportRefresh(
+export function bindOutlineViewportRefresh(
   map: LayerDatasetMap,
   loadFeatures: () => Promise<GeoJSON.FeatureCollection | null>,
-  config: Pick<AdminOutlineLayerConfig, 'polygonSourceId' | 'lineSourceId'>,
+  config: Pick<OutlineLayerConfig, 'polygonSourceId' | 'lineSourceId'>,
+  ops: Pick<OutlineLayerOps, 'refresh'>,
   debounceMs = 400
 ): () => void {
   return bindDebouncedMapMoveend(
     map,
     async () => {
       const next = await loadFeatures();
-      if (!next?.features.length) return;
-      refreshAdminOutlineForPreset(map, next, config);
+      if (!next?.features.length || !ops.refresh) return;
+      ops.refresh(map, next, config);
     },
     debounceMs
   );
 }
 
-export function attachAdminOutlineLayers(
+export function attachOutlineLayers(
   map: LayerDatasetMap,
   features: GeoJSON.FeatureCollection,
-  config: AdminOutlineLayerConfig,
-  ops: AdminOutlineLayerOps,
+  config: OutlineLayerConfig,
+  ops: OutlineLayerOps,
   beforeLayerId?: string
 ): void {
   ops.add(map, features, config, beforeLayerId);
   ops.applyPaint(map, config);
-  stackGkOutlineLayersAboveDmaFill(map);
+  if (config.fillLayerId) {
+    stackGkOutlineLayersAboveDatasetFill(map, config.fillLayerId);
+  }
 }
 
-export function createAdminOutlineHandle(
+export function createOutlineLayerHandle(
   map: LayerDatasetMap,
-  config: AdminOutlineLayerConfig,
-  remove: AdminOutlineLayerOps['remove'],
-  options?: {
-    hitLayerIds?: string[];
-    cleanupExtra?: () => void;
-  }
+  config: OutlineLayerConfig,
+  remove: OutlineLayerOps['remove'],
+  options?: { hitLayerIds?: string[]; cleanupExtra?: () => void }
 ): LayerDatasetHandle {
   return {
     sourceId: config.polygonSourceId,
@@ -220,18 +180,22 @@ export function createAdminOutlineHandle(
   };
 }
 
-export async function mountLoadedAdminOutlineDataset(
+export async function mountLoadedOutlineDataset(
   ctx: LayerDatasetContext,
-  config: AdminOutlineLayerConfig,
+  config: OutlineLayerConfig,
   loadFeatures: (ctx: LayerDatasetContext) => Promise<GeoJSON.FeatureCollection | null>,
-  ops: AdminOutlineLayerOps,
-  handleOptions?: MountAdminOutlineHandleOptions
+  ops: OutlineLayerOps,
+  handleOptions?: {
+    hitLayerIds?: string[] | ((ctx: LayerDatasetContext) => string[] | undefined);
+    cleanupExtra?: () => void;
+    afterMount?: (ctx: LayerDatasetContext, config: OutlineLayerConfig) => (() => void) | void;
+  }
 ): Promise<LayerDatasetHandle | null> {
   const { map, options } = ctx;
   const features = await loadFeatures(ctx);
   if (!features?.features?.length) return null;
 
-  attachAdminOutlineLayers(map, features, config, ops, resolveDatasetBeforeLayerId(map, options));
+  attachOutlineLayers(map, features, config, ops, resolveDatasetBeforeLayerId(map, options));
 
   const hitLayerIds =
     typeof handleOptions?.hitLayerIds === 'function'
@@ -247,32 +211,10 @@ export async function mountLoadedAdminOutlineDataset(
         }
       : handleOptions?.cleanupExtra;
 
-  return createAdminOutlineHandle(map, config, ops.remove, {
+  return createOutlineLayerHandle(map, config, ops.remove, {
     hitLayerIds,
     cleanupExtra,
   });
-}
-
-export async function mountAdminOutlineDatasetPreset(
-  ctx: LayerDatasetContext,
-  preset: AdminOutlineDatasetPresetDef,
-  loadFeatures: (ctx: LayerDatasetContext) => Promise<GeoJSON.FeatureCollection | null>,
-  handleOptions?: MountAdminOutlineHandleOptions
-): Promise<LayerDatasetHandle | null> {
-  let config = buildPresetAdminOutlineConfig(preset, ctx.options);
-  config = await applyAdminColorModeToConfig(
-    config,
-    ctx.options,
-    defaultAdminColorMode(preset.kind),
-    ctx
-  );
-  return mountLoadedAdminOutlineDataset(
-    ctx,
-    config,
-    loadFeatures,
-    adminOutlinePreset(preset.kind),
-    handleOptions
-  );
 }
 
 export type CellLayerLoaderForViewport = {

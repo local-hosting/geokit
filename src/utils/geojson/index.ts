@@ -34,7 +34,7 @@ export {
   type StripAcuteOuterRingSpikesOptions,
 } from './polygon-utils';
 
-export { polygonsToBoundaryLines } from './boundary-lines';
+export { capPolygonCollectionForMapLibre, polygonsToBoundaryLines } from './boundary-lines';
 
 /**
  * Extract coordinates from a GeoJSON feature or geometry
