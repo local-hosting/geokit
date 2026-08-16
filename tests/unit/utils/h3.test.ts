@@ -115,6 +115,15 @@ describe('h3', () => {
       expect(ring[0][0]).toBeCloseTo(ring[ring.length - 1][0], 10);
       expect(ring[0][1]).toBeCloseTo(ring[ring.length - 1][1], 10);
     });
+
+    it('should unwrap antimeridian-crossing rings for map rendering', () => {
+      const polygon = h3ToPolygon('81167ffffffffff');
+      expect(polygon).not.toBeNull();
+      const ring = polygon!.coordinates[0];
+      const lngs = ring.map(([lng]) => lng);
+      const span = Math.max(...lngs) - Math.min(...lngs);
+      expect(span).toBeLessThan(30);
+    });
   });
 
   describe('snapToH3Cell', () => {
