@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import dotenv from 'dotenv';
 import type { GeokitEnv } from '../../types/env.js';
 import { applyGeokitEnvAliases } from './aliases.js';
-import { isGeoCdnConfiguredFromEnv, isGlobeCdnJwtConfigured } from './geo-cdn.js';
 
 function mergeDotenvFile(env: GeokitEnv, dotenvPath: string): void {
   if (!existsSync(dotenvPath)) return;
@@ -51,10 +50,4 @@ export function bootstrapGeokitMcpEnv(geokitRoot: string): GeokitEnv {
   const loaded = loadGeokitProcessEnv(geokitRoot);
   applyLoadedEnvToProcess(loaded);
   return loaded;
-}
-
-export function geoCdnStartupNote(env: GeokitEnv = process.env): string | undefined {
-  if (!isGeoCdnConfiguredFromEnv(env)) return undefined;
-  if (isGlobeCdnJwtConfigured(env)) return undefined;
-  return 'GEOKIT_GEO_CDN_URL is set but no geo CDN JWT — set GEOKIT_GEO_CDN_JWT_SECRET if your geo CDN requires auth.';
 }

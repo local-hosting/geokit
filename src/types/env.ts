@@ -1,26 +1,6 @@
 /** Trimmed string map — process.env, Vite import.meta.env, or injected test env. */
 export type GeokitEnv = Record<string, string | undefined>;
 
-export const GEO_CDN_URL_KEYS = [
-  'GEOKIT_GEO_CDN_URL',
-  'GEOKIT_GLOBE_CDN_URL',
-  'GLOBE_CDN_URL',
-  'FW_GLOBE_CDN_URL',
-] as const;
-
-export const GEO_CDN_JWT_KEYS = [
-  'GEOKIT_GEO_CDN_JWT',
-  'GEOKIT_GLOBE_CDN_JWT',
-  'GLOBE_CDN_JWT',
-  'FW_GLOBE_CDN_JWT',
-] as const;
-
-export const GEO_CDN_JWT_SECRET_KEYS = [
-  'GEOKIT_GEO_CDN_JWT_SECRET',
-  'GLOBE_CDN_JWT_SECRET',
-  'GEOKIT_GLOBE_CDN_JWT_SECRET',
-] as const;
-
 export const MAP_PROVIDER_KEYS = ['GEOKIT_MAP_PROVIDER', 'MAP_PROVIDER'] as const;
 
 export const MAP_GENERIC_API_KEY_KEYS = ['GEOKIT_MAP_API_KEY', 'MAP_API_KEY'] as const;
@@ -84,21 +64,4 @@ export const GEOKIT_ENV_ALIAS_GROUPS: EnvAliasGroup[] = [
     sources: [...FOURSQUARE_KEY_KEYS],
     targets: ['FOURSQUARE_SERVICE_API_KEY', 'FOURSQUARE_API_KEY', 'FSQ_API_KEY'],
   },
-  {
-    sources: [...GEO_CDN_JWT_KEYS],
-    targets: ['GLOBE_CDN_JWT', 'GEOKIT_GLOBE_CDN_JWT', 'FW_GLOBE_CDN_JWT'],
-  },
-  {
-    sources: [...GEO_CDN_JWT_SECRET_KEYS],
-    targets: ['GLOBE_CDN_JWT_SECRET', 'GEOKIT_GLOBE_CDN_JWT_SECRET'],
-  },
-  {
-    sources: [...GEO_CDN_URL_KEYS],
-    targets: ['FW_GLOBE_CDN_URL', 'GLOBE_CDN_URL', 'GEOKIT_GLOBE_CDN_URL', 'GEOKIT_GEO_CDN_URL'],
-  },
 ];
-
-export type GlobeCdnFetchOptions = {
-  baseUrl?: string;
-  init?: RequestInit;
-};
