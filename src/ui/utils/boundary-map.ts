@@ -176,7 +176,7 @@ export function isAdminOutlineLineLayerId(id: string): boolean {
   if ((LEGACY_ADMIN_OUTLINE_LINE_LAYER_IDS as readonly string[]).includes(id)) {
     return true;
   }
-  return id.startsWith('gk-dataset-') && id.endsWith('-line') && id !== 'gk-dataset-dma-line';
+  return id.startsWith('gk-dataset-') && id.endsWith('-line');
 }
 
 export function hasAdminOutlineLineLayers(map: BoundaryMapLike | null | undefined): boolean {
