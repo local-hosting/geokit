@@ -300,6 +300,13 @@
       "require": "./dist/cjs/config/env/index.cjs",
       "default": "./dist/esm/config/env/index.js"
     },
+    "./config/env/node": {
+      "source": "./src/config/env/node.ts",
+      "types": "./dist/esm/config/env/node.d.ts",
+      "import": "./dist/esm/config/env/node.js",
+      "require": "./dist/cjs/config/env/node.cjs",
+      "default": "./dist/esm/config/env/node.js"
+    },
     "./config/tile-cdn": {
       "source": "./src/config/tile-cdn.ts",
       "types": "./dist/esm/config/tile-cdn.d.ts",
@@ -373,7 +380,7 @@
   "scripts": {
     "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "dev": "vite --config config/vite.demo.config.js",
-    "cdn:export-markets": "yarn --cwd ../pipeline geo cdn --markets",
+    "globe-static:export-markets": "yarn --cwd ../services/globe-static export:markets",
     "test": "vitest run --config config/vitest.config.ts",
     "test:watch": "vitest --config config/vitest.config.ts",
     "test:integration": "vitest run --config config/vitest.integration.config.ts",
@@ -408,6 +415,7 @@
   ],
   "author": "",
   "license": "MPL-2.0",
+  "packageManager": "yarn@4.14.1",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",
     "@twinfile:registry": "https://npm.pkg.github.com"
@@ -430,8 +438,8 @@
     "patch-package": "^8.0.1",
     "playwright": "^1.56.1",
     "prettier": "^3.6.2",
-    "tsx": "^4.20.5",
     "tsup": "^8.5.0",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.3",
     "vite": "^6.1.0",
     "vitest": "^2.1.8",
