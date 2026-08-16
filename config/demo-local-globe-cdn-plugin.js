@@ -7,10 +7,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-export const DEFAULT_LOCAL_CDN_BUILD = resolve(
-  __dirname,
-  '../../../apps/cdn/build'
-);
+export const DEFAULT_LOCAL_CDN_BUILD = resolve(__dirname, '../../../services/globe-static/build');
 
 const LOCAL_DMA_INDEX = join('markets', 'dma', 'regions', 'index.json');
 
@@ -42,6 +39,7 @@ function shouldServeGlobeCdnPath(pathname) {
   }
   return (
     pathname.startsWith('/markets/') ||
+    pathname.startsWith('/cell/') ||
     pathname.startsWith('/us/') ||
     pathname.startsWith('/_edge/') ||
     pathname.startsWith('/_view/') ||
@@ -51,8 +49,12 @@ function shouldServeGlobeCdnPath(pathname) {
 }
 
 function contentType(filePath) {
-  const ext = filePath.slice(filePath.lastIndexOf('.'));
-  return MIME[ext] ?? 'application/octet-stream';
+  const dot = filePath.lastIndexOf('.');
+  const ext = dot >= 0 ? filePath.slice(dot) : '';
+  if (MIME[ext]) return MIME[ext];
+  // Pipeline writes extensionless GeoJSON shards (e.g. /us/place/ny/accord).
+  if (!ext) return 'application/json; charset=utf-8';
+  return 'application/octet-stream';
 }
 
 export function resolveLocalGlobeCdnBuildRoot(env = process.env) {
@@ -69,7 +71,7 @@ export function demoLocalGlobeCdnPlugin(options = {}) {
     configureServer(server) {
       if (!active) {
         console.warn(
-          '[geokit demo] local Globe CDN inactive — run: cd packages/pipeline && yarn geo cdn --markets'
+          '[geokit demo] local Globe CDN inactive — run: cd services/globe-static && yarn export:markets'
         );
         console.warn(`[geokit demo] expected ${localDmaIndexPath(buildRoot)}`);
         return;
