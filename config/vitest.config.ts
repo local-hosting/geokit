@@ -14,9 +14,10 @@ const geokitRoot = path.resolve(__dirname, '..');
 export default defineConfig({
   resolve: {
     alias: {
-      '@twinfile/geokit/bounds': path.join(geokitRoot, 'src/utils/bounds/index.ts'),
-      '@twinfile/geokit/types': path.join(geokitRoot, 'src/types/index.ts'),
-      '@twinfile/geokit/distance': path.join(geokitRoot, 'src/utils/distance/index.ts'),    },
+      'geokit/bounds': path.join(geokitRoot, 'src/utils/bounds/index.ts'),
+      'geokit/types': path.join(geokitRoot, 'src/types/index.ts'),
+      'geokit/distance': path.join(geokitRoot, 'src/utils/distance/index.ts'),
+    },
   },
   test: {
     globals: true,

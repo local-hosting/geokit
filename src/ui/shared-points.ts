@@ -1,7 +1,7 @@
 /**
  * Shared point layer utilities — feature caching, paint expressions, sync helpers.
  *
- * Import from `@twinfile/geokit/ui/shared-points` (keeps layer-styles lazy-loaded).
+ * Import from `geokit/ui/shared-points` (keeps layer-styles lazy-loaded).
  */
 
 export {

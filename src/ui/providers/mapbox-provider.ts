@@ -107,7 +107,7 @@ export class MapboxUIProvider extends BaseUIProvider {
     const configuredStyleUrl =
       this.config?.styleUrl?.trim() || getProviderConfig('mapbox')?.styleUrl?.trim();
 
-    // Build style: configured Corio/product style wins over stock Mapbox theme names.
+    // Build style: configured style URL wins over stock Mapbox theme names.
     let style = options.style;
     if (
       !style ||

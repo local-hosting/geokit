@@ -1,4 +1,4 @@
-# @twinfile/geokit
+# geokit
 
 A functional, curried geospatial utility toolkit for browser and Node.js.
 
@@ -16,10 +16,10 @@ A functional, curried geospatial utility toolkit for browser and Node.js.
 ## Installation
 
 ```bash
-yarn add @twinfile/geokit
+yarn add geokit
 ```
 
-Published on GitHub Packages (`@twinfile` scope). Configure `.npmrc` for `https://npm.pkg.github.com` if needed.
+Published on npm. Install with your package manager of choice.
 
 ### Demographics (H3 ↔ ZIP + ACS)
 
@@ -27,7 +27,7 @@ Geokit does not bundle census data. Load a pre-built crosswalk and ZIP-level dem
 
 - **`loadZipIndexData` / `loadDemographicsData`** — pass JSON you already fetched (from host catalogs in the host app)
 - **Globe CDN** — geo shapes only (ZCTA polygons); no ACS attributes on CDN
-- **Pipeline / lockers** — `geo-crosswalks`, `census-catalog`, and `census-{dma}` shards (`@twinfile/geo`)
+- **Pipeline / lockers** — `geo-crosswalks`, `census-catalog`, and `census-{dma}` shards (host-provided data packages)
 
 Without the index, polygon ZIP lookup falls back to Mapbox reverse geocoding (slow).
 
@@ -44,7 +44,7 @@ import {
   greatCircleMeters,
   rhumbLineMeters,
   withinDistance,
-} from '@twinfile/geokit';
+} from 'geokit';
 
 const nyc = [40.7128, -74.006];
 const la = [34.0522, -118.2437];
@@ -92,7 +92,7 @@ import {
   createPoint,
   serializeCoordinates,
   deserializeCoordinates,
-} from '@twinfile/geokit';
+} from 'geokit';
 
 // Convert between [lat, lon] and [lon, lat] formats
 const geojsonCoords = toLonLat([40.7128, -74.006]); // [-74.0060, 40.7128]
@@ -134,7 +134,7 @@ import {
   createFeatureCollection,
   getCoordinates,
   extractGeometry,
-} from '@twinfile/geokit';
+} from 'geokit';
 
 // Create features
 const point = { type: 'Point', coordinates: [-74.006, 40.7128] };
@@ -163,7 +163,7 @@ import {
   bufferPoint,
   bufferLine,
   bufferPolygon,
-} from '@twinfile/geokit';
+} from 'geokit';
 
 // Calculate centroids
 const polygon = {
@@ -219,7 +219,7 @@ import {
   polygonAreaKm,
   circleArea,
   boundsArea,
-} from '@twinfile/geokit';
+} from 'geokit';
 
 // Calculate line/polyline length
 const route = [
@@ -251,7 +251,7 @@ import {
   midpoint,
   destinationMeters,
   destinationKm,
-} from '@twinfile/geokit';
+} from 'geokit';
 
 const nyc = [40.7128, -74.006];
 const la = [34.0522, -118.2437];
@@ -276,7 +276,7 @@ const northLocation = move5kmNorth(nyc);
 ### Clustering
 
 ```typescript
-import { gridCluster, gridClusterMeters, distanceCluster } from '@twinfile/geokit';
+import { gridCluster, gridClusterMeters, distanceCluster } from 'geokit';
 
 const points = [
   { location: [40.7128, -74.006], data: { name: 'Point 1' } },
@@ -310,7 +310,7 @@ import {
   // Universal functions
   decodePointToCoordinates,
   getBoundsFromPoint,
-} from '@twinfile/geokit';
+} from 'geokit';
 
 // Identify spatial index type
 getSpatialIndexType('dr5regw3p'); // 'geohash'
@@ -344,7 +344,7 @@ import {
   toDegrees,
   normalizeLongitude,
   normalizeLatitude,
-} from '@twinfile/geokit';
+} from 'geokit';
 
 // Convert decimal degrees to DMS (Degrees, Minutes, Seconds)
 const dms = toDMS(40.7128); // { degrees: 40, minutes: 42, seconds: 46.08 }
@@ -369,7 +369,7 @@ const normalizedLat = normalizeLatitude(95); // 90 (clamped)
 ### String Normalization
 
 ```typescript
-import { slugify, normalize, normalizeName } from '@twinfile/geokit';
+import { slugify, normalize, normalizeName } from 'geokit';
 
 slugify('New York City'); // 'new-york-city'
 slugify('Los Angeles, CA'); // 'los-angeles-ca'
@@ -398,7 +398,7 @@ import {
   encodeGeohashPoint,
   decodeGeohashPoint,
   geohashPointNeighbors,
-} from '@twinfile/geokit';
+} from 'geokit';
 
 // Encode coordinates to geohash
 const hash = encodeGeohash([40.7128, -74.006], 9); // 'dr5regw3p'
@@ -449,7 +449,7 @@ import {
   // Type-safe functions
   coordinatesToH3Point,
   h3PointToPolygon,
-} from '@twinfile/geokit';
+} from 'geokit';
 
 // Convert coordinates to H3 index
 const h3Index = coordinatesToH3([40.7128, -74.006], 9);
@@ -509,7 +509,7 @@ import {
   nearestPointOnLine,
   nearestPointOnPolyline,
   resample,
-} from '@twinfile/geokit';
+} from 'geokit';
 
 const start = [40.7128, -74.006];
 const end = [40.758, -73.9855];
@@ -542,7 +542,7 @@ const resampled = resample(1000)(route); // Points every 1km
 ### Containment Checks
 
 ```typescript
-import { pointInPolygon, pointInCircle, boundsContains } from '@twinfile/geokit';
+import { pointInPolygon, pointInCircle, boundsContains } from 'geokit';
 
 const polygon = {
   type: 'Polygon',
@@ -574,7 +574,7 @@ const contains = boundsContains(outerBounds)(innerBounds); // true
 ### Simplification
 
 ```typescript
-import { simplify, simplifyMeters } from '@twinfile/geokit';
+import { simplify, simplifyMeters } from 'geokit';
 
 const complexRoute = [
   [40.7128, -74.006],
@@ -597,7 +597,7 @@ import {
   withinDistance,
   extractCoordinates,
   isValidCoordinate,
-} from '@twinfile/geokit';
+} from 'geokit';
 
 // User location
 const userLocation = [40.7128, -74.006];
@@ -785,7 +785,7 @@ This package is designed to work in both browser and Node.js environments. It us
 
 ## Map UI (Web Components)
 
-Import from `@twinfile/geokit/ui`. Custom elements (`gk-map`, `gk-point`, `gk-layer`, …) emit `gk-*` events for app integration.
+Import from `geokit/ui`. Custom elements (`gk-map`, `gk-point`, `gk-layer`, …) emit `gk-*` events for app integration.
 
 See [docs/EVENTS.md](./docs/EVENTS.md) for the full event reference.
 

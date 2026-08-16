@@ -189,3 +189,85 @@ body.cdn-demo {
 .maplibregl-ctrl-group button {
   border-radius: 0 !important;
 }
+
+/* Popups — wire geokit tokens to brutalist palette (inherits on gk-map children) */
+gk-map {
+  --gk-popup-background: var(--bk-bg);
+  --gk-popup-text: var(--bk-fg);
+  --gk-popup-text-muted: var(--bk-muted);
+  --gk-popup-close-button: var(--bk-fg);
+  --gk-popup-tag-background: var(--bk-bg);
+  --gk-popup-tag-label-background: var(--bk-bg);
+  --gk-popup-tag-text: var(--bk-fg);
+  --gk-popup-link-color: var(--bk-fg);
+  --gk-popup-border: var(--bk-border);
+  --gk-popup-border-radius: 0;
+  --gk-popup-shadow: none;
+  --gk-popup-divider: var(--bk-line);
+  --gk-control-background: var(--bk-bg);
+  --gk-control-border: var(--bk-line);
+  --gk-control-text: var(--bk-fg);
+  --gk-control-hover-background: var(--bk-fg);
+  --gk-control-active-background: var(--bk-fg);
+  --gk-control-shadow: none;
+  --gk-control-inset-highlight: none;
+  --gk-placeholder-background: var(--bk-bg);
+}
+
+gk-map .maplibregl-ctrl-group,
+gk-map .mapboxgl-ctrl-group {
+  border: var(--bk-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+gk-map .maplibregl-ctrl button:hover,
+gk-map .mapboxgl-ctrl button:hover {
+  color: var(--bk-bg);
+}
+
+gk-map .maplibregl-popup-tip,
+gk-map .mapboxgl-popup-tip {
+  display: none;
+}
+
+gk-map .maplibregl-popup-content,
+gk-map .mapboxgl-popup-content {
+  font-family: var(--bk-font);
+  min-width: 200px;
+  padding: 10px 12px;
+}
+
+gk-map .maplibregl-popup-content h4,
+gk-map .mapboxgl-popup-content h4,
+gk-map h4.geokit-popup-title {
+  margin: 0 0 4px;
+  padding-right: 24px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bk-fg);
+}
+
+gk-map .maplibregl-popup-content p,
+gk-map .mapboxgl-popup-content p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--bk-muted);
+}
+
+gk-map .maplibregl-popup-close-button,
+gk-map .mapboxgl-popup-close-button {
+  border-radius: 0;
+  font-weight: 700;
+}
+
+gk-map .maplibregl-popup-close-button:hover,
+gk-map .mapboxgl-popup-close-button:hover {
+  background: var(--bk-fg);
+  color: var(--bk-bg);
+}

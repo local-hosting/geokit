@@ -35,9 +35,11 @@ export function getPopupStylesCss(): string {
   .mapboxgl-popup-content {
     background: var(--gk-popup-background, rgb(22, 27, 34)) !important;
     color: var(--gk-popup-text, #c9d1d9) !important;
+    border: var(--gk-popup-border, none);
+    box-shadow: var(--gk-popup-shadow, none);
     position: relative;
     padding: 12px 14px;
-    border-radius: 6px;
+    border-radius: var(--gk-popup-border-radius, 6px);
     min-width: 280px;
     max-width: 400px;
     overflow-wrap: break-word;
@@ -221,7 +223,7 @@ export function getPopupStylesCss(): string {
   .geokit-popup-actions {
     margin-top: 10px;
     padding-top: 10px;
-    border-top: 1px solid var(--gk-popup-border, rgba(139, 148, 158, 0.2));
+    border-top: 1px solid var(--gk-popup-divider, rgba(139, 148, 158, 0.2));
     display: flex;
     align-items: center;
     justify-content: space-between;
