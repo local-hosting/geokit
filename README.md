@@ -821,3 +821,16 @@ This project uses Husky to enforce code quality standards before each commit:
 - **Tests** - All tests must pass before committing
 
 The pre-commit hook will automatically run on staged files when you commit. Files will be auto-formatted, and if any validation fails, the commit will be blocked until the issues are fixed.
+
+
+## Swift parity
+
+GeoKit Swift (`packages/geokit-swift`) shares core geo math via fixture tests.
+
+- [Module map](docs/module-map.md) — folder layout ↔ Swift targets
+- [Parity tiers](docs/parity.md) — what is and is not cross-platform
+- [Providers](docs/providers.md) — Mapbox / MapTiler / Apple alignment
+
+```bash
+yarn verify:parity   # build + fixture check + Swift GeoKitCoreTests
+```
