@@ -28,15 +28,13 @@
  *   :paint="{ 'circle-color': ['get', 'color'], 'circle-radius': 6 }"
  * />
  *
- * CDN presets (dataset mode):
- * <gk-layer dataset="state" line-color="rgba(255,255,255,0.4)" />
- * <gk-layer dataset="dma" mode="viewport" interactive />
- * <gk-layer dataset="dma" mode="slugs" slugs="austin,houston" highlight-slug="austin" />
+ * Dataset mode (app registers mounts at bootstrap):
+ * <gk-layer dataset="my-layer" mode="viewport" interactive />
  *
  * Vue / `:dataset` bindings conflict with HTMLElement.dataset — use layer-dataset instead:
- * <gk-layer layer-dataset="dma" mode="viewport" interactive />
+ * <gk-layer layer-dataset="my-layer" mode="viewport" interactive />
  *
- * JWT for DMA CDN: set getRequestInit on the element in JS (not in markup).
+ * Auth headers: set getRequestInit on the element in JS (not in markup).
  */
 
 import { MapChildElement } from '../../map-child-element';
@@ -48,8 +46,8 @@ export type {
   LayerMouseLeaveEventDetail,
 } from './layer-interactions';
 import {
-  isLayerDatasetId,
   mountLayerDataset,
+  normalizeLayerDatasetId,
   parseLayerDatasetSlugs,
   unmountLayerDataset,
   type LayerDatasetHandle,
@@ -57,8 +55,10 @@ import {
   type LayerDatasetOptions,
   type LayerDatasetReadyDetail,
 } from './layer-datasets';
-import { parseAdminColorMode } from '../../../utils/admin-color-mode.js';
-import { stackGkOutlineLayersAboveDmaFill } from '../../../utils/layer-stack';
+import {
+  datasetFillLayerId,
+  stackGkOutlineLayersAboveDatasetFill,
+} from '../../../utils/layer-stack';
 
 export type LayerType =
   | 'circle'
@@ -103,7 +103,7 @@ export interface LayerOptions {
   hitLayers?: string[];
 }
 
-/** Event detail for gk-layer-ready (dataset mode — CDN geo drawn) */
+/** Event detail for gk-layer-ready (dataset mode) */
 export type LayerReadyEventDetail = LayerDatasetReadyDetail;
 
 export class LayerElement extends MapChildElement {
@@ -129,11 +129,9 @@ export class LayerElement extends MapChildElement {
     'fill-color',
     'color-mode',
     'outline-color',
-    'cdn-base',
-    'state',
+        'state',
   ];
 
-  /** Bearer JWT and other CDN fetch headers — host app sets this in JS. */
   getRequestInit?: () => RequestInit;
 
   // Properties set via create() or attributes
@@ -269,7 +267,7 @@ export class LayerElement extends MapChildElement {
 
   get datasetId(): LayerDatasetId | null {
     const raw = this.safeGetAttribute('layer-dataset') ?? this.safeGetAttribute('dataset');
-    return isLayerDatasetId(raw) ? raw : null;
+    return normalizeLayerDatasetId(raw);
   }
 
   get sourceId(): string {
@@ -378,8 +376,20 @@ export class LayerElement extends MapChildElement {
     const modeRaw = this.safeGetAttribute('mode');
     const mode = modeRaw === 'slugs' || modeRaw === 'viewport' ? modeRaw : undefined;
 
+    const attrs: Record<string, string> = {};
+    for (const name of [
+      'state',
+      'dma-region',
+      'dark-variant',
+          ] as const) {
+      const value = this.safeGetAttribute(name);
+      if (value) attrs[name] = value;
+    }
+    if (this.hasAttribute('dark-variant')) attrs['dark-variant'] = 'true';
+
     return {
-      cdnBase: this.safeGetAttribute('cdn-base') ?? undefined,
+      baseUrl:
+        this.safeGetAttribute('base-url') ?? undefined,
       lineColor: this.safeGetAttribute('line-color') ?? undefined,
       lineWidth,
       beforeLayerId: this.beforeLayerId,
@@ -391,10 +401,7 @@ export class LayerElement extends MapChildElement {
       fillOpacity: Number.isFinite(fillOpacity) ? fillOpacity : undefined,
       fillColor: this.safeGetAttribute('fill-color') ?? undefined,
       outlineColor: this.safeGetAttribute('outline-color') ?? undefined,
-      dmaRegion: this.safeGetAttribute('dma-region') ?? undefined,
-      darkVariant: this.hasAttribute('dark-variant'),
-      state: this.safeGetAttribute('state') ?? undefined,
-      colorMode: parseAdminColorMode(this.safeGetAttribute('color-mode')),
+      attrs: Object.keys(attrs).length > 0 ? attrs : undefined,
     };
   }
 
@@ -402,7 +409,7 @@ export class LayerElement extends MapChildElement {
     this.dispatchEvent(new CustomEvent('gk-layer-ready', { detail, bubbles: true }));
   }
 
-  /** Re-fetch and redraw CDN dataset layers (e.g. after wiring Bearer JWT). */
+  /** Re-fetch and redraw registered dataset layers. */
   async reloadDataset(): Promise<void> {
     if (!this.datasetId || !this.map) return;
     await this.mountDatasetLayer();
@@ -438,18 +445,10 @@ export class LayerElement extends MapChildElement {
     this._datasetHandle = handle;
     this._hitLayers = handle.hitLayerIds;
 
-    if (
-      dataset === 'state' ||
-      dataset === 'county' ||
-      dataset === 'dma' ||
-      dataset === 'place' ||
-      dataset === 'city' ||
-      dataset === 'zip'
-    ) {
-      stackGkOutlineLayersAboveDmaFill(
-        this.map as Parameters<typeof stackGkOutlineLayersAboveDmaFill>[0]
-      );
-    }
+    stackGkOutlineLayersAboveDatasetFill(
+      this.map as Parameters<typeof stackGkOutlineLayersAboveDatasetFill>[0],
+      datasetFillLayerId(dataset)
+    );
 
     if (this.interactive) {
       this.setupInteractions();
@@ -807,8 +806,7 @@ export class LayerElement extends MapChildElement {
       const remountAttrs = [
         'dataset',
         'layer-dataset',
-        'cdn-base',
-        'mode',
+                'mode',
         'line-width',
         'minzoom',
         'slugs',

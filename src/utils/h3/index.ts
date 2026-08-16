@@ -56,6 +56,5 @@ export { h3DiskToFeatureCollection, type H3DiskToFeatureCollectionOptions } from
 export * from './cell-fade';
 export * from './cursor-dwell';
 export * from './viewport';
-export * from './market-cells';
 export * from './session-loaded';
 export * from './map-viewport';
