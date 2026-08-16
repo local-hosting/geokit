@@ -1,11 +1,8 @@
-export type { GeokitEnv, GlobeCdnFetchOptions } from '../../types/env.js';
+export type { GeokitEnv } from '../../types/env.js';
 export {
   CDN_TOKEN_SUB_KEYS,
   FOURSQUARE_KEY_KEYS,
   GOOGLE_PLACES_KEY_KEYS,
-  GEO_CDN_JWT_KEYS,
-  GEO_CDN_JWT_SECRET_KEYS,
-  GEO_CDN_URL_KEYS,
   GEOKIT_ENV_ALIAS_GROUPS,
   MAPBOX_KEY_KEYS,
   MAP_GENERIC_API_KEY_KEYS,
@@ -32,20 +29,6 @@ export {
 export { applyGeokitEnvAliases } from './aliases.js';
 
 export {
-  formatGlobeCdnAuthHeader,
-  globeCdnAuthHeaderFromEnv,
-  isGeoCdnConfiguredFromEnv,
-  isGlobeCdnJwtConfigured,
-  resolveCdnTokenSubFromEnv,
-  resolveGeoCdnBaseUrlFromEnv,
-  resolveGlobeCdnFetchOptions,
-  resolveGlobeCdnJwtFromEnv,
-  resolveGlobeCdnJwtSecretFromEnv,
-} from './geo-cdn.js';
-
-export { ensureGlobeCdnJwt, isGlobeCdnAuthConfigured } from './geo-cdn-auth.js';
-
-export {
   resolveDedicatedMapKeysFromEnv,
   resolveMapApiKeyFromEnv,
   resolveMapboxKeyFromEnv,
@@ -67,6 +50,5 @@ export {
 export {
   applyLoadedEnvToProcess,
   bootstrapGeokitMcpEnv,
-  geoCdnStartupNote,
   loadGeokitProcessEnv,
 } from './bootstrap.js';

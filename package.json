@@ -80,12 +80,6 @@
       "require": "./dist/cjs/types/index.cjs",
       "default": "./dist/esm/types/index.js"
     },
-    "./demographics": {
-      "source": "./src/utils/demographics/zipcode.ts",
-      "types": "./dist/esm/utils/demographics/zipcode.d.ts",
-      "import": "./dist/esm/utils/demographics/zipcode.js",
-      "require": "./dist/cjs/utils/demographics/zipcode.cjs"
-    },
     "./ui": {
       "source": "./src/ui/index.ts",
       "types": "./dist/esm/ui/index.d.ts",
@@ -181,13 +175,6 @@
       "import": "./dist/esm/api/providers/foursquare-provider.js",
       "require": "./dist/cjs/api/providers/foursquare-provider.cjs"
     },
-    "./cdn": {
-      "source": "./src/cdn/index.ts",
-      "types": "./dist/esm/cdn/index.d.ts",
-      "import": "./dist/esm/cdn/index.js",
-      "require": "./dist/cjs/cdn/index.cjs",
-      "default": "./dist/esm/cdn/index.js"
-    },
     "./ui/dev-proxy/maptiler": {
       "source": "./src/ui/dev-proxy/maptiler-dev-proxy.ts",
       "types": "./dist/esm/ui/dev-proxy/maptiler-dev-proxy.d.ts",
@@ -208,13 +195,6 @@
       "import": "./dist/esm/ui/utils/choropleth-fill-paint.js",
       "require": "./dist/cjs/ui/utils/choropleth-fill-paint.cjs",
       "default": "./dist/esm/ui/utils/choropleth-fill-paint.js"
-    },
-    "./ui/dma-colors": {
-      "source": "./src/ui/utils/dma-colors.ts",
-      "types": "./dist/esm/ui/utils/dma-colors.d.ts",
-      "import": "./dist/esm/ui/utils/dma-colors.js",
-      "require": "./dist/cjs/ui/utils/dma-colors.cjs",
-      "default": "./dist/esm/ui/utils/dma-colors.js"
     },
     "./ui/map-terrain-disable": {
       "source": "./src/ui/utils/map-terrain-disable.ts",
@@ -245,13 +225,6 @@
       "default": "./dist/esm/ui/utils/admin-outline-preset.js"
     },
     "./ui/state-boundaries": {
-      "source": "./src/ui/utils/admin-outline-preset.ts",
-      "types": "./dist/esm/ui/utils/admin-outline-preset.d.ts",
-      "import": "./dist/esm/ui/utils/admin-outline-preset.js",
-      "require": "./dist/cjs/ui/utils/admin-outline-preset.cjs",
-      "default": "./dist/esm/ui/utils/admin-outline-preset.js"
-    },
-    "./ui/county-boundaries": {
       "source": "./src/ui/utils/admin-outline-preset.ts",
       "types": "./dist/esm/ui/utils/admin-outline-preset.d.ts",
       "import": "./dist/esm/ui/utils/admin-outline-preset.js",
@@ -299,13 +272,6 @@
       "import": "./dist/esm/config/env/index.js",
       "require": "./dist/cjs/config/env/index.cjs",
       "default": "./dist/esm/config/env/index.js"
-    },
-    "./config/env/node": {
-      "source": "./src/config/env/node.ts",
-      "types": "./dist/esm/config/env/node.d.ts",
-      "import": "./dist/esm/config/env/node.js",
-      "require": "./dist/cjs/config/env/node.cjs",
-      "default": "./dist/esm/config/env/node.js"
     },
     "./config/tile-cdn": {
       "source": "./src/config/tile-cdn.ts",
@@ -358,7 +324,36 @@
       "source": "./src/config/env/primitives.ts",
       "types": "./dist/esm/config/env/primitives.d.ts",
       "import": "./dist/esm/config/env/primitives.js",
+      "require": "./dist/cjs/config/env/primitives.cjs",
       "default": "./dist/esm/config/env/primitives.js"
+    },
+    "./geojson-loader": {
+      "source": "./src/utils/geojson-loader/index.ts",
+      "types": "./dist/esm/utils/geojson-loader/index.d.ts",
+      "import": "./dist/esm/utils/geojson-loader/index.js",
+      "require": "./dist/cjs/utils/geojson-loader/index.cjs",
+      "default": "./dist/esm/utils/geojson-loader/index.js"
+    },
+    "./types/env": {
+      "source": "./src/types/env.ts",
+      "types": "./dist/esm/types/env.d.ts",
+      "import": "./dist/esm/types/env.js",
+      "require": "./dist/cjs/types/env.cjs",
+      "default": "./dist/esm/types/env.js"
+    },
+    "./types/geojson-loader": {
+      "source": "./src/types/geojson-loader.ts",
+      "types": "./dist/esm/types/geojson-loader.d.ts",
+      "import": "./dist/esm/types/geojson-loader.js",
+      "require": "./dist/cjs/types/geojson-loader.cjs",
+      "default": "./dist/esm/types/geojson-loader.js"
+    },
+    "./ui/layer-dataset-shared": {
+      "source": "./src/ui/components/elements/layer/layer-dataset-shared.ts",
+      "types": "./dist/esm/ui/components/elements/layer/layer-dataset-shared.d.ts",
+      "import": "./dist/esm/ui/components/elements/layer/layer-dataset-shared.js",
+      "require": "./dist/cjs/ui/components/elements/layer/layer-dataset-shared.cjs",
+      "default": "./dist/esm/ui/components/elements/layer/layer-dataset-shared.js"
     }
   },
   "sideEffects": [
@@ -380,7 +375,6 @@
   "scripts": {
     "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "dev": "vite --config config/vite.demo.config.js",
-    "globe-static:export-markets": "yarn --cwd ../services/globe-static export:markets",
     "test": "vitest run --config config/vitest.config.ts",
     "test:watch": "vitest --config config/vitest.config.ts",
     "test:integration": "vitest run --config config/vitest.integration.config.ts",
