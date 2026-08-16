@@ -14,3 +14,4 @@ export {
   type MapViewportBounds,
   type StateAbbrResolver,
 } from './resolve-states-in-viewport';
+export { calculateFitBoundsViewport } from './fit-viewport.js';
