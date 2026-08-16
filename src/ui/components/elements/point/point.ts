@@ -200,12 +200,11 @@ export class PointElement extends MapChildElement {
   }
 
   protected override async onMapReady(): Promise<void> {
-    // By the time onMapReady is called, the parent gk-map is fully initialized
-    // (either via gk-map-ready event or direct getMap() check)
-    // No need to wait for style - it's already loaded
+    await super.onMapReady();
     if (!this.map) return;
 
-    this.addPoint();
+    // MapTiler may report loaded() before addSource/addLayer are safe; defer like polyline.
+    this.waitForStyleLoaded(() => this.addPoint());
   }
 
   /** Re-add point layers after map style change (e.g. theme toggle). */
