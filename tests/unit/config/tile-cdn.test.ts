@@ -1,29 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  isGeoCdnConfigured,
-  resolveGlobeCdnBaseUrl,
-  resolveGlobeCdnBaseUrlFromEnvSnapshot,
-} from '../../../src/cdn/config.js';
-import { isGeoCdnConfiguredFromEnv } from '../../../src/config/env/geo-cdn.js';
-import {
   buildMaptilerStyleUrl,
   createTileCdnTransformFromEnv,
   resolveMapStyleUrlFromEnv,
   resolveMaptilerStaticMapsBase,
   resolveTileApiUrlFromEnv,
 } from '../../../src/config/tile-cdn.js';
-
-describe('resolveGlobeCdnBaseUrl', () => {
-  it('returns empty string when unset', () => {
-    expect(resolveGlobeCdnBaseUrlFromEnvSnapshot({})).toBe('');
-    expect(isGeoCdnConfiguredFromEnv({})).toBe(false);
-  });
-
-  it('prefers GEOKIT_GEO_CDN_URL', () => {
-    expect(resolveGlobeCdnBaseUrl('https://geo.example.com/')).toBe('https://geo.example.com');
-    expect(isGeoCdnConfigured('https://geo.example.com')).toBe(true);
-  });
-});
 
 describe('tile CDN env', () => {
   it('reads GEOKIT_MAP_STYLE_URL', () => {

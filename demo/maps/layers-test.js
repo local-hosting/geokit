@@ -26,14 +26,25 @@ configure({
 const statusEl = document.getElementById('status');
 
 function log(message, type = 'info') {
-  console.log(`[LayerTest] ${message}`);
+  const prefix = `[LayerTest] ${message}`;
+  if (type === 'error') {
+    console.error(prefix);
+    return;
+  }
+  console.log(prefix);
+}
+
+function showStatusError(message) {
+  statusEl.hidden = false;
+  statusEl.innerHTML = '';
   const div = document.createElement('div');
-  div.className = type;
+  div.className = 'error';
   div.textContent = message;
   statusEl.appendChild(div);
 }
 
-function clearStatus() {
+function hideStatus() {
+  statusEl.hidden = true;
   statusEl.innerHTML = '';
 }
 
@@ -52,12 +63,12 @@ function getCSSVarNum(name, fallback) {
 const mapElement = document.getElementById('test-map');
 
 mapElement.addEventListener('gk-map-ready', async () => {
-  clearStatus();
+  hideStatus();
   log('Map ready!', 'success');
   
   const map = mapElement.getMap();
   if (!map) {
-    log('ERROR: Could not get map instance', 'error');
+    showStatusError('Could not get map instance');
     return;
   }
   
@@ -107,7 +118,7 @@ mapElement.addEventListener('gk-map-ready', async () => {
     });
     log(`Source added: ${!!map.getSource(sourceId)}`, 'success');
   } catch (e) {
-    log(`Failed to add source: ${e.message}`, 'error');
+    showStatusError(`Failed to add source: ${e.message}`);
     return;
   }
 
@@ -195,11 +206,11 @@ mapElement.addEventListener('gk-map-ready', async () => {
       log('Click a point — geokit moves the selection ring automatically');
       log('See /maps/selection.html for events + setSelectedPoint demos');
     } else {
-      log('❌ LAYER CREATION FAILED', 'error');
+      showStatusError('Layer creation failed');
     }
 
   } catch (e) {
-    log(`createSharedPointLayers threw: ${e.message}`, 'error');
+    showStatusError(`createSharedPointLayers threw: ${e.message}`);
     console.error(e);
   }
 });

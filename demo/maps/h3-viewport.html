@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>geokit — H3 viewport</title>
   <link rel="stylesheet" href="../shared/maps-shell.css">
-  <link rel="stylesheet" href="../cdn/cdn.css">
   <style>
     body.h3-viewport-demo {
       overflow: hidden;
@@ -51,7 +50,7 @@
       <div class="cdn-actions">
         <button type="button" id="resync">Resync grid</button>
       </div>
-      <pre class="cdn-log" id="log"></pre>
+      <p class="h3-viewport-note">Grid sync output — DevTools console (<code>[H3Viewport]</code>).</p>
     </div>
     <div class="cdn-map-wrap">
       <div id="map-container">
@@ -70,9 +69,6 @@
           buildings-enabled="false"
           max-pitch="0"
           pitch="0">
-          <gk-layer
-            dataset="state"
-            line-color="rgba(255, 255, 255, 0.32)"></gk-layer>
         </gk-map>
       </div>
     </div>

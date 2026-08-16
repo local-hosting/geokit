@@ -20,6 +20,7 @@ export async function setupMapsDemo(options = {}) {
 
   const maptilerKey = import.meta.env.MAPTILER_KEY;
   const mapboxToken = import.meta.env.MAPBOX_TOKEN;
+
   configure({
     maptiler: { apiKey: maptilerKey },
     mapbox: { accessToken: mapboxToken },
@@ -51,7 +52,8 @@ export function scheduleMapboxApiInit(mapboxToken) {
   }
   const initMapbox = async () => {
     try {
-      const { registerAPIProvider, initAPIProvider, MapboxAPIProvider } = await import('../../src/api/index.ts');
+      const { registerAPIProvider, initAPIProvider } = await import('../../src/api/providers/registry.ts');
+      const { MapboxAPIProvider } = await import('../../src/api/providers/mapbox-provider.ts');
       registerAPIProvider('mapbox', new MapboxAPIProvider());
       await initAPIProvider('mapbox', { accessToken: mapboxToken });
     } catch (error) {

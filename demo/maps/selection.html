@@ -94,24 +94,6 @@
       min-height: 2.5em;
       word-break: break-all;
     }
-    #event-log {
-      flex: 1;
-      min-height: 140px;
-      max-height: 240px;
-      overflow: auto;
-      padding: 8px;
-      background: #111;
-      color: #b8f7b0;
-      border: 2px solid #000;
-    }
-    #event-log .evt {
-      margin: 0 0 6px;
-      line-height: 1.35;
-    }
-    #event-log .evt-click { color: #9cdcfe; }
-    #event-log .evt-selected { color: #dcdcaa; }
-    #event-log .evt-point { color: #c586c0; }
-    #event-log .evt-info { color: #888; }
   </style>
 </head>
 <body class="selection-demo" data-demo-active="selection">
@@ -169,12 +151,13 @@
       </div>
     </section>
 
-    <section class="demo-block" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+    <section class="demo-block">
       <h3>4 — Events</h3>
-      <div id="event-log" aria-live="polite"></div>
-      <div class="btn-row" style="margin-top:8px;">
-        <button type="button" class="demo-btn secondary" id="btn-clear-log">Clear log</button>
-      </div>
+      <p>
+        <code>gk-shared-point-selected</code>, <code>gk-point-click</code>,
+        <code>gk-point-focus</code>, <code>gk-point-blur</code> — open DevTools console
+        (<code>[Selection]</code> prefix).
+      </p>
     </section>
     </aside>
   </div>
