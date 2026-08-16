@@ -50,26 +50,33 @@ export function listLayerIdsByPrefix(
   }
 }
 
-export const GK_DATASET_DMA_FILL_LAYER_ID = 'gk-dataset-dma-fill';
-
-export function isGkDatasetOutlineLayerId(id: string): boolean {
-  return (
-    id.startsWith('gk-dataset-') &&
-    (id.endsWith('-line') || id.endsWith('-lines')) &&
-    id !== GK_DATASET_DMA_FILL_LAYER_ID &&
-    id !== 'gk-dataset-dma-line'
-  );
+export function datasetFillLayerId(dataset: string): string {
+  return `gk-dataset-${dataset}-fill`;
 }
 
-/** Stack CDN admin line layers above DMA choropleth fill. */
-export function stackGkOutlineLayersAboveDmaFill(map: MapWithStyle | null | undefined): void {
-  if (!map?.getLayer?.(GK_DATASET_DMA_FILL_LAYER_ID)) return;
+export function isGkDatasetOutlineLayerId(id: string, choroplethDataset?: string): boolean {
+  if (!id.startsWith('gk-dataset-')) return false;
+  if (!id.endsWith('-line') && !id.endsWith('-lines')) return false;
+  if (choroplethDataset && id === `gk-dataset-${choroplethDataset}-line`) return false;
+  return true;
+}
+
+/** Stack gk-dataset outline line layers above a choropleth fill layer. */
+export function stackGkOutlineLayersAboveDatasetFill(
+  map: MapWithStyle | null | undefined,
+  fillLayerId: string
+): void {
+  if (!map?.getLayer?.(fillLayerId)) return;
+  const choroplethDataset = fillLayerId.startsWith('gk-dataset-') && fillLayerId.endsWith('-fill')
+    ? fillLayerId.slice('gk-dataset-'.length, -'-fill'.length)
+    : undefined;
   const outlineIds = [
-    ...listLayerIdsByPrefix(map, 'gk-dataset-').filter(isGkDatasetOutlineLayerId),
-    ...['cdn-city-lines', 'cdn-state-lines', 'cdn-county-lines'].filter((id) => map.getLayer?.(id)),
+    ...listLayerIdsByPrefix(map, 'gk-dataset-').filter((id) =>
+      isGkDatasetOutlineLayerId(id, choroplethDataset)
+    ),
   ];
   if (!outlineIds.length) return;
-  stackLayersAboveAnchor(map, outlineIds, GK_DATASET_DMA_FILL_LAYER_ID);
+  stackLayersAboveAnchor(map, outlineIds, fillLayerId);
 }
 
 export function stackLayersAboveAnchor(
