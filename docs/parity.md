@@ -38,3 +38,5 @@ CDN choropleth, Globe layer datasets, MCP map tools, full provider registry surf
 - Point buffer ring density differs (Turf.js vs turf-swift).
 
 See also [`providers.md`](providers.md).
+
+Offline maps contract: [`offline.md`](offline.md).
