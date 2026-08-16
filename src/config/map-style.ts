@@ -15,7 +15,7 @@ export function mapboxStyleUriToStaticStyle(styleUri: string): string {
   return styleUri;
 }
 
-export function resolveCorioMapboxStyleUri(
+export function resolveDopplerMapboxStyleUri(
   env: { GEOKIT_MAP_STYLE_URL?: string; MAP_STYLE_URL?: string } = process.env as {
     GEOKIT_MAP_STYLE_URL?: string;
     MAP_STYLE_URL?: string;
@@ -25,11 +25,11 @@ export function resolveCorioMapboxStyleUri(
   return explicit || CORIO_MAPBOX_STYLE_URI;
 }
 
-export function resolveCorioMapboxStaticStyle(
+export function resolveDopplerMapboxStaticStyle(
   env: { GEOKIT_MAP_STYLE_URL?: string; MAP_STYLE_URL?: string } = process.env as {
     GEOKIT_MAP_STYLE_URL?: string;
     MAP_STYLE_URL?: string;
   }
 ): string {
-  return mapboxStyleUriToStaticStyle(resolveCorioMapboxStyleUri(env));
+  return mapboxStyleUriToStaticStyle(resolveDopplerMapboxStyleUri(env));
 }

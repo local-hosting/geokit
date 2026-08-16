@@ -37,11 +37,6 @@ export {
 } from './api-utils';
 
 // Demographics shapes (catalog aggregation, not live vendor APIs)
-export type {
-  DemographicField,
-  DemographicsOptions,
-  DemographicsResult,
-} from '../../types/demographics';
 
 // Export provider implementations
 export { MapboxAPIProvider } from './mapbox-provider';
