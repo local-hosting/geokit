@@ -58,3 +58,14 @@ export * from './cursor-dwell';
 export * from './viewport';
 export * from './session-loaded';
 export * from './map-viewport';
+
+export {
+  h3CellToPolygonFeature,
+  h3CellsForViewport,
+  filterCellsInCoverage,
+  viewportCoverageCells,
+  h3CoveragePolygonCollection,
+  DEFAULT_MAX_H3_HEX_POLYGONS,
+  DEFAULT_MAX_VIEWPORT_H3_EVAL,
+  type H3CellPolygonOptions,
+} from './viewport-coverage';

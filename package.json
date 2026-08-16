@@ -375,6 +375,34 @@
       "import": "./dist/esm/utils/turf/index.js",
       "require": "./dist/cjs/utils/turf/index.cjs",
       "default": "./dist/esm/utils/turf/index.js"
+    },
+    "./static-map": {
+      "source": "./src/static-map/index.ts",
+      "types": "./dist/esm/static-map/index.d.ts",
+      "import": "./dist/esm/static-map/index.js",
+      "require": "./dist/cjs/static-map/index.cjs",
+      "default": "./dist/esm/static-map/index.js"
+    },
+    "./demographics": {
+      "source": "./src/demographics/index.ts",
+      "types": "./dist/esm/demographics/index.d.ts",
+      "import": "./dist/esm/demographics/index.js",
+      "require": "./dist/cjs/demographics/index.cjs",
+      "default": "./dist/esm/demographics/index.js"
+    },
+    "./ui/lazy-popup": {
+      "source": "./src/ui/lazy-popup.ts",
+      "types": "./dist/esm/ui/lazy-popup.d.ts",
+      "import": "./dist/esm/ui/lazy-popup.js",
+      "require": "./dist/cjs/ui/lazy-popup.cjs",
+      "default": "./dist/esm/ui/lazy-popup.js"
+    },
+    "./ui/map-facet-filters": {
+      "source": "./src/ui/map-facet-filters.ts",
+      "types": "./dist/esm/ui/map-facet-filters.d.ts",
+      "import": "./dist/esm/ui/map-facet-filters.js",
+      "require": "./dist/cjs/ui/map-facet-filters.cjs",
+      "default": "./dist/esm/ui/map-facet-filters.js"
     }
   },
   "sideEffects": [
