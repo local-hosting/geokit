@@ -403,6 +403,20 @@
       "import": "./dist/esm/ui/map-facet-filters.js",
       "require": "./dist/cjs/ui/map-facet-filters.cjs",
       "default": "./dist/esm/ui/map-facet-filters.js"
+    },
+    "./ui/route-progress-gradient": {
+      "source": "./src/ui/utils/route-progress-gradient.ts",
+      "types": "./dist/esm/ui/utils/route-progress-gradient.d.ts",
+      "import": "./dist/esm/ui/utils/route-progress-gradient.js",
+      "require": "./dist/cjs/ui/utils/route-progress-gradient.cjs",
+      "default": "./dist/esm/ui/utils/route-progress-gradient.js"
+    },
+    "./ui/map-viewport": {
+      "source": "./src/ui/utils/map-viewport.ts",
+      "types": "./dist/esm/ui/utils/map-viewport.d.ts",
+      "import": "./dist/esm/ui/utils/map-viewport.js",
+      "require": "./dist/cjs/ui/utils/map-viewport.cjs",
+      "default": "./dist/esm/ui/utils/map-viewport.js"
     }
   },
   "sideEffects": [
