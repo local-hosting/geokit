@@ -69,7 +69,7 @@ async function collectPageErrors(page: Page, path: string): Promise<string[]> {
     throw new Error(`${path}: HTTP ${response?.status() ?? 'no response'}`);
   }
 
-  // Let maps / CDN demos finish initial async work.
+  // Let maps finish initial async work.
   await page.waitForTimeout(5_000);
 
   if (path === '/layers-test.html') {
@@ -77,20 +77,6 @@ async function collectPageErrors(page: Page, path: string): Promise<string[]> {
     if (status > 0) {
       const text = await page.locator('#status').innerText();
       pageErrors.push(`layers-test status errors:\n${text}`);
-    }
-  }
-
-  if (
-    path.endsWith('/county.html') ||
-    path.endsWith('/cities.html') ||
-    path.endsWith('/state.html')
-  ) {
-    const log = await page
-      .locator('#log')
-      .innerText()
-      .catch(() => '');
-    if (log.includes('null — check path')) {
-      pageErrors.push(`${path}: CDN fetch returned null — ${log.slice(0, 300)}`);
     }
   }
 

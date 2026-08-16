@@ -1,5 +1,5 @@
 /**
- * Registry for geokit demo pages — nav sidebar and Playwright smoke tests.
+ * Registry for geokit demo pages — map UI only (CDN/DMA demos live in globe-static).
  * @typedef {{ id: string, path: string, label: string, description?: string }} DemoPage
  * @typedef {{ id: string, label: string, items: DemoPage[] }} DemoSection
  */
@@ -36,72 +36,6 @@ export const DEMO_SECTIONS = [
         path: '/maps/layers-test.html',
         label: 'Point layers',
         description: 'MapLibre point layer expressions and category styling',
-      },
-    ],
-  },
-  {
-    id: 'shapes',
-    label: 'Shapes',
-    items: [
-      {
-        id: 'state',
-        path: '/cdn/state.html',
-        label: 'State',
-        description: 'states bulk, single state, state code list',
-      },
-      {
-        id: 'cities',
-        path: '/cdn/cities.html',
-        label: 'Cities',
-        description: 'catalog, cities bulk, single city',
-      },
-      {
-        id: 'county',
-        path: '/cdn/county.html',
-        label: 'County',
-        description: 'counties bulk, single county, FIPS list',
-      },
-      {
-        id: 'dma',
-        path: '/maps/dma.html',
-        label: 'DMA',
-        description: 'gk-layer dma — all (viewport) or one (slug)',
-      },
-      {
-        id: 'paint-hero',
-        path: '/maps/paint-hero.html',
-        label: 'Paint hero',
-        description: 'CONUS hero stack — state lines + DMA viewport on dataviz-dark',
-      },
-    ],
-  },
-  {
-    id: 'util',
-    label: 'Util',
-    items: [
-      {
-        id: 'fetch',
-        path: '/cdn/fetch.html',
-        label: 'Fetch',
-        description: 'fetchGlobeCdn / fetchGlobeCdnJson — raw HTTP + Accept header',
-      },
-      {
-        id: 'paths',
-        path: '/cdn/paths.html',
-        label: 'Paths',
-        description: 'URL builders — countyShapeUrl, state cities catalog',
-      },
-      {
-        id: 'bounds',
-        path: '/cdn/bounds.html',
-        label: 'Bounds',
-        description: 'boundsFromFeature / boundsFromFeatures',
-      },
-      {
-        id: 'resolve-shape',
-        path: '/cdn/resolve-shape.html',
-        label: 'Resolve shape',
-        description: 'FIPS, state+place, borough aliases → bounds',
       },
     ],
   },
