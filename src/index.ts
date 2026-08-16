@@ -368,42 +368,6 @@ export {
 // API Providers
 export * from './api';
 
-// Demographic aggregation utilities
-export {
-  aggregateDemographics,
-  filterDemographicsByBounds,
-  filterDemographicsByPolygon,
-  getPolygonBounds,
-} from './utils/demographics/aggregate';
-
-// ZIP code utilities for demographics
-export type { ZipCentroid } from './utils/demographics/zipcode';
-export {
-  // H3-to-ZIP index (fast path for instant lookups)
-  loadH3ZipIndex,
-  loadH3ZipIndexFromUrl,
-  isH3IndexLoaded,
-  getH3IndexStats,
-  findZipsInPolygonLocal,
-  // Local demographics data (instant lookups, no API calls)
-  loadDemographicsData,
-  isDemographicsDataLoaded,
-  getLocalDemographics,
-  // Legacy aliases
-  getCachedDemographics,
-  isDemographicsCacheLoaded,
-  // ZIP lookup functions
-  getZipForPoint,
-  findZipsInRadius,
-  filterZipsByPolygon,
-  findZipsInPolygon,
-  estimateTravelRadius,
-  estimateTravelRadiusMiles,
-  clearZipCache,
-} from './utils/demographics/zipcode';
-
-// H3-to-ZIP index loader (lazy-loaded from URL, saves ~690KB bundle size)
-export { initializeZipIndex, loadZipIndexData } from './utils/demographics/zip-h3-index';
 
 // TopoJSON conversion utilities
 export type {

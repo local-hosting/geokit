@@ -151,7 +151,7 @@ class ConfigManager {
         isochrone: 'maptiler',
         geocoding: 'maptiler',
         placeSearch: 'foursquare',
-        demographics: 'census',
+        // demographics provider is app-defined
         directions: 'maptiler',
       },
       performance: {
