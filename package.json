@@ -354,6 +354,27 @@
       "import": "./dist/esm/ui/components/elements/layer/layer-dataset-shared.js",
       "require": "./dist/cjs/ui/components/elements/layer/layer-dataset-shared.cjs",
       "default": "./dist/esm/ui/components/elements/layer/layer-dataset-shared.js"
+    },
+    "./core": {
+      "source": "./src/core/index.ts",
+      "types": "./dist/esm/core/index.d.ts",
+      "import": "./dist/esm/core/index.js",
+      "require": "./dist/cjs/core/index.cjs",
+      "default": "./dist/esm/core/index.js"
+    },
+    "./contract": {
+      "source": "./src/contract/index.ts",
+      "types": "./dist/esm/contract/index.d.ts",
+      "import": "./dist/esm/contract/index.js",
+      "require": "./dist/cjs/contract/index.cjs",
+      "default": "./dist/esm/contract/index.js"
+    },
+    "./turf": {
+      "source": "./src/utils/turf/index.ts",
+      "types": "./dist/esm/utils/turf/index.d.ts",
+      "import": "./dist/esm/utils/turf/index.js",
+      "require": "./dist/cjs/utils/turf/index.cjs",
+      "default": "./dist/esm/utils/turf/index.js"
     }
   },
   "sideEffects": [
@@ -389,7 +410,9 @@
     "prepare": "husky",
     "prepublishOnly": "yarn build && yarn test",
     "postinstall": "patch-package || true",
-    "export:parity-fixtures": "node scripts/export-parity-fixtures.mjs > ../geokit-swift/Tests/GeoKitCoreTests/Fixtures/parity-fixtures.json"
+    "export:parity-fixtures": "node scripts/export-parity-fixtures.mjs > ../geokit-swift/Tests/GeoKitCoreTests/Fixtures/parity-fixtures.json",
+    "check:parity-fixtures": "node scripts/check-parity-fixtures.mjs",
+    "verify:parity": "bash scripts/verify-parity.sh"
   },
   "keywords": [
     "geospatial",
