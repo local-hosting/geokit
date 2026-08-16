@@ -23,10 +23,12 @@ export function whenStyleReady(map: MapLike | null, timeout: number = 2000): Pro
     throw new Error('[gk-map] No map instance');
   }
 
-  if (typeof map.isStyleLoaded === 'function' && map.isStyleLoaded()) {
-    return Promise.resolve();
-  }
-  if (typeof map.loaded === 'function' && map.loaded()) {
+  if (typeof map.isStyleLoaded === 'function') {
+    if (map.isStyleLoaded()) {
+      return Promise.resolve();
+    }
+    // Do not treat loaded() as equivalent — MapTiler can return loaded() while style is still loading.
+  } else if (typeof map.loaded === 'function' && map.loaded()) {
     return Promise.resolve();
   }
 

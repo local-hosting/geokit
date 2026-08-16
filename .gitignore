@@ -10,3 +10,5 @@ tests/unit/**/__screenshots__
 .yarn/
 
 package-lock.json
+.vercel
+.vercel-fetch/

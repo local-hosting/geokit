@@ -8,7 +8,7 @@ import {
   type NormalizedFoursquarePlace,
 } from '../../types/foursquare-places.js';
 
-import { resolveFoursquareApiKey } from '../../config/env/index.js';
+import { resolveFoursquareApiKey } from '../../config/env/service-keys.js';
 
 export function foursquarePlacesApiKey(): string | undefined {
   return resolveFoursquareApiKey();

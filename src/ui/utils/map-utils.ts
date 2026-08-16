@@ -207,10 +207,13 @@ export function waitForMapStyleLoaded(
       return;
     }
 
-    // Check if style is already loaded
-    const isStyleLoaded = typeof map.isStyleLoaded === 'function' ? map.isStyleLoaded() : false;
-    const hasStyle = typeof map.getStyle === 'function' && map.getStyle() != null;
-    if (isStyleLoaded || hasStyle) {
+    // Check if style is already loaded (getStyle() alone is not sufficient — style may still be loading)
+    if (typeof map.isStyleLoaded === 'function') {
+      if (map.isStyleLoaded()) {
+        resolve();
+        return;
+      }
+    } else if (typeof map.getStyle === 'function' && map.getStyle() != null) {
       resolve();
       return;
     }
