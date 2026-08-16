@@ -38,7 +38,7 @@ export class MarkerElement extends MapChildElement {
     const lng = parseFloat(this.getAttribute('lng') || '0');
 
     if (!lat || !lng) {
-      console.warn('Marker: lat and lng attributes are required');
+      console.warn('[gk-marker] lat and lng attributes are required');
       return;
     }
 

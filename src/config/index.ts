@@ -279,7 +279,7 @@ export function initializeConfig(source?: 'env' | 'localStorage' | GeokitConfig)
         configManager.set(config);
       }
     } catch (error) {
-      console.warn('Failed to load config from localStorage:', error);
+      console.warn('[gk-config] Failed to load config from localStorage:', error);
     }
   }
 }
@@ -292,7 +292,7 @@ export function saveConfigToLocalStorage(): void {
     try {
       localStorage.setItem('geokit-config', JSON.stringify(configManager.getAll()));
     } catch (error) {
-      console.warn('Failed to save config to localStorage:', error);
+      console.warn('[gk-config] Failed to save config to localStorage:', error);
     }
   }
 }

@@ -30,7 +30,7 @@ export class ApiTracker {
     if (pct >= 0.8 && !this.warnedAt80) {
       this.warnedAt80 = true;
       console.warn(
-        `\x1b[33m  [budget] ${this.totalCount}/${this.budget} requests used (80%)\x1b[0m`
+        `\x1b[33m  [gk-api-tracker] budget ${this.totalCount}/${this.budget} requests used (80%)\x1b[0m`
       );
     }
     if (this.totalCount > this.budget) {
@@ -48,7 +48,7 @@ export class ApiTracker {
 
   printSummary(): void {
     if (this.totalCount === 0) return;
-    console.log('\nAPI Usage Summary');
+    console.log('\n[gk-api-tracker] API Usage Summary');
     const maxLen = Math.max(...[...this.counts.keys()].map((k) => k.length), 5);
     for (const [api, count] of [...this.counts.entries()].sort((a, b) => b[1] - a[1])) {
       console.log(`  ${api.padEnd(maxLen)}  ${count.toLocaleString().padStart(8)}`);

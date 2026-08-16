@@ -31,7 +31,7 @@ function log(message, type = 'info') {
     console.error(prefix);
     return;
   }
-  console.log(prefix);
+  console.log(`[gk-demo] ${prefix}`);
 }
 
 function showStatusError(message) {

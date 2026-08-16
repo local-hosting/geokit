@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>geokit — Static map</title>
+  <link rel="stylesheet" href="../shared/brutalist.css">
+  <link rel="stylesheet" href="../shared/nav.css">
+  <link rel="stylesheet" href="../shared/sdk-demo.css">
+</head>
+<body class="cdn-demo cdn-only" data-demo-active="static-map">
+  <aside id="demo-nav" aria-label="Demo pages"></aside>
+  <div class="cdn-shell">
+    <div class="cdn-panel">
+      <h1>Static map</h1>
+      <p class="subtitle">MapTiler snapshot URL + preview</p>
+      <p class="demo-note">
+        Uses <code>buildStaticCenterUrl</code> with the MapTiler static adapter. Requires
+        <code>MAPTILER_KEY</code> in the demo env.
+      </p>
+      <div class="cdn-field">
+        <label for="lat">Latitude</label>
+        <input id="lat" type="number" step="0.0001" value="40.7128" />
+      </div>
+      <div class="cdn-field">
+        <label for="lng">Longitude</label>
+        <input id="lng" type="number" step="0.0001" value="-74.006" />
+      </div>
+      <div class="cdn-field">
+        <label for="zoom">Zoom</label>
+        <input id="zoom" type="number" step="0.1" min="0" max="18" value="11" />
+      </div>
+      <div class="cdn-field">
+        <label for="width">Width (px)</label>
+        <input id="width" type="number" min="100" max="1280" value="640" />
+      </div>
+      <div class="cdn-field">
+        <label for="height">Height (px)</label>
+        <input id="height" type="number" min="100" max="1280" value="400" />
+      </div>
+      <div class="cdn-actions">
+        <button type="button" id="render">Render snapshot</button>
+      </div>
+      <pre id="log" class="cdn-log">Click render to build a static map URL.</pre>
+      <img id="preview" class="static-preview" alt="Static map preview" hidden />
+      <div id="url" class="static-url"></div>
+    </div>
+    <div class="cdn-map-wrap" aria-hidden="true"></div>
+  </div>
+  <script type="module" src="./static-map.js"></script>
+</body>
+</html>

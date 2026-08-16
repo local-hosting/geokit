@@ -111,14 +111,14 @@ export class H3Element extends MapChildElement {
         try {
           h3Index = coordinatesToH3(resolution)([lat, lng]);
         } catch (error) {
-          console.warn('Failed to create H3 index from coordinates:', error);
+          console.warn('[gk-h3] Failed to create H3 index from coordinates:', error);
           return;
         }
       }
     }
 
     if (!h3Index) {
-      console.warn('H3: No valid coordinates or H3 index provided');
+      console.warn('[gk-h3] No valid coordinates or H3 index provided');
       return;
     }
 
@@ -135,7 +135,7 @@ export class H3Element extends MapChildElement {
     });
 
     if (geojson.features.length === 0) {
-      console.warn('H3 to feature collection returned no features');
+      console.warn('[gk-h3] to feature collection returned no features');
       return;
     }
 

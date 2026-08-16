@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>geokit — Lazy popup</title>
+  <link rel="stylesheet" href="../shared/maps-shell.css">
+  <link rel="stylesheet" href="../shared/sdk-demo.css">
+</head>
+<body class="cdn-demo" data-demo-active="lazy-popup">
+  <aside id="demo-nav" aria-label="Demo pages"></aside>
+  <div class="cdn-shell">
+    <div class="cdn-panel">
+      <h1>Lazy popup</h1>
+      <p class="subtitle">Deferred popup module load</p>
+      <p class="demo-note">
+        Map boots without <code>gk-popup</code>. Click the map after
+        <code>preloadPopupModule</code> to open a popup via <code>getPopupModule</code>.
+      </p>
+      <p id="module-status" class="demo-note">Popup module: pending</p>
+      <div class="cdn-actions">
+        <button type="button" id="preload">Preload module</button>
+        <button type="button" class="secondary" id="clear">Clear popup</button>
+      </div>
+      <pre id="log" class="cdn-log">Click the map to open a lazy popup.</pre>
+    </div>
+    <div class="cdn-map-wrap">
+      <div id="map-container">
+        <gk-map
+          id="lazy-popup-map"
+          provider="maptiler"
+          lat="40.758"
+          lng="-73.9855"
+          zoom="13"
+          map-style="dataviz-dark"
+          terrain-enabled="false"
+          hillshade-enabled="false"
+          buildings-enabled="false">
+        </gk-map>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./lazy-popup.js"></script>
+</body>
+</html>

@@ -32,10 +32,10 @@ let pendingHoverLngLat = null;
 /** @param {string} message @param {unknown} [detail] */
 function log(message, detail) {
   if (detail === undefined) {
-    console.log(`[H3Viewport] ${message}`);
+    console.log(`[gk-h3] ${message}`);
     return;
   }
-  console.log(`[H3Viewport] ${message}`, detail);
+  console.log(`[gk-h3] ${message}`, detail);
 }
 
 function readResolution() {

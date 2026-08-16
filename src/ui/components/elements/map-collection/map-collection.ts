@@ -55,9 +55,9 @@ function mapCollectionDebug(msg: string, data?: Record<string, unknown>): void {
     (window as unknown as { __GEOKIT_DEBUG__?: boolean }).__GEOKIT_DEBUG__
   ) {
     if (data !== undefined) {
-      console.warn('[map-collection]', msg, data);
+      console.warn('[gk-map-collection]', msg, data);
     } else {
-      console.warn('[map-collection]', msg);
+      console.warn('[gk-map-collection]', msg);
     }
   }
 }
@@ -553,7 +553,7 @@ export class MapCollectionElement extends BaseElement {
       const success = await this.unfreezeSlot(slotInfo);
 
       if (success) {
-        debug.log('[map-collection] active', {
+        debug.log('[gk-map-collection] active', {
           slotId: this.getSlotId(slotInfo.slotElement),
           activeCount: this.activeCount,
         });
@@ -610,7 +610,7 @@ export class MapCollectionElement extends BaseElement {
       await toFreeze.mapElement.freeze();
       toFreeze.isActive = false;
       this.activeCount--;
-      debug.log('[map-collection] frozen', { slotId, activeCount: this.activeCount });
+      debug.log('[gk-map-collection] frozen', { slotId, activeCount: this.activeCount });
       return true;
     }
 
@@ -667,7 +667,7 @@ export class MapCollectionElement extends BaseElement {
         this.handleNewMapsRafId = requestAnimationFrame(() => {
           this.handleNewMapsRafId = null;
           const count = this.querySelectorAll('gk-map').length;
-          debug.log('[map-collection] rAF handleNewMaps', { gkMapCountInDom: count });
+          debug.log('[gk-map-collection] rAF handleNewMaps', { gkMapCountInDom: count });
           this.handleNewMaps();
         });
       }
@@ -735,7 +735,7 @@ export class MapCollectionElement extends BaseElement {
         }
         this.processVisibilityChanges();
       }, 250);
-      debug.log('[map-collection] handleNewMaps done', {
+      debug.log('[gk-map-collection] handleNewMaps done', {
         slots: this.slots.length,
         note: 'IntersectionObserver + 250ms fallback',
       });

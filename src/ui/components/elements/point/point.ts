@@ -18,7 +18,7 @@ import {
 } from '../../../../utils/coordinates';
 import type { MapEvent, MapRenderedFeature } from '../../../providers/types';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
-import { debug } from '../../../utils/logger';
+import { createGeokitLogger } from '../../../utils/logger';
 import { PopupElement } from '../popup/popup';
 import { readFirstPointCoordinatesFromGeoJsonSource } from '../../../utils/geojson-source-options';
 import { applyPointPaintProperties } from './point-style';
@@ -27,6 +27,8 @@ import {
   applySelectedVisual as applySelectedVisualFn,
   clearSelectedVisual,
 } from './point-selection';
+
+const { debug } = createGeokitLogger('point');
 
 export interface PointOptions {
   lat: number;
@@ -194,7 +196,7 @@ export class PointElement extends MapChildElement {
       // Setup event listeners (idempotent)
       this.setupEventListeners();
     } catch (error) {
-      console.error(`[Point] Error in connectedCallback:`, error);
+      console.error(`[gk-point] Error in connectedCallback:`, error);
       throw error;
     }
   }
@@ -209,7 +211,7 @@ export class PointElement extends MapChildElement {
 
   /** Re-add point layers after map style change (e.g. theme toggle). */
   protected override onStyleLoad(): void {
-    debug.log('[Point] onStyleLoad', {
+    debug.log('onStyleLoad', {
       hasMap: !!this.map,
       sourceId: this.sourceId,
       layerId: this.layerId,
@@ -335,13 +337,13 @@ export class PointElement extends MapChildElement {
 
     // Skip if attributes haven't been set yet
     if (isNaN(lat) || isNaN(lng)) {
-      debug.log('[Point] addPoint skipped: no lat/lng', { lat, lng });
+      debug.log('addPoint skipped: no lat/lng', { lat, lng });
       return;
     }
-    debug.log('[Point] addPoint', { lat, lng, sourceId: this.sourceId, layerId: this.layerId });
+    debug.log('addPoint', { lat, lng, sourceId: this.sourceId, layerId: this.layerId });
 
     if (!isValidCoordinate([lat, lng])) {
-      console.warn('Point: Invalid lat/lng coordinates', { lat, lng });
+      console.warn('[gk-point] Invalid lat/lng coordinates', { lat, lng });
       return;
     }
 
@@ -395,19 +397,19 @@ export class PointElement extends MapChildElement {
 
   private createPointLayers(pointData: GeoJSON.FeatureCollection, _featureId: string): void {
     if (!this.map || !this.sourceId || !this.layerId) {
-      debug.log('[Point] createPointLayers skipped: map or IDs missing', {
+      debug.log('createPointLayers skipped: map or IDs missing', {
         hasMap: !!this.map,
         sourceId: this.sourceId,
         layerId: this.layerId,
       });
-      console.warn('[Point] Cannot create layers: map or IDs missing', {
+      console.warn('[gk-point] Cannot create layers: map or IDs missing', {
         hasMap: !!this.map,
         sourceId: this.sourceId,
         layerId: this.layerId,
       });
       return;
     }
-    debug.log('[Point] createPointLayers adding source + layers', {
+    debug.log('createPointLayers adding source + layers', {
       sourceId: this.sourceId,
       layerId: this.layerId,
     });
@@ -770,7 +772,7 @@ export class PointElement extends MapChildElement {
 
         this.popupCreatedTime = Date.now();
       } catch (error) {
-        console.warn('[PointElement] Failed to show popup:', error);
+        console.warn('[gk-point] Failed to show popup:', error);
       }
     }
 
@@ -838,7 +840,7 @@ export class PointElement extends MapChildElement {
 
     // Cleanup layers
     if (this.glowLayerId) {
-      debug.log('[Point] glow layer REMOVE (teardown)', {
+      debug.log('glow layer REMOVE (teardown)', {
         where: 'point.ts teardown -> cleanupMapLayers',
         when: 'before cleanupMapLayers',
         glowLayerId: this.glowLayerId,
@@ -1166,7 +1168,7 @@ export class PointElement extends MapChildElement {
 
     geojson.features.forEach((feature) => {
       if (feature.geometry.type !== 'Point') {
-        console.warn('Skipping non-Point feature:', feature);
+        console.warn('[gk-point] Skipping non-Point feature:', feature);
         return;
       }
 

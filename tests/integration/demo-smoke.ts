@@ -72,7 +72,7 @@ async function collectPageErrors(page: Page, path: string): Promise<string[]> {
   // Let maps finish initial async work.
   await page.waitForTimeout(5_000);
 
-  if (path === '/layers-test.html') {
+  if (path === '/maps/layers-test.html') {
     const status = await page.locator('#status .error').count();
     if (status > 0) {
       const text = await page.locator('#status').innerText();

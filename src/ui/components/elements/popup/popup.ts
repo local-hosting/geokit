@@ -74,7 +74,7 @@ export class PopupElement extends MapChildElement {
     const lng = parseFloat(this.getAttribute('lng') || '');
 
     if (isNaN(lat) || isNaN(lng)) {
-      console.warn('Popup: Invalid lat/lng coordinates');
+      console.warn('[gk-popup] Invalid lat/lng coordinates');
       return;
     }
 
@@ -117,7 +117,7 @@ export class PopupElement extends MapChildElement {
         );
       }
     } catch (error) {
-      console.error('Failed to create popup:', error);
+      console.error('[gk-popup] Failed to create popup:', error);
     }
   }
 

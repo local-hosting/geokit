@@ -203,7 +203,7 @@ export function waitForMapStyleLoaded(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!map) {
-      reject(new Error('[geokit] Map instance is required'));
+      reject(new Error('[gk-map-utils] Map instance is required'));
       return;
     }
 
@@ -255,7 +255,7 @@ export function waitForMapStyleLoaded(
       if (!resolved) {
         resolved = true;
         cleanup();
-        reject(new Error(`[geokit] Timeout waiting for map style to load (${timeoutMs}ms)`));
+        reject(new Error(`[gk-map-utils] Timeout waiting for map style to load (${timeoutMs}ms)`));
       }
     }, timeoutMs);
 
@@ -474,7 +474,7 @@ export function updateSourceData(
     (source as any).setData(data);
     return true;
   } catch (error) {
-    console.warn(`[geokit] Failed to update source: ${sourceId}`, error);
+    console.warn(`[gk-map-utils] Failed to update source: ${sourceId}`, error);
     return false;
   }
 }
@@ -576,7 +576,7 @@ export function setupIsochronePrefetch(
   let prefetchTimeout: ReturnType<typeof setTimeout> | null = null;
 
   const log = enableDebug
-    ? (...args: unknown[]) => console.log('[geokit:prefetch]', ...args)
+    ? (...args: unknown[]) => console.log('[gk-prefetch]', ...args)
     : () => {};
 
   const prefetchHandler = (e: any) => {

@@ -147,7 +147,7 @@ export function showPointPopup(
 
   const activeProvider = provider ?? MapChildElement.getProviderFromMapInstance(map);
   if (!activeProvider?.createPopup) {
-    console.error('[PopupElement] No provider available for creating popup');
+    console.error('[gk-popup] No provider available for creating popup');
     return popup;
   }
 
@@ -165,14 +165,14 @@ export function showPointPopup(
   const newPopup = createPopupWithProvider(activeProvider, { anchor, offset, closeButton });
 
   if (!newPopup) {
-    console.error('[PopupElement] Failed to create popup instance');
+    console.error('[gk-popup] Failed to create popup instance');
     return null;
   }
 
   const lng = typeof lngLat.lng === 'number' ? lngLat.lng : parseFloat(String(lngLat.lng));
   const lat = typeof lngLat.lat === 'number' ? lngLat.lat : parseFloat(String(lngLat.lat));
   if (isNaN(lng) || isNaN(lat)) {
-    console.error('[PopupElement] Invalid coordinates:', lngLat);
+    console.error('[gk-popup] Invalid coordinates:', lngLat);
     return null;
   }
 
@@ -212,7 +212,7 @@ export function showPointPopup(
 
     return newPopup;
   } catch (error) {
-    console.error('[PopupElement] Failed to add popup to map:', error);
+    console.error('[gk-popup] Failed to add popup to map:', error);
     return null;
   }
 }
@@ -230,7 +230,7 @@ export function showPopupGeneric(
 
   const activeProvider = MapChildElement.getProviderFromMapInstance(map);
   if (!activeProvider?.createPopup) {
-    console.error('[PopupElement] No provider available for creating popup');
+    console.error('[gk-popup] No provider available for creating popup');
     return null;
   }
 
@@ -240,14 +240,14 @@ export function showPopupGeneric(
   const newPopup = createPopupWithProvider(activeProvider, { anchor, offset, closeButton });
 
   if (!newPopup) {
-    console.error('[PopupElement] Failed to create popup instance');
+    console.error('[gk-popup] Failed to create popup instance');
     return null;
   }
 
   const lng = typeof lngLat.lng === 'number' ? lngLat.lng : parseFloat(String(lngLat.lng));
   const lat = typeof lngLat.lat === 'number' ? lngLat.lat : parseFloat(String(lngLat.lat));
   if (isNaN(lng) || isNaN(lat)) {
-    console.error('[PopupElement] Invalid coordinates:', lngLat);
+    console.error('[gk-popup] Invalid coordinates:', lngLat);
     return null;
   }
 
@@ -273,7 +273,7 @@ export function showPopupGeneric(
 
     return newPopup;
   } catch (error) {
-    console.error('[PopupElement] Failed to add popup to map:', error);
+    console.error('[gk-popup] Failed to add popup to map:', error);
     return null;
   }
 }

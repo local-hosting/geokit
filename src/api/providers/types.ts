@@ -40,6 +40,8 @@ export interface GeocodeOptions {
   types?: string[];
   proximity?: Position;
   bbox?: [number, number, number, number];
+  /** Request admin boundary polygons when the provider supports them (Mapbox). */
+  polygons?: boolean;
 }
 
 /**

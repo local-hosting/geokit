@@ -96,7 +96,7 @@ export function createPointLayers(
       ...POINT_GEOJSON_SOURCE_OPTIONS,
     });
   } catch (error) {
-    console.error('[Point] Failed to add source:', error);
+    console.error('[gk-point] Failed to add source:', error);
     return;
   }
 
@@ -109,12 +109,12 @@ export function createPointLayers(
         ...POINT_GEOJSON_SOURCE_OPTIONS,
       });
     } catch (error) {
-      console.error('[Point] Failed to add hover source:', error);
+      console.error('[gk-point] Failed to add hover source:', error);
     }
   }
 
   if (glow && glowLayerId) {
-    debug.log('[Point] glow layer ADD (createPointLayers)', {
+    debug.log(' glow layer ADD (createPointLayers)', {
       where: 'point-layers.ts',
       glowLayerId,
       sourceId,
@@ -132,7 +132,7 @@ export function createPointLayers(
         },
       });
     } catch (error) {
-      console.error('[Point] Failed to add glow layer:', error);
+      console.error('[gk-point] Failed to add glow layer:', error);
     }
   }
 
@@ -150,7 +150,7 @@ export function createPointLayers(
         },
       });
     } catch (error) {
-      console.error('[Point] Failed to add shadow layer:', error);
+      console.error('[gk-point] Failed to add shadow layer:', error);
     }
   }
 
@@ -180,7 +180,7 @@ export function createPointLayers(
         layerId
       );
     } catch (error) {
-      console.error('[Point] Failed to add hover layer:', error);
+      console.error('[gk-point] Failed to add hover layer:', error);
     }
   }
 
@@ -201,7 +201,7 @@ export function createPointLayers(
         },
       });
     } catch (error) {
-      console.error('[Point] Failed to add hover point layer:', error);
+      console.error('[gk-point] Failed to add hover point layer:', error);
     }
   }
 
@@ -226,8 +226,8 @@ export function createPointLayers(
       source: sourceId,
       paint,
     });
-    debug.log('[Point] createPointLayers done', { layerId });
+    debug.log(' createPointLayers done', { layerId });
   } catch (error) {
-    console.error('[Point] Failed to add main layer:', error);
+    console.error('[gk-point] Failed to add main layer:', error);
   }
 }
