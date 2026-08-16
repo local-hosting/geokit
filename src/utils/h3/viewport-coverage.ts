@@ -35,10 +35,17 @@ export function h3CellToPolygonFeature(
 export function h3CellsForViewport(
   bounds: ViewportBounds,
   resolution: number,
-  options?: { maxEvalCells?: number; fallbackDiskK?: number }
+  options?: {
+    maxEvalCells?: number;
+    fallbackDiskK?: number;
+    centerLat?: number;
+    centerLng?: number;
+  }
 ): string[] {
   return h3CellsForViewportBounds(bounds, {
     resolution,
+    centerLat: options?.centerLat,
+    centerLng: options?.centerLng,
     fallbackDiskK: options?.fallbackDiskK ?? 2,
     maxEvalCells: options?.maxEvalCells ?? DEFAULT_MAX_VIEWPORT_H3_EVAL,
   });
@@ -62,10 +69,18 @@ export function viewportCoverageCells(
   bounds: ViewportBounds,
   coverageIndex: Set<string>,
   resolution: number,
-  options?: { maxEvalCells?: number }
+  options?: {
+    maxEvalCells?: number;
+    centerLat?: number;
+    centerLng?: number;
+  }
 ): string[] {
   return filterCellsInCoverage(
-    h3CellsForViewport(bounds, resolution, options),
+    h3CellsForViewport(bounds, resolution, {
+      maxEvalCells: options?.maxEvalCells,
+      centerLat: options?.centerLat,
+      centerLng: options?.centerLng,
+    }),
     coverageIndex,
     resolution
   );

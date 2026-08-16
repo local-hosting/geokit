@@ -22,6 +22,42 @@ export const DEMO_SECTIONS = [
     ],
   },
   {
+    id: 'sdk',
+    label: 'SDK',
+    items: [
+      {
+        id: 'h3-coverage',
+        path: '/maps/h3-coverage.html',
+        label: 'H3 coverage',
+        description: 'viewportCoverageCells + filterCellsInCoverage against a fake index',
+      },
+      {
+        id: 'static-map',
+        path: '/maps/static-map.html',
+        label: 'Static map',
+        description: 'MapTiler static snapshot URL builder + image preview',
+      },
+      {
+        id: 'lazy-popup',
+        path: '/maps/lazy-popup.html',
+        label: 'Lazy popup',
+        description: 'preloadPopupModule / getPopupModule deferred popup load',
+      },
+      {
+        id: 'facet-filters',
+        path: '/maps/facet-filters.html',
+        label: 'Facet filters',
+        description: 'buildFacetFilterExpression on a GeoJSON point layer',
+      },
+      {
+        id: 'fit-bounds',
+        path: '/maps/fit-bounds.html',
+        label: 'Fit bounds',
+        description: 'calculateFitBoundsViewport then flyTo on gk-map',
+      },
+    ],
+  },
+  {
     id: 'points',
     label: 'Points',
     items: [

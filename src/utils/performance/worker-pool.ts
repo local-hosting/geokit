@@ -55,7 +55,7 @@ export class GeospatialWorkerPool {
   }
 
   private handleWorkerError(workerIndex: number, error: ErrorEvent): void {
-    console.error(`Worker ${workerIndex} error:`, error);
+    console.error(`[gk-worker] Worker ${workerIndex} error:`, error);
     this.workerBusy[workerIndex] = false;
     
     // Find and reject any active task for this worker

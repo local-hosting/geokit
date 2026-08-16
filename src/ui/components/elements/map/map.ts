@@ -353,7 +353,7 @@ export class MapElement extends BaseElement {
         } catch {
           // No provider set, auto-initialize MapTiler if we have an API key
           if (apiKey) {
-            debug.warn('[geokit] Auto-initializing MapTiler provider from api-key attribute');
+            debug.warn('[gk-map] Auto-initializing MapTiler provider from api-key attribute');
             if (!getUIProviderByName('maptiler')) {
               registerUIProvider('maptiler', new MapTilerUIProvider());
             }
@@ -1759,7 +1759,7 @@ export class MapElement extends BaseElement {
         try {
           (child as HTMLElement & { disconnectedCallback: () => void }).disconnectedCallback();
         } catch (error) {
-          console.warn(`Error in disconnectedCallback for ${child.tagName}:`, error);
+          console.warn(`[gk-map] Error in disconnectedCallback for ${child.tagName}:`, error);
         }
       }
       // Remove the element from DOM
@@ -1816,7 +1816,7 @@ export class MapElement extends BaseElement {
           });
         }
       } catch (error) {
-        console.warn('Error cleaning up dangling layers/sources:', error);
+        console.warn('[gk-map] Error cleaning up dangling layers/sources:', error);
       }
     }
   }

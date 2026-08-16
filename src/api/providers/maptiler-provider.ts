@@ -52,7 +52,7 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
     if (config?.apiKey) {
       this.apiKey = config.apiKey;
     } else {
-      console.warn('MapTiler API Provider: No API key provided. API calls will not work.');
+      console.warn('[gk-api-maptiler]  No API key provided. API calls will not work.');
     }
   }
 

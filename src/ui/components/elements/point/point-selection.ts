@@ -128,7 +128,7 @@ export function applySelectedVisual(
       sourceId: selectedSourceId,
     };
   } catch (error) {
-    console.error('[Point] Error applying selected visual:', error);
+    console.error('[gk-point] Error applying selected visual:', error);
     return null;
   }
 }

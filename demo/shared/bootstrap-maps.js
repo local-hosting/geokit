@@ -47,7 +47,7 @@ export async function setupMapsDemo(options = {}) {
 /** @param {string | undefined} mapboxToken */
 export function scheduleMapboxApiInit(mapboxToken) {
   if (!mapboxToken) {
-    console.warn('[Demo] No Mapbox token found. Isochrones will not work. Set MAPBOX_TOKEN environment variable.');
+    console.warn('[gk-demo] No Mapbox token found. Isochrones will not work. Set MAPBOX_TOKEN environment variable.');
     return;
   }
   const initMapbox = async () => {
@@ -57,7 +57,7 @@ export function scheduleMapboxApiInit(mapboxToken) {
       registerAPIProvider('mapbox', new MapboxAPIProvider());
       await initAPIProvider('mapbox', { accessToken: mapboxToken });
     } catch (error) {
-      console.warn('[Demo] Failed to register Mapbox API provider:', error);
+      console.warn('[gk-demo] Failed to register Mapbox API provider:', error);
     }
   };
   if (typeof requestIdleCallback !== 'undefined') {

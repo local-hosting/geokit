@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createLogger } from '../../../src/utils/logger';
+import { createLogger, createGeokitLogger, geokitTag } from '../../../src/utils/logger';
 
 const FLAG = '__TEST_LOGGER_DEBUG__';
 
@@ -132,4 +132,26 @@ describe('logger', () => {
       expect(errorSpy).toHaveBeenCalledWith('err2');
     });
   });
+
+  describe('geokitTag / scoped logger', () => {
+    it('geokitTag normalizes scope to [gk-<scope>]', () => {
+      expect(geokitTag('h3')).toBe('[gk-h3]');
+      expect(geokitTag('gk-map')).toBe('[gk-map]');
+    });
+
+    it('createGeokitLogger prefixes log messages when debug is enabled', () => {
+      const logger = createGeokitLogger('h3', { windowFlag: FLAG });
+      logger.setDebugEnabled(true);
+      logger.debug.log('viewport cells', 3);
+      expect(logSpy).toHaveBeenCalledWith('[gk-h3] viewport cells', 3);
+    });
+
+    it('does not double-prefix messages that already include a gk tag', () => {
+      const logger = createGeokitLogger('h3', { windowFlag: FLAG });
+      logger.setDebugEnabled(true);
+      logger.debug.log('[gk-map] already tagged');
+      expect(logSpy).toHaveBeenCalledWith('[gk-map] already tagged');
+    });
+  });
+
 });

@@ -78,7 +78,7 @@ async function initMapboxProvider(accessToken?: string, maptilerApiKey?: string)
       maptilerApiKey,
     });
   } catch (err) {
-    console.warn('[geokit] Failed to initialize API capability routers:', err);
+    console.warn('[gk-bootstrap] Failed to initialize API capability routers:', err);
   }
 }
 
@@ -141,12 +141,12 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
     const timeoutMs = maptiler?.initTimeoutMs ?? 8000;
     await Promise.race([
       setUIProvider('maptiler', maptilerConfig).catch((err) => {
-        console.warn('[geokit] Failed to initialize MapTiler UI provider:', err);
+        console.warn('[gk-bootstrap] Failed to initialize MapTiler UI provider:', err);
       }),
       new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
     ]);
   } else if (!apiKey) {
-    console.warn('[geokit] MapTiler apiKey not set — MapTiler features disabled.');
+    console.warn('[gk-bootstrap] MapTiler apiKey not set — MapTiler features disabled.');
   }
   phase(options.onPhase, 'maptiler provider', providerStep);
 

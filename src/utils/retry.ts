@@ -15,7 +15,7 @@ export interface RetryOptions {
   baseDelayMs?: number;
   /** Whether to log retry attempts to console (default: true) */
   logRetries?: boolean;
-  /** Prefix for log messages (default: '[Retry]') */
+  /** Prefix for log messages (default: '[gk-retry]') */
   logPrefix?: string;
   /** Predicate — return false to stop retrying for a given error */
   shouldRetry?: (error: Error) => boolean;
@@ -43,7 +43,7 @@ export async function withRetry<T>(fn: () => Promise<T>, options?: RetryOptions)
     maxRetries = 3,
     baseDelayMs = 1000,
     logRetries = true,
-    logPrefix = '[Retry]',
+    logPrefix = '[gk-retry]',
     shouldRetry: shouldRetryFn,
   } = options || {};
 

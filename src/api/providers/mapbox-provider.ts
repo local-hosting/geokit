@@ -55,7 +55,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
     if (config?.accessToken) {
       this.accessToken = config.accessToken;
     } else {
-      console.warn('Mapbox API Provider: No access token provided. API calls will not work.');
+      console.warn('[gk-api-mapbox]  No access token provided. API calls will not work.');
     }
   }
 
@@ -249,6 +249,9 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       );
       url.searchParams.set('access_token', this.accessToken!);
       url.searchParams.set('limit', limit.toString());
+      if (options.polygons !== false) {
+        url.searchParams.set('polygons', 'true');
+      }
 
       if (proximity) {
         url.searchParams.set('proximity', `${proximity[0]},${proximity[1]}`);

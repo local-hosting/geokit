@@ -58,7 +58,7 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
     if (config?.apiKey) {
       this.apiKey = config.apiKey;
     } else {
-      console.warn('Foursquare API Provider: No API key provided. API calls will not work.');
+      console.warn('[gk-api-foursquare]  No API key provided. API calls will not work.');
     }
   }
 

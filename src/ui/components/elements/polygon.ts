@@ -10,10 +10,12 @@
 import { MapChildElement } from '../map-child-element';
 import { normalizeCoordinatesArray } from '../../../utils/coordinates';
 import { simplifyPolygonRingToMaxPoints } from '../../../utils/simplify/polygon';
-import { debug } from '../../utils/logger';
+import { createGeokitLogger } from '../../utils/logger';
 import { getCSSVariable } from '../../utils/theme';
 import { buildChoroplethFillPaint, type FillAntialiasMap } from '../../utils/choropleth-fill-paint';
 import type { LatLon } from '../../../types';
+
+const { debug } = createGeokitLogger('polygon');
 
 export interface PolygonOptions {
   points: number[][]; // Array of [lat, lng] coordinates
@@ -119,18 +121,18 @@ export class PolygonElement extends MapChildElement {
     try {
       this.createPolygon();
     } catch (error) {
-      console.error(`[Polygon ${this.layerId}] Error creating polygon:`, error);
+      console.error(`[gk-polygon] layer ${this.layerId} Error creating polygon:`, error);
     }
   }
 
   /** Re-add polygon layers after map style change (e.g. theme toggle). */
   protected override onStyleLoad(): void {
     if (!this.map) return;
-    debug.log('[Polygon] onStyleLoad', { layerId: this.layerId, sourceId: this.sourceId });
+    debug.log(' onStyleLoad', { layerId: this.layerId, sourceId: this.sourceId });
     try {
       this.createPolygon();
     } catch (error) {
-      console.error(`[Polygon ${this.layerId}] Error re-creating polygon after style load:`, error);
+      console.error(`[gk-polygon] layer ${this.layerId} Error re-creating polygon after style load:`, error);
     }
   }
 
@@ -184,7 +186,7 @@ export class PolygonElement extends MapChildElement {
       // the element from the DOM.
       this.removeLayerInteractivity(this.layerId);
       this.cleanupMapLayers([this.layerId, this.strokeLayerId], [this.sourceId]);
-      debug.log('[Polygon] createPolygon: cleared (not visible)', { layerId: this.layerId });
+      debug.log(' createPolygon: cleared (not visible)', { layerId: this.layerId });
       return;
     }
 
@@ -194,10 +196,10 @@ export class PolygonElement extends MapChildElement {
       ? JSON.stringify(pointsFromProp)
       : this.safeGetAttribute('points');
     if (!pointsAttr) {
-      debug.warn('[Polygon] points attribute is required');
+      debug.warn(' points attribute is required');
       return;
     }
-    debug.log('[Polygon] createPolygon', { layerId: this.layerId, sourceId: this.sourceId });
+    debug.log(' createPolygon', { layerId: this.layerId, sourceId: this.sourceId });
 
     let coordinates: number[][];
     try {
@@ -205,7 +207,7 @@ export class PolygonElement extends MapChildElement {
       // Normalize to [lat, lng] format first
       coordinates = normalizeCoordinatesArray(coordinates, 'latlon', 'auto');
     } catch (error) {
-      debug.warn('[Polygon] Invalid points format', error);
+      debug.warn(' Invalid points format', error);
       return;
     }
 
@@ -249,7 +251,7 @@ export class PolygonElement extends MapChildElement {
         type: 'geojson',
         data: geojson,
       });
-      debug.log('[Polygon] source ADD', { sourceId: this.sourceId });
+      debug.log(' source ADD', { sourceId: this.sourceId });
 
       // Find insertion point: insert before points
       // This ensures: polygons (below) < points (top)
@@ -276,7 +278,7 @@ export class PolygonElement extends MapChildElement {
       } else {
         this.map.addLayer(fillSpec);
       }
-      debug.log('[Polygon] fill layer ADD', {
+      debug.log(' fill layer ADD', {
         layerId: this.layerId,
         beforeLayerId: beforeId ?? undefined,
       });
@@ -311,17 +313,17 @@ export class PolygonElement extends MapChildElement {
         } else {
           this.map.addLayer(strokeSpec);
         }
-        debug.log('[Polygon] stroke layer ADD', {
+        debug.log(' stroke layer ADD', {
           strokeLayerId: this.strokeLayerId,
           beforeLayerId: beforeId ?? undefined,
         });
       } else {
-        debug.log('[Polygon] stroke layer SKIP (strokeWidth 0)', {
+        debug.log(' stroke layer SKIP (strokeWidth 0)', {
           strokeLayerId: this.strokeLayerId,
         });
       }
     } catch (error) {
-      console.error(`[Polygon] Error creating polygon ${this.sourceId}:`, error);
+      console.error(`[gk-polygon] Error creating polygon ${this.sourceId}:`, error);
       throw error; // Re-throw to help with debugging
     }
 
@@ -410,7 +412,7 @@ export class PolygonElement extends MapChildElement {
   }
 
   protected override onMapUnload(): void {
-    debug.log('[Polygon] onMapUnload (removing layers)', {
+    debug.log(' onMapUnload (removing layers)', {
       layerId: this.layerId,
       strokeLayerId: this.strokeLayerId,
       sourceId: this.sourceId,
@@ -422,7 +424,7 @@ export class PolygonElement extends MapChildElement {
 
   disconnectedCallback(): void {
     if (this.map) {
-      debug.log('[Polygon] disconnectedCallback (removing layers)', {
+      debug.log(' disconnectedCallback (removing layers)', {
         layerId: this.layerId,
         strokeLayerId: this.strokeLayerId,
         sourceId: this.sourceId,

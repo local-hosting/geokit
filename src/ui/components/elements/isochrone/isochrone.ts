@@ -73,7 +73,7 @@ export class IsochroneElement extends MapChildElement {
     // By the time onMapReady is called, the parent gk-map is fully initialized
     // No need to wait for style - it's already loaded
     if (!this.map) {
-      console.warn('[Isochrone] onMapReady called but no map instance');
+      console.warn('[gk-isochrone] onMapReady called but no map instance');
       return;
     }
 
@@ -344,7 +344,7 @@ export class IsochroneElement extends MapChildElement {
                   }
                 } catch (error) {
                   // Map might be in invalid state, try to fetch anyway
-                  debug.warn('[Isochrone] Error checking source, attempting fetch:', error);
+                  debug.warn('[gk-isochrone] Error checking source, attempting fetch:', error);
                   this.waitForStyleLoaded(() => {
                     this.fetchAndRenderIsochrone();
                   });
@@ -450,7 +450,7 @@ export class IsochroneElement extends MapChildElement {
     const mode = this.mode;
 
     if (isNaN(lat) || isNaN(lng)) {
-      console.warn('[Isochrone] Invalid coordinates:', { lat, lng });
+      console.warn('[gk-isochrone] Invalid coordinates:', { lat, lng });
       return;
     }
 
@@ -490,7 +490,7 @@ export class IsochroneElement extends MapChildElement {
           mode,
         })) as GeoJSON.FeatureCollection | null;
       } catch (error) {
-        const errorMsg = `[Isochrone] ✗ Failed to fetch isochrone for ${lat.toFixed(6)},${lng.toFixed(6)}: ${error instanceof Error ? error.message : String(error)}`;
+        const errorMsg = `[gk-isochrone] ✗ Failed to fetch isochrone for ${lat.toFixed(6)},${lng.toFixed(6)}: ${error instanceof Error ? error.message : String(error)}`;
         console.error(errorMsg, error);
         this.dispatchEvent(
           new CustomEvent('isochrone-error', {
@@ -515,7 +515,7 @@ export class IsochroneElement extends MapChildElement {
       (this as any)._originalIsochroneData = result;
 
       if (!result || !result.features || result.features.length === 0) {
-        debug.warn(`[Isochrone] No features returned for ${lat.toFixed(6)},${lng.toFixed(6)}`);
+        debug.warn(`[gk-isochrone] No features returned for ${lat.toFixed(6)},${lng.toFixed(6)}`);
         this.dispatchEvent(
           new CustomEvent('isochrone-error', {
             detail: {
@@ -581,7 +581,7 @@ export class IsochroneElement extends MapChildElement {
             this.map.setPaintProperty?.(this.lineLayerId, 'line-width', this.strokeWidth);
           }
         } catch (paintErr) {
-          debug.warn('[Isochrone] setPaintProperty failed', paintErr);
+          debug.warn('[gk-isochrone] setPaintProperty failed', paintErr);
         }
       } else {
         // First render: create source + layers once
@@ -654,7 +654,7 @@ export class IsochroneElement extends MapChildElement {
               this.map.moveLayer(this.fillLayerId, moveTarget);
             }
           } catch (err) {
-            debug.warn('[Isochrone] moveLayer failed', { moveTarget, err });
+            debug.warn('[gk-isochrone] moveLayer failed', { moveTarget, err });
           }
         }
       }
@@ -669,7 +669,7 @@ export class IsochroneElement extends MapChildElement {
         })
       );
     } catch (error) {
-      const errorMsg = `[Isochrone] ✗ Failed to fetch isochrone for ${lat.toFixed(6)},${lng.toFixed(6)}: ${error instanceof Error ? error.message : String(error)}`;
+      const errorMsg = `[gk-isochrone] ✗ Failed to fetch isochrone for ${lat.toFixed(6)},${lng.toFixed(6)}: ${error instanceof Error ? error.message : String(error)}`;
       console.error(errorMsg, error);
       this.dispatchEvent(
         new CustomEvent('isochrone-error', {
@@ -819,7 +819,7 @@ export class IsochroneElement extends MapChildElement {
 
       // Validate conversion produced features
       if (!upgradedData || !upgradedData.features || upgradedData.features.length === 0) {
-        debug.warn('[Isochrone] H3 conversion produced no features, keeping raw polygon');
+        debug.warn('[gk-isochrone] H3 conversion produced no features, keeping raw polygon');
         this.hasUpgradedResolution = false; // Reset so we can try again
         return;
       }
@@ -829,7 +829,7 @@ export class IsochroneElement extends MapChildElement {
       const source = this.map.getSource(this.sourceId) as unknown;
       this.applyUpgradedDataAndDispatch(source, upgradedData, targetResolution);
     } catch (error) {
-      debug.warn(`[Isochrone] Failed to convert to H3 hexagons:`, error);
+      debug.warn(`[gk-isochrone] Failed to convert to H3 hexagons:`, error);
       // Reset on error so we can try again
       this.hasUpgradedResolution = false;
     }
@@ -988,7 +988,7 @@ export class IsochroneElement extends MapChildElement {
       }
       return null;
     } catch {
-      debug.warn('[Isochrone] Invalid JSON in data attribute');
+      debug.warn('[gk-isochrone] Invalid JSON in data attribute');
       return null;
     }
   }

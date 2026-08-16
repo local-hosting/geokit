@@ -74,7 +74,7 @@ export class PolylineElement extends MapChildElement {
       // Parse points
       const coordinates = this.parsePoints();
       if (!coordinates || coordinates.length < 2) {
-        console.warn('Polyline: Need at least 2 points');
+        console.warn('[gk-polyline] Need at least 2 points');
         return;
       }
 
@@ -122,7 +122,7 @@ export class PolylineElement extends MapChildElement {
         })
       );
     } catch (error) {
-      console.warn('Failed to create polyline:', error);
+      console.warn('[gk-polyline] Failed to create polyline:', error);
     }
   }
 
@@ -180,7 +180,7 @@ export class PolylineElement extends MapChildElement {
       // Normalize coordinates to GeoJSON [lng, lat] format
       return normalizeCoordinatesArray(coordinates, 'lonlat', 'auto') as number[][];
     } catch (error) {
-      console.warn('Failed to parse polyline points:', error);
+      console.warn('[gk-polyline] Failed to parse polyline points:', error);
       return null;
     }
   }
@@ -201,7 +201,7 @@ export class PolylineElement extends MapChildElement {
       }
       return null;
     } catch (error) {
-      console.warn('Failed to parse dash array:', error);
+      console.warn('[gk-polyline] Failed to parse dash array:', error);
       return null;
     }
   }
@@ -284,7 +284,7 @@ export class PolylineElement extends MapChildElement {
     try {
       this.map?.setLayoutProperty?.(this.layerId, 'visibility', this.visible ? 'visible' : 'none');
     } catch (error) {
-      console.warn('Failed to toggle polyline visibility:', error);
+      console.warn('[gk-polyline] Failed to toggle polyline visibility:', error);
     }
   }
 

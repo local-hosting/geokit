@@ -215,7 +215,7 @@ export class MapTilerUIProvider extends BaseUIProvider {
         this.sdk = maptilerModule;
         return this.sdk;
       } catch (error) {
-        console.error('Failed to load MapTiler SDK:', error);
+        console.error('[gk-maptiler] Failed to load MapTiler SDK:', error);
         throw error;
       }
     })();
@@ -281,14 +281,14 @@ export class MapTilerUIProvider extends BaseUIProvider {
         try {
           styleOption = await getProxiedStyleObject(styleFetchUrl, transformRequest);
         } catch (e) {
-          console.warn('[MapTiler] Proxied style fetch failed, using URL:', e);
+          console.warn('[gk-maptiler] Proxied style fetch failed, using URL:', e);
           styleOption = styleFetchUrl;
         }
       } else {
         try {
           styleOption = await getStyleObject(styleFetchUrl);
         } catch (e) {
-          console.warn('[MapTiler] Style cache fetch failed, using URL:', e);
+          console.warn('[gk-maptiler] Style cache fetch failed, using URL:', e);
         }
       }
     }

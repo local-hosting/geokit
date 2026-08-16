@@ -785,7 +785,7 @@ export function createGlowPointLayers(config: GlowPointLayerConfig): {
       }
       debug.log('[layer-styles] glow layer ADD done', { glowLayerId });
     } catch (error) {
-      console.error(`[geokit] Failed to add glow layer ${glowLayerId}:`, error);
+      console.error(`[gk-layer-styles] Failed to add glow layer ${glowLayerId}:`, error);
     }
   }
 
@@ -809,7 +809,7 @@ export function createGlowPointLayers(config: GlowPointLayerConfig): {
         map.addLayer(pointSpec as any);
       }
     } catch (error) {
-      console.error(`[geokit] Failed to add point layer ${pointLayerId}:`, error);
+      console.error(`[gk-layer-styles] Failed to add point layer ${pointLayerId}:`, error);
     }
   }
 
@@ -1029,7 +1029,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
           map.setPaintProperty(pointLayerId, 'circle-color', circleColor as any);
         } catch (paintErr) {
           console.warn(
-            `[geokit] setPaintProperty circle-color failed for ${pointLayerId}:`,
+            `[gk-layer-styles] setPaintProperty circle-color failed for ${pointLayerId}:`,
             paintErr
           );
         }
@@ -1040,7 +1040,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
           map.setPaintProperty(pointLayerId, 'circle-radius', pointRadius as any);
         } catch (radiusErr) {
           console.warn(
-            `[geokit] setPaintProperty circle-radius failed for ${pointLayerId}:`,
+            `[gk-layer-styles] setPaintProperty circle-radius failed for ${pointLayerId}:`,
             radiusErr
           );
         }
@@ -1071,13 +1071,13 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
           }
         } catch (strokeErr) {
           console.warn(
-            `[geokit] setPaintProperty circle-stroke failed for ${pointLayerId}:`,
+            `[gk-layer-styles] setPaintProperty circle-stroke failed for ${pointLayerId}:`,
             strokeErr
           );
         }
       }
     } catch (error) {
-      console.error(`[geokit] MapTiler helpers.addPoint failed for ${pointLayerId}:`, error);
+      console.error(`[gk-layer-styles] MapTiler helpers.addPoint failed for ${pointLayerId}:`, error);
     }
   }
 
@@ -1093,7 +1093,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       });
       debug.log('[layer-styles] source ADD (manual path)', { sourceId });
     } catch (sourceErr) {
-      console.error(`[geokit] Failed to add source ${sourceId}:`, sourceErr);
+      console.error(`[gk-layer-styles] Failed to add source ${sourceId}:`, sourceErr);
     }
   }
 
@@ -1131,7 +1131,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         map.addLayer(glowLayerSpec as any, pointLayerId);
         debug.log('[layer-styles] glow layer ADD done (below MapTiler point)', { glowLayerId });
       } catch (err) {
-        console.error(`[geokit] Failed to add glow layer ${glowLayerId}:`, err);
+        console.error(`[gk-layer-styles] Failed to add glow layer ${glowLayerId}:`, err);
       }
     }
     // Selection ring: dedicated single-feature source so no data-driven expressions
@@ -1142,7 +1142,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         map.setPaintProperty(pointLayerId, 'circle-radius', effectivePointRadius as any);
       } catch (radiusErr) {
         console.warn(
-          `[geokit] setPaintProperty circle-radius failed for ${pointLayerId}:`,
+          `[gk-layer-styles] setPaintProperty circle-radius failed for ${pointLayerId}:`,
           radiusErr
         );
       }
@@ -1228,7 +1228,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       }
       debug.log('[layer-styles] glow layer ADD done', { glowLayerId });
     } catch (error) {
-      console.error(`[geokit] Failed to add glow layer ${glowLayerId}:`, error);
+      console.error(`[gk-layer-styles] Failed to add glow layer ${glowLayerId}:`, error);
     }
   }
 
@@ -1267,7 +1267,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     try {
       map.addLayer(pointLayerSpec as any);
     } catch (error) {
-      console.error(`[geokit] Failed to add point layer ${pointLayerId}:`, error, { sourceId });
+      console.error(`[gk-layer-styles] Failed to add point layer ${pointLayerId}:`, error, { sourceId });
       // Fallback: static white dots so points remain visible (data-driven color may have failed)
       try {
         const fallbackSpec = {
@@ -1286,7 +1286,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         if (filter != null) fallbackSpec.filter = filter;
         map.addLayer(fallbackSpec as any);
       } catch (fallbackError) {
-        console.error(`[geokit] Fallback point layer also failed ${pointLayerId}:`, fallbackError);
+        console.error(`[gk-layer-styles] Fallback point layer also failed ${pointLayerId}:`, fallbackError);
       }
     }
 
@@ -1405,7 +1405,7 @@ function setupSelectionShadowLayer(
       );
       debug.log('[layer-styles] selection shadow layer ADD', { shadowLayerId });
     } catch (err) {
-      console.error(`[geokit] Failed to add selection shadow ${shadowLayerId}:`, err);
+      console.error(`[gk-layer-styles] Failed to add selection shadow ${shadowLayerId}:`, err);
     }
   }
 }
@@ -1430,7 +1430,7 @@ function setupSelectionRingLayer(
       });
       debug.log('[layer-styles] selection source ADD', { selectionSourceId });
     } catch (err) {
-      console.error(`[geokit] Failed to add selection source ${selectionSourceId}:`, err);
+      console.error(`[gk-layer-styles] Failed to add selection source ${selectionSourceId}:`, err);
       return;
     }
   }
@@ -1455,7 +1455,7 @@ function setupSelectionRingLayer(
       } as any);
       debug.log('[layer-styles] selection ring layer ADD', { ringLayerId });
     } catch (err) {
-      console.error(`[geokit] Failed to add selection ring ${ringLayerId}:`, err);
+      console.error(`[gk-layer-styles] Failed to add selection ring ${ringLayerId}:`, err);
     }
   }
 }
@@ -1965,7 +1965,7 @@ export function createSharedPointLayersWithHover(
       });
       debug.log('[layer-styles] hover source ADD', { hoverSourceId });
     } catch (err) {
-      console.error(`[geokit] Failed to add hover source ${hoverSourceId}:`, err);
+      console.error(`[gk-layer-styles] Failed to add hover source ${hoverSourceId}:`, err);
     }
   }
 
@@ -2001,7 +2001,7 @@ export function createSharedPointLayersWithHover(
       );
       debug.log('[layer-styles] hover glow layer ADD', { hoverLayerId });
     } catch (err) {
-      console.error(`[geokit] Failed to add hover layer ${hoverLayerId}:`, err);
+      console.error(`[gk-layer-styles] Failed to add hover layer ${hoverLayerId}:`, err);
     }
   }
 
@@ -2028,7 +2028,7 @@ export function createSharedPointLayersWithHover(
       } as any);
       debug.log('[layer-styles] hover point layer ADD', { hoverPointLayerId });
     } catch (err) {
-      console.error(`[geokit] Failed to add hover point layer ${hoverPointLayerId}:`, err);
+      console.error(`[gk-layer-styles] Failed to add hover point layer ${hoverPointLayerId}:`, err);
     }
   }
 
@@ -2112,7 +2112,7 @@ export function removeGlowPointLayers(map: MapInstance, layerPrefix: string): vo
       debug.log('[layer-styles] glow layer REMOVE done', { glowLayerId });
     }
   } catch (error) {
-    console.error(`[geokit] Failed to remove layers for ${layerPrefix}:`, error);
+    console.error(`[gk-layer-styles] Failed to remove layers for ${layerPrefix}:`, error);
   }
 }
 
@@ -2140,7 +2140,7 @@ export function setGlowPointLayersVisibility(
       map.setLayoutProperty(pointLayerId, 'visibility', visibility);
     }
   } catch (error) {
-    console.error(`[geokit] Failed to set visibility for ${layerPrefix}:`, error);
+    console.error(`[gk-layer-styles] Failed to set visibility for ${layerPrefix}:`, error);
   }
 }
 
@@ -2174,6 +2174,6 @@ export function setGlowPointLayersFilter(
       mapWithFilter.setFilter(pointLayerId, filterExpr);
     }
   } catch (error) {
-    console.error(`[geokit] Failed to set filter for ${layerPrefix}:`, error);
+    console.error(`[gk-layer-styles] Failed to set filter for ${layerPrefix}:`, error);
   }
 }

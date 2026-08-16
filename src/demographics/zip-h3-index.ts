@@ -19,7 +19,7 @@ export async function initializeZipIndex(url: string = DEFAULT_INDEX_URL): Promi
 
   initPromise = loadH3ZipIndexFromUrl(url)
     .catch((error) => {
-      console.warn('[H3 Index] Failed to load index:', error);
+      console.warn('[gk-h3] Failed to load index:', error);
     })
     .finally(() => {
       initPromise = null;

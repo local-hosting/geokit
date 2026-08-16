@@ -9,8 +9,10 @@
 
 import { BaseElement } from './base-element';
 import { getUIProvider as getGlobalUIProvider, getUIProviderByName } from '../providers/registry';
-import { debug } from '../utils/logger';
+import { createGeokitLogger } from '../utils/logger';
 import type { MapInstance } from '../providers/types';
+
+const { debug } = createGeokitLogger('map-child');
 
 /**
  * Base class for elements that need a parent gk-map
@@ -73,7 +75,7 @@ export class MapChildElement extends BaseElement {
     try {
       return getGlobalUIProvider();
     } catch (error) {
-      console.error('[MapChildElement] Failed to get global provider:', error);
+      console.error('[gk-map-child] Failed to get global provider:', error);
       return null;
     }
   }
@@ -259,9 +261,9 @@ export class MapChildElement extends BaseElement {
         // Defer by one frame so we don't add layers in the same frame as the event (avoids
         // MapTiler coalesceChanges "Cannot convert undefined or null to object" during render).
         const handleStyleLoad = () => {
-          debug.log('[MapChildElement] gk-map-style-load received', { tagName: this.tagName });
+          debug.log('gk-map-style-load received', { tagName: this.tagName });
           requestAnimationFrame(() => {
-            debug.log('[MapChildElement] onStyleLoad running', { tagName: this.tagName });
+            debug.log('onStyleLoad running', { tagName: this.tagName });
             this.onStyleLoad();
           });
         };
@@ -283,7 +285,7 @@ export class MapChildElement extends BaseElement {
       parent = parent.parentElement;
     }
 
-    debug.warn(`[MapChildElement] No parent gk-map element found for ${this.constructor.name}`);
+    debug.warn(`No parent gk-map element found for ${this.constructor.name}`);
   }
 
   /**

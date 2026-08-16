@@ -98,7 +98,7 @@ export async function retryOn429(
 
     const retryDelay = baseDelayMs * Math.pow(2, attempt);
     console.warn(
-      `[${providerName}] Rate limited, retrying in ${retryDelay}ms (attempt ${attempt + 1}/${maxRetries})`
+      `[gk-api] ${providerName} rate limited, retrying in ${retryDelay}ms (attempt ${attempt + 1}/${maxRetries})`
     );
     await delay(retryDelay);
   }
