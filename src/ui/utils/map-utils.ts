@@ -398,7 +398,15 @@ export function safeResizeMap(
  * Call once immediately after map construction.
  */
 export function wrapMapResize(
-  map: (ResizeTargetMap & { resize?: () => void }) | null | undefined
+  map:
+    | (ResizeTargetMap & {
+        resize?: () => void;
+        _onWindowResize?: () => void;
+        _removed?: boolean;
+        painter?: unknown;
+      })
+    | null
+    | undefined
 ): void {
   if (!map || typeof map.resize !== 'function') return;
 
@@ -413,6 +421,18 @@ export function wrapMapResize(
       // SDK can throw transformMat4 errors when resize races teardown or zero-size layout.
     }
   };
+
+  const originalOnWindowResize = map._onWindowResize?.bind(map);
+  if (typeof originalOnWindowResize === 'function') {
+    map._onWindowResize = () => {
+      if (map._removed || !map.painter) return;
+      try {
+        originalOnWindowResize();
+      } catch {
+        // Stale window resize handler after map.remove() or Vite HMR.
+      }
+    };
+  }
 }
 
 // ============================================================================

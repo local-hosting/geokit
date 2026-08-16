@@ -13,6 +13,15 @@ import { MapChildElement } from '../map-child-element';
 import { coordinatesToH3, h3DiskToFeatureCollection, h3GetResolution } from '../../../utils/h3';
 import { getCSSVariable } from '../../utils/theme';
 
+/** Light fill when hovering a cell whose base opacity is 0 (outline-only grids). */
+const H3_HOVER_FILL_OPACITY = 0.05;
+
+function h3HoverFillOpacity(baseOpacity: number): number {
+  return baseOpacity <= 0
+    ? H3_HOVER_FILL_OPACITY
+    : Math.min(baseOpacity + 0.18, 0.55);
+}
+
 export interface H3Options {
   lat?: number;
   lng?: number;
@@ -147,15 +156,7 @@ export class H3Element extends MapChildElement {
           source: this.sourceId,
           paint: {
             'fill-color': this.color,
-            'fill-opacity':
-              ringK > 0
-                ? ([
-                    'case',
-                    ['boolean', ['get', 'isCenter'], false],
-                    this.opacity,
-                    this.ringOpacity,
-                  ] as unknown)
-                : this.opacity,
+            'fill-opacity': this.fillOpacityPaint(),
           },
         });
       }
@@ -187,22 +188,37 @@ export class H3Element extends MapChildElement {
     }
   }
 
+  private fillOpacityPaint(): number | unknown[] {
+    const ringK = this.ringK;
+    return ringK > 0
+      ? ([
+          'case',
+          ['boolean', ['get', 'isCenter'], false],
+          this.opacity,
+          this.ringOpacity,
+        ] as unknown[])
+      : this.opacity;
+  }
+
   private bindFillInteractivity(layerId: string): void {
     if (!this.map || this.interactiveBound) return;
     this.interactiveBound = true;
     this.setupLayerInteractivity(layerId, 'h3');
 
-    const baseOpacity = this.opacity;
-    const hoverOpacity = baseOpacity <= 0 ? 0 : Math.min(baseOpacity + 0.18, 0.55);
+    const baseFillOpacity = this.fillOpacityPaint();
+    const hoverFillOpacity =
+      this.ringK > 0
+        ? h3HoverFillOpacity(Math.max(this.opacity, this.ringOpacity))
+        : h3HoverFillOpacity(this.opacity);
 
     this.map.on('mouseenter', layerId, () => {
       if (this.fillLayerId) {
-        this.map?.setPaintProperty?.(this.fillLayerId, 'fill-opacity', hoverOpacity);
+        this.map?.setPaintProperty?.(this.fillLayerId, 'fill-opacity', hoverFillOpacity);
       }
     });
     this.map.on('mouseleave', layerId, () => {
       if (this.fillLayerId) {
-        this.map?.setPaintProperty?.(this.fillLayerId, 'fill-opacity', baseOpacity);
+        this.map?.setPaintProperty?.(this.fillLayerId, 'fill-opacity', baseFillOpacity);
       }
     });
   }
