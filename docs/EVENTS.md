@@ -4,7 +4,7 @@ Custom events use the `gk-*` prefix where they are part of the public API. This 
 
 ---
 
-## Shared point layers (`@twinfile/geokit/ui/shared-points`)
+## Shared point layers (`geokit/ui/shared-points`)
 
 Many map points (venues, POIs, fleet sites) share one **source + glow + point + hover + selection** layer set. Geokit owns **how** points render and update; apps own **what** each feature carries (`_color`, `brand`, ratings, etc.).
 
@@ -21,7 +21,7 @@ import {
   createSharedPointLayersFromPaint,
   syncExistingSharedPointLayers,
   preloadSharedPointLayerStyles,
-} from '@twinfile/geokit/ui/shared-points';
+} from 'geokit/ui/shared-points';
 ```
 
 **First paint** — source exists, layers do not:
@@ -216,7 +216,7 @@ document.dispatchEvent(new CustomEvent('gk-clear-all-focus', { bubbles: true }))
 **Map ready only inside a container:**
 
 ```js
-import { onMapReadyInContainer } from '@twinfile/geokit/ui';
+import { onMapReadyInContainer } from 'geokit/ui';
 
 const unsub = onMapReadyInContainer(containerEl, (mapElement, map) => {
   // decorate map, add layers, etc.
