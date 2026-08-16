@@ -16,4 +16,3 @@ export * from './geojson-source-options';
 export * from './map-terrain-disable';
 export * from './fill-antialias';
 export * from './choropleth-fill-paint';
-export * from './dma-colors';
