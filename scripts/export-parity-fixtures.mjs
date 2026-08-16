@@ -52,7 +52,7 @@ const nycDms = coordinatesToDMS(nyc.latitude, nyc.longitude);
 
 const fixtures = {
   version: 4,
-  description: 'Shared parity fixtures — generated from @twinfile/geokit',
+  description: 'Shared parity fixtures — generated from geokit',
   coordinates: { nyc, la, nearNyc },
   bounds: {
     nycPair: {

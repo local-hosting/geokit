@@ -4,10 +4,10 @@ Complex GeoJSON polygons (DMA boundaries, dissolved regions) are triangulated at
 
 ## Contract
 
-Use `buildChoroplethFillPaint` from `@twinfile/geokit/ui/choropleth-fill-paint` for fill layers:
+Use `buildChoroplethFillPaint` from `geokit/ui/choropleth-fill-paint` for fill layers:
 
 ```ts
-import { buildChoroplethFillPaint } from '@twinfile/geokit/ui/choropleth-fill-paint';
+import { buildChoroplethFillPaint } from 'geokit/ui/choropleth-fill-paint';
 
 map.addLayer({
   id: 'region-fill',

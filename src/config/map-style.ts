@@ -1,10 +1,10 @@
 /**
- * Corio product Mapbox basemap — shared by geokit-swift (GeoKitDemoConstants), MCP, and web UI.
+ * Mapbox basemap style resolution — env-driven with stock Mapbox fallback.
  */
-export const CORIO_MAPBOX_STYLE_URI = 'mapbox://styles/corio/cm1gmmsh900xd01nw38jtafz7';
+export const DEFAULT_MAPBOX_STYLE_URI = 'mapbox://styles/mapbox/streets-v12';
 
 /** Mapbox Static Images API style path (`owner/styleId`). */
-export const CORIO_MAPBOX_STATIC_STYLE = 'corio/cm1gmmsh900xd01nw38jtafz7';
+export const DEFAULT_MAPBOX_STATIC_STYLE = 'mapbox/streets-v12';
 
 /** Convert `mapbox://styles/owner/id` to Static API `owner/id`. */
 export function mapboxStyleUriToStaticStyle(styleUri: string): string {
@@ -15,21 +15,21 @@ export function mapboxStyleUriToStaticStyle(styleUri: string): string {
   return styleUri;
 }
 
-export function resolveDopplerMapboxStyleUri(
+export function resolveMapboxStyleUri(
   env: { GEOKIT_MAP_STYLE_URL?: string; MAP_STYLE_URL?: string } = process.env as {
     GEOKIT_MAP_STYLE_URL?: string;
     MAP_STYLE_URL?: string;
   }
 ): string {
   const explicit = env.GEOKIT_MAP_STYLE_URL?.trim() || env.MAP_STYLE_URL?.trim();
-  return explicit || CORIO_MAPBOX_STYLE_URI;
+  return explicit || DEFAULT_MAPBOX_STYLE_URI;
 }
 
-export function resolveDopplerMapboxStaticStyle(
+export function resolveMapboxStaticStyle(
   env: { GEOKIT_MAP_STYLE_URL?: string; MAP_STYLE_URL?: string } = process.env as {
     GEOKIT_MAP_STYLE_URL?: string;
     MAP_STYLE_URL?: string;
   }
 ): string {
-  return mapboxStyleUriToStaticStyle(resolveDopplerMapboxStyleUri(env));
+  return mapboxStyleUriToStaticStyle(resolveMapboxStyleUri(env));
 }

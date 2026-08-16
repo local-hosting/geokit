@@ -1,6 +1,6 @@
 /**
  * Theme system – style values live in CSS (theme.css).
- * Import theme.css in your app: import '@twinfile/geokit/ui/theme.css'
+ * Import theme.css in your app: import 'geokit/ui/theme.css'
  * Theme logic here: name + mapStyle only; CSS provides --gk-* variables via :root and gk-map.gk-theme-*.
  */
 
@@ -89,7 +89,7 @@ const THEME_CLASS_DARK = 'gk-theme-dark';
 
 /**
  * No-op. Styles are in theme.css – ensure your app imports it:
- * import '@twinfile/geokit/ui/theme.css'
+ * import 'geokit/ui/theme.css'
  */
 export function injectThemeStyles(): void {
   /* Styles live in theme.css; app must import it. */

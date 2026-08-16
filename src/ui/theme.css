@@ -1,6 +1,6 @@
 /**
  * geokit theme – all styles in CSS.
- * Import this file in your app: import '@twinfile/geokit/ui/theme.css'
+ * Import this file in your app: import 'geokit/ui/theme.css'
  * Default: light. Dark: @media (prefers-color-scheme: dark) or gk-map[theme="dark"].
  */
 
@@ -24,7 +24,10 @@
   --gk-popup-tag-label-background: rgba(175, 184, 193, 0.1);
   --gk-popup-tag-text: #1f2328;
   --gk-popup-link-color: #0969da;
-  --gk-popup-border: rgba(208, 215, 222, 0.5);
+  --gk-popup-border: none;
+  --gk-popup-border-radius: 6px;
+  --gk-popup-shadow: none;
+  --gk-popup-divider: rgba(208, 215, 222, 0.5);
   --gk-primary-color: #0891b2;
   --gk-primary-stroke: #0e7490;
   --gk-focus-ring-color: #1f2937;
@@ -67,7 +70,10 @@
     --gk-popup-tag-label-background: rgba(139, 148, 158, 0.08);
     --gk-popup-tag-text: #c9d1d9;
     --gk-popup-link-color: #58a6ff;
-    --gk-popup-border: rgba(139, 148, 158, 0.2);
+    --gk-popup-border: none;
+    --gk-popup-border-radius: 6px;
+    --gk-popup-shadow: none;
+    --gk-popup-divider: rgba(139, 148, 158, 0.2);
     --gk-primary-color: #3FB1CE;
     --gk-primary-stroke: #1B8AA8;
     --gk-focus-ring-color: #ffffff;
@@ -111,7 +117,10 @@ gk-map.gk-theme-light {
   --gk-popup-tag-label-background: rgba(175, 184, 193, 0.1);
   --gk-popup-tag-text: #1f2328;
   --gk-popup-link-color: #0969da;
-  --gk-popup-border: rgba(208, 215, 222, 0.5);
+  --gk-popup-border: none;
+  --gk-popup-border-radius: 6px;
+  --gk-popup-shadow: none;
+  --gk-popup-divider: rgba(208, 215, 222, 0.5);
   --gk-primary-color: #0891b2;
   --gk-primary-stroke: #0e7490;
   --gk-focus-ring-color: #1f2937;
@@ -153,7 +162,10 @@ gk-map.gk-theme-dark {
   --gk-popup-tag-label-background: rgba(139, 148, 158, 0.08);
   --gk-popup-tag-text: #c9d1d9;
   --gk-popup-link-color: #58a6ff;
-  --gk-popup-border: rgba(139, 148, 158, 0.2);
+  --gk-popup-border: none;
+  --gk-popup-border-radius: 6px;
+  --gk-popup-shadow: none;
+  --gk-popup-divider: rgba(139, 148, 158, 0.2);
   --gk-primary-color: #3FB1CE;
   --gk-primary-stroke: #1B8AA8;
   --gk-focus-ring-color: #ffffff;

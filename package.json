@@ -1,5 +1,5 @@
 {
-  "name": "@twinfile/geokit",
+  "name": "geokit",
   "version": "0.2.33",
   "description": "A functional, curried geospatial utility toolkit for browser and Node.js",
   "type": "module",
@@ -411,8 +411,7 @@
   "license": "MPL-2.0",
   "packageManager": "yarn@4.14.1",
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
-    "@twinfile:registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
