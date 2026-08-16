@@ -79,6 +79,7 @@ import {
 
 export class MapElement extends BaseElement {
   static observedAttributes = [
+    'map-id',
     'lat',
     'lng',
     'zoom',
@@ -584,6 +585,8 @@ export class MapElement extends BaseElement {
           })
         );
 
+        void this.scheduleOfflinePrefetchOnContextLoad();
+
         // 3D terrain / hillshade are opt-in via attributes (default off)
         if (this.isMapOverlayEnabled('terrain-enabled') && this.getAttribute('terrain-min-zoom')) {
           this.setupTerrain();
@@ -696,6 +699,20 @@ export class MapElement extends BaseElement {
     if (!handler) return;
     this._styleImageMissingHandler = handler;
     map.on('styleimagemissing', handler);
+  }
+
+
+  /** Tier D — prefetch offline tiles when host configured `MapOfflineContextLoader`. */
+  private async scheduleOfflinePrefetchOnContextLoad(): Promise<void> {
+    const mapId = this.getAttribute('map-id')?.trim();
+    if (!mapId) return;
+    try {
+      const { MapOfflineContextLoader } = await import('../../../../storage/map-offline-context-loader.js');
+      const zoom = parseFloat(this.getAttribute('zoom') || '12');
+      await MapOfflineContextLoader.onMapContextLoad(mapId, { zoom });
+    } catch (error) {
+      debug.warn('[gk-map] offline prefetch on context load failed', error);
+    }
   }
 
   /**

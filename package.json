@@ -417,6 +417,13 @@
       "import": "./dist/esm/ui/utils/map-viewport.js",
       "require": "./dist/cjs/ui/utils/map-viewport.cjs",
       "default": "./dist/esm/ui/utils/map-viewport.js"
+    },
+    "./storage": {
+      "source": "./src/storage/index.ts",
+      "types": "./dist/esm/storage/index.d.ts",
+      "import": "./dist/esm/storage/index.js",
+      "require": "./dist/cjs/storage/index.cjs",
+      "default": "./dist/esm/storage/index.js"
     }
   },
   "sideEffects": [
