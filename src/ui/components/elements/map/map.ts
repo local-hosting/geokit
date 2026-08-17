@@ -2490,6 +2490,8 @@ export class MapElement extends BaseElement {
       pitch?: number;
       bearing?: number;
       maxZoom?: number;
+      /** Camera transition length in ms; 0 = instant (default). */
+      duration?: number;
     } = {}
   ): Promise<void> {
     if (!this.map) {
@@ -2518,6 +2520,7 @@ export class MapElement extends BaseElement {
     }
     const pitch = options.pitch ?? 0;
     const bearing = options.bearing ?? 0;
+    const duration = Math.max(0, options.duration ?? 0);
 
     // Wait for style to be ready
     await this.whenStyleReady();
@@ -2554,7 +2557,29 @@ export class MapElement extends BaseElement {
         ? { top: padding, bottom: padding, left: padding, right: padding }
         : padding;
 
-    // Prefer cameraForBounds + jumpTo — MapTiler fitBounds can NaN when canvas layout is settling.
+    const waitForViewportSettle = (): Promise<void> => {
+      if (duration <= 0) {
+        return new Promise((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => resolve());
+          });
+        });
+      }
+
+      return new Promise((resolve) => {
+        const timeoutMs = duration + 250;
+        let timeout = 0;
+        const finish = () => {
+          if (timeout) window.clearTimeout(timeout);
+          map.off?.('moveend', finish);
+          resolve();
+        };
+        timeout = window.setTimeout(finish, timeoutMs);
+        map.once?.('moveend', finish);
+      });
+    };
+
+    // Prefer cameraForBounds + easeTo/jumpTo — MapTiler fitBounds can NaN when canvas layout is settling.
     try {
       const camera = map.cameraForBounds?.(corners, {
         padding: paddingObj,
@@ -2565,12 +2590,34 @@ export class MapElement extends BaseElement {
         camera.center.every(Number.isFinite) &&
         Number.isFinite(camera.zoom)
       ) {
-        map.jumpTo?.({
+        const cameraOptions = {
           center: camera.center,
           zoom: camera.zoom,
           bearing: camera.bearing ?? bearing,
           pitch: camera.pitch ?? pitch,
-          duration: 0,
+          duration,
+        };
+        if (duration > 0) {
+          const animated = {
+            ...cameraOptions,
+            essential: true,
+            ...(duration >= 1000 ? { curve: 1.42 } : {}),
+          };
+          if (typeof map.flyTo === 'function') {
+            map.flyTo(animated);
+          } else {
+            map.easeTo?.(animated);
+          }
+        } else {
+          map.jumpTo?.(cameraOptions);
+        }
+      } else if (duration > 0) {
+        map.fitBounds(corners, {
+          padding: paddingObj,
+          pitch,
+          bearing,
+          duration,
+          maxZoom: options.maxZoom,
         });
       } else {
         map.fitBounds(corners, {
@@ -2587,19 +2634,19 @@ export class MapElement extends BaseElement {
         map.triggerRepaint();
       }
 
-      // Wait for viewport to settle
-      await new Promise((resolve) => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(resolve);
-        });
-      });
+      await waitForViewportSettle();
     } catch (error) {
       console.warn('[gk-map] Error in setBounds:', error);
       // Fallback to center
       const centerLng = (minLng + maxLng) / 2;
       const centerLat = (minLat + maxLat) / 2;
       try {
-        map.jumpTo?.({ center: [centerLng, centerLat], pitch, bearing });
+        if (duration > 0) {
+          map.easeTo?.({ center: [centerLng, centerLat], pitch, bearing, duration });
+          await waitForViewportSettle();
+        } else {
+          map.jumpTo?.({ center: [centerLng, centerLat], pitch, bearing });
+        }
       } catch {
         // Ignore fallback errors
       }
