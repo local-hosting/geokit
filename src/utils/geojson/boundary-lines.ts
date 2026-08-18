@@ -15,7 +15,10 @@ import type { FeatureCollection, LineString, Polygon, MultiPolygon, Position } f
 export const MAPLIBRE_BOUNDARY_LINE_VERTEX_CHUNK = 2048;
 
 /** Match host shape export ring budget — keeps fill + line sources aligned. */
-export const ADMIN_POLYGON_RING_MAX = 900;
+export const BOUNDARY_POLYGON_RING_MAX = 900;
+
+/** @deprecated Use BOUNDARY_POLYGON_RING_MAX */
+export const ADMIN_POLYGON_RING_MAX = BOUNDARY_POLYGON_RING_MAX;
 
 function exteriorRings(geometry: Polygon | MultiPolygon): Position[][] {
   if (geometry.type === 'Polygon') {
@@ -111,7 +114,7 @@ function ringExceedsBudget(geometry: Polygon | MultiPolygon, maxPoints: number):
 
 export function capPolygonCollectionForMapLibre(
   collection: FeatureCollection,
-  maxPoints = ADMIN_POLYGON_RING_MAX
+  maxPoints = BOUNDARY_POLYGON_RING_MAX
 ): FeatureCollection {
   const needsCap = collection.features.some((feature) => {
     const geometry = feature.geometry;

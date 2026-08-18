@@ -64,8 +64,8 @@ function setBasemapLayerZoomRange(
   }
 }
 
-/** Show MapTiler admin borders — smooth vector tiles, not client geojson-vt. */
-export function restoreBasemapAdminBorders(
+/** Show MapTiler basemap borders — smooth vector tiles, not client geojson-vt. */
+export function restoreBasemapBorders(
   map: BoundaryMapLike | null | undefined,
   options?: { stateLineColor?: string; countyLineColor?: string }
 ): void {
@@ -128,7 +128,7 @@ export function applyBasemapStateOutline(
   map: BoundaryMapLike | null | undefined,
   lineColor: string
 ): void {
-  restoreBasemapAdminBorders(map, { stateLineColor: lineColor });
+  restoreBasemapBorders(map, { stateLineColor: lineColor });
   extendBasemapStateBorderZoom(map);
   for (const layerId of BASEMAP_STATE_BORDER_LAYER_IDS) {
     if (!map?.getLayer?.(layerId)) continue;
@@ -141,7 +141,7 @@ export function applyBasemapCountyOutline(
   lineColor: string,
   minZoom = 7
 ): void {
-  restoreBasemapAdminBorders(map, { countyLineColor: lineColor });
+  restoreBasemapBorders(map, { countyLineColor: lineColor });
   extendBasemapCountyBorderZoom(map, minZoom);
   for (const layerId of BASEMAP_COUNTY_BORDER_LAYER_IDS) {
     if (!map?.getLayer?.(layerId)) continue;
@@ -149,7 +149,7 @@ export function applyBasemapCountyOutline(
   }
 }
 
-/** Hide default basemap borders so custom admin outlines read clearly. */
+/** Hide default basemap borders so custom boundary outlines read clearly. */
 export function suppressBasemapBorders(
   map: BoundaryMapLike | null | undefined,
   layerIds: readonly string[] = BASEMAP_CHOROPLETH_STACK_LAYER_IDS
@@ -166,18 +166,25 @@ export function suppressBasemapBorders(
 }
 
 /** True when the style has a gk-layer dataset outline line layer. */
-export function isAdminOutlineLineLayerId(id: string): boolean {
+export function isBoundaryOutlineLineLayerId(id: string): boolean {
   return id.startsWith('gk-dataset-') && id.endsWith('-line');
 }
 
-export function hasAdminOutlineLineLayers(map: BoundaryMapLike | null | undefined): boolean {
+export function hasBoundaryOutlineLineLayers(map: BoundaryMapLike | null | undefined): boolean {
   const layers = map?.getStyle?.()?.layers;
   if (!layers) return false;
   return layers.some((layer) => {
     const id = layer.id;
-    return typeof id === 'string' && isAdminOutlineLineLayerId(id);
+    return typeof id === 'string' && isBoundaryOutlineLineLayerId(id);
   });
 }
+
+/** @deprecated Use restoreBasemapBorders */
+export const restoreBasemapAdminBorders = restoreBasemapBorders;
+/** @deprecated Use isBoundaryOutlineLineLayerId */
+export const isAdminOutlineLineLayerId = isBoundaryOutlineLineLayerId;
+/** @deprecated Use hasBoundaryOutlineLineLayers */
+export const hasAdminOutlineLineLayers = hasBoundaryOutlineLineLayers;
 
 export function assertBoundaryLayerOrder(
   map: BoundaryMapLike | null | undefined,
