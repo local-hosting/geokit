@@ -217,33 +217,12 @@
       "require": "./dist/cjs/ui/utils/geojson-source-options.cjs",
       "default": "./dist/esm/ui/utils/geojson-source-options.js"
     },
-    "./ui/admin-outline-preset": {
-      "source": "./src/ui/utils/admin-outline-preset.ts",
-      "types": "./dist/esm/ui/utils/admin-outline-preset.d.ts",
-      "import": "./dist/esm/ui/utils/admin-outline-preset.js",
-      "require": "./dist/cjs/ui/utils/admin-outline-preset.cjs",
-      "default": "./dist/esm/ui/utils/admin-outline-preset.js"
-    },
-    "./ui/state-boundaries": {
-      "source": "./src/ui/utils/admin-outline-preset.ts",
-      "types": "./dist/esm/ui/utils/admin-outline-preset.d.ts",
-      "import": "./dist/esm/ui/utils/admin-outline-preset.js",
-      "require": "./dist/cjs/ui/utils/admin-outline-preset.cjs",
-      "default": "./dist/esm/ui/utils/admin-outline-preset.js"
-    },
     "./ui/boundary-map": {
       "source": "./src/ui/utils/boundary-map.ts",
       "types": "./dist/esm/ui/utils/boundary-map.d.ts",
       "import": "./dist/esm/ui/utils/boundary-map.js",
       "require": "./dist/cjs/ui/utils/boundary-map.cjs",
       "default": "./dist/esm/ui/utils/boundary-map.js"
-    },
-    "./ui/place-boundaries": {
-      "source": "./src/ui/utils/admin-outline-preset.ts",
-      "types": "./dist/esm/ui/utils/admin-outline-preset.d.ts",
-      "import": "./dist/esm/ui/utils/admin-outline-preset.js",
-      "require": "./dist/cjs/ui/utils/admin-outline-preset.cjs",
-      "default": "./dist/esm/ui/utils/admin-outline-preset.js"
     },
     "./ui/layer-datasets": {
       "source": "./src/ui/components/elements/layer/layer-datasets.ts",
