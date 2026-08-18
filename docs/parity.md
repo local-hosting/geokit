@@ -28,7 +28,7 @@ Exported from `@geokit/turf` (`src/utils/turf/`). Fixtures under `turf.*`.
 
 ## Tier 3 — Node-only (out of scope)
 
-Choropleth datasets, host layer loaders, MCP map tools, full provider registry surface, extended Turf suite (union/difference/simplify/clustering). Host apps own those integrations outside geokit.
+MCP map tools, full provider registry surface, extended Turf suite (union/difference/simplify/clustering). Host apps own application-specific integrations.
 
 ## Known differences
 

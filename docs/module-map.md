@@ -11,7 +11,6 @@ Cross-platform layout for `@twinfile/geokit` and **geokit-swift**. See [`parity.
 | Contract | `src/contract/` | `GeoKitContract` | Map lifecycle, provider ids, bootstrap |
 | UI | `src/ui/` | `GeoKitUI` | Map components, theme, layer stack |
 | Providers | `src/api/`, `src/ui/providers/` | `GeoKitUIMapbox`, `GeoKitUI/Providers/` | Mapbox, MapTiler, Apple |
-| Host geo layers | *(not in geokit)* | *(not in geokit-swift)* | Host app |
 
 ## Core (Tier 1)
 

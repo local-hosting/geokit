@@ -1,6 +1,6 @@
 # Choropleth fill paint (MapLibre)
 
-Complex GeoJSON polygons (DMA boundaries, dissolved regions) are triangulated at render time (earcut). Semi-transparent fills without antialiasing can show diagonal fold lines inside the shape — not bad geometry.
+Complex GeoJSON polygons (admin boundaries, dissolved regions) are triangulated at render time (earcut). Semi-transparent fills without antialiasing can show diagonal fold lines inside the shape — not bad geometry.
 
 ## Contract
 
@@ -26,5 +26,5 @@ Default options use `preferAntialiasedWhenFlat: true` (product maps). Pass `{}` 
 
 - `fillAntialiasForMap` — lower-level pitch/terrain heuristic
 - `BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS` — geojson-vt tuning for outline sources (`tolerance: 0`, `buffer: 256`, `maxzoom: 14`)
-- `CHOROPLETH_BOUNDARY_GEOJSON_SOURCE_OPTIONS` — choropleth / DMA polygon sources (`tolerance: 0` keeps shared borders aligned)
-- Host app: `dmaChoroplethFillAntialiasOptions()` — terrain-aware wrapper
+- `CHOROPLETH_BOUNDARY_GEOJSON_SOURCE_OPTIONS` — choropleth polygon sources (`tolerance: 0` keeps shared borders aligned)
+- Pass terrain-aware options from the host when the map uses 3D terrain
