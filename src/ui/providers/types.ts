@@ -12,7 +12,7 @@ export interface MapProviderConfig {
   accessToken?: string;
   /** Full MapLibre style.json URL — overrides built-in theme/style names. */
   styleUrl?: string;
-  /** Optional URL to load MapTiler SDK from (e.g. CDN UMD). Script must set window.maptilersdk. */
+  /** Optional URL to load MapTiler SDK from (e.g. external script URL). Script must set window.maptilersdk. */
   sdkScriptUrl?: string;
   /** MapLibre transformRequest — rewrite tile/style URLs (e.g. dev proxy for referrer-restricted keys). */
   transformRequest?: (

@@ -1,7 +1,7 @@
 /**
  * Admin boundary outlines — polygon fill-outline on GeoJSON sources.
  *
- * Client geojson-vt slices polygons at tile edges; CDN fill-outline fragments at
+ * Client geojson-vt slices polygons at tile edges; fill-outline fragments at
  * continent zoom. State preset uses basemap admin borders for visuals at all zooms.
  */
 
@@ -19,10 +19,10 @@ export type BoundaryOutlinePaintConfig = {
   lineColor: string;
   lineWidth: number | unknown[];
   minzoom?: number;
-  /** Zoom at which CDN outline paints (county/city). Default 7. */
+  /** Zoom at which custom outline paints (county/city). Default 7. */
   minOutlineZoom?: number;
   /**
-   * State preset: basemap draws outlines at every zoom; CDN layer is hit-target only.
+   * State preset: basemap draws outlines at every zoom; overlay layer is hit-target only.
    */
   useBasemapOutline?: boolean;
 };

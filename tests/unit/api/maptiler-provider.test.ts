@@ -40,7 +40,7 @@ describe('MapTilerAPIProvider', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       await provider.initialize({});
       expect(consoleSpy).toHaveBeenCalledWith(
-        'MapTiler API Provider: No API key provided. API calls will not work.'
+        '[gk-api-maptiler]  No API key provided. API calls will not work.'
       );
       consoleSpy.mockRestore();
     });

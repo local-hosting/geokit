@@ -88,6 +88,6 @@ Legend: **✅** both providers · **🟡** partial / provider-specific config ·
 
 ## Out of scope (both cores)
 
-Globe CDN fetch, DMA JWT, H3 cell layer catalogs, MCP map tools — **`@twinfile/globe-static`** (`host/client`, `host/map`).
+DMA JWT, H3 cell layer catalogs, MCP map tools — host apps, not geokit cores.
 
 Geo math (`interpolateAlongPath`, H3, distance, etc.) is provider-agnostic in `geokit` / `GeoKitCore`.

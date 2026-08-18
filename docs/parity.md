@@ -28,7 +28,7 @@ Exported from `@geokit/turf` (`src/utils/turf/`). Fixtures under `turf.*`.
 
 ## Tier 3 — Node-only (out of scope)
 
-CDN choropleth, Globe layer datasets, MCP map tools, full provider registry surface, extended Turf suite (union/difference/simplify/clustering). Host apps use `@twinfile/globe-static` for CDN.
+Choropleth datasets, host layer loaders, MCP map tools, full provider registry surface, extended Turf suite (union/difference/simplify/clustering). Host apps own those integrations outside geokit.
 
 ## Known differences
 

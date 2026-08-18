@@ -64,7 +64,7 @@ function setBasemapLayerZoomRange(
   }
 }
 
-/** Show MapTiler admin borders — smooth vector tiles, not CDN geojson-vt. */
+/** Show MapTiler admin borders — smooth vector tiles, not client geojson-vt. */
 export function restoreBasemapAdminBorders(
   map: BoundaryMapLike | null | undefined,
   options?: { stateLineColor?: string; countyLineColor?: string }
@@ -149,7 +149,7 @@ export function applyBasemapCountyOutline(
   }
 }
 
-/** Hide default basemap borders so custom CDN outlines read clearly. */
+/** Hide default basemap borders so custom admin outlines read clearly. */
 export function suppressBasemapBorders(
   map: BoundaryMapLike | null | undefined,
   layerIds: readonly string[] = BASEMAP_CHOROPLETH_STACK_LAYER_IDS
@@ -165,17 +165,8 @@ export function suppressBasemapBorders(
   }
 }
 
-const LEGACY_ADMIN_OUTLINE_LINE_LAYER_IDS = [
-  'cdn-state-lines',
-  'cdn-county-lines',
-  'cdn-city-lines',
-] as const;
-
-/** True when the style still has a CDN admin outline line layer (gk-layer or legacy). */
+/** True when the style has a gk-layer dataset outline line layer. */
 export function isAdminOutlineLineLayerId(id: string): boolean {
-  if ((LEGACY_ADMIN_OUTLINE_LINE_LAYER_IDS as readonly string[]).includes(id)) {
-    return true;
-  }
   return id.startsWith('gk-dataset-') && id.endsWith('-line');
 }
 

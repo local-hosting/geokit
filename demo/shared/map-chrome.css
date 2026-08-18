@@ -2,17 +2,17 @@
  * Dev demos — hide MapLibre footer attribution chrome.
  * Product apps should show credits; demos keep the map canvas clean.
  */
-.cdn-map .maplibregl-ctrl-attrib,
-.cdn-map .maplibregl-ctrl-attrib-button,
-.cdn-map .maplibregl-ctrl-attrib-inner,
-.cdn-map .maplibregl-ctrl-logo,
-.cdn-map .maplibregl-compact,
-.cdn-map .maplibregl-compact-show,
-.cdn-map .maplibregl-ctrl-bottom-left:has(.maplibregl-ctrl-attrib),
-.cdn-map .maplibregl-ctrl-bottom-right:has(.maplibregl-ctrl-attrib),
-.cdn-map a[href*='maptiler'],
-.cdn-map a[href*='maplibre'],
-.cdn-map a[href*='openstreetmap'] {
+.gk-map-chrome .maplibregl-ctrl-attrib,
+.gk-map-chrome .maplibregl-ctrl-attrib-button,
+.gk-map-chrome .maplibregl-ctrl-attrib-inner,
+.gk-map-chrome .maplibregl-ctrl-logo,
+.gk-map-chrome .maplibregl-compact,
+.gk-map-chrome .maplibregl-compact-show,
+.gk-map-chrome .maplibregl-ctrl-bottom-left:has(.maplibregl-ctrl-attrib),
+.gk-map-chrome .maplibregl-ctrl-bottom-right:has(.maplibregl-ctrl-attrib),
+.gk-map-chrome a[href*='maptiler'],
+.gk-map-chrome a[href*='maplibre'],
+.gk-map-chrome a[href*='openstreetmap'] {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;

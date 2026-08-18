@@ -43,7 +43,6 @@ export const FOURSQUARE_KEY_KEYS = [
   'GEOKIT_FOURSQUARE_KEY',
 ] as const;
 
-export const CDN_TOKEN_SUB_KEYS = ['GEOKIT_CDN_TOKEN_SUB'] as const;
 
 export type EnvAliasGroup = {
   sources: readonly string[];

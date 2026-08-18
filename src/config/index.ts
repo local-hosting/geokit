@@ -12,7 +12,6 @@ export interface GeokitConfig {
     isochrone?: string;
     geocoding?: string;
     placeSearch?: string;
-    demographics?: string;
     directions?: string;
   };
 
@@ -151,7 +150,6 @@ class ConfigManager {
         isochrone: 'maptiler',
         geocoding: 'maptiler',
         placeSearch: 'foursquare',
-        // demographics provider is app-defined
         directions: 'maptiler',
       },
       performance: {

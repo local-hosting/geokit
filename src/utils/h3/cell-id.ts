@@ -1,4 +1,4 @@
-/** H3 cell index helpers — compact ids for catalog/CDN catalogs (no trailing `f` padding). */
+/** H3 cell index helpers — compact ids for catalogs (no trailing `f` padding). */
 
 import { cellToLatLng, cellToParent, getResolution, latLngToCell } from 'h3-js';
 

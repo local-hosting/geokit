@@ -109,7 +109,7 @@ preloadSharedPointLayerStyles();
 | `gk-layer-click`      | Feature clicked on layer              | `{ feature, lngLat, layerId, sourceId, originalEvent }` — cancelable |
 | `gk-layer-mouseenter` | Pointer entered a rendered feature    | `{ feature, lngLat, layerId, sourceId }`                             |
 | `gk-layer-mouseleave` | Pointer left the layer                | `{ layerId, sourceId }`                                              |
-| `gk-layer-ready`      | Dataset CDN geo drawn (`dataset="…"`) | `{ dataset, sourceId, layerId, featureCount? }`                      |
+| `gk-layer-ready`      | Dataset geo drawn (`dataset="…"`) | `{ dataset, sourceId, layerId, featureCount? }`                      |
 
 ---
 

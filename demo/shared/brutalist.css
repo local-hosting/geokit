@@ -37,7 +37,7 @@ body {
 .bk-btn,
 .theme-toggle,
 .demo-nav-link,
-.cdn-actions button {
+.gk-actions button {
   font-family: var(--bk-font);
   font-size: 12px;
   font-weight: 700;
@@ -61,19 +61,19 @@ body {
 .bk-btn:hover,
 .theme-toggle:hover,
 .demo-nav-link:hover,
-.cdn-actions button:hover {
+.gk-actions button:hover {
   background: var(--bk-fg);
   color: var(--bk-bg);
 }
 
 .bk-btn--active,
 .demo-nav-link.active,
-.cdn-actions button:not(.secondary) {
+.gk-actions button:not(.secondary) {
   background: var(--bk-fg);
   color: var(--bk-bg);
 }
 
-.cdn-actions button.secondary {
+.gk-actions button.secondary {
   background: var(--bk-bg);
   color: var(--bk-fg);
 }
@@ -110,17 +110,17 @@ body {
   pointer-events: none;
 }
 
-/* CDN demo shell */
-body.cdn-demo {
+/* GeoKit demo shell */
+body.gk-demo {
   background: var(--bk-bg);
   color: var(--bk-fg);
 }
 
-.cdn-panel {
+.gk-panel {
   border-right: var(--bk-border);
 }
 
-.cdn-field label {
+.gk-field label {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -128,8 +128,8 @@ body.cdn-demo {
   color: var(--bk-muted);
 }
 
-.cdn-field input,
-.cdn-field select {
+.gk-field input,
+.gk-field select {
   border: var(--bk-border);
   border-radius: 0;
   background: var(--bk-bg);
@@ -138,7 +138,7 @@ body.cdn-demo {
   font-size: 12px;
 }
 
-.cdn-log {
+.gk-log {
   font-family: var(--bk-mono);
   border: var(--bk-border);
   border-radius: 0;
@@ -146,34 +146,34 @@ body.cdn-demo {
   color: var(--bk-fg);
 }
 
-.cdn-card {
+.gk-card {
   border: var(--bk-border);
   border-radius: 0;
   background: var(--bk-bg);
   color: var(--bk-fg);
 }
 
-.cdn-card:hover {
+.gk-card:hover {
   background: var(--bk-fg);
   color: var(--bk-bg);
 }
 
-.cdn-panel h1,
-.cdn-hub h1 {
+.gk-panel h1,
+.gk-hub h1 {
   font-size: 1rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-.cdn-panel .subtitle,
-.cdn-card span {
+.gk-panel .subtitle,
+.gk-card span {
   font-family: var(--bk-mono);
   font-size: 12px;
   color: var(--bk-muted);
 }
 
-.cdn-hub code {
+.gk-hub code {
   font-family: var(--bk-mono);
   border: 1px solid var(--bk-line);
   padding: 2px 6px;
