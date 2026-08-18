@@ -1,6 +1,6 @@
 # Offline maps contract
 
-Shared types for **geokit** (web) and **geokit-swift** (`GeoKitContract`). Geokit stores **map runtime state** only — camera, tile cache, snapshots. Domain data (venues, markers, sync) stays in the host app (e.g. Trustbase lockers).
+Shared types for **geokit** (web) and **geokit-swift** (`GeoKitContract`). Geokit stores **map runtime state** only — camera, tile cache, snapshots. Domain data (venues, markers, sync) stays in the host app.
 
 Swift mirror: [`geokit-swift/docs/offline.md`](../../geokit-swift/docs/offline.md)
 
@@ -66,7 +66,7 @@ MapOfflineDefaults.snapshotFallbackCoverageThreshold // 0.5 → show snapshot
 
 - Venue/marker documents, packages, sync cursors
 - Auth tokens, signed geo URLs, account entitlements
-- Demographics / catalog payloads
+- Application attribute datasets
 
 ## Tier D context load hook
 
