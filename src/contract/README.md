@@ -2,7 +2,7 @@
 
 Map lifecycle, static provider ids, and bootstrap. Mirrors **geokit-swift `GeoKitContract`**.
 
-Host geo layer adapters are outside geokit.
+Application adapters live in host apps.
 
 See `docs/module-map.md` and `docs/providers.md`.
 
