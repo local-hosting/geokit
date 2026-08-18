@@ -33,7 +33,7 @@ export function h3CellIdsForViewportLoad(options: ViewportH3LoadOptions): string
   return unique;
 }
 
-/** Normalize CDN catalog cell id — strip trailing f padding from h3-js indices. */
+/** Normalize catalog cell id — strip trailing f padding from h3-js indices. */
 export function normalizeLoadedCellId(cellId: string): string {
   return compactH3CellId(cellId.trim());
 }

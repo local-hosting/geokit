@@ -1,5 +1,5 @@
 /**
- * Registry for geokit demo pages — map UI only (CDN/DMA demos live in globe-static).
+ * Registry for geokit demo pages — map UI only (boundary/geo layer demos are host-app concerns).
  * @typedef {{ id: string, path: string, label: string, description?: string }} DemoPage
  * @typedef {{ id: string, label: string, items: DemoPage[] }} DemoSection
  */

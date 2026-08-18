@@ -126,9 +126,9 @@ body.demo-has-nav:not(.scrolling-demo) .scroll-main {
   margin-left: var(--demo-scroll-panel-width);
 }
 
-body.demo-has-nav.cdn-demo .cdn-shell,
-body.demo-has-nav.cdn-demo .cdn-hub,
-body.demo-has-nav.cdn-demo .cdn-only .cdn-shell {
+body.demo-has-nav.gk-demo .gk-shell,
+body.demo-has-nav.gk-demo .gk-hub,
+body.demo-has-nav.gk-demo .gk-only .gk-shell {
   min-height: 100vh;
 }
 

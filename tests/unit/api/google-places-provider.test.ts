@@ -40,7 +40,7 @@ describe('GooglePlacesAPIProvider', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       await provider.initialize({});
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Google Places API Provider: No API key provided. API calls will not work.'
+        '[gk-api-google-places]  No API key provided. API calls will not work.'
       );
       consoleSpy.mockRestore();
     });

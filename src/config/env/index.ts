@@ -1,6 +1,5 @@
 export type { GeokitEnv } from '../../types/env.js';
 export {
-  CDN_TOKEN_SUB_KEYS,
   FOURSQUARE_KEY_KEYS,
   GOOGLE_PLACES_KEY_KEYS,
   GEOKIT_ENV_ALIAS_GROUPS,

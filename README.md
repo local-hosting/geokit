@@ -21,16 +21,6 @@ yarn add geokit
 
 Published on npm. Install with your package manager of choice.
 
-### Demographics (H3 ↔ ZIP + ACS)
-
-Geokit does not bundle census data. Load a pre-built crosswalk and ZIP-level demographics, then query polygons:
-
-- **`loadZipIndexData` / `loadDemographicsData`** — pass JSON you already fetched (from host catalogs in the host app)
-- **Globe CDN** — geo shapes only (ZCTA polygons); no ACS attributes on CDN
-- **Pipeline / lockers** — `geo-crosswalks`, `census-catalog`, and `census-{dma}` shards (host-provided data packages)
-
-Without the index, polygon ZIP lookup falls back to Mapbox reverse geocoding (slow).
-
 ## Usage
 
 ### Distance Calculations

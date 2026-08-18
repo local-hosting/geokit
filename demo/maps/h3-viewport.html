@@ -11,12 +11,12 @@
       overflow: hidden;
     }
 
-    .cdn-map-wrap #map-container {
+    .gk-map-wrap #map-container {
       position: absolute;
       inset: 0;
     }
 
-    .cdn-map-wrap gk-map {
+    .gk-map-wrap gk-map {
       display: block;
       width: 100%;
       height: 100%;
@@ -30,30 +30,30 @@
     }
   </style>
 </head>
-<body class="cdn-demo h3-viewport-demo" data-demo-active="h3-viewport">
+<body class="gk-demo h3-viewport-demo" data-demo-active="h3-viewport">
   <aside id="demo-nav" aria-label="Demo pages"></aside>
-  <div class="cdn-shell">
-    <div class="cdn-panel">
+  <div class="gk-shell">
+    <div class="gk-panel">
       <h1>h3 viewport</h1>
       <p class="subtitle">gk-h3 grid tessellated to the map viewport</p>
       <p class="h3-viewport-note">
         Uses <code>h3CellsForViewportBounds</code> and one shared GeoJSON layer for the
         viewport grid. Pan or zoom to refresh; raise resolution at closer zoom.
       </p>
-      <div class="cdn-field">
+      <div class="gk-field">
         <label for="resolution">Resolution</label>
         <input id="resolution" type="number" min="0" max="6" value="1" />
       </div>
-      <div class="cdn-field">
+      <div class="gk-field">
         <label for="max-cells">Max cells</label>
         <input id="max-cells" type="number" min="8" max="400" value="160" />
       </div>
-      <div class="cdn-actions">
+      <div class="gk-actions">
         <button type="button" id="resync">Resync grid</button>
       </div>
       <p class="h3-viewport-note">Grid sync output — DevTools console (<code>[gk-h3]</code>).</p>
     </div>
-    <div class="cdn-map-wrap">
+    <div class="gk-map-wrap">
       <div id="map-container">
         <gk-map
           id="h3-viewport-map"

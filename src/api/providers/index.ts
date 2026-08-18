@@ -36,8 +36,6 @@ export {
   type RateLimitRetryOptions,
 } from './api-utils';
 
-// Demographics shapes (catalog aggregation, not live vendor APIs)
-
 // Export provider implementations
 export { MapboxAPIProvider } from './mapbox-provider';
 export { MapTilerAPIProvider } from './maptiler-provider';

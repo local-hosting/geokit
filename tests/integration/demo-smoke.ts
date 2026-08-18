@@ -16,7 +16,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const IGNORED_CONSOLE_PATTERNS = [
   /Failed to register Mapbox API provider/i,
   /No Mapbox token found/i,
-  /\[cdn-demo\] MAPTILER_KEY missing/i,
+  /\[gk-demo\] MAPTILER_KEY missing/i,
   /favicon\.ico/i,
 ];
 

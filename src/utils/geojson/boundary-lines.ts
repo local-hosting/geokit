@@ -14,7 +14,7 @@ import type { FeatureCollection, LineString, Polygon, MultiPolygon, Position } f
  */
 export const MAPLIBRE_BOUNDARY_LINE_VERTEX_CHUNK = 2048;
 
-/** Match Globe CDN state outline export budget — keeps fill + line sources aligned. */
+/** Match host shape export ring budget — keeps fill + line sources aligned. */
 export const ADMIN_POLYGON_RING_MAX = 900;
 
 function exteriorRings(geometry: Polygon | MultiPolygon): Position[][] {

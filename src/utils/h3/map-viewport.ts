@@ -2,7 +2,7 @@ import type { ViewportBounds } from './viewport';
 
 export type { ViewportBounds };
 
-/** Approximate WGS84 bounds from map center + zoom (for CDN prefetch before MapLibre is ready). */
+/** Approximate WGS84 bounds from map center + zoom (for viewport prefetch before MapLibre is ready). */
 export function approximateViewportBoundsFromCenterZoom(
   centerLat: number,
   centerLng: number,

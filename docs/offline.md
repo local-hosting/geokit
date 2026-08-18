@@ -65,7 +65,7 @@ MapOfflineDefaults.snapshotFallbackCoverageThreshold // 0.5 → show snapshot
 ## What geokit does **not** store
 
 - Venue/marker documents, packages, sync cursors
-- Auth tokens, CDN JWT, account entitlements
+- Auth tokens, signed geo URLs, account entitlements
 - Demographics / catalog payloads
 
 ## Tier D context load hook
