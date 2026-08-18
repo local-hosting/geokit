@@ -43,7 +43,7 @@ describe('MapboxAPIProvider', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       await provider.initialize({});
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Mapbox API Provider: No access token provided. API calls will not work.'
+        '[gk-api-mapbox]  No access token provided. API calls will not work.'
       );
       consoleSpy.mockRestore();
     });

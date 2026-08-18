@@ -7,10 +7,10 @@
   <link rel="stylesheet" href="../shared/maps-shell.css">
   <link rel="stylesheet" href="../shared/sdk-demo.css">
 </head>
-<body class="cdn-demo" data-demo-active="lazy-popup">
+<body class="gk-demo" data-demo-active="lazy-popup">
   <aside id="demo-nav" aria-label="Demo pages"></aside>
-  <div class="cdn-shell">
-    <div class="cdn-panel">
+  <div class="gk-shell">
+    <div class="gk-panel">
       <h1>Lazy popup</h1>
       <p class="subtitle">Deferred popup module load</p>
       <p class="demo-note">
@@ -18,13 +18,13 @@
         <code>preloadPopupModule</code> to open a popup via <code>getPopupModule</code>.
       </p>
       <p id="module-status" class="demo-note">Popup module: pending</p>
-      <div class="cdn-actions">
+      <div class="gk-actions">
         <button type="button" id="preload">Preload module</button>
         <button type="button" class="secondary" id="clear">Clear popup</button>
       </div>
-      <pre id="log" class="cdn-log">Click the map to open a lazy popup.</pre>
+      <pre id="log" class="gk-log">Click the map to open a lazy popup.</pre>
     </div>
-    <div class="cdn-map-wrap">
+    <div class="gk-map-wrap">
       <div id="map-container">
         <gk-map
           id="lazy-popup-map"

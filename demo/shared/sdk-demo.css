@@ -1,48 +1,48 @@
 /* Panel + map layout for geokit SDK demos */
-body.cdn-demo.demo-has-nav {
+body.gk-demo.demo-has-nav {
   margin-left: var(--demo-nav-width);
 }
 
-body.cdn-demo {
+body.gk-demo {
   margin: 0;
   min-height: 100%;
   overflow: hidden;
 }
 
-.cdn-shell {
+.gk-shell {
   display: grid;
   grid-template-columns: minmax(280px, 360px) 1fr;
   min-height: 100vh;
 }
 
-.cdn-panel {
+.gk-panel {
   padding: 20px;
   overflow: auto;
 }
 
-.cdn-panel h1 {
+.gk-panel h1 {
   margin: 0 0 4px;
 }
 
-.cdn-panel .subtitle {
+.gk-panel .subtitle {
   margin: 0 0 16px;
 }
 
-.cdn-field {
+.gk-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
   margin-bottom: 12px;
 }
 
-.cdn-actions {
+.gk-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 12px;
 }
 
-.cdn-log {
+.gk-log {
   font-size: 11px;
   line-height: 1.45;
   white-space: pre-wrap;
@@ -52,28 +52,28 @@ body.cdn-demo {
   padding: 10px;
 }
 
-.cdn-map-wrap {
+.gk-map-wrap {
   position: relative;
   min-height: 100vh;
   border-left: var(--bk-border);
 }
 
-.cdn-map-wrap #map-container {
+.gk-map-wrap #map-container {
   position: absolute;
   inset: 0;
 }
 
-.cdn-map-wrap gk-map {
+.gk-map-wrap gk-map {
   display: block;
   width: 100%;
   height: 100%;
 }
 
-.cdn-only .cdn-map-wrap {
+.gk-only .gk-map-wrap {
   display: none;
 }
 
-.cdn-only .cdn-shell {
+.gk-only .gk-shell {
   grid-template-columns: 1fr;
   max-width: 840px;
   margin: 0 auto;

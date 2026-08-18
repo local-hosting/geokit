@@ -2,7 +2,7 @@
 
 Map lifecycle, static provider ids, and bootstrap. Mirrors **geokit-swift `GeoKitContract`**.
 
-CDN/Globe adapters live in `@twinfile/globe-static`, not here.
+Host geo layer adapters are outside geokit.
 
 See `docs/module-map.md` and `docs/providers.md`.
 

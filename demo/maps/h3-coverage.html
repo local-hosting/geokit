@@ -7,27 +7,27 @@
   <link rel="stylesheet" href="../shared/maps-shell.css">
   <link rel="stylesheet" href="../shared/sdk-demo.css">
 </head>
-<body class="cdn-demo" data-demo-active="h3-coverage">
+<body class="gk-demo" data-demo-active="h3-coverage">
   <aside id="demo-nav" aria-label="Demo pages"></aside>
-  <div class="cdn-shell">
-    <div class="cdn-panel">
+  <div class="gk-shell">
+    <div class="gk-panel">
       <h1>H3 coverage</h1>
       <p class="subtitle">Filter viewport cells against a fake coverage index</p>
       <p class="demo-note">
         Builds a parent-cell index from NYC, Chicago, and LA. At res 3 you should see up to three large hexes when the viewport includes those metros, then uses
         <code>viewportCoverageCells</code> so only indexed cells render.
       </p>
-      <div class="cdn-field">
+      <div class="gk-field">
         <label for="resolution">Resolution</label>
         <input id="resolution" type="number" min="1" max="5" value="3" />
       </div>
-      <div class="cdn-actions">
+      <div class="gk-actions">
         <button type="button" id="resync">Resync grid</button>
         <button type="button" class="secondary" id="rebuild-index">Rebuild index</button>
       </div>
-      <pre id="log" class="cdn-log">Waiting for map…</pre>
+      <pre id="log" class="gk-log">Waiting for map…</pre>
     </div>
-    <div class="cdn-map-wrap">
+    <div class="gk-map-wrap">
       <div id="map-container">
         <gk-map
           id="h3-coverage-map"

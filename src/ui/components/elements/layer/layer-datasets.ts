@@ -81,7 +81,7 @@ export type LayerDatasetReadyDetail = {
 };
 
 const DATASET_ATTR_ALIASES: Record<string, string> = {
-  city: 'place',
+  place: 'city',
 };
 
 export function normalizeLayerDatasetId(

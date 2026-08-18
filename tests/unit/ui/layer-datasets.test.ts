@@ -12,9 +12,9 @@ describe('layer-datasets', () => {
     expect(normalizeLayerDatasetId(null)).toBeNull();
   });
 
-  it('normalizeLayerDatasetId maps city alias to place', () => {
-    expect(normalizeLayerDatasetId('city')).toBe('place');
-    expect(resolveLayerDatasetId('place')).toBe('place');
+  it('normalizeLayerDatasetId treats city as canonical and maps legacy place', () => {
+    expect(normalizeLayerDatasetId('city')).toBe('city');
+    expect(resolveLayerDatasetId('place')).toBe('city');
   });
 
   it('parseLayerDatasetSlugs splits comma-separated slugs', () => {

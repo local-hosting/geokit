@@ -52,7 +52,7 @@ export function isochroneFeatureCollection(
   };
 }
 
-/** California state feature stub for CDN shape tests. */
+/** California state feature stub for boundary shape tests. */
 export function californiaStateFeature(): GeoJSON.Feature {
   return {
     type: 'Feature',

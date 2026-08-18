@@ -6,7 +6,7 @@ import {
 } from '../../../src/utils/h3/cell-id';
 
 describe('h3 cell-id', () => {
-  it('strips trailing f padding for CDN paths', () => {
+  it('strips trailing f padding for catalog URL paths', () => {
     expect(compactH3CellId('84485b7ffffffff')).toBe('84485b7');
     expect(compactH3CellId('85283477fffffff')).toBe('85283477');
     expect(compactH3CellId('820c07')).toBe('820c07');

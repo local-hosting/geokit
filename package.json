@@ -383,13 +383,6 @@
       "require": "./dist/cjs/static-map/index.cjs",
       "default": "./dist/esm/static-map/index.js"
     },
-    "./demographics": {
-      "source": "./src/demographics/index.ts",
-      "types": "./dist/esm/demographics/index.d.ts",
-      "import": "./dist/esm/demographics/index.js",
-      "require": "./dist/cjs/demographics/index.cjs",
-      "default": "./dist/esm/demographics/index.js"
-    },
     "./ui/lazy-popup": {
       "source": "./src/ui/lazy-popup.ts",
       "types": "./dist/esm/ui/lazy-popup.d.ts",

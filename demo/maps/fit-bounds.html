@@ -7,14 +7,14 @@
   <link rel="stylesheet" href="../shared/maps-shell.css">
   <link rel="stylesheet" href="../shared/sdk-demo.css">
 </head>
-<body class="cdn-demo" data-demo-active="fit-bounds">
+<body class="gk-demo" data-demo-active="fit-bounds">
   <aside id="demo-nav" aria-label="Demo pages"></aside>
-  <div class="cdn-shell">
-    <div class="cdn-panel">
+  <div class="gk-shell">
+    <div class="gk-panel">
       <h1>Fit bounds</h1>
       <p class="subtitle">calculateFitBoundsViewport + flyTo</p>
       <p class="demo-note">Pick a preset bbox, then fit the map viewport to those bounds.</p>
-      <div class="cdn-field">
+      <div class="gk-field">
         <label for="preset">Bounds preset</label>
         <select id="preset">
           <option value="nyc">NYC metro</option>
@@ -22,21 +22,21 @@
           <option value="conus">Continental US</option>
         </select>
       </div>
-      <div class="cdn-field">
+      <div class="gk-field">
         <label for="width">Viewport width (px)</label>
         <input id="width" type="number" min="200" max="2000" value="900" />
       </div>
-      <div class="cdn-field">
+      <div class="gk-field">
         <label for="height">Viewport height (px)</label>
         <input id="height" type="number" min="200" max="2000" value="600" />
       </div>
-      <div class="cdn-actions">
+      <div class="gk-actions">
         <button type="button" id="fit">Fit bounds</button>
         <button type="button" class="secondary" id="show-box">Show bbox</button>
       </div>
-      <pre id="log" class="cdn-log">Select a preset and click Fit bounds.</pre>
+      <pre id="log" class="gk-log">Select a preset and click Fit bounds.</pre>
     </div>
-    <div class="cdn-map-wrap">
+    <div class="gk-map-wrap">
       <div id="map-container">
         <gk-map
           id="fit-bounds-map"

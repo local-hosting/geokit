@@ -4,7 +4,7 @@
 
 | Path                              | Purpose                                                                                   |
 | --------------------------------- | ----------------------------------------------------------------------------------------- |
-| `tests/unit/`                     | Fast unit tests (happy-dom). Mirrors `src/` areas: `api`, `cdn`, `config`, `ui`, `utils`. |
+| `tests/unit/`                     | Fast unit tests (happy-dom). Mirrors `src/` areas: `api`, `config`, `ui`, `utils`. |
 | `tests/unit/ui/browser/`          | Playwright browser tests (`yarn test:browser`) — real WebGL for map controls.             |
 | `tests/integration/`              | Live API smoke tests (`yarn test:integration`). Skips when env keys are missing.          |
 | `tests/integration/demo-smoke.ts` | Playwright smoke test for `demo/` pages (`yarn test:demo`).                               |
@@ -44,9 +44,7 @@ yarn test:all              # unit + integration
 
 Prefer **behavior-oriented** test file names when the source module name is ambiguous:
 
-- `globe-cdn-fetch.test.ts` — CDN URL resolution and JSON fetch helpers
 - `dma-shape-resolve.test.ts` — DMA slug parsing and shape loading
-- `state-shape-fetch.test.ts` — US state polygon CDN helpers
 - `provider-registry-integration.test.ts` — UI + API registry wiring
 - `web-component-dom-api.test.ts` — DOM/custom-element primitives (not gk-\* components)
 

@@ -3,7 +3,7 @@
  *
  * Implements BaseUIProvider for MapTiler SDK
  * Handles map rendering, controls, markers, and popups.
- * Supports loading the SDK from a script URL (e.g. CDN UMD) via config.sdkScriptUrl;
+ * Supports loading the SDK from a script URL (e.g. external script URL) via config.sdkScriptUrl;
  * the script must set window.maptilersdk.
  */
 
@@ -165,7 +165,7 @@ export class MapTilerUIProvider extends BaseUIProvider {
       return Promise.resolve(this.sdk);
     }
 
-    // Check if SDK is already loaded globally (e.g. from CDN script tag)
+    // Check if SDK is already loaded globally (e.g. from external script tag)
     if (typeof window !== 'undefined' && (window as any).maptilersdk) {
       this.sdk = (window as any).maptilersdk;
       if (config?.apiKey) {
@@ -174,7 +174,7 @@ export class MapTilerUIProvider extends BaseUIProvider {
       return Promise.resolve(this.sdk);
     }
 
-    // Load SDK dynamically: optional script URL (CDN) or dynamic import
+    // Load SDK dynamically: optional external script URL or dynamic import
     this.sdkLoadPromise = (async () => {
       try {
         let maptilerModule: any;
@@ -182,7 +182,7 @@ export class MapTilerUIProvider extends BaseUIProvider {
         await withSuppressedMaptilerConsole(
           async () => {
             if (typeof window !== 'undefined' && config?.sdkScriptUrl) {
-              // Load from CDN/script URL (script must set window.maptilersdk)
+              // Load from external script URL (script must set window.maptilersdk)
               maptilerModule = await loadScriptAndGetGlobal(config.sdkScriptUrl, 'maptilersdk');
             } else {
               // Dynamic import of MapTiler SDK from bundle

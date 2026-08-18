@@ -41,7 +41,7 @@ describe('FoursquareAPIProvider', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       await provider.initialize({});
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Foursquare API Provider: No API key provided. API calls will not work.'
+        '[gk-api-foursquare]  No API key provided. API calls will not work.'
       );
       consoleSpy.mockRestore();
     });
