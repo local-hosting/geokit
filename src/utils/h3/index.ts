@@ -24,6 +24,29 @@ export { h3Neighbors, h3AreNeighbors } from './neighbors';
 // Polygon operations
 export { h3SetToMultiPolygon, polygonToH3 } from './polygon';
 
+// Cell map ↔ polygon spatial join
+export {
+  joinCellMapToPolygon,
+  lookupValuesForH3Cells,
+  polygonGeometryToH3Cells,
+  type H3CellValueMap,
+  type JoinCellMapToPolygonOptions,
+  type PolygonToH3CellsOptions,
+} from './cell-polygon-join';
+
+// Cell map spreadsheet ops (invert, rollup, parent resolve)
+export {
+  invertCellMap,
+  rollupCellMap,
+  keyToParentCell,
+  invertH3ToZips,
+  rollupH3ToZips,
+  zipToH3ParentCell,
+  type H3CellMultiMap,
+  type H3ToZips,
+  type InvertCellMapOptions,
+} from './cell-crosswalk';
+
 // Metrics
 export { h3EdgeLength, h3CellArea } from './metrics';
 
