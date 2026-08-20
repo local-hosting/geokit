@@ -1,5 +1,6 @@
 import { cellToBoundary } from 'h3-js';
 import type { LatLon, Polygon } from '../../types';
+import { expandH3CellId } from './cell-id';
 
 type LonLat = [number, number];
 
@@ -34,7 +35,7 @@ export function unwrapPolygonRingLongitudes(ring: LonLat[]): LonLat[] {
  * ```
  */
 export function h3ToBoundary(h3Index: string): LatLon[] {
-  const boundary = cellToBoundary(h3Index);
+  const boundary = cellToBoundary(expandH3CellId(h3Index));
   return boundary.map(([lat, lng]) => [lat, lng] as LatLon);
 }
 
@@ -52,7 +53,7 @@ export function h3ToBoundary(h3Index: string): LatLon[] {
  */
 export function h3ToPolygon(h3Index: string): Polygon | null {
   try {
-    const boundary = cellToBoundary(h3Index);
+    const boundary = cellToBoundary(expandH3CellId(h3Index));
     // Convert from [lat, lon] to [lon, lat] for GeoJSON format
     const openRing = boundary.map(([lat, lng]) => [lng, lat] as LonLat);
     const ring = unwrapPolygonRingLongitudes(openRing);
