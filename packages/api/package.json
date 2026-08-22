@@ -1,0 +1,86 @@
+{
+  "name": "@geokit/api",
+  "version": "0.1.0",
+  "description": "Geokit API providers and place taxonomy",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./place-taxonomy": {
+      "types": "./src/place-taxonomy.ts",
+      "import": "./src/place-taxonomy.ts",
+      "default": "./src/place-taxonomy.ts"
+    },
+    "./providers/foursquare": {
+      "types": "./src/providers/foursquare-provider.ts",
+      "import": "./src/providers/foursquare-provider.ts",
+      "default": "./src/providers/foursquare-provider.ts"
+    },
+    "./providers/foursquare-places": {
+      "types": "./src/providers/foursquare-places.ts",
+      "import": "./src/providers/foursquare-places.ts",
+      "default": "./src/providers/foursquare-places.ts"
+    },
+    "./providers/google-places": {
+      "types": "./src/providers/google-places-provider.ts",
+      "import": "./src/providers/google-places-provider.ts",
+      "default": "./src/providers/google-places-provider.ts"
+    },
+    "./providers/mapbox": {
+      "types": "./src/providers/mapbox-provider.ts",
+      "import": "./src/providers/mapbox-provider.ts",
+      "default": "./src/providers/mapbox-provider.ts"
+    },
+    "./providers/maptiler": {
+      "types": "./src/providers/maptiler-provider.ts",
+      "import": "./src/providers/maptiler-provider.ts",
+      "default": "./src/providers/maptiler-provider.ts"
+    },
+    "./registry": {
+      "types": "./src/providers/registry.ts",
+      "import": "./src/providers/registry.ts",
+      "default": "./src/providers/registry.ts"
+    },
+    "./setup-capability-routers": {
+      "types": "./src/providers/setup-capability-routers.ts",
+      "import": "./src/providers/setup-capability-routers.ts",
+      "default": "./src/providers/setup-capability-routers.ts"
+    },
+    "./types": {
+      "types": "./src/providers/types.ts",
+      "import": "./src/providers/types.ts",
+      "default": "./src/providers/types.ts"
+    },
+    "./types/api-composite": {
+      "types": "./src/types/api-composite.ts",
+      "import": "./src/types/api-composite.ts",
+      "default": "./src/types/api-composite.ts"
+    },
+    "./types/foursquare-places": {
+      "types": "./src/types/foursquare-places.ts",
+      "import": "./src/types/foursquare-places.ts",
+      "default": "./src/types/foursquare-places.ts"
+    },
+    "./types/place-taxonomy": {
+      "types": "./src/types/place-taxonomy.ts",
+      "import": "./src/types/place-taxonomy.ts",
+      "default": "./src/types/place-taxonomy.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "typescript": "^5.8.3",
+    "vitest": "^4.0.18"
+  },
+  "peerDependencies": {
+    "geokit": "workspace:*"
+  }
+}

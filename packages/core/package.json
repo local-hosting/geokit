@@ -549,6 +549,20 @@
       "import": "./dist/esm/types/place-taxonomy.js",
       "require": "./dist/cjs/types/place-taxonomy.cjs",
       "default": "./dist/esm/types/place-taxonomy.js"
+    },
+    "./utils/cache": {
+      "source": "./src/utils/cache.ts",
+      "types": "./dist/esm/utils/cache.d.ts",
+      "import": "./dist/esm/utils/cache.js",
+      "require": "./dist/cjs/utils/cache.cjs",
+      "default": "./dist/esm/utils/cache.js"
+    },
+    "./utils/retry": {
+      "source": "./src/utils/retry.ts",
+      "types": "./dist/esm/utils/retry.d.ts",
+      "import": "./dist/esm/utils/retry.js",
+      "require": "./dist/cjs/utils/retry.cjs",
+      "default": "./dist/esm/utils/retry.js"
     }
   },
   "sideEffects": [
@@ -649,6 +663,7 @@
     ]
   },
   "dependencies": {
+    "@geokit/api": "workspace:*",
     "@maptiler/sdk": "3.10.2",
     "@turf/along": "^7.3.0",
     "@turf/area": "^7.3.0",

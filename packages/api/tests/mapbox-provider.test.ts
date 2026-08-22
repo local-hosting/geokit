@@ -7,11 +7,11 @@ import {
   registerAPIProvider,
   initAPIProvider,
   getProviderForCapability,
-} from '../../../src/api/providers/registry';
-import { MapboxAPIProvider } from '../../../src/api/providers/mapbox-provider';
-import { useCleanAPIRegistry } from '../../setup/registries';
-import { isochroneFeatureCollection } from '../../fixtures/geojson';
-import { mockGlobalFetchJson } from '../../mocks/fetch';
+} from '../src/providers/registry';
+import { MapboxAPIProvider } from '../src/providers/mapbox-provider';
+import { useCleanAPIRegistry } from './setup/registries.ts';
+import { isochroneFeatureCollection } from '../../core/tests/fixtures/geojson';
+import { mockGlobalFetchJson } from '../../core/tests/mocks/fetch';
 
 describe('MapboxAPIProvider', () => {
   let provider: MapboxAPIProvider;

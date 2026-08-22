@@ -8,8 +8,8 @@ import {
   initAPIProvider,
   getProviderForCapability,
   _resetRegistries,
-} from '../../../src/api/providers/registry';
-import { MapTilerAPIProvider } from '../../../src/api/providers/maptiler-provider';
+} from '../src/providers/registry';
+import { MapTilerAPIProvider } from '../src/providers/maptiler-provider';
 
 describe('MapTilerAPIProvider', () => {
   let provider: MapTilerAPIProvider;

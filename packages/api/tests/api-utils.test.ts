@@ -4,7 +4,7 @@ import {
   fetchWithRetry,
   requireAPIKey,
   retryOn429,
-} from '../../../src/api/providers/api-utils.js';
+} from '../src/providers/api-utils.js';
 
 describe('api-utils', () => {
   afterEach(() => {
@@ -36,7 +36,7 @@ describe('api-utils', () => {
       .fn()
       .mockResolvedValueOnce(new Response('', { status: 429 }))
       .mockResolvedValueOnce(new Response('ok', { status: 200 }));
-    const delaySpy = vi.spyOn(await import('../../../src/utils/retry.js'), 'delay').mockResolvedValue();
+    const delaySpy = vi.spyOn(await import('geokit/utils/retry'), 'delay').mockResolvedValue();
 
     const response = await retryOn429(fn, { maxRetries: 2, baseDelayMs: 1, providerName: 'Test' });
     expect(response.status).toBe(200);
@@ -46,7 +46,7 @@ describe('api-utils', () => {
 
   it('retryOn429 throws after max retries', async () => {
     const fn = vi.fn().mockResolvedValue(new Response('', { status: 429 }));
-    vi.spyOn(await import('../../../src/utils/retry.js'), 'delay').mockResolvedValue();
+    vi.spyOn(await import('geokit/utils/retry'), 'delay').mockResolvedValue();
     await expect(retryOn429(fn, { maxRetries: 1, baseDelayMs: 1, providerName: 'Test' })).rejects.toThrow(
       'max retries exceeded'
     );
