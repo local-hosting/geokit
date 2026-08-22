@@ -122,9 +122,15 @@ export function onClearPopupsEvent(
 
 const POPUP_CLOSED_EVENT = 'gk-popup-closed';
 
+import type { PopupCloseReason } from './utils/popup-close-reason.js';
+
+export type { PopupCloseReason } from './utils/popup-close-reason.js';
+export { setPopupCloseReason, takePopupCloseReason, peekPopupCloseReason } from './utils/popup-close-reason.js';
+
 export type PopupClosedDetail = {
   popup?: unknown;
   map?: unknown;
+  reason?: PopupCloseReason;
 };
 
 /**

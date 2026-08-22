@@ -33,3 +33,12 @@ export {
   onGkMapReadyOnce,
   type GkMapReadyOnceOptions,
 } from './map-document-events.js';
+
+export { bindGkMapPointEventsLifecycle } from './point-events-lifecycle.js';
+export { bindGkMapMoveendLifecycle } from './moveend-lifecycle.js';
+export {
+  bindGkFlyToBounds,
+  dispatchGkFlyToBounds,
+  GK_FLY_TO_BOUNDS_EVENT,
+  type GkFlyToBoundsDetail,
+} from './fly-to-bounds-events.js';

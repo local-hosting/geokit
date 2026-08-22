@@ -18,3 +18,14 @@ export * from './fill-antialias';
 export * from './choropleth-fill-paint';
 export * from './route-progress-gradient';
 export * from './map-viewport';
+
+export {
+  bindGkVenueLayerStacking,
+  restackVenueLayersForMarket,
+  restackVenueLayersAboveDmaFill,
+  type BindGkVenueLayerStackingOptions,
+} from './utils/venue-layer-stack-bind.js';
+
+export * from './map-semantic-events.js';
+export * from './venue-layer-stack-bind.js';
+export * from './popup-close-reason.js';

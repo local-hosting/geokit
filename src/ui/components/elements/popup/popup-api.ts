@@ -12,6 +12,11 @@ import type {
 } from '../../../../types/popup';
 import { injectPopupStyles } from './popup-styles';
 import {
+  takePopupCloseReason,
+  type PopupCloseReason,
+  setPopupCloseReason,
+} from '../../../utils/popup-close-reason.js';
+import {
   buildPopupContent,
   buildPopupContentGeneric,
   addTagsToPopup as addTagsToPopupContent,
@@ -190,7 +195,11 @@ export function showPointPopup(
         const target = (gkMap as HTMLElement) || document;
         target.dispatchEvent(
           new CustomEvent('gk-popup-closed', {
-            detail: { popup: newPopup, map },
+            detail: {
+              popup: newPopup,
+              map,
+              reason: takePopupCloseReason(newPopup) ?? 'user',
+            },
             bubbles: true,
           })
         );
@@ -285,7 +294,12 @@ export function addTagsToPopup(
   addTagsToPopupContent(popup, tags);
 }
 
-export function fadeOutPopup(popup: any, onComplete?: () => void): void {
+export function fadeOutPopup(
+  popup: any,
+  onComplete?: () => void,
+  reason: PopupCloseReason = 'programmatic'
+): void {
+  setPopupCloseReason(popup, reason);
   if (!popup) {
     onComplete?.();
     return;
