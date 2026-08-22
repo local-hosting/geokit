@@ -6,3 +6,4 @@
 
 // Re-export API providers (types, registry, implementations)
 export * from './providers';
+export * from './place-taxonomy.js';
