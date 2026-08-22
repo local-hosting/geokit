@@ -120,3 +120,4 @@ export type {
 export * from './api-composite.js';
 
 export type * from './static-map.js';
+export * from './map-display.js';
