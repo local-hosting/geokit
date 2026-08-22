@@ -107,3 +107,5 @@ export {
   type SharedPointMapOrchestrator,
   type SharedPointMapOrchestratorOptions,
 } from './utils/shared-point-map-orchestrator.js';
+
+export { bindGkVenueLayerStacking, restackVenueLayersForMarket } from './utils/venue-layer-stack-bind.js';

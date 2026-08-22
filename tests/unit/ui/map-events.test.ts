@@ -25,4 +25,35 @@ describe('map-events', () => {
 
     unbind();
   });
+
+  it('bindGkPointLayerEvents matches by element when gkMap option is set', () => {
+    const gkMap = document.createElement('gk-map');
+    const otherMap = document.createElement('gk-map');
+    const onClick = vi.fn();
+    const unbind = bindGkPointLayerEvents(gkMap, { onClick }, { targetGkMap: gkMap });
+
+    gkMap.dispatchEvent(
+      new CustomEvent('gk-point-click', {
+        detail: {
+          element: gkMap,
+          map: {},
+          features: [{ properties: { slug: 'a' } }],
+        },
+      })
+    );
+    expect(onClick).toHaveBeenCalledTimes(1);
+
+    gkMap.dispatchEvent(
+      new CustomEvent('gk-point-click', {
+        detail: {
+          element: otherMap,
+          map: {},
+          features: [{ properties: { slug: 'b' } }],
+        },
+      })
+    );
+    expect(onClick).toHaveBeenCalledTimes(1);
+
+    unbind();
+  });
 });

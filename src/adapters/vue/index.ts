@@ -16,3 +16,16 @@ export type {
   MapMountMode,
   MapMountPolicyOptions,
 } from '../shared/index.js';
+
+export { useGkMapPointEvents } from './useGkMapPointEvents.js';
+export { useGkMapMoveend } from './useGkMapMoveend.js';
+export { useGkFlyToBounds } from './useGkFlyToBounds.js';
+export {
+  bindGkFlyToBounds,
+  dispatchGkFlyToBounds,
+  GK_FLY_TO_BOUNDS_EVENT,
+  type GkFlyToBoundsDetail,
+} from '../shared/fly-to-bounds-events.js';
+export { bindGkMapPointEventsLifecycle } from '../shared/point-events-lifecycle.js';
+export { bindGkMapMoveendLifecycle } from '../shared/moveend-lifecycle.js';
+
