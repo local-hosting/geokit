@@ -257,6 +257,34 @@
       "require": "./dist/cjs/ui/index.cjs",
       "default": "./dist/esm/ui/index.js"
     },
+    "./adapters/shared": {
+      "source": "./src/adapters/shared/index.ts",
+      "types": "./dist/esm/adapters/shared/index.d.ts",
+      "import": "./dist/esm/adapters/shared/index.js",
+      "require": "./dist/cjs/adapters/shared/index.cjs",
+      "default": "./dist/esm/adapters/shared/index.js"
+    },
+    "./vue": {
+      "source": "./src/adapters/vue/index.ts",
+      "types": "./dist/esm/adapters/vue/index.d.ts",
+      "import": "./dist/esm/adapters/vue/index.js",
+      "require": "./dist/cjs/adapters/vue/index.cjs",
+      "default": "./dist/esm/adapters/vue/index.js"
+    },
+    "./react": {
+      "source": "./src/adapters/react/index.ts",
+      "types": "./dist/esm/adapters/react/index.d.ts",
+      "import": "./dist/esm/adapters/react/index.js",
+      "require": "./dist/cjs/adapters/react/index.cjs",
+      "default": "./dist/esm/adapters/react/index.js"
+    },
+    "./svelte": {
+      "source": "./src/adapters/svelte/index.ts",
+      "types": "./dist/esm/adapters/svelte/index.d.ts",
+      "import": "./dist/esm/adapters/svelte/index.js",
+      "require": "./dist/cjs/adapters/svelte/index.cjs",
+      "default": "./dist/esm/adapters/svelte/index.js"
+    },
     "./ui.theme.css": "./dist/ui/theme.css",
     "./ui/admin-boundary-outlines": {
       "source": "./src/ui/utils/boundary-outline-controller.ts",
@@ -438,6 +466,69 @@
     "./ui/theme.css": {
       "source": "./src/ui/theme.css",
       "default": "./dist/ui/theme.css"
+    },
+    "./ui/boundary-outline-layer": {
+      "source": "./src/ui/utils/boundary-outline-layer.ts",
+      "types": "./dist/esm/ui/utils/boundary-outline-layer.d.ts",
+      "import": "./dist/esm/ui/utils/boundary-outline-layer.js",
+      "require": "./dist/cjs/ui/utils/boundary-outline-layer.cjs",
+      "default": "./dist/esm/ui/utils/boundary-outline-layer.js"
+    },
+    "./ui/boundary-outline-preset": {
+      "source": "./src/ui/utils/boundary-outline-preset.ts",
+      "types": "./dist/esm/ui/utils/boundary-outline-preset.d.ts",
+      "import": "./dist/esm/ui/utils/boundary-outline-preset.js",
+      "require": "./dist/cjs/ui/utils/boundary-outline-preset.cjs",
+      "default": "./dist/esm/ui/utils/boundary-outline-preset.js"
+    },
+    "./ui/outline-ops": {
+      "source": "./src/ui/utils/outline-ops.ts",
+      "types": "./dist/esm/ui/utils/outline-ops.d.ts",
+      "import": "./dist/esm/ui/utils/outline-ops.js",
+      "require": "./dist/cjs/ui/utils/outline-ops.cjs",
+      "default": "./dist/esm/ui/utils/outline-ops.js"
+    },
+    "./ui/h3-grid-layer-controller": {
+      "source": "./src/ui/utils/h3-grid-layer-controller.ts",
+      "types": "./dist/esm/ui/utils/h3-grid-layer-controller.d.ts",
+      "import": "./dist/esm/ui/utils/h3-grid-layer-controller.js",
+      "require": "./dist/cjs/ui/utils/h3-grid-layer-controller.cjs",
+      "default": "./dist/esm/ui/utils/h3-grid-layer-controller.js"
+    },
+    "./ui/choropleth-feature-state-controller": {
+      "source": "./src/ui/utils/choropleth-feature-state-controller.ts",
+      "types": "./dist/esm/ui/utils/choropleth-feature-state-controller.d.ts",
+      "import": "./dist/esm/ui/utils/choropleth-feature-state-controller.js",
+      "require": "./dist/cjs/ui/utils/choropleth-feature-state-controller.cjs",
+      "default": "./dist/esm/ui/utils/choropleth-feature-state-controller.js"
+    },
+    "./h3/cell-to-region-index": {
+      "source": "./src/utils/h3/cell-to-region-index.ts",
+      "types": "./dist/esm/utils/h3/cell-to-region-index.d.ts",
+      "import": "./dist/esm/utils/h3/cell-to-region-index.js",
+      "require": "./dist/cjs/utils/h3/cell-to-region-index.cjs",
+      "default": "./dist/esm/utils/h3/cell-to-region-index.js"
+    },
+    "./ui/lazy-choropleth-controller": {
+      "source": "./src/ui/utils/lazy-choropleth-controller.ts",
+      "types": "./dist/esm/ui/utils/lazy-choropleth-controller.d.ts",
+      "import": "./dist/esm/ui/utils/lazy-choropleth-controller.js",
+      "require": "./dist/cjs/ui/utils/lazy-choropleth-controller.cjs",
+      "default": "./dist/esm/ui/utils/lazy-choropleth-controller.js"
+    },
+    "./ui/shared-point-map-orchestrator": {
+      "source": "./src/ui/utils/shared-point-map-orchestrator.ts",
+      "types": "./dist/esm/ui/utils/shared-point-map-orchestrator.d.ts",
+      "import": "./dist/esm/ui/utils/shared-point-map-orchestrator.js",
+      "require": "./dist/cjs/ui/utils/shared-point-map-orchestrator.cjs",
+      "default": "./dist/esm/ui/utils/shared-point-map-orchestrator.js"
+    },
+    "./ui/gk-dma-layer-bind": {
+      "source": "./src/ui/utils/gk-dma-layer-bind.ts",
+      "types": "./dist/esm/ui/utils/gk-dma-layer-bind.d.ts",
+      "import": "./dist/esm/ui/utils/gk-dma-layer-bind.js",
+      "require": "./dist/cjs/ui/utils/gk-dma-layer-bind.cjs",
+      "default": "./dist/esm/ui/utils/gk-dma-layer-bind.js"
     }
   },
   "sideEffects": [
@@ -503,6 +594,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
+    "@types/react": "^19.0.0",
     "@types/topojson-client": "^3.1.5",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
     "@typescript-eslint/parser": "^8.47.0",
@@ -517,11 +609,13 @@
     "patch-package": "^8.0.1",
     "playwright": "^1.56.1",
     "prettier": "^3.6.2",
+    "react": "^19.0.0",
     "tsup": "^8.5.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3",
     "vite": "^6.1.0",
     "vitest": "^2.1.8",
+    "vue": "^3.5.13",
     "zod": "^3.25.0"
   },
   "lint-staged": {
@@ -564,5 +658,21 @@
     "topojson-client": "^3.1.0",
     "topojson-server": "^3.0.1",
     "topojson-simplify": "^3.0.3"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "svelte": ">=4.0.0",
+    "vue": ">=3.3.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
   }
 }

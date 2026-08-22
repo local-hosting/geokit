@@ -119,3 +119,28 @@ export function onClearPopupsEvent(
   document.addEventListener(CLEAR_POPUPS_EVENT, handler);
   return () => document.removeEventListener(CLEAR_POPUPS_EVENT, handler);
 }
+
+const POPUP_CLOSED_EVENT = 'gk-popup-closed';
+
+export type PopupClosedDetail = {
+  popup?: unknown;
+  map?: unknown;
+};
+
+/**
+ * Listen for gk-popup-closed (dispatched by geokit popup-api on close).
+ */
+export function onPopupClosedEvent(
+  handler: (detail: PopupClosedDetail) => void,
+  target: EventTarget = document
+): () => void {
+  if (typeof document === 'undefined') return () => {};
+
+  const listener = (event: Event): void => {
+    const detail = ((event as CustomEvent).detail ?? {}) as PopupClosedDetail;
+    handler(detail);
+  };
+
+  target.addEventListener(POPUP_CLOSED_EVENT, listener as EventListener);
+  return () => target.removeEventListener(POPUP_CLOSED_EVENT, listener as EventListener);
+}

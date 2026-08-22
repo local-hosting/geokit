@@ -92,3 +92,16 @@ export {
   DEFAULT_MAX_VIEWPORT_H3_EVAL,
   type H3CellPolygonOptions,
 } from './viewport-coverage';
+
+export {
+  normalizeRegionSlug,
+  canonicalRegionH3CellId,
+  buildCellToRegionMap,
+  buildRegionMarketCellsIndex,
+  collectCellIdsForRegionSlugs,
+  resolveRegionSlugsForViewportCells,
+  buildRegionCellFeatureCollection,
+  mergeRegionCellFeatures,
+  type RegionMarketCellsIndex,
+  type RegionCellFeatureOptions,
+} from './cell-to-region-index.js';
