@@ -81,7 +81,7 @@ MapOfflineDefaults.snapshotFallbackCoverageThreshold // 0.5 → show snapshot
 
 ## Tier B storage
 
-- **Web:** `MapLocalStore` (`@twinfile/geokit/storage`) — IndexedDB for durable scope, `sessionStorage` for session scope
+- **Web:** `MapLocalStore` (`geokit/storage`) — IndexedDB for durable scope, `sessionStorage` for session scope
 - **Swift:** `MapLocalStore` + `GeoKitMapSnapshotDiskStore` under Application Support; snapshot capture persists automatically
 
 ## Import
@@ -91,9 +91,9 @@ import {
   MapOfflineDefaults,
   validateOfflinePrefetchRequest,
   resolveOfflineCoverage,
-} from '@twinfile/geokit/contract';
+} from 'geokit/contract';
 
-import { MapLocalStore, MapOfflineTileCache, MapOfflineContextLoader } from '@twinfile/geokit/storage';
+import { MapLocalStore, MapOfflineTileCache, MapOfflineContextLoader } from 'geokit/storage';
 ```
 
 ```swift

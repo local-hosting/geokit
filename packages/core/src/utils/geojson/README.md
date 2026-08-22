@@ -2,6 +2,6 @@
 
 Parity Tier 1 with geokit-swift `GeoKitCore/Utils/geojson/`.
 
-Export: `@twinfile/geokit/geojson` or `@twinfile/geokit/core`.
+Export: `geokit/geojson` or `geokit/core`.
 
 See `docs/module-map.md`.

@@ -8,7 +8,7 @@ This document mirrors [`geokit-swift/docs/parity.md`](../geokit-swift/docs/parit
 - **Version:** 4 (`turf.*` groups)
 - **Generate:** `yarn export:parity-fixtures` (requires `yarn build` first — script reads `dist/esm`)
 - **Verify:** `yarn check:parity-fixtures`
-- **Swift tests:** `swift test --filter GeoKitCoreTests` (from `packages/geokit-swift`)
+- **Swift tests:** `swift test --filter GeoKitCoreTests` (from `geokit-swift`)
 
 ## Tier 1 — shared fixtures
 

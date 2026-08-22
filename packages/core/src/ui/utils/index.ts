@@ -24,7 +24,7 @@ export {
   restackVenueLayersForMarket,
   restackVenueLayersAboveDmaFill,
   type BindGkVenueLayerStackingOptions,
-} from './utils/venue-layer-stack-bind.js';
+} from './venue-layer-stack-bind.js';
 
 export * from './map-semantic-events.js';
 export * from './venue-layer-stack-bind.js';
