@@ -457,7 +457,7 @@ export function wrapMapResize(
  *
  * @example
  * ```ts
- * const ok = updateSourceData(map, 'venues', featureCollection);
+ * const ok = updateSourceData(map, 'points', featureCollection);
  * if (!ok) console.warn('Source update failed');
  * ```
  */
@@ -493,7 +493,7 @@ export function updateSourceData(
  *
  * @example
  * ```ts
- * const cleanup = setupLayerCursor(map, 'venue-layer');
+ * const cleanup = setupLayerCursor(map, 'point-layer');
  * // Later: cleanup?.();
  * ```
  */
@@ -559,7 +559,7 @@ export interface IsochronePrefetchOptions {
  *
  * @example
  * ```ts
- * const cleanup = setupIsochronePrefetch(map, 'venue-layer', {
+ * const cleanup = setupIsochronePrefetch(map, 'point-layer', {
  *   time: 15,
  *   mode: 'driving',
  * });
@@ -686,8 +686,8 @@ export interface LayerClickPopupOptions {
  *
  * @example
  * ```ts
- * const cleanup = setupLayerClickPopup(map, 'venue-layer', {
- *   sourceId: 'venues',
+ * const cleanup = setupLayerClickPopup(map, 'point-layer', {
+ *   sourceId: 'points',
  *   buildContent: (props) => ({
  *     headline: props.name as string,
  *     subhead: `${props.city}, ${props.state}`,

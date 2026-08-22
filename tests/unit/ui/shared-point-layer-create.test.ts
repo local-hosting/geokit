@@ -8,9 +8,15 @@ vi.mock('../../../src/ui/utils/map-utils', () => ({
   updateSourceData: vi.fn(() => true),
 }));
 
+vi.mock('../../../src/ui/utils/shared-point-heal.js', () => ({
+  ensureSharedPointLayerSetHealed: vi.fn(async () => true),
+  isSharedPointLayerSetFullyComplete: vi.fn(() => true),
+}));
+
 vi.mock('../../../src/ui/utils/layer-styles', () => ({
   createSharedPointLayers,
   getGlowRadiusInterpolation: () => ['literal', 12],
+  multiplyRadiusExpression: (base: unknown, scale: number) => ['*', base, scale],
 }));
 
 import {
@@ -21,6 +27,7 @@ import {
   createSharedPointLayersFromPaint,
   preloadSharedPointLayerStyles,
   syncExistingSharedPointLayers,
+  isSharedPointLayerSetComplete,
 } from '../../../src/ui/utils/shared-point-sync';
 import type { ApplySharedPointPaintOptions } from '../../../src/ui/utils/shared-point-paint';
 
@@ -44,25 +51,38 @@ describe('buildSharedPointFeatureStateHoverPaint', () => {
 
     expect(paint.glowOpacity[0]).toBe('case');
     expect(paint.pointOpacity[0]).toBe('case');
-    expect(paint.pointStrokeWidth[0]).toBe('case');
-    expect(paint.pointStrokeColor[0]).toBe('case');
-    expect(paint.glowRadius).toEqual(['*', ['literal', 12], 1.35]);
+    expect(paint.glowRadius).toEqual(['*', ['literal', 12], 1.45]);
   });
 });
+
+
+  it('scales interpolate glow radius stops for hover instead of wrapping with multiply', () => {
+    const paint = buildSharedPointFeatureStateHoverPaint({
+      glowRadius: ['interpolate', ['linear'], ['zoom'], 4, 2.8, 10, 5.6],
+      glowOpacity: 0.24,
+      pointOpacity: 0.92,
+      glowHoverOpacity: 0.55,
+    });
+
+    expect(paint.glowRadius[0]).toBe('interpolate');
+    expect(paint.glowRadius[4]).toBeCloseTo(2.8 * 1.45);
+    expect(paint.glowRadius[6]).toBeCloseTo(5.6 * 1.45);
+  });
 
 describe('applySharedPointLayerPaint', () => {
   it('applies feature-state hover paint when featureStateHover is set', () => {
     const setPaintProperty = vi.fn();
     const map = {
+      getSource: vi.fn(() => ({})),
       getLayer: vi.fn(() => ({})),
       setPaintProperty,
     };
 
     applySharedPointLayerPaint(map as never, {
       ids: {
-        sourceId: 'stores',
-        glowLayerId: 'stores-glow',
-        pointLayerId: 'stores-points',
+        sourceId: 'demo-points',
+        glowLayerId: 'demo-points-glow',
+        pointLayerId: 'demo-points-points',
       },
       pointColorExpression: ['literal', '#0060df'],
       pointRadiusExpression: ['literal', 4],
@@ -76,14 +96,14 @@ describe('applySharedPointLayerPaint', () => {
     });
 
     expect(setPaintProperty).toHaveBeenCalledWith(
-      'stores-glow',
+      'demo-points-glow',
       'circle-opacity',
       expect.arrayContaining(['case'])
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
-      'stores-points',
+      'demo-points-points',
       'circle-stroke-width',
-      expect.arrayContaining(['case'])
+      ['literal', 0]
     );
   });
 });
@@ -97,9 +117,9 @@ describe('createSharedPointLayersFromPaint', () => {
     };
 
     const ids = {
-      sourceId: 'venues-louisville',
-      glowLayerId: 'louisville-venue-glow',
-      pointLayerId: 'louisville-venue-points',
+      sourceId: 'points-louisville',
+      glowLayerId: 'louisville-point-glow',
+      pointLayerId: 'louisville-point-points',
     };
 
     const paint: ApplySharedPointPaintOptions = {
@@ -113,6 +133,7 @@ describe('createSharedPointLayersFromPaint', () => {
     const geojson = { type: 'FeatureCollection' as const, features: [] };
 
     await createSharedPointLayersFromPaint({
+      layerSetWaitMs: 0,
       map: map as never,
       ids,
       geojson,
@@ -132,11 +153,12 @@ describe('createSharedPointLayersFromPaint', () => {
         selectionRingColor: '#111',
         promoteId: 'slug',
         useFeatureStateHover: true,
+        glowRadius: ['literal', 12],
       })
     );
 
     expect(setPaintProperty).toHaveBeenCalledWith(
-      'louisville-venue-glow',
+      'louisville-point-glow',
       'circle-opacity',
       expect.arrayContaining(['case'])
     );
@@ -150,9 +172,9 @@ describe('createSharedPointLayersFromPaint', () => {
     };
 
     const ids = {
-      sourceId: 'venues',
-      glowLayerId: 'venues-glow',
-      pointLayerId: 'venues-points',
+      sourceId: 'demo-points',
+      glowLayerId: 'points-glow',
+      pointLayerId: 'points-points',
     };
 
     const paint: ApplySharedPointPaintOptions = {
@@ -162,6 +184,7 @@ describe('createSharedPointLayersFromPaint', () => {
     };
 
     await createSharedPointLayersFromPaint({
+      layerSetWaitMs: 0,
       map: map as never,
       ids,
       geojson: { type: 'FeatureCollection', features: [] },
@@ -185,14 +208,15 @@ describe('syncExistingSharedPointLayers', () => {
   it('re-applies feature-state hover paint after paint sync', async () => {
     const setPaintProperty = vi.fn();
     const map = {
+      getSource: vi.fn(() => ({})),
       getLayer: vi.fn(() => ({})),
       setPaintProperty,
     };
 
     const ids = {
-      sourceId: 'stores',
-      glowLayerId: 'stores-glow',
-      pointLayerId: 'stores-points',
+      sourceId: 'demo-points',
+      glowLayerId: 'demo-points-glow',
+      pointLayerId: 'demo-points-points',
     };
 
     const paint: ApplySharedPointPaintOptions = {
@@ -213,14 +237,73 @@ describe('syncExistingSharedPointLayers', () => {
     });
 
     expect(setPaintProperty).toHaveBeenCalledWith(
-      'stores-glow',
+      'demo-points-glow',
       'circle-opacity',
       expect.arrayContaining(['case'])
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
-      'stores-points',
+      'demo-points-points',
       'circle-stroke-width',
-      expect.arrayContaining(['case'])
+      ['literal', 0]
+    );
+  });
+});
+describe('isSharedPointLayerSetComplete', () => {
+  it('returns false when glow layer is missing', () => {
+    const map = {
+      getSource: vi.fn(() => ({})),
+      getLayer: vi.fn((id: string) => (id === 'demo-points-points' ? {} : null)),
+    };
+
+    expect(
+      isSharedPointLayerSetComplete(map as never, {
+        sourceId: 'demo-points',
+        glowLayerId: 'demo-points-glow',
+        pointLayerId: 'demo-points-points',
+      })
+    ).toBe(false);
+  });
+});
+
+describe('syncExistingSharedPointLayers heal', () => {
+  it('creates missing glow layers when point exists without glow', async () => {
+    createSharedPointLayers.mockClear();
+
+    const setPaintProperty = vi.fn();
+    const map = {
+      getSource: vi.fn(() => ({})),
+      getLayer: vi.fn((id: string) => (id === 'demo-points-points' ? {} : null)),
+      setPaintProperty,
+    };
+
+    const ids = {
+      sourceId: 'demo-points',
+      glowLayerId: 'demo-points-glow',
+      pointLayerId: 'demo-points-points',
+    };
+
+    const paint: ApplySharedPointPaintOptions = {
+      ids,
+      pointColorExpression: ['literal', '#0060df'],
+      pointRadiusExpression: ['literal', 4],
+      glowOpacity: 0.18,
+    };
+
+    await syncExistingSharedPointLayers({
+      map: map as never,
+      ids,
+      geojson: { type: 'FeatureCollection', features: [] },
+      paint,
+      useMapTilerPointHelper: false,
+      layerSetWaitMs: 0,
+    });
+
+    expect(createSharedPointLayers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceId: 'demo-points',
+        glowLayerId: 'demo-points-glow',
+        pointLayerId: 'demo-points-points',
+      })
     );
   });
 });

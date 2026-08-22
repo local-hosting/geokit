@@ -13,6 +13,17 @@
 import { MapChildElement } from '../../map-child-element';
 import { debug } from '../../../utils/logger';
 import type { MapEvent } from '../../../providers/types';
+import {
+  createSharedPointLayersFromPaint,
+  ensureSharedPointGeoJsonSource,
+  tearDownSharedPointLayers,
+  updateSharedPointSourceData,
+} from '../../../utils/shared-point-sync.js';
+import {
+  paintColorFromProperty,
+  SHARED_POINT_GLOW_BLUR,
+  SHARED_POINT_UNIFORM_GLOW_OPACITY,
+} from '../../../utils/shared-point-paint.js';
 import type {
   LayerClickEventDetail,
   LayerMouseEnterEventDetail,
@@ -34,6 +45,28 @@ export interface PointLayerOptions {
   cursor?: string;
   /** Layer IDs to include in hit test (e.g. [glowLayerId] for larger hover area). */
   hitLayers?: string[];
+}
+
+
+function asPaintExpression(value: unknown, fallback: unknown[]): unknown[] {
+  if (Array.isArray(value)) return value as unknown[];
+  if (typeof value === 'number' || typeof value === 'string') return ['literal', value];
+  return fallback;
+}
+
+function toFeatureCollection(
+  data: GeoJSON.FeatureCollection | GeoJSON.Feature | GeoJSON.Geometry
+): GeoJSON.FeatureCollection {
+  if (typeof data === 'object' && data !== null && 'features' in data) {
+    return data as GeoJSON.FeatureCollection;
+  }
+  if (typeof data === 'object' && data !== null && 'type' in data && (data as GeoJSON.Feature).geometry) {
+    return { type: 'FeatureCollection', features: [data as GeoJSON.Feature] };
+  }
+  return {
+    type: 'FeatureCollection',
+    features: [{ type: 'Feature', properties: {}, geometry: data as GeoJSON.Geometry }],
+  };
 }
 
 function sanitizePaint(o: Record<string, unknown>): Record<string, unknown> {
@@ -113,7 +146,7 @@ export class PointLayerElement extends MapChildElement {
 
   protected override async onMapReady(): Promise<void> {
     if (!this.map) return;
-    this.addLayers();
+    void this.addLayers();
   }
 
   protected override onStyleLoad(): void {
@@ -122,7 +155,7 @@ export class PointLayerElement extends MapChildElement {
       sourceId: this.sourceId,
       pointLayerId: this.pointLayerId,
     });
-    this.addLayers();
+    void this.addLayers();
   }
 
   private get sourceId(): string {
@@ -147,7 +180,7 @@ export class PointLayerElement extends MapChildElement {
     return layers.filter(Boolean);
   }
 
-  private addLayers(): void {
+  private async addLayers(): Promise<void> {
     const map = this.map as any;
     if (!map) return;
 
@@ -162,7 +195,6 @@ export class PointLayerElement extends MapChildElement {
       return;
     }
 
-    // Ensure create options are applied (in case addLayers runs before options were applied)
     const createOptions = (this as any)._createOptions;
     if (createOptions) {
       this.applyCreateOptions(createOptions);
@@ -172,69 +204,61 @@ export class PointLayerElement extends MapChildElement {
     this.removeLayers();
 
     const data = this._data ?? { type: 'FeatureCollection' as const, features: [] };
-    const featureCount =
-      typeof data === 'object' && data !== null && 'features' in data
-        ? ((data as GeoJSON.FeatureCollection).features?.length ?? 0)
-        : 1;
+    const featureCollection = toFeatureCollection(data);
+    const featureCount = featureCollection.features?.length ?? 0;
     debug.log('[PointLayer] addLayers', { sourceId, pointLayerId, glowLayerId, featureCount });
-
-    if (!map.getSource?.(sourceId)) {
-      try {
-        map.addSource(sourceId, {
-          type: 'geojson',
-          data,
-          promoteId: this.promoteId,
-        });
-        this._ownSource = true;
-        debug.log('[PointLayer] source ADD', { sourceId });
-      } catch (error) {
-        console.error(`[gk-point-layer] Failed to add source ${sourceId}:`, error);
-        return;
-      }
-    } else if (this._data && typeof (map.getSource(sourceId) as any)?.setData === 'function') {
-      (map.getSource(sourceId) as any).setData(this._data);
-      debug.log('[PointLayer] source setData (existing source)', { sourceId, featureCount });
-    }
 
     const pointPaint = this._pointPaint
       ? sanitizePaint(this._pointPaint as Record<string, unknown>)
       : { 'circle-radius': 6, 'circle-color': '#333', 'circle-opacity': 1 };
-    try {
-      map.addLayer({
-        id: pointLayerId,
-        type: 'circle',
-        source: sourceId,
-        paint: pointPaint,
-      });
-      debug.log('[PointLayer] point layer ADD', { pointLayerId });
-    } catch (error) {
-      console.error(`[gk-point-layer] Failed to add point layer ${pointLayerId}:`, error);
-      return;
+    const glowPaint = this._glowPaint
+      ? sanitizePaint(this._glowPaint as Record<string, unknown>)
+      : undefined;
+
+    if (!map.getSource?.(sourceId)) {
+      ensureSharedPointGeoJsonSource(map, sourceId, featureCollection, this.promoteId);
+      this._ownSource = true;
+      debug.log('[PointLayer] source ADD', { sourceId });
+    } else if (this._data) {
+      await updateSharedPointSourceData(map, sourceId, featureCollection);
+      debug.log('[PointLayer] source setData (existing source)', { sourceId, featureCount });
     }
 
-    if (glowLayerId && this._glowPaint && Object.keys(this._glowPaint).length > 0) {
-      try {
-        const glowPaint = sanitizePaint(this._glowPaint as Record<string, unknown>);
-        map.addLayer(
-          {
-            id: glowLayerId,
-            type: 'circle',
-            source: sourceId,
-            paint: glowPaint,
-          },
-          pointLayerId
-        );
-        debug.log('[PointLayer] glow layer ADD', { glowLayerId, beforeLayerId: pointLayerId });
-      } catch (error) {
-        console.error(`[gk-point-layer] Failed to add glow layer ${glowLayerId}:`, error);
-      }
-    } else {
-      debug.log('[PointLayer] glow layer SKIP (no glowPaint or empty)', { glowLayerId });
+    const resolvedGlowLayerId = glowLayerId || `${pointLayerId}-glow`;
+    const mapProvider = this.closest('gk-map')?.getAttribute?.('provider') ?? null;
+
+    await createSharedPointLayersFromPaint({
+      map,
+      ids: { sourceId, glowLayerId: resolvedGlowLayerId, pointLayerId },
+      geojson: featureCollection,
+      paint: {
+        ids: { sourceId, glowLayerId: resolvedGlowLayerId, pointLayerId },
+        pointColorExpression: asPaintExpression(pointPaint['circle-color'], ['literal', '#333']),
+        pointRadiusExpression: asPaintExpression(pointPaint['circle-radius'], ['literal', 6]),
+        glowColorExpression: glowPaint?.['circle-color']
+          ? asPaintExpression(glowPaint['circle-color'], paintColorFromProperty())
+          : paintColorFromProperty(),
+        glowOpacity:
+          typeof glowPaint?.['circle-opacity'] === 'number'
+            ? (glowPaint['circle-opacity'] as number)
+            : SHARED_POINT_UNIFORM_GLOW_OPACITY,
+      },
+      mapProvider,
+      useMapTilerPointHelper: mapProvider === 'maptiler',
+      useFeatureStateHover: this._hoverState,
+      layerSetWaitMs: 0,
+      glowBlur:
+        typeof glowPaint?.['circle-blur'] === 'number'
+          ? (glowPaint['circle-blur'] as number)
+          : SHARED_POINT_GLOW_BLUR,
+    });
+
+    if (!this._hitLayers?.length) {
+      this._hitLayers = [resolvedGlowLayerId, pointLayerId];
     }
 
     if (this._interactive) this.setupInteractions();
 
-    // If no explicit data but we have gk-point children, build from them
     if (
       !this._data ||
       (typeof this._data === 'object' &&
@@ -251,49 +275,13 @@ export class PointLayerElement extends MapChildElement {
     const map = this.map as any;
     if (!map) return;
 
-    const pointLayerId = this.pointLayerId;
-    const glowLayerId = this.glowLayerId;
     const sourceId = this.sourceId;
-
-    if (pointLayerId && map.getLayer?.(pointLayerId)) {
-      try {
-        map.removeLayer(pointLayerId);
-        debug.log('[PointLayer] point layer REMOVE', { pointLayerId });
-      } catch {
-        // ignore
-      }
+    const pointLayerId = this.pointLayerId;
+    const glowLayerId = this.glowLayerId || (pointLayerId ? `${pointLayerId}-glow` : '');
+    if (sourceId && pointLayerId && glowLayerId) {
+      tearDownSharedPointLayers(map, { sourceId, glowLayerId, pointLayerId });
     }
-    if (glowLayerId && map.getLayer?.(glowLayerId)) {
-      try {
-        map.removeLayer(glowLayerId);
-        debug.log('[PointLayer] glow layer REMOVE', { glowLayerId });
-      } catch {
-        // ignore
-      }
-    }
-
-    if (sourceId && this._ownSource && map.getSource?.(sourceId)) {
-      if (this._hoveredFeatureId != null && map.removeFeatureState) {
-        try {
-          map.removeFeatureState({ source: sourceId, id: this._hoveredFeatureId });
-        } catch {
-          // ignore
-        }
-        this._hoveredFeatureId = null;
-      }
-      const style = map.getStyle?.();
-      const layers = (style?.layers as Array<{ source?: string }>) ?? [];
-      const others = layers.filter((l: any) => l.source === sourceId);
-      if (others.length === 0) {
-        try {
-          map.removeSource(sourceId);
-          debug.log('[PointLayer] source REMOVE', { sourceId });
-        } catch {
-          // ignore
-        }
-        this._ownSource = false;
-      }
-    }
+    this._ownSource = false;
   }
 
   private setupInteractions(): void {

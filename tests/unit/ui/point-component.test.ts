@@ -427,9 +427,9 @@ describe('Point highlight layer and style-load', () => {
 
   describe('onStyleLoad re-apply focus', () => {
     it('should merge _lastPopupProperties into synthetic feature when re-opening popup after style change', () => {
-      const lastPopupProperties = { 'id:store-number': '123', city: 'NYC' };
+      const lastPopupProperties = { 'id:external-ref': '123', city: 'NYC' };
       const pointId = 'pt-1';
-      const pointName = 'Store 1';
+      const pointName = 'Point 1';
       const sourceId = 'point-source-xyz';
 
       const properties: Record<string, unknown> = {
@@ -439,8 +439,8 @@ describe('Point highlight layer and style-load', () => {
       };
 
       expect(properties['point-id']).toBe('pt-1');
-      expect(properties['point-name']).toBe('Store 1');
-      expect(properties['id:store-number']).toBe('123');
+      expect(properties['point-name']).toBe('Point 1');
+      expect(properties['id:external-ref']).toBe('123');
       expect(properties.city).toBe('NYC');
     });
 

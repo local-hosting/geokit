@@ -11,7 +11,11 @@ import { getFeatureId } from '../../utils/geojson/get-feature-id';
 import { getCSSVariable, getCSSVariableNumber } from './theme';
 import { debug } from './logger';
 import { HOVER_CONFIG, type HoverStateHandlers } from './feature-state-hover';
-import { buildSharedPointFeatureStateHoverPaint } from './shared-point-paint';
+import {
+  buildSharedPointFeatureStateHoverPaint,
+  expandInterpolateCaseMultiply,
+} from './shared-point-paint';
+import { resolveSharedPointLayerIdForSource } from './shared-point-heal.js';
 
 // ============================================================================
 // Types
@@ -31,7 +35,7 @@ export interface GlowPointLayerConfig {
   map: MapInstance;
   /** GeoJSON source ID */
   sourceId: string;
-  /** Prefix for layer IDs (e.g., 'venue' creates 'venue-glow' and 'venue-points') */
+  /** Prefix for layer IDs (e.g., 'site' creates 'site-glow' and 'site-points') */
   layerPrefix: string;
   /** Point color (string or data-driven expression) */
   color: string | unknown[];
@@ -472,7 +476,36 @@ export function multiplyRadiusExpression(
 ): unknown[] {
   const minRadiusPx = options.minRadiusPx ?? MIN_POINT_RADIUS_PX;
   if (typeof scaleExpression === 'number') {
-    return scaleRadiusInterpolation(baseRadius, scaleExpression, minRadiusPx);
+    if (Array.isArray(baseRadius) && baseRadius[0] === 'interpolate') {
+      return scaleRadiusInterpolation(baseRadius, scaleExpression, minRadiusPx);
+    }
+    if (
+      Array.isArray(baseRadius) &&
+      baseRadius[0] === '*' &&
+      Array.isArray(baseRadius[1]) &&
+      baseRadius[1][0] === 'interpolate' &&
+      Array.isArray(baseRadius[2]) &&
+      baseRadius[2][0] === 'case'
+    ) {
+      return expandInterpolateCaseMultiply(
+        scaleRadiusInterpolation(baseRadius[1] as unknown[], 1, minRadiusPx),
+        baseRadius[2] as unknown[],
+        scaleExpression
+      );
+    }
+    if (
+      Array.isArray(baseRadius) &&
+      baseRadius[0] === '*' &&
+      Array.isArray(baseRadius[1]) &&
+      baseRadius[1][0] === 'interpolate'
+    ) {
+      return [
+        '*',
+        scaleRadiusInterpolation(baseRadius[1] as unknown[], scaleExpression, minRadiusPx),
+        baseRadius[2],
+      ];
+    }
+    return ['*', baseRadius, scaleExpression];
   }
 
   if (Array.isArray(scaleExpression) && scaleExpression[0] === 'match') {
@@ -481,6 +514,15 @@ export function multiplyRadiusExpression(
       defaultScaleFromMatchExpression(scaleExpression),
       minRadiusPx
     );
+  }
+
+  if (
+    Array.isArray(scaleExpression) &&
+    scaleExpression[0] === 'case' &&
+    Array.isArray(baseRadius) &&
+    baseRadius[0] === 'interpolate'
+  ) {
+    return expandInterpolateCaseMultiply(baseRadius, scaleExpression);
   }
 
   return ['*', baseRadius, scaleExpression];
@@ -723,8 +765,8 @@ export function createCircleLayerSpec(config: CircleLayerConfig): Record<string,
  * ```ts
  * const { glowLayerId, pointLayerId } = createGlowPointLayers({
  *   map,
- *   sourceId: 'venues',
- *   layerPrefix: 'venue',
+ *   sourceId: 'points',
+ *   layerPrefix: 'site',
  *   color: resolveDefaultLayerColor(),
  * });
  * ```
@@ -917,8 +959,197 @@ function resolveSharedPointFeatureStateHoverPaint(
 /**
  * Create GK point shared layers: one source, glow layer, and point layer for many features.
  * Layers use feature-state (hover/selected) so apps can wire hover via createHoverStateHandlers
- * or createSharedPointLayersWithHover. This is the GK point pattern for many points (e.g. venues).
+ * or createSharedPointLayersWithHover. This is the GK point pattern for many points from one source.
  */
+type SharedPointGlowLayerConfig = {
+  map: MapInstance;
+  sourceId: string;
+  glowLayerId: string;
+  pointLayerId: string;
+  baseGlowRadius: unknown[] | number;
+  resolvedGlowColor: string | unknown[];
+  glowBlur: number | undefined;
+  hoverPaint: ReturnType<typeof resolveSharedPointFeatureStateHoverPaint>;
+  glowOpacity: number | unknown[] | undefined;
+  filter?: unknown[];
+  beforeLayerId?: string;
+};
+
+
+function whenMapLayerExists(
+  map: MapInstance,
+  layerId: string,
+  fn: () => void,
+  maxAttempts = 60
+): void {
+  if (map.getLayer?.(layerId)) {
+    fn();
+    return;
+  }
+
+  let attempts = 0;
+  const tryRun = () => {
+    attempts += 1;
+    if (map.getLayer?.(layerId)) {
+      fn();
+      return;
+    }
+    if (attempts >= maxAttempts) return;
+    if (typeof map.once === 'function') {
+      map.once('idle', tryRun);
+      return;
+    }
+    setTimeout(tryRun, 16);
+  };
+
+  tryRun();
+}
+
+function addSharedPointGlowLayer(config: SharedPointGlowLayerConfig): boolean {
+  const {
+    map,
+    sourceId,
+    glowLayerId,
+    pointLayerId,
+    baseGlowRadius,
+    resolvedGlowColor,
+    glowBlur,
+    hoverPaint,
+    glowOpacity,
+    filter,
+    beforeLayerId,
+  } = config;
+
+  if (map.getLayer?.(glowLayerId)) return true;
+
+  const glowRadiusVal = baseGlowRadius;
+  const glowColorVal = resolvedGlowColor;
+  const glowBlurVal = glowBlur ?? resolveGlowBlur();
+  let glowOpacityExpression: unknown[] | number;
+  if (hoverPaint) {
+    glowOpacityExpression = hoverPaint.glowOpacity;
+  } else if (Array.isArray(glowOpacity)) {
+    glowOpacityExpression = glowOpacity;
+  } else {
+    glowOpacityExpression = typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
+  }
+
+  const glowPaint: Record<string, unknown> = {
+    'circle-radius': hoverPaint?.glowRadius ?? glowRadiusVal,
+    'circle-color': glowColorVal,
+    'circle-opacity': glowOpacityExpression,
+    'circle-blur': glowBlurVal,
+  };
+  const glowLayerSpec: Record<string, unknown> = {
+    id: glowLayerId,
+    type: 'circle',
+    source: sourceId,
+    minzoom: 0,
+    layout: { visibility: 'visible' },
+    paint: omitNil(glowPaint),
+  };
+  if (filter != null) glowLayerSpec.filter = filter;
+
+  try {
+    if (map.getLayer?.(pointLayerId)) {
+      map.addLayer(glowLayerSpec as any, pointLayerId);
+    } else if (beforeLayerId != null) {
+      map.addLayer(glowLayerSpec as any, beforeLayerId);
+    } else {
+      map.addLayer(glowLayerSpec as any);
+    }
+    debug.log('[layer-styles] glow layer ADD done', { glowLayerId });
+    return !!map.getLayer?.(glowLayerId);
+  } catch (error) {
+    console.error(`[gk-layer-styles] Failed to add glow layer ${glowLayerId}:`, error);
+    return false;
+  }
+}
+
+function finishSharedPointHelperLayerSet(
+  config: SharedPointLayersConfig,
+  ctx: {
+    baseGlowRadius: unknown[] | number;
+    resolvedGlowColor: string | unknown[];
+    hoverPaint: ReturnType<typeof resolveSharedPointFeatureStateHoverPaint>;
+  }
+): boolean {
+  const {
+    map,
+    sourceId,
+    glowLayerId,
+    pointLayerId,
+    glowOpacity,
+    glowBlur,
+    glowHoverOpacity,
+    filter,
+    beforeLayerId,
+    pointRadius,
+    circleColor,
+    selectionRingColor = '#ffffff',
+    selectionShadowColor,
+    selectionPointStrokeWidth = 0,
+    circleStrokeWidth: _circleStrokeWidth,
+  } = config;
+  const { baseGlowRadius, resolvedGlowColor, hoverPaint } = ctx;
+
+  const glowAdded = addSharedPointGlowLayer({
+    map,
+    sourceId,
+    glowLayerId,
+    pointLayerId,
+    baseGlowRadius,
+    resolvedGlowColor,
+    glowBlur,
+    hoverPaint,
+    glowOpacity,
+    filter,
+    beforeLayerId,
+  });
+  if (!glowAdded) return false;
+
+  const effectivePointRadius = resolveEffectivePointRadius(pointRadius, true);
+  if (pointRadius === undefined && map.setPaintProperty) {
+    try {
+      map.setPaintProperty(pointLayerId, 'circle-radius', effectivePointRadius as any);
+    } catch (radiusErr) {
+      console.warn(
+        `[gk-layer-styles] setPaintProperty circle-radius failed for ${pointLayerId}:`,
+        radiusErr
+      );
+    }
+  }
+
+  setupSelectionRingLayer(
+    map,
+    sourceId,
+    pointLayerId,
+    selectionRingColor,
+    effectivePointRadius,
+    selectionPointStrokeWidth || (_circleStrokeWidth ?? 0)
+  );
+  if (selectionShadowColor) {
+    setupSelectionShadowLayer(
+      map,
+      sourceId,
+      pointLayerId,
+      selectionShadowColor,
+      effectivePointRadius,
+      selectionPointStrokeWidth || (_circleStrokeWidth ?? 0)
+    );
+  }
+
+  setupHoverLayers(map, sourceId, glowLayerId, pointLayerId, {
+    glowRadius: baseGlowRadius as unknown[],
+    glowColor: resolvedGlowColor,
+    glowBlur: glowBlur ?? resolveGlowBlur(),
+    glowHoverOpacity,
+    circleColor,
+    pointRadius: effectivePointRadius,
+  });
+  return true;
+}
+
 export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   const {
     map,
@@ -1014,7 +1245,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         }
       };
       setPointLayerZoomRange();
-      // Helper may add the layer asynchronously; retry on idle so venues stay visible when zooming out
+      // Helper may add the layer asynchronously; retry on idle so points stay visible when zooming out
       if (!(map as any).getLayer?.(pointLayerId)) {
         const onIdle = () => {
           setPointLayerZoomRange();
@@ -1023,7 +1254,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         map.once?.('idle', onIdle);
       }
 
-      // Apply data-driven color so points show actual venue/DMA color instead of single fallback
+      // Apply data-driven color so points show actual feature color instead of single fallback
       if (Array.isArray(circleColor) && map.setPaintProperty) {
         try {
           map.setPaintProperty(pointLayerId, 'circle-color', circleColor as any);
@@ -1050,25 +1281,14 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         try {
           if (hoverPaint) {
             map.setPaintProperty(pointLayerId, 'circle-opacity', hoverPaint.pointOpacity as any);
-            map.setPaintProperty(
-              pointLayerId,
-              'circle-stroke-width',
-              hoverPaint.pointStrokeWidth as any
-            );
-            map.setPaintProperty(
-              pointLayerId,
-              'circle-stroke-color',
-              hoverPaint.pointStrokeColor as any
-            );
-          } else {
-            const baseStrokeWidth = _circleStrokeWidth ?? 0;
-            map.setPaintProperty(pointLayerId, 'circle-stroke-width', baseStrokeWidth as any);
-            const strokeColorVal =
-              _circleStrokeColor ??
-              selectionRingColor ??
-              resolveDefaultStrokeColor(document.documentElement);
-            map.setPaintProperty(pointLayerId, 'circle-stroke-color', strokeColorVal as any);
           }
+          const baseStrokeWidth = _circleStrokeWidth ?? 0;
+          map.setPaintProperty(pointLayerId, 'circle-stroke-width', baseStrokeWidth as any);
+          const strokeColorVal =
+            _circleStrokeColor ??
+            selectionRingColor ??
+            resolveDefaultStrokeColor(document.documentElement);
+          map.setPaintProperty(pointLayerId, 'circle-stroke-color', strokeColorVal as any);
         } catch (strokeErr) {
           console.warn(
             `[gk-layer-styles] setPaintProperty circle-stroke failed for ${pointLayerId}:`,
@@ -1098,84 +1318,16 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   }
 
   if (helperSucceeded) {
-    // Add glow layer below the point layer (same source created by the helper)
-    if (!map.getLayer?.(glowLayerId)) {
-      const glowRadiusVal = baseGlowRadius;
-      const glowColorVal = resolvedGlowColor;
-      const glowBlurVal = glowBlur ?? resolveGlowBlur();
-      let glowOpacityExpression: unknown[] | number;
-      if (hoverPaint) {
-        glowOpacityExpression = hoverPaint.glowOpacity;
-      } else if (Array.isArray(glowOpacity)) {
-        glowOpacityExpression = glowOpacity;
-      } else {
-        glowOpacityExpression =
-          typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
-      }
-      const glowPaint: Record<string, unknown> = {
-        'circle-radius': hoverPaint?.glowRadius ?? glowRadiusVal,
-        'circle-color': glowColorVal,
-        'circle-opacity': glowOpacityExpression,
-        'circle-blur': glowBlurVal,
-      };
-      const glowLayerSpec: Record<string, unknown> = {
-        id: glowLayerId,
-        type: 'circle',
-        source: sourceId,
-        minzoom: 0, // Ensure visibility at all zoom levels
-        layout: { visibility: 'visible' },
-        paint: omitNil(glowPaint),
-      };
-      if (filter != null) glowLayerSpec.filter = filter;
-      try {
-        map.addLayer(glowLayerSpec as any, pointLayerId);
-        debug.log('[layer-styles] glow layer ADD done (below MapTiler point)', { glowLayerId });
-      } catch (err) {
-        console.error(`[gk-layer-styles] Failed to add glow layer ${glowLayerId}:`, err);
-      }
-    }
-    // Selection ring: dedicated single-feature source so no data-driven expressions
-    // are evaluated on all venue features (avoids MapTiler per-tile rendering budget issues).
-    const effectivePointRadius = resolveEffectivePointRadius(pointRadius, true);
-    if (pointRadius === undefined && map.setPaintProperty) {
-      try {
-        map.setPaintProperty(pointLayerId, 'circle-radius', effectivePointRadius as any);
-      } catch (radiusErr) {
-        console.warn(
-          `[gk-layer-styles] setPaintProperty circle-radius failed for ${pointLayerId}:`,
-          radiusErr
-        );
-      }
-    }
-    setupSelectionRingLayer(
-      map,
-      sourceId,
-      pointLayerId,
-      selectionRingColor,
-      effectivePointRadius,
-      selectionPointStrokeWidth || (_circleStrokeWidth ?? 0)
-    );
-    if (selectionShadowColor) {
-      setupSelectionShadowLayer(
-        map,
-        sourceId,
-        pointLayerId,
-        selectionShadowColor,
-        effectivePointRadius,
-        selectionPointStrokeWidth || (_circleStrokeWidth ?? 0)
-      );
-    }
+    const helperCtx = { baseGlowRadius, resolvedGlowColor, hoverPaint };
+    const finishHelperLayers = () => {
+      finishSharedPointHelperLayerSet(config, helperCtx);
+    };
 
-    // Setup automatic hover layers (same pattern as non-helper path)
-    setupHoverLayers(map, sourceId, glowLayerId, pointLayerId, {
-      glowRadius: baseGlowRadius,
-      glowColor: resolvedGlowColor,
-      glowBlur: glowBlur ?? resolveGlowBlur(),
-      glowHoverOpacity,
-      circleColor,
-      pointRadius: effectivePointRadius,
-    });
-    return;
+    if (map.getLayer?.(pointLayerId)) {
+      finishHelperLayers();
+    } else {
+      whenMapLayerExists(map, pointLayerId, finishHelperLayers);
+    }
   }
 
   // Create glow layer (bottom) - serves as hit area and visual glow
@@ -1188,53 +1340,24 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
       sourceId,
       beforeLayerId: beforeLayerId ?? undefined,
     });
-    const glowRadiusVal = baseGlowRadius;
-    const glowColorVal = resolvedGlowColor;
-    const glowBlurVal = glowBlur ?? resolveGlowBlur();
-
-    let glowOpacityExpression: unknown[] | number;
-    if (hoverPaint) {
-      glowOpacityExpression = hoverPaint.glowOpacity;
-    } else if (Array.isArray(glowOpacity)) {
-      glowOpacityExpression = glowOpacity;
-    } else {
-      glowOpacityExpression = typeof glowOpacity === 'number' ? glowOpacity : resolveGlowOpacity();
-    }
-
-    const glowPaint: Record<string, unknown> = {
-      'circle-radius': hoverPaint?.glowRadius ?? glowRadiusVal,
-      'circle-color': glowColorVal,
-      'circle-opacity': glowOpacityExpression,
-      'circle-blur': glowBlurVal,
-    };
-    const glowLayerSpec: Record<string, unknown> = {
-      id: glowLayerId,
-      type: 'circle',
-      source: sourceId,
-      minzoom: 0, // Ensure visibility at all zoom levels
-      layout: { visibility: 'visible' },
-      paint: omitNil(glowPaint),
-    };
-
-    if (filter != null) {
-      glowLayerSpec.filter = filter;
-    }
-
-    try {
-      if (beforeLayerId != null) {
-        map.addLayer(glowLayerSpec as any, beforeLayerId);
-      } else {
-        map.addLayer(glowLayerSpec as any);
-      }
-      debug.log('[layer-styles] glow layer ADD done', { glowLayerId });
-    } catch (error) {
-      console.error(`[gk-layer-styles] Failed to add glow layer ${glowLayerId}:`, error);
-    }
+    addSharedPointGlowLayer({
+      map,
+      sourceId,
+      glowLayerId,
+      pointLayerId,
+      baseGlowRadius,
+      resolvedGlowColor,
+      glowBlur,
+      hoverPaint,
+      glowOpacity,
+      filter,
+      beforeLayerId,
+    });
   }
 
   // Point layer (top): zoom-based radius so points get larger as you zoom in; data-driven circle-color.
   // Selection stroke and ring both use feature-state 'selected' (requires promoteId on source).
-  if (!map.getLayer?.(pointLayerId)) {
+  if (!map.getLayer?.(pointLayerId) && !helperSucceeded) {
     const circleColorVal = circleColor ?? resolveDefaultLayerColor();
     const radiusVal = pointRadius ?? getPointRadiusInterpolation();
     const pointPaint: Record<string, unknown> = {
@@ -1244,16 +1367,11 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         hoverPaint?.pointOpacity ?? (typeof _circleOpacity === 'number' ? _circleOpacity : 1),
       'circle-blur': 0,
     };
-    if (hoverPaint) {
-      pointPaint['circle-stroke-width'] = hoverPaint.pointStrokeWidth;
-      pointPaint['circle-stroke-color'] = hoverPaint.pointStrokeColor;
-    } else {
-      pointPaint['circle-stroke-width'] = _circleStrokeWidth ?? 0;
-      pointPaint['circle-stroke-color'] =
-        _circleStrokeColor ??
-        selectionRingColor ??
-        resolveDefaultStrokeColor(document.documentElement);
-    }
+    pointPaint['circle-stroke-width'] = _circleStrokeWidth ?? 0;
+    pointPaint['circle-stroke-color'] =
+      _circleStrokeColor ??
+      selectionRingColor ??
+      resolveDefaultStrokeColor(document.documentElement);
     const pointLayerSpec: Record<string, unknown> = {
       id: pointLayerId,
       type: 'circle',
@@ -1291,7 +1409,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
     }
 
     // Selection ring: dedicated single-feature source so no data-driven expressions
-    // are evaluated on all venue features (avoids MapTiler per-tile rendering budget issues).
+    // are evaluated on all point features (avoids MapTiler per-tile rendering budget issues).
     setupSelectionRingLayer(
       map,
       sourceId,
@@ -1307,6 +1425,32 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         pointLayerId,
         selectionShadowColor,
         radiusVal,
+        selectionPointStrokeWidth || (_circleStrokeWidth ?? 0)
+      );
+    }
+  }
+
+  if (
+    helperSucceeded &&
+    map.getLayer?.(pointLayerId) &&
+    map.getLayer?.(glowLayerId)
+  ) {
+    const effectivePointRadius = resolveEffectivePointRadius(pointRadius, true);
+    setupSelectionRingLayer(
+      map,
+      sourceId,
+      pointLayerId,
+      selectionRingColor,
+      effectivePointRadius,
+      selectionPointStrokeWidth || (_circleStrokeWidth ?? 0)
+    );
+    if (selectionShadowColor) {
+      setupSelectionShadowLayer(
+        map,
+        sourceId,
+        pointLayerId,
+        selectionShadowColor,
+        effectivePointRadius,
         selectionPointStrokeWidth || (_circleStrokeWidth ?? 0)
       );
     }
@@ -1353,7 +1497,7 @@ interface GeoJSONSourceWithSetData {
 /**
  * Create a dedicated source + layer for the selection ring.
  * Uses a single-feature source (0-1 features) so no data-driven expressions
- * are evaluated on all venue features. Same pattern as hover layers.
+ * are evaluated on all point features. Same pattern as hover layers.
  */
 
 /** Shadow halo radius: slightly larger than the point for a raised look. */
@@ -1470,6 +1614,39 @@ function ensureSelectionRingOnTop(map: MapInstance, pointLayerId: string): void 
   }
 }
 
+
+
+export function ensureSharedPointSelectionRingLayer(
+  map: MapInstance,
+  sourceId: string,
+  pointLayerId: string,
+  selectionRingColor: string,
+  pointRadius?: unknown,
+  pointStrokeWidth?: unknown
+): void {
+  setupSelectionRingLayer(
+    map,
+    sourceId,
+    pointLayerId,
+    selectionRingColor,
+    pointRadius,
+    pointStrokeWidth
+  );
+
+  const ringLayerId = `${pointLayerId}-selection-ring`;
+  const ringRadius = getSelectionRingRadiusFromPointRadius(
+    pointRadius ?? getPointRadiusInterpolation(),
+    pointStrokeWidth ?? 0
+  );
+  if (map.getLayer?.(ringLayerId) && map.setPaintProperty) {
+    map.setPaintProperty(ringLayerId, 'circle-radius', ringRadius as never);
+    map.setPaintProperty(ringLayerId, 'circle-stroke-color', selectionRingColor);
+    map.setPaintProperty(ringLayerId, 'circle-stroke-width', SELECTION_RING_STROKE_WIDTH);
+  }
+
+  ensureSelectionRingOnTop(map, pointLayerId);
+}
+
 /** Canonical point coordinates from the GeoJSON source (not click lngLat). */
 export function lookupSharedPointCoords(
   map: MapInstance,
@@ -1518,7 +1695,7 @@ function resolveSharedPointSelectionLngLat(
  *
  * @param map - Map instance
  * @param sourceId - The base source ID used when creating the shared point layers
- * @param coordinates - Selected venue coordinates, or null to clear
+ * @param coordinates - Selected point coordinates, or null to clear
  */
 export function updateSharedPointSelection(
   map: MapInstance,
@@ -1552,7 +1729,7 @@ export function updateSharedPointSelection(
   }
 }
 
-/** Property order for resolving feature ids on shared point layers (e.g. venues). */
+/** Property order for resolving feature ids on shared point layers. */
 export const DEFAULT_SHARED_POINT_ID_PROPERTIES = ['slug', 'id', 'point-id', 'id:google-maps'];
 
 export interface SharedPointSelectionState {
@@ -1564,9 +1741,56 @@ export interface SetSharedPointSelectionOptions {
   idProperties?: string[];
   /** Point layer id — used to keep the ring above the dot. */
   pointLayerId?: string;
+  /** Ring stroke color when the selection layer must be mounted lazily. */
+  selectionRingColor?: string;
+  /** Point outline width (px) for ring radius math when mounting lazily. */
+  selectionPointStrokeWidth?: number;
   /** When set with dispatchEvent, fires gk-shared-point-selected on this element. */
   mapElement?: HTMLElement | null;
   dispatchEvent?: boolean;
+}
+
+function readPointRadiusFromLayer(map: MapInstance, pointLayerId: string): unknown {
+  if (!map.getLayer?.(pointLayerId)) {
+    return getPointRadiusInterpolation();
+  }
+  try {
+    const getPaint = (map as { getPaintProperty?: (id: string, prop: string) => unknown })
+      .getPaintProperty;
+    const live = getPaint?.(pointLayerId, 'circle-radius');
+    return Array.isArray(live) ? live : getPointRadiusInterpolation();
+  } catch {
+    return getPointRadiusInterpolation();
+  }
+}
+
+/** Mount selection source + ring when MapTiler helper skipped them during layer create. */
+function ensureSelectionRingReady(
+  map: MapInstance,
+  sourceId: string,
+  options?: SetSharedPointSelectionOptions
+): void {
+  const pointLayerId =
+    options?.pointLayerId ?? resolveSharedPointLayerIdForSource(map, sourceId);
+  if (!pointLayerId || !map.getLayer?.(pointLayerId)) return;
+
+  const selectionRingColor =
+    options?.selectionRingColor ??
+    (typeof document !== 'undefined'
+      ? resolveDefaultStrokeColor(document.documentElement)
+      : '#ffffff');
+  try {
+    ensureSharedPointSelectionRingLayer(
+      map,
+      sourceId,
+      pointLayerId,
+      selectionRingColor,
+      readPointRadiusFromLayer(map, pointLayerId),
+      options?.selectionPointStrokeWidth ?? 0
+    );
+  } catch {
+    // Style may not be loaded yet (e.g. visibility restore) — ring data still updates below.
+  }
 }
 
 const sharedPointSelectionByMap = new WeakMap<
@@ -1626,13 +1850,16 @@ export function setSharedPointSelection(
     const resolvedLngLat =
       lookupSharedPointCoords(map, sourceId, String(featureId), idProperties) ?? lngLat;
     getSharedPointSelectionMap(map).set(sourceId, { featureId, lngLat: resolvedLngLat });
+    ensureSelectionRingReady(map, sourceId, options);
     updateSharedPointSelection(map, sourceId, {
       lngLat: resolvedLngLat,
       ...(properties ? { properties } : {}),
     });
     clearSharedPointHoverOverlay(map, sourceId);
-    if (options?.pointLayerId) {
-      ensureSelectionRingOnTop(map, options.pointLayerId);
+    const pointLayerId =
+      options?.pointLayerId ?? resolveSharedPointLayerIdForSource(map, sourceId);
+    if (pointLayerId) {
+      ensureSelectionRingOnTop(map, pointLayerId);
     }
   }
 
@@ -2022,8 +2249,7 @@ export function createSharedPointLayersWithHover(
           'circle-color': pointColorVal,
           'circle-opacity': HOVER_CONFIG.pointOpacity,
           'circle-blur': 0,
-          'circle-stroke-width': HOVER_CONFIG.pointStrokeWidth,
-          'circle-stroke-color': HOVER_CONFIG.pointStrokeColor,
+          'circle-stroke-width': 0,
         },
       } as any);
       debug.log('[layer-styles] hover point layer ADD', { hoverPointLayerId });

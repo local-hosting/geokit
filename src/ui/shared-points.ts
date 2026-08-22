@@ -25,6 +25,8 @@ export {
 export {
   SHARED_POINT_MIN_RADIUS_PX,
   SHARED_POINT_UNIFORM_GLOW_OPACITY,
+  SHARED_POINT_DEFAULT_GLOW_OPACITY,
+  SHARED_POINT_DEFAULT_GLOW_BLUR,
   SHARED_POINT_GLOW_BLUR,
   SHARED_POINT_GLOW_HIT_AREA_SCALE,
   SHARED_POINT_DEFAULT_GLOW_HOVER_OPACITY,
@@ -37,6 +39,7 @@ export {
   circleSortKeyByProperty,
   sharedPointStrokeWidthExpression,
   sharedPointStrokeColorExpression,
+  sharedPointGlowRadiusFromPointExpression,
   applySharedPointLayerPaint,
   attachSharedPointHoverGlowRadiusSync,
   buildSharedPointFeatureStateHoverPaint,
@@ -52,6 +55,8 @@ export {
   getSharedPointRelatedSourceIds,
   tearDownSharedPointLayers,
   isMapTilerPointHelperAvailable,
+  isSharedPointLayerSetComplete,
+  waitForSharedPointLayerSetComplete,
   ensureSharedPointGeoJsonSource,
   updateSharedPointSourceData,
   createSharedPointLayerSet,
@@ -80,3 +85,20 @@ export {
   type ResolveEmbedPointScaleOptions,
   type SharedPointEmbedLayerOptions,
 } from './utils/embed-point-scale';
+
+export {
+  createSharedPointLayerController,
+  type SharedPointLayerController,
+  type SharedPointLayerControllerOptions,
+  type SharedPointGkMap,
+  type SharedPointLayerMap,
+} from './utils/shared-point-layer-controller.js';
+
+export {
+  ensureSharedPointLayerSetHealed,
+  isSharedPointLayerSetFullyComplete,
+  resolveSharedPointLayerIdForSource,
+  syncSharedPointGlowPaint,
+  syncSharedPointSelectionRingPaint,
+  type EnsureSharedPointLayerSetHealedOptions,
+} from './utils/shared-point-heal.js';
