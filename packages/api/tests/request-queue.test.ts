@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { RequestQueue } from '../../../src/api/providers/request-queue';
+import { RequestQueue } from '../src/providers/request-queue';
 
 describe('RequestQueue', () => {
   beforeEach(() => {

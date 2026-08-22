@@ -3,9 +3,9 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createCompositeAPIProvider } from '../../../src/api/providers/composite-provider';
-import { MockAPIProvider } from '../../mocks/mock-api-provider';
-import { NYC } from '../../fixtures/locations';
+import { createCompositeAPIProvider } from '../src/providers/composite-provider';
+import { MockAPIProvider } from '../../core/tests/mocks/mock-api-provider';
+import { NYC } from '../../core/tests/fixtures/locations';
 
 describe('CompositeAPIProvider', () => {
   let primary: MockAPIProvider;

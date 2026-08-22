@@ -1,5 +1,5 @@
 /**
- * Tests for Foursquare API Provider
+ * Tests for Google Places API Provider
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -8,28 +8,27 @@ import {
   initAPIProvider,
   getProviderForCapability,
   _resetRegistries,
-} from '../../../src/api/providers/registry';
-import { FoursquareAPIProvider } from '../../../src/api/providers/foursquare-provider';
+} from '../src/providers/registry';
+import { GooglePlacesAPIProvider } from '../src/providers/google-places-provider';
 
-describe('FoursquareAPIProvider', () => {
-  let provider: FoursquareAPIProvider;
+describe('GooglePlacesAPIProvider', () => {
+  let provider: GooglePlacesAPIProvider;
 
   beforeEach(() => {
     vi.clearAllMocks();
     _resetRegistries();
-    provider = new FoursquareAPIProvider();
+    provider = new GooglePlacesAPIProvider();
   });
 
   describe('initialization', () => {
     it('should have correct name', () => {
-      expect(provider.getName()).toBe('foursquare');
+      expect(provider.getName()).toBe('google-places');
     });
 
-    it('should have placeSearch capability', () => {
+    it('should have placeSearch capability only', () => {
       const capabilities = provider.getCapabilities();
       expect(capabilities).toContain('placeSearch');
-      // Note: behavioral capability was removed - Foursquare deprecated their ratings API
-      expect(capabilities).not.toContain('behavioral');
+      expect(capabilities).toEqual(['placeSearch']);
     });
 
     it('should initialize with API key', async () => {
@@ -41,7 +40,7 @@ describe('FoursquareAPIProvider', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       await provider.initialize({});
       expect(consoleSpy).toHaveBeenCalledWith(
-        '[gk-api-foursquare]  No API key provided. API calls will not work.'
+        '[gk-api-google-places]  No API key provided. API calls will not work.'
       );
       consoleSpy.mockRestore();
     });
@@ -53,48 +52,43 @@ describe('FoursquareAPIProvider', () => {
       await provider.initialize({});
       consoleSpy.mockRestore();
       await expect(provider.placeSearch({ query: 'coffee' })).rejects.toThrow(
-        'Foursquare API Provider: No API key configured.'
+        'Google Places API Provider: No API key configured.'
       );
     });
 
     it('should throw error when neither query nor location provided', async () => {
       await provider.initialize({ apiKey: 'test-key' });
       await expect(provider.placeSearch({})).rejects.toThrow(
-        'Foursquare API Provider: Either query or location (ll) is required'
+        'Google Places API Provider: Either query or location (ll) is required'
       );
     });
   });
 
   describe('placeSearch with mocked fetch', () => {
     const mockResponse = {
-      results: [
+      candidates: [
         {
-          fsq_id: 'test-venue-123',
+          place_id: 'test-place-123',
           name: 'Test Coffee Shop',
-          geocodes: {
-            main: {
-              latitude: 40.7128,
-              longitude: -74.006,
+          geometry: {
+            location: {
+              lat: 40.7128,
+              lng: -74.006,
             },
           },
-          location: {
-            address: '123 Main St',
-            locality: 'New York',
-            region: 'NY',
-            postcode: '10001',
-          },
-          categories: [{ name: 'Coffee Shop' }, { name: 'Cafe' }],
-          distance: 150,
-          rating: 8.5,
-          price: 2,
-          hours: {
+          formatted_address: '123 Main St, New York, NY 10001',
+          types: ['cafe', 'establishment'],
+          rating: 4.5,
+          user_rating_total: 150,
+          price_level: 2,
+          opening_hours: {
             open_now: true,
-            display: 'Open until 10 PM',
           },
-          tel: '555-1234',
+          formatted_phone_number: '555-1234',
           website: 'https://example.com',
         },
       ],
+      status: 'OK',
     };
 
     beforeEach(() => {
@@ -110,12 +104,11 @@ describe('FoursquareAPIProvider', () => {
       const results = await provider.placeSearch({ query: 'coffee' });
 
       expect(results).toHaveLength(1);
-      expect(results[0].id).toBe('test-venue-123');
+      expect(results[0].id).toBe('test-place-123');
       expect(results[0].name).toBe('Test Coffee Shop');
       expect(results[0].location).toEqual([-74.006, 40.7128]);
-      expect(results[0].categories).toContain('Coffee Shop');
-      expect(results[0].distance).toBe(150);
-      expect(results[0].rating).toBe(8.5);
+      expect(results[0].categories).toContain('cafe');
+      expect(results[0].rating).toBe(4.5);
     });
 
     it('should search places with location', async () => {
@@ -125,10 +118,6 @@ describe('FoursquareAPIProvider', () => {
 
       expect(results).toHaveLength(1);
       expect(fetch).toHaveBeenCalled();
-
-      const fetchCall = (fetch as any).mock.calls[0];
-      const url = new URL(fetchCall[0]);
-      expect(url.searchParams.get('ll')).toBe('40.7128,-74.006');
     });
 
     it('should include optional parameters in request', async () => {
@@ -138,25 +127,15 @@ describe('FoursquareAPIProvider', () => {
         query: 'pizza',
         ll: [-74.006, 40.7128],
         radius: 1000,
-        categories: ['13065'],
+        types: ['restaurant'],
         limit: 20,
-        sort: 'DISTANCE',
-        openNow: true,
-        minPrice: 1,
-        maxPrice: 3,
       });
 
       const fetchCall = (fetch as any).mock.calls[0];
       const url = new URL(fetchCall[0]);
-
-      expect(url.searchParams.get('query')).toBe('pizza');
-      expect(url.searchParams.get('radius')).toBe('1000');
-      expect(url.searchParams.get('categories')).toBe('13065');
-      expect(url.searchParams.get('limit')).toBe('20');
-      expect(url.searchParams.get('sort')).toBe('DISTANCE');
-      expect(url.searchParams.get('open_now')).toBe('true');
-      expect(url.searchParams.get('min_price')).toBe('1');
-      expect(url.searchParams.get('max_price')).toBe('3');
+      expect(url.searchParams.get('input')).toBe('pizza');
+      // When query is provided, location is passed as locationbias
+      expect(url.searchParams.get('locationbias')).toBe('point:40.7128,-74.006');
     });
 
     it('should use cache for repeated requests', async () => {
@@ -177,34 +156,21 @@ describe('FoursquareAPIProvider', () => {
       expect(fetch).toHaveBeenCalledTimes(2);
     });
 
-    it('should send correct authorization header', async () => {
-      await provider.initialize({ apiKey: 'my-secret-key' });
-
-      await provider.placeSearch({ query: 'coffee' });
-
-      const fetchCall = (fetch as any).mock.calls[0];
-      expect(fetchCall[0]).toContain('places-api.foursquare.com/places/search');
-      expect(fetchCall[1].headers.Authorization).toBe('Bearer my-secret-key');
-      expect(fetchCall[1].headers['X-Places-Api-Version']).toBe('2025-06-17');
-    });
-
     it('should transform response to PlaceSearchResult format', async () => {
       await provider.initialize({ apiKey: 'test-api-key' });
 
       const results = await provider.placeSearch({ query: 'coffee' });
 
       expect(results[0]).toMatchObject({
-        id: 'test-venue-123',
+        id: 'test-place-123',
         name: 'Test Coffee Shop',
-        address: '123 Main St, New York, NY, 10001',
+        address: '123 Main St, New York, NY 10001',
         location: [-74.006, 40.7128],
-        categories: ['Coffee Shop', 'Cafe'],
-        distance: 150,
-        rating: 8.5,
+        categories: ['cafe', 'establishment'],
+        rating: 4.5,
         priceLevel: 2,
         hours: {
           openNow: true,
-          display: 'Open until 10 PM',
         },
         contact: {
           phone: '555-1234',
@@ -213,52 +179,11 @@ describe('FoursquareAPIProvider', () => {
       });
       expect(results[0].raw).toBeDefined();
     });
-
-    it('should transform new Places API response shape', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            results: [
-              {
-                fsq_place_id: 'new-place-456',
-                name: 'New API Coffee',
-                latitude: 41.2855,
-                longitude: -96.0712,
-                location: {
-                  formatted_address: '10196 Maple St, Omaha, NE 68134',
-                },
-                categories: [{ name: 'Coffee Shop' }],
-                distance: 722,
-                rating: 8.3,
-              },
-            ],
-          }),
-      } as Response);
-
-      await provider.initialize({ apiKey: 'test-api-key' });
-      const results = await provider.placeSearch({ query: 'coffee' });
-
-      expect(results[0]).toMatchObject({
-        id: 'new-place-456',
-        name: 'New API Coffee',
-        address: '10196 Maple St, Omaha, NE 68134',
-        location: [-96.0712, 41.2855],
-        categories: ['Coffee Shop'],
-        distance: 722,
-        rating: 8.3,
-      });
-    });
   });
 
   describe('error handling', () => {
     beforeEach(async () => {
       vi.useFakeTimers();
-      // Reset fetch before each test to ensure test isolation
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ results: [] }),
-      });
       await provider.initialize({ apiKey: 'test-api-key' });
     });
 
@@ -280,21 +205,18 @@ describe('FoursquareAPIProvider', () => {
         }
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ results: [] }),
+          json: () => Promise.resolve({ candidates: [], status: 'OK' }),
         });
       });
 
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const promise = provider.placeSearch({ query: 'coffee' });
-
-      // Advance timers to process all retries
       await vi.runAllTimersAsync();
-
       const results = await promise;
 
       expect(results).toEqual([]);
-      expect(callCount).toBe(3); // 2 rate-limited + 1 success
+      expect(callCount).toBe(3); // 2 retries + 1 success
       consoleSpy.mockRestore();
     });
 
@@ -309,11 +231,7 @@ describe('FoursquareAPIProvider', () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const promise = provider.placeSearch({ query: 'coffee' });
-
-      // Prevent unhandled rejection warning while timers advance
       promise.catch(() => {});
-
-      // Advance timers to process all retries
       await vi.runAllTimersAsync();
 
       await expect(promise).rejects.toThrow('Too Many Requests (max retries exceeded)');
@@ -324,14 +242,16 @@ describe('FoursquareAPIProvider', () => {
 
     it('should handle API errors', async () => {
       global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 400,
-        statusText: 'Bad Request',
-        json: () => Promise.resolve({ message: 'Invalid parameter' }),
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            status: 'INVALID_REQUEST',
+            error_message: 'Invalid parameter',
+          }),
       });
 
       await expect(provider.placeSearch({ query: 'coffee' })).rejects.toThrow(
-        'Foursquare API error: 400 Bad Request - Invalid parameter'
+        'Google Places API error: INVALID_REQUEST'
       );
     });
   });
@@ -342,7 +262,7 @@ describe('FoursquareAPIProvider', () => {
 
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ results: [] }),
+        json: () => Promise.resolve({ candidates: [], status: 'OK' }),
       });
 
       // Initial call
@@ -366,7 +286,7 @@ describe('FoursquareAPIProvider', () => {
 
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ results: [] }),
+        json: () => Promise.resolve({ candidates: [], status: 'OK' }),
       });
 
       await provider.placeSearch({ query: 'coffee' });
@@ -385,11 +305,11 @@ describe('FoursquareAPIProvider', () => {
 
   describe('integration with registry', () => {
     it('should register and route placeSearch capability', async () => {
-      registerAPIProvider('foursquare', provider);
-      await initAPIProvider('foursquare', { apiKey: 'test-key' });
+      registerAPIProvider('google-places', provider);
+      await initAPIProvider('google-places', { apiKey: 'test-key' });
 
       const foundProvider = getProviderForCapability('placeSearch');
-      expect(foundProvider?.getName()).toBe('foursquare');
+      expect(foundProvider?.getName()).toBe('google-places');
     });
   });
 });

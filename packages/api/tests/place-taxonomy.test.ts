@@ -3,7 +3,7 @@ import {
   enrichPlaceSearchResult,
   resolvePlaceSearchCategories,
   setPlaceTaxonomyResolver,
-} from '../../../src/api/place-taxonomy.js';
+} from '../src/place-taxonomy.js';
 import { createGeokitTaxonomyResolver } from '@geokit/geotypes/geokit';
 
 describe('place-taxonomy', () => {

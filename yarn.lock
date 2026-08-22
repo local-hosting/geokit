@@ -875,6 +875,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@geokit/api@workspace:*, @geokit/api@workspace:packages/api":
+  version: 0.0.0-use.local
+  resolution: "@geokit/api@workspace:packages/api"
+  dependencies:
+    "@types/node": "npm:^22.15.21"
+    typescript: "npm:^5.8.3"
+    vitest: "npm:^4.0.18"
+  peerDependencies:
+    geokit: "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@geokit/geotypes@workspace:*, @geokit/geotypes@workspace:packages/geotypes":
   version: 0.0.0-use.local
   resolution: "@geokit/geotypes@workspace:packages/geotypes"
@@ -882,13 +894,11 @@ __metadata:
     "@bufbuild/protobuf": "npm:^2.6.0"
     "@bufbuild/protoc-gen-es": "npm:^2.6.0"
     "@types/js-yaml": "npm:^4.0.9"
-    "@types/node": "npm:^22.15.21"
     commander: "npm:^14.0.0"
-    geokit: "workspace:*"
     js-yaml: "npm:^4.1.0"
-    tsx: "npm:^4.19.4"
-    typescript: "npm:^5.8.3"
-    vitest: "npm:^4.0.18"
+  peerDependencies:
+    "@geokit/api": "workspace:*"
+    geokit: "workspace:*"
   languageName: unknown
   linkType: soft
 
@@ -4276,14 +4286,19 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "geokit-monorepo@workspace:."
   dependencies:
+    "@types/node": "npm:^24.10.1"
     husky: "npm:^9.1.7"
+    tsx: "npm:^4.20.5"
+    typescript: "npm:^5.9.3"
+    vitest: "npm:^2.1.8"
   languageName: unknown
   linkType: soft
 
-"geokit@workspace:*, geokit@workspace:packages/core":
+"geokit@workspace:packages/core":
   version: 0.0.0-use.local
   resolution: "geokit@workspace:packages/core"
   dependencies:
+    "@geokit/api": "workspace:*"
     "@geokit/geotypes": "workspace:*"
     "@maptiler/sdk": "npm:3.10.2"
     "@modelcontextprotocol/sdk": "npm:^1.29.0"
@@ -7031,21 +7046,6 @@ __metadata:
     tsup: dist/cli-default.js
     tsup-node: dist/cli-node.js
   checksum: 10c0/86b0a5ee5533cf5363431ffaf6a244d06fbc80e3a739f216a121a336b28e663d521bae1d3b2d9ba7d479cb4b5f7dcb5e0722e169d3daf664c78f0d68676fa06a
-  languageName: node
-  linkType: hard
-
-"tsx@npm:^4.19.4":
-  version: 4.23.12
-  resolution: "tsx@npm:4.23.12"
-  dependencies:
-    esbuild: "npm:~0.28.0"
-    fsevents: "npm:~2.3.3"
-  dependenciesMeta:
-    fsevents:
-      optional: true
-  bin:
-    tsx: dist/cli.mjs
-  checksum: 10c0/cdd7f03754021fb337c13839f25f5f5edee01ed12e1e176da50cc34bc5c5fc4e7b533aeba89127055be969d4ff292c6accdb6b9d977ed022c524349eca6ff841
   languageName: node
   linkType: hard
 

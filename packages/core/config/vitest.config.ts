@@ -38,7 +38,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       include: [
         'src/utils/**/*.ts',
-        'src/api/providers/**/*.ts',
+        '../api/src/providers/**/*.ts',
         'src/config/env/**/*.ts',
         'src/config/tile-cdn.ts',
         'src/contract/**/*.ts',

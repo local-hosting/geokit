@@ -1,5 +1,5 @@
 import type { FeatureCollection } from 'geojson';
-import type { CompositeAPIProviderOptions } from '../../types/api-composite';
+import type { CompositeAPIProviderOptions } from '../types/api-composite';
 import {
   BaseAPIProvider,
   type APICapability,
