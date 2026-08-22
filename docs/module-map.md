@@ -52,3 +52,5 @@ Cross-platform layout for `@twinfile/geokit` and **geokit-swift**. See [`parity.
 
 Regenerate shared fixtures: `yarn export:parity-fixtures`  
 Verify: `yarn check:parity-fixtures`
+
+See also [standalone-kit.md](./standalone-kit.md) for minimal third-party boot.
