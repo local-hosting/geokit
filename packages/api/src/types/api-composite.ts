@@ -1,4 +1,4 @@
-import type { APICapability, BaseAPIProvider } from '../api/providers/types';
+import type { APICapability, BaseAPIProvider } from '../providers/types.js';
 
 /** Ordered provider list per capability for fallback routing. */
 export type CapabilityProviderChain = Partial<Record<APICapability, BaseAPIProvider[]>>;

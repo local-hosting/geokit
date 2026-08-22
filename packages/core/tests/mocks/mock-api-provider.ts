@@ -24,7 +24,7 @@ export type MockIsochroneOptions = {
  * Tracks fetch count and supports in-memory caching like real providers.
  */
 export class MockAPIProvider implements BaseAPIProvider {
-  private config: MapProviderConfig | null = null;
+  protected config: MapProviderConfig | null = null;
   private initialized = false;
   private readonly cache = new Map<string, GeoJSON.FeatureCollection>();
   private fetchCount = 0;

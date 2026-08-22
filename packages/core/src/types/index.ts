@@ -117,7 +117,7 @@ export type {
   PopupContentOptions,
 } from './popup';
 
-export * from './api-composite.js';
+export * from '@geokit/api/types/api-composite';
 
 export type * from './static-map.js';
 export * from './map-display.js';

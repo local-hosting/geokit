@@ -10,11 +10,11 @@ import {
   getCapabilityRouter,
   registerCapabilityRouter,
   getAPIProvider,
-} from '../../../src/api/providers/registry';
-import { MockAPIProvider } from '../../mocks/mock-api-provider';
-import { createCompositeAPIProvider } from '../../../src/api/providers/composite-provider';
-import { useCleanAPIRegistry } from '../../setup/registries';
-import { NYC } from '../../fixtures/locations';
+} from '../src/providers/registry';
+import { MockAPIProvider } from '../../core/tests/mocks/mock-api-provider';
+import { createCompositeAPIProvider } from '../src/providers/composite-provider';
+import { useCleanAPIRegistry } from './setup/registries.ts';
+import { NYC } from '../../core/tests/fixtures/locations';
 
 describe('API Provider Registry', () => {
   useCleanAPIRegistry();
@@ -222,7 +222,7 @@ import {
   getRegisteredAPIProviders,
   getSupportedCapabilities,
   isCapabilitySupported,
-} from '../../../src/api/providers/registry';
+} from '../src/providers/registry';
 
 describe('registry introspection helpers', () => {
   useCleanAPIRegistry();
