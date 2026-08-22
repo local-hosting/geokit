@@ -139,7 +139,7 @@ export class PolygonElement extends MapChildElement {
   /**
    * Find the layer ID to insert polygon layers before.
    * Priority: 1) explicit beforeLayerId option, 2) first circle layer found.
-   * This ensures polygons render below points (venues, markers, etc.).
+   * This ensures polygons render below points (markers, etc.).
    */
   private findFirstPointLayer(): string | undefined {
     // If explicit beforeLayerId was provided, verify it exists and use it
@@ -161,8 +161,8 @@ export class PolygonElement extends MapChildElement {
       const style = getStyle();
       if (!style || !style.layers) return undefined;
 
-      // Look for the first circle layer (points, venue dots, glow hit areas)
-      // Circle layers are used for venue points and their glow/hitarea
+      // Look for the first circle layer (points, point dots, glow hit areas)
+      // Circle layers are used for point layers and their glow/hitarea
       for (const layer of style.layers) {
         if (layer.type === 'circle') {
           return layer.id;

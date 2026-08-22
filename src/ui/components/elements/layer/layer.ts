@@ -19,8 +19,8 @@
  *
  * Usage:
  * <gk-layer
- *   source-id="venues"
- *   layer-id="venue-points"
+ *   source-id="points"
+ *   layer-id="site-points"
  *   type="circle"
  *   interactive
  *   hover-state
@@ -45,6 +45,10 @@ export type {
   LayerMouseEnterEventDetail,
   LayerMouseLeaveEventDetail,
 } from './layer-interactions';
+import {
+  collectPassthroughDatasetAttrs,
+  isPassthroughDatasetAttr,
+} from './layer-dataset-attrs.js';
 import {
   mountLayerDataset,
   normalizeLayerDatasetId,
@@ -129,7 +133,6 @@ export class LayerElement extends MapChildElement {
     'fill-color',
     'color-mode',
     'outline-color',
-        'state',
   ];
 
   getRequestInit?: () => RequestInit;
@@ -376,16 +379,7 @@ export class LayerElement extends MapChildElement {
     const modeRaw = this.safeGetAttribute('mode');
     const mode = modeRaw === 'slugs' || modeRaw === 'viewport' ? modeRaw : undefined;
 
-    const attrs: Record<string, string> = {};
-    for (const name of [
-      'state',
-      'dma-region',
-      'dark-variant',
-          ] as const) {
-      const value = this.safeGetAttribute(name);
-      if (value) attrs[name] = value;
-    }
-    if (this.hasAttribute('dark-variant')) attrs['dark-variant'] = 'true';
+    const passthroughAttrs = collectPassthroughDatasetAttrs(this);
 
     return {
       baseUrl:
@@ -401,7 +395,7 @@ export class LayerElement extends MapChildElement {
       fillOpacity: Number.isFinite(fillOpacity) ? fillOpacity : undefined,
       fillColor: this.safeGetAttribute('fill-color') ?? undefined,
       outlineColor: this.safeGetAttribute('outline-color') ?? undefined,
-      attrs: Object.keys(attrs).length > 0 ? attrs : undefined,
+      attrs: Object.keys(passthroughAttrs).length > 0 ? passthroughAttrs : undefined,
     };
   }
 
@@ -819,7 +813,7 @@ export class LayerElement extends MapChildElement {
         'outline-color',
         'line-color',
       ];
-      if (remountAttrs.includes(name)) {
+      if (remountAttrs.includes(name) || isPassthroughDatasetAttr(name)) {
         void this.mountDatasetLayer();
       } else if (patchAttrs.includes(name)) {
         this.applyDatasetOptionPatch(name);

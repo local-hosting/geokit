@@ -8,7 +8,7 @@ import {
 describe('layer-datasets', () => {
   it('normalizeLayerDatasetId accepts any non-empty id', () => {
     expect(normalizeLayerDatasetId('state')).toBe('state');
-    expect(normalizeLayerDatasetId('venues')).toBe('venues');
+    expect(normalizeLayerDatasetId('points')).toBe('points');
     expect(normalizeLayerDatasetId(null)).toBeNull();
   });
 
