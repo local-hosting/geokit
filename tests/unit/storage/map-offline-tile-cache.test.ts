@@ -93,3 +93,131 @@ describe('storage/map-offline-tile-cache', () => {
     expect(coverage.tilesCached).toBeGreaterThanOrEqual(1);
   });
 });
+
+function installFakeIndexedDB() {
+  const databases = new Map<string, { stores: Map<string, Map<IDBValidKey, unknown>> }>();
+  class FakeRequest {
+    onsuccess: ((event: Event) => void) | null = null;
+    onupgradeneeded: ((event: IDBVersionChangeEvent) => void) | null = null;
+    result: unknown;
+  }
+  class FakeObjectStore {
+    constructor(private data: Map<IDBValidKey, unknown>) {}
+    get(key: IDBValidKey) {
+      const request = new FakeRequest();
+      queueMicrotask(() => {
+        request.result = this.data.get(key);
+        request.onsuccess?.({} as Event);
+      });
+      return request as IDBRequest;
+    }
+    getAll() {
+      const request = new FakeRequest();
+      queueMicrotask(() => {
+        request.result = [...this.data.values()];
+        request.onsuccess?.({} as Event);
+      });
+      return request as IDBRequest;
+    }
+    put(value: unknown) {
+      const request = new FakeRequest();
+      const record = value as { mapId?: string; key?: string };
+      const key = (record.mapId ?? record.key) as IDBValidKey;
+      queueMicrotask(() => {
+        this.data.set(key, value);
+        request.onsuccess?.({} as Event);
+      });
+      return request as IDBRequest;
+    }
+    delete(key: IDBValidKey) {
+      const request = new FakeRequest();
+      queueMicrotask(() => {
+        this.data.delete(key);
+        request.onsuccess?.({} as Event);
+      });
+      return request as IDBRequest;
+    }
+  }
+  class FakeDatabase {
+    objectStoreNames = { contains: (name: string) => this.stores.has(name) };
+    constructor(public stores: Map<string, Map<IDBValidKey, unknown>>) {}
+    createObjectStore(name: string) {
+      const data = new Map<IDBValidKey, unknown>();
+      this.stores.set(name, data);
+      return new FakeObjectStore(data);
+    }
+    transaction(storeName: string) {
+      return { objectStore: () => new FakeObjectStore(this.stores.get(storeName)!) };
+    }
+  }
+  vi.stubGlobal('indexedDB', {
+    open(name: string) {
+      const request = new FakeRequest();
+      queueMicrotask(() => {
+        const record = databases.get(name) ?? { stores: new Map() };
+        if (!databases.has(name)) databases.set(name, record);
+        const db = new FakeDatabase(record.stores);
+        request.result = db;
+        request.onupgradeneeded?.({ target: request } as IDBVersionChangeEvent);
+        request.onsuccess?.({} as Event);
+      });
+      return request as IDBOpenDBRequest;
+    },
+    deleteDatabase(name: string) {
+      const request = new FakeRequest();
+      queueMicrotask(() => {
+        databases.delete(name);
+        request.onsuccess?.({} as Event);
+      });
+      return request as IDBOpenDBRequest;
+    },
+  } as IDBFactory);
+}
+
+describe('storage/map-offline-tile-cache durable paths', () => {
+  beforeEach(() => {
+    installFakeIndexedDB();
+  });
+
+  it('reuses cached tiles without refetching', async () => {
+    const cache = MapOfflineTileCache.getInstance();
+    const template = 'https://tiles.example/{z}/{x}/{y}.pbf';
+    const fetchMock = vi.fn(async () => new Response(new Uint8Array([1]), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await cache.prefetch({ mapId: 'trip-2', bounds, zoomRange }, { urlTemplate: template });
+    fetchMock.mockClear();
+    const coverage = await cache.prefetch({ mapId: 'trip-2', bounds, zoomRange }, { urlTemplate: template });
+    expect(coverage.tilesCached).toBeGreaterThan(0);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('removeRegion and clearAll delete cached tiles and metadata', async () => {
+    const cache = MapOfflineTileCache.getInstance();
+    const template = 'https://tiles.example/{z}/{x}/{y}.pbf';
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(new Uint8Array([1, 2]), { status: 200, headers: { 'content-length': '2' } })));
+
+    await cache.prefetch({ mapId: 'trip-3', bounds, zoomRange }, { urlTemplate: template });
+    await cache.removeRegion('trip-3');
+    await cache.clearAll();
+    const reopened = await caches.open(TILE_CACHE_NAME);
+    expect((await reopened.keys()).length).toBe(0);
+  });
+
+  it('reports prefetch progress and skips failed tile fetches', async () => {
+    const cache = MapOfflineTileCache.getInstance();
+    const template = 'https://tiles.example/{z}/{x}/{y}.pbf';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('nope', { status: 500 }))
+    );
+    const progress: number[] = [];
+    const coverage = await cache.prefetch(
+      { mapId: 'trip-4', bounds, zoomRange },
+      { urlTemplate: template },
+      (p) => progress.push(p.fractionComplete)
+    );
+    expect(coverage.tilesCached).toBe(0);
+    expect(progress.length).toBe(0);
+  });
+});

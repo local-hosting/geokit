@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   bearing,
   finalBearing,
@@ -382,4 +382,26 @@ describe('bearing', () => {
       });
     });
   });
+  describe('fallback paths', () => {
+    it('uses spherical fallback when turf midpoint fails', async () => {
+      const turfUtils = await import('../../../src/utils/turf-utils');
+      vi.spyOn(turfUtils, 'createPointFeature').mockImplementation(() => {
+        throw new Error('turf unavailable');
+      });
+      const mid = midpoint(nyc)(la);
+      expect(mid[0]).toBeCloseTo((nyc[0] + la[0]) / 2, 5);
+      vi.restoreAllMocks();
+    });
+
+    it('uses spherical fallback when turf destination fails', async () => {
+      const turfUtils = await import('../../../src/utils/turf-utils');
+      vi.spyOn(turfUtils, 'createPointFeature').mockImplementation(() => {
+        throw new Error('turf unavailable');
+      });
+      const dest = destinationMeters(1000, 90)(nyc);
+      expect(dest[1]).toBeGreaterThan(nyc[1]);
+      vi.restoreAllMocks();
+    });
+  });
+
 });
