@@ -122,7 +122,7 @@ function hideTooltip(): void {
 }
 
 export function wirePolygonOutlineHover(
-  map: MapWithFeatureState,
+  map: MapWithLayers,
   options: Pick<PolygonOutlineHoverOptions, 'sourceId' | 'promoteId' | 'tooltip' | 'hover'>
 ): () => void {
   const sourceId = options.sourceId;
@@ -302,7 +302,9 @@ export function upsertPolygonOutlineLayer(
   };
 
   const data = preparePolygonOutlineGeoJson(geojson, options);
-  const existing = map.getSource?.(resolved.sourceId);
+  const existing = map.getSource?.(resolved.sourceId) as
+    | { setData?: (next: GeoJSON.FeatureCollection) => void }
+    | undefined;
 
   if (existing?.setData) {
     existing.setData(data);

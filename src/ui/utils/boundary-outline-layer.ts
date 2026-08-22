@@ -1,124 +1,178 @@
 /**
- * Boundary outline layers — polygon fill-outline on GeoJSON sources.
+ * Boundary outlines — polygon fill (hit target) + line layer (visual).
  *
- * Client geojson-vt slices polygons at tile edges; fill-outline fragments at
- * continent zoom. State preset uses basemap border layers for visuals at all zooms.
+ * All gk-layer geo presets (state, county, city, zip) share this stack.
+ * Apps supply choropleth fill via mount options (fill color + optional line).
  */
 
-import type { BoundaryMapLike } from './boundary-map';
-import { BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS } from './geojson-source-options';
+import {
+  capPolygonCollectionForMapLibre,
+  polygonsToBoundaryLines,
+} from '../../utils/geojson/index.js';
+import {
+  COUNTY_BOUNDARY_GEOJSON_SOURCE_OPTIONS,
+  STATE_BOUNDARY_GEOJSON_SOURCE_OPTIONS,
+  ZIP_BOUNDARY_GEOJSON_SOURCE_OPTIONS,
+  BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS,
+} from './geojson-source-options.js';
+import {
+  hasBoundaryOutlineLineLayers,
+  restoreBasemapBorders,
+  suppressBasemapBorders,
+  type BoundaryMapLike,
+} from './boundary-map.js';
 
-/** Transparent fill; outline paints when fill-outline-color is non-transparent. */
-export const BOUNDARY_OUTLINE_FILL_OPACITY = 1;
+/** Nearly invisible fill so interactive layers remain queryable. */
+export const BOUNDARY_OUTLINE_HIT_FILL_OPACITY = 0.01;
 
-export const BOUNDARY_OUTLINE_MIN_ZOOM = 7;
+export const BOUNDARY_OUTLINE_LINE_MIN_ZOOM = 7;
 
-export type BoundaryOutlinePaintConfig = {
-  sourceId: string;
+export type BoundaryOutlineSourceOptions = {
+  tolerance: number;
+  buffer: number;
+  maxzoom: number;
+};
+
+export type BoundaryOutlineLayerConfig = {
+  polygonSourceId: string;
+  lineSourceId: string;
+  fillLayerId: string;
   lineLayerId: string;
   lineColor: string;
   lineWidth: number | unknown[];
   minzoom?: number;
-  /** Zoom at which custom outline paints (county/city). Default 7. */
-  minOutlineZoom?: number;
-  /**
-   * State preset: basemap draws outlines at every zoom; overlay layer is hit-target only.
-   */
-  useBasemapOutline?: boolean;
+  /** Zoom at which CDN line paint becomes visible. Default 7. */
+  lineMinzoom?: number;
+  fillColor?: string | unknown[];
+  fillOpacity?: number;
+  polygonSourceOptions?: BoundaryOutlineSourceOptions;
+  lineSourceOptions?: BoundaryOutlineSourceOptions;
 };
 
-const TRANSPARENT_OUTLINE = 'rgba(0, 0, 0, 0)';
-
-function outlineColorExpression(lineColor: string, minOutlineZoom: number): unknown[] {
-  return ['step', ['zoom'], TRANSPARENT_OUTLINE, minOutlineZoom, lineColor];
+function lineSourceId(config: Pick<BoundaryOutlineLayerConfig, 'polygonSourceId' | 'lineSourceId'>) {
+  return config.lineSourceId;
 }
 
-function resolveOutlinePaint(
-  config: Pick<BoundaryOutlinePaintConfig, 'lineColor' | 'minOutlineZoom' | 'useBasemapOutline'>
-): unknown[] | string {
-  if (config.useBasemapOutline) return TRANSPARENT_OUTLINE;
-  const minOutlineZoom = config.minOutlineZoom ?? BOUNDARY_OUTLINE_MIN_ZOOM;
-  return outlineColorExpression(config.lineColor, minOutlineZoom);
+function resolveLineMinzoom(config: Pick<BoundaryOutlineLayerConfig, 'lineMinzoom' | 'minzoom'>) {
+  return config.lineMinzoom ?? config.minzoom ?? BOUNDARY_OUTLINE_LINE_MIN_ZOOM;
+}
+
+function lineOpacityExpression(minZoom: number): unknown[] {
+  return ['step', ['zoom'], 0, minZoom, 1];
 }
 
 export function removeBoundaryOutlineLayer(
   map: BoundaryMapLike | null | undefined,
-  config: Pick<BoundaryOutlinePaintConfig, 'sourceId' | 'lineLayerId'>
+  config: Pick<
+    BoundaryOutlineLayerConfig,
+    'polygonSourceId' | 'lineSourceId' | 'fillLayerId' | 'lineLayerId'
+  >
 ): void {
   if (!map) return;
   try {
     if (map.getLayer?.(config.lineLayerId)) map.removeLayer?.(config.lineLayerId);
-    if (map.getSource?.(config.sourceId)) map.removeSource?.(config.sourceId);
+    if (map.getLayer?.(config.fillLayerId)) map.removeLayer?.(config.fillLayerId);
+    if (map.getSource?.(config.lineSourceId)) map.removeSource?.(config.lineSourceId);
+    if (map.getSource?.(config.polygonSourceId)) map.removeSource?.(config.polygonSourceId);
+    if (!hasBoundaryOutlineLineLayers(map)) {
+      restoreBasemapBorders(map);
+    }
   } catch {
     /* map torn down */
   }
 }
 
-export function setBoundaryOutlineLineOpacity(
-  map: BoundaryMapLike | null | undefined,
-  lineLayerId: string,
-  opacity: number
-): void {
-  if (!map?.getLayer?.(lineLayerId)) return;
-  map.setPaintProperty?.(
-    lineLayerId,
-    'fill-opacity',
-    opacity <= 0 ? 0 : BOUNDARY_OUTLINE_FILL_OPACITY
-  );
-}
-
 export function applyBoundaryOutlineLinePaint(
   map: BoundaryMapLike | null | undefined,
   config: Pick<
-    BoundaryOutlinePaintConfig,
-    'lineLayerId' | 'lineColor' | 'lineWidth' | 'minOutlineZoom' | 'useBasemapOutline'
+    BoundaryOutlineLayerConfig,
+    'lineLayerId' | 'lineColor' | 'lineWidth' | 'lineMinzoom' | 'minzoom'
   >
 ): void {
   if (!map?.getLayer?.(config.lineLayerId)) return;
-  map.setPaintProperty?.(config.lineLayerId, 'fill-outline-color', resolveOutlinePaint(config));
-  map.setPaintProperty?.(config.lineLayerId, 'fill-opacity', BOUNDARY_OUTLINE_FILL_OPACITY);
-  void config.lineWidth;
+  const lineMinzoom = resolveLineMinzoom(config);
+  map.setPaintProperty?.(config.lineLayerId, 'line-color', config.lineColor);
+  map.setPaintProperty?.(config.lineLayerId, 'line-width', config.lineWidth);
+  map.setPaintProperty?.(config.lineLayerId, 'line-opacity', lineOpacityExpression(lineMinzoom));
 }
 
 export function refreshBoundaryOutlineData(
   map: BoundaryMapLike | null | undefined,
   polygons: GeoJSON.FeatureCollection,
-  sourceId: string
+  config: Pick<BoundaryOutlineLayerConfig, 'polygonSourceId' | 'lineSourceId'>
 ): GeoJSON.FeatureCollection | null {
-  map?.getSource?.(sourceId)?.setData?.(polygons);
-  return polygons;
+  const capped = capPolygonCollectionForMapLibre(polygons);
+  map?.getSource?.(config.polygonSourceId)?.setData?.(capped);
+  const lines = polygonsToBoundaryLines(polygons);
+  map?.getSource?.(lineSourceId(config))?.setData?.(lines);
+  return capped;
 }
 
 export function addBoundaryOutlineLayer(
   map: BoundaryMapLike,
   polygons: GeoJSON.FeatureCollection,
-  config: BoundaryOutlinePaintConfig,
+  config: BoundaryOutlineLayerConfig,
   beforeLayerId?: string
 ): GeoJSON.FeatureCollection {
   removeBoundaryOutlineLayer(map, config);
 
-  map.addSource?.(config.sourceId, {
+  const capped = capPolygonCollectionForMapLibre(polygons);
+  const polygonOptions = config.polygonSourceOptions ?? STATE_BOUNDARY_GEOJSON_SOURCE_OPTIONS;
+  const lineOptions = config.lineSourceOptions ?? BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS;
+  const lines = polygonsToBoundaryLines(polygons);
+  const before = beforeLayerId && map.getLayer?.(beforeLayerId) ? beforeLayerId : undefined;
+  const lineMinzoom = resolveLineMinzoom(config);
+
+  map.addSource?.(config.polygonSourceId, {
     type: 'geojson',
-    data: polygons,
-    ...BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS,
+    data: capped,
+    ...polygonOptions,
   });
 
-  const before = beforeLayerId && map.getLayer?.(beforeLayerId) ? beforeLayerId : undefined;
+  map.addSource?.(config.lineSourceId, {
+    type: 'geojson',
+    data: lines,
+    ...lineOptions,
+  });
+
   map.addLayer?.(
     {
-      id: config.lineLayerId,
+      id: config.fillLayerId,
       type: 'fill',
-      source: config.sourceId,
+      source: config.polygonSourceId,
       ...(config.minzoom != null ? { minzoom: config.minzoom } : {}),
       paint: {
-        'fill-color': 'rgba(0, 0, 0, 0)',
-        'fill-opacity': BOUNDARY_OUTLINE_FILL_OPACITY,
-        'fill-outline-color': resolveOutlinePaint(config),
-        'fill-antialias': true,
+        'fill-color': config.fillColor ?? 'rgba(0, 0, 0, 0)',
+        'fill-opacity': config.fillOpacity ?? BOUNDARY_OUTLINE_HIT_FILL_OPACITY,
+        'fill-antialias': false,
       },
     },
     before
   );
 
-  return polygons;
+  map.addLayer?.(
+    {
+      id: config.lineLayerId,
+      type: 'line',
+      source: config.lineSourceId,
+      ...(config.minzoom != null ? { minzoom: config.minzoom } : {}),
+      paint: {
+        'line-color': config.lineColor,
+        'line-width': config.lineWidth,
+        'line-opacity': lineOpacityExpression(lineMinzoom),
+      },
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+    },
+    before
+  );
+
+  // MapTiler basemap borders use a different geometry source — hide them so CDN
+  // geojson-vt lines do not moiré/double-stroke against the basemap.
+  suppressBasemapBorders(map);
+
+  return capped;
 }
+
+export const STATE_BOUNDARY_OUTLINE_SOURCE_OPTIONS = STATE_BOUNDARY_GEOJSON_SOURCE_OPTIONS;
+export const COUNTY_BOUNDARY_OUTLINE_SOURCE_OPTIONS = COUNTY_BOUNDARY_GEOJSON_SOURCE_OPTIONS;
+export const ZIP_BOUNDARY_OUTLINE_SOURCE_OPTIONS = ZIP_BOUNDARY_GEOJSON_SOURCE_OPTIONS;

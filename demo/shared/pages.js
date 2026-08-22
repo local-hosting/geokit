@@ -15,7 +15,7 @@ export const DEMO_SECTIONS = [
         id: 'standalone-kit',
         path: '/maps/standalone-kit.html',
         label: 'Standalone kit',
-        description: 'Mock registerLayerDatasetMount + gk-point-layer halos (no Fieldwise)',
+        description: 'Mock registerLayerDatasetMount + gk-point-layer halos (standalone demo)',
       },
       { id: 'scrolling', path: '/maps/scrolling.html', label: 'Scrolling' },
       { id: 'centered', path: '/maps/centered.html', label: 'Providers' },

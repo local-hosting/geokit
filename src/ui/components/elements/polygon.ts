@@ -112,7 +112,7 @@ export class PolygonElement extends MapChildElement {
 
     // Style is already ready (waited in waitForMapStyleReady), so create immediately
     // Create synchronously to avoid staggered rendering when many polygons are added
-    // The fragment batching in FWMap.vue already prevents blocking the main thread
+    // Host map shell fragment batching already prevents blocking the main thread
     // Check if polygon layer already exists (might have been created during wait)
     if (this.map.getLayer?.(this.layerId)) {
       return; // Already created
