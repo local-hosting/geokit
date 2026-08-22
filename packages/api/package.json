@@ -72,13 +72,11 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
+    "test": "yarn run -T vitest run"
   },
   "devDependencies": {
-    "@types/node": "^22.15.21",
-    "typescript": "^5.8.3",
-    "vitest": "^4.0.18"
+    "geokit": "workspace:*"
   },
   "peerDependencies": {
     "geokit": "workspace:*"
