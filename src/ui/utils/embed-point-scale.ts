@@ -16,7 +16,7 @@ export const DEFAULT_EMBED_MIN_SCALE = 0.35;
 export const COMPACT_EMBED_MIN_RADIUS_PX = 2;
 /** No blur on compact embed glow — circle-blur softens tiny points into fuzzy halos. */
 export const COMPACT_EMBED_GLOW_BLUR = 0;
-/** Above this zoom, embed shrink is not applied — points grow with zoom when inspecting stores. */
+/** Above this zoom, embed shrink is not applied — points grow with zoom when inspecting points. */
 export const COMPACT_EMBED_ZOOM_GROWTH_THRESHOLD = 8;
 
 export interface EmbedPointScaleFromHeightOptions {

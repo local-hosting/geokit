@@ -80,34 +80,34 @@ mapElement.addEventListener('gk-map-ready', async () => {
     features: [
       {
         type: 'Feature',
-        properties: { slug: 'venue-1', type: 'default', name: 'Los Angeles', averageRating: 4.5 },
+        properties: { slug: 'point-1', type: 'default', name: 'Los Angeles', averageRating: 4.5 },
         geometry: { type: 'Point', coordinates: [-118.2437, 34.0522] }
       },
       {
         type: 'Feature',
-        properties: { slug: 'venue-2', type: 'premium', name: 'Phoenix' },
+        properties: { slug: 'point-2', type: 'premium', name: 'Phoenix' },
         geometry: { type: 'Point', coordinates: [-112.0740, 33.4484] }
       },
       {
         type: 'Feature',
-        properties: { slug: 'venue-3', type: 'partner', name: 'Denver', averageRating: 3.8 },
+        properties: { slug: 'point-3', type: 'partner', name: 'Denver', averageRating: 3.8 },
         geometry: { type: 'Point', coordinates: [-104.9903, 39.7392] }
       },
       {
         type: 'Feature',
-        properties: { slug: 'venue-4', type: 'default', name: 'Chicago' },
+        properties: { slug: 'point-4', type: 'default', name: 'Chicago' },
         geometry: { type: 'Point', coordinates: [-87.6298, 41.8781] }
       },
       {
         type: 'Feature',
-        properties: { slug: 'venue-5', type: 'default', name: 'New York', averageRating: 4.2 },
+        properties: { slug: 'point-5', type: 'default', name: 'New York', averageRating: 4.2 },
         geometry: { type: 'Point', coordinates: [-74.006, 40.7128] }
       }
     ]
   };
 
   // Add source
-  const sourceId = 'test-venues';
+  const sourceId = 'test-points';
   log(`Adding source: ${sourceId}`);
   
   try {
@@ -170,8 +170,8 @@ mapElement.addEventListener('gk-map-ready', async () => {
   const glowRadius = getGlowRadiusInterpolation({ scale: 1.5 });
 
   // Create layer IDs
-  const glowLayerId = 'test-venue-glow';
-  const pointLayerId = 'test-venue-points';
+  const glowLayerId = 'test-point-glow';
+  const pointLayerId = 'test-point-points';
 
   log(`Creating layers: glow=${glowLayerId}, point=${pointLayerId}`);
 

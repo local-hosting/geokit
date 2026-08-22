@@ -3,7 +3,7 @@
  *
  * Single place for hover highlight logic: set/clear feature-state and
  * build data-driven opacity expressions. Used by PointElement and by
- * apps (e.g. venue layers) that render many points from one source.
+ * apps (e.g. shared point layers) that render many points from one source.
  *
  * This is the SOURCE OF TRUTH for all hover visual behavior in GeoKit.
  */
@@ -18,18 +18,18 @@
  */
 export const HOVER_CONFIG = {
   /** Scale factor for hover glow radius vs base glow */
-  glowRadiusScale: 1.35,
+  glowRadiusScale: 1.45,
 
   /** Default glow opacity on dedicated hover layer */
-  glowOpacity: 0.35,
+  glowOpacity: 0.65,
 
   /** Blur for hover glow (MapLibre 0–1; keep below 1 to avoid muddy halos) */
   glowBlur: 0.55,
 
-  /** Point stroke width on hover for brightness effect */
-  pointStrokeWidth: 3,
+  /** Point stroke width on hover (0 = glow-only hover feedback) */
+  pointStrokeWidth: 0,
 
-  /** Point stroke color on hover (bright white for maximum visibility) */
+  /** Point stroke color on hover (unused when pointStrokeWidth is 0) */
   pointStrokeColor: '#FFFFFF',
 
   /** Point opacity on hover */
@@ -98,11 +98,43 @@ export const FOCUS_POINT_OPACITY = 1;
  * @param baseRadius - Base radius expression (MapLibre interpolation or number)
  * @returns Scaled radius expression for hover state
  */
-export function scaleRadiusForHover(baseRadius: unknown[] | number): unknown[] | number {
-  if (typeof baseRadius === 'number') {
-    return baseRadius * HOVER_CONFIG.glowRadiusScale;
+
+function scaleInterpolateRadiusStops(interpolate: unknown[], scale: number): unknown[] {
+  if (
+    !Array.isArray(interpolate) ||
+    interpolate[0] !== 'interpolate' ||
+    typeof scale !== 'number' ||
+    scale === 1
+  ) {
+    return interpolate;
   }
-  return ['*', baseRadius, HOVER_CONFIG.glowRadiusScale];
+
+  const scaled = [...interpolate];
+  for (let i = 4; i < scaled.length; i += 2) {
+    if (typeof scaled[i] === 'number') {
+      scaled[i] = (scaled[i] as number) * scale;
+    }
+  }
+  return scaled;
+}
+
+export function scaleRadiusForHover(baseRadius: unknown[] | number): unknown[] | number {
+  const scale = HOVER_CONFIG.glowRadiusScale;
+  if (typeof baseRadius === 'number') {
+    return baseRadius * scale;
+  }
+  if (Array.isArray(baseRadius) && baseRadius[0] === 'interpolate') {
+    return scaleInterpolateRadiusStops(baseRadius, scale);
+  }
+  if (
+    Array.isArray(baseRadius) &&
+    baseRadius[0] === '*' &&
+    Array.isArray(baseRadius[1]) &&
+    baseRadius[1][0] === 'interpolate'
+  ) {
+    return ['*', scaleInterpolateRadiusStops(baseRadius[1], scale), baseRadius[2]];
+  }
+  return ['*', baseRadius, scale];
 }
 
 /**

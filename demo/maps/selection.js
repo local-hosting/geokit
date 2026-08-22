@@ -4,7 +4,7 @@ import { createSharedPointLayers } from '../../src/ui/utils/layer-styles.ts';
 
 await setupMapsDemo({ elements: ['point'] });
 
-const SOURCE_ID = 'demo-venues';
+const SOURCE_ID = 'demo-points';
 const mapElement = document.getElementById('selection-map');
 const stateEl = document.getElementById('selection-state');
 const declarativePoint = document.getElementById('declarative-point');
@@ -29,27 +29,27 @@ const testVenues = {
   features: [
     {
       type: 'Feature',
-      properties: { slug: 'venue-1', name: 'Los Angeles', type: 'default' },
+      properties: { slug: 'point-1', name: 'Los Angeles', type: 'default' },
       geometry: { type: 'Point', coordinates: [-118.2437, 34.0522] },
     },
     {
       type: 'Feature',
-      properties: { slug: 'venue-2', name: 'Phoenix', type: 'premium' },
+      properties: { slug: 'point-2', name: 'Phoenix', type: 'premium' },
       geometry: { type: 'Point', coordinates: [-112.074, 33.4484] },
     },
     {
       type: 'Feature',
-      properties: { slug: 'venue-3', name: 'Denver', type: 'partner' },
+      properties: { slug: 'point-3', name: 'Denver', type: 'partner' },
       geometry: { type: 'Point', coordinates: [-104.9903, 39.7392] },
     },
     {
       type: 'Feature',
-      properties: { slug: 'venue-4', name: 'Chicago', type: 'default' },
+      properties: { slug: 'point-4', name: 'Chicago', type: 'default' },
       geometry: { type: 'Point', coordinates: [-87.6298, 41.8781] },
     },
     {
       type: 'Feature',
-      properties: { slug: 'venue-5', name: 'New York', type: 'default' },
+      properties: { slug: 'point-5', name: 'New York', type: 'default' },
       geometry: { type: 'Point', coordinates: [-74.006, 40.7128] },
     },
   ],
@@ -71,8 +71,8 @@ mapElement.addEventListener('gk-map-ready', () => {
   createSharedPointLayers({
     map,
     sourceId: SOURCE_ID,
-    glowLayerId: 'demo-venue-glow',
-    pointLayerId: 'demo-venue-points',
+    glowLayerId: 'demo-point-glow',
+    pointLayerId: 'demo-point-points',
     circleColor: [
       'match',
       ['get', 'type'],
@@ -86,7 +86,7 @@ mapElement.addEventListener('gk-map-ready', () => {
     selectionRingColor: '#ffffff',
   });
 
-  logEvent('Shared venue layers ready — click a dot');
+  logEvent('Shared point layers ready — click a dot');
   formatSelection();
 });
 
