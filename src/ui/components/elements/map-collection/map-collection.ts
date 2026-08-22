@@ -402,7 +402,7 @@ export class MapCollectionElement extends BaseElement {
   }
 
   /**
-   * Suppress map activation for a period (e.g. during programmatic scroll to a selected venue).
+   * Suppress map activation for a period (e.g. during programmatic scroll to a selected item).
    * Call before triggering smooth scroll so cards that pass through the viewport don't activate maps.
    */
   suppressActivation(durationMs: number): void {

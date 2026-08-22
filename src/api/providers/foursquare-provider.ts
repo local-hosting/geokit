@@ -68,7 +68,7 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
   }
 
   /**
-   * Search for places/venues
+   * Search for places
    */
   async placeSearch(options: PlaceSearchOptions): Promise<PlaceSearchResult[]> {
     requireAPIKey(this.apiKey, `${PROVIDER_NAME} API Provider`);

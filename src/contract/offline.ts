@@ -1,6 +1,6 @@
 /**
  * Offline map contract — shared with geokit-swift `GeoKitContract`.
- * Geokit stores map/runtime state only; domain data (venues, markers) stays in the host app.
+ * Geokit stores map/runtime state only; domain data (markers, domain records) stays in the host app.
  */
 
 export interface MapCameraFrame {

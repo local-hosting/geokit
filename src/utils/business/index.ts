@@ -9,9 +9,9 @@ import { getBounds } from '../bounds';
 import type { Coordinate, Polygon } from '../../types';
 
 /**
- * Store locator utilities
+ * Locatable entity utilities
  */
-export interface Store {
+export interface LocatableEntity {
   id: string;
   name: string;
   location: Coordinate;
@@ -20,28 +20,28 @@ export interface Store {
   phone?: string;
 }
 
-export interface StoreSearchOptions {
+export interface LocatableSearchOptions {
   maxDistance?: number; // meters
   limit?: number;
   openNow?: boolean;
 }
 
 /**
- * Find nearest stores to a location
+ * Find nearest locatable entities to a point
  */
-export function findNearestStores(
+export function findNearestLocatableEntities(
   userLocation: Coordinate,
-  stores: Store[],
-  options: StoreSearchOptions = {}
-): Array<Store & { distance: number }> {
+  entities: LocatableEntity[],
+  options: LocatableSearchOptions = {}
+): Array<LocatableEntity & { distance: number }> {
   const { maxDistance = 50000, limit = 10 } = options;
-  
-  return stores
-    .map(store => ({
-      ...store,
-      distance: haversineMeters(userLocation)(store.location)
+
+  return entities
+    .map((entity) => ({
+      ...entity,
+      distance: haversineMeters(userLocation)(entity.location),
     }))
-    .filter(store => store.distance <= maxDistance)
+    .filter((entity) => entity.distance <= maxDistance)
     .sort((a, b) => a.distance - b.distance)
     .slice(0, limit);
 }

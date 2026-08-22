@@ -20,15 +20,13 @@ export interface StyledPopupOptions {
 export interface PointPopupProperties {
   [key: string]: unknown;
   'id:google-maps'?: string;
-  'id:store-sid'?: string;
-  'id:store-number'?: string;
   id?: string;
   address?: string;
   city?: string;
   state?: string;
 }
 
-/** A tag with an optional label prefix (e.g. { label: 'DMA', value: 'Albuquerque Santa Fe' }) */
+/** A tag with an optional label prefix (e.g. { label: 'Region', value: 'Midwest' }) */
 export interface PopupTag {
   label?: string;
   value: string;
