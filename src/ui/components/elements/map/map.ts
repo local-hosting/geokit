@@ -7,6 +7,7 @@
  * <gk-map lat="40.7128" lng="-74.006" zoom="10" style="streets"></gk-map>
  */
 
+import { resolveSharedPointLayerIdForSource } from '../../../utils/shared-point-heal.js';
 import { BaseElement } from '../../base-element';
 import {
   registerUIProvider,
@@ -3116,7 +3117,11 @@ export class MapElement extends BaseElement {
       map,
       sourceId,
       { featureId, lngLat: coords, properties },
-      { mapElement: this, dispatchEvent: true }
+      {
+        mapElement: this,
+        dispatchEvent: true,
+        pointLayerId: resolveSharedPointLayerIdForSource(map, sourceId),
+      }
     );
     return true;
   }
@@ -3172,7 +3177,7 @@ export class MapElement extends BaseElement {
 
   /**
    * @deprecated For shared point layers (createSharedPointLayers), use setSelectedPoint()
-   * which moves the dedicated selection ring without mutating venue source data.
+   * which moves the dedicated selection ring without mutating point source data.
    *
    * Legacy: update selection state in a GeoJSON source by setting __selected on features.
    * @param sourceId - Source ID to update

@@ -19,6 +19,7 @@ import {
   type SharedPointFeatureStateHoverOptions,
   type SharedPointLayerIds,
 } from './shared-point-paint';
+import { ensureSharedPointLayerSetHealed } from './shared-point-heal.js';
 import {
   applyEmbedScaleToSharedPointLayerOptions,
   COMPACT_EMBED_GLOW_BLUR,
@@ -152,6 +153,54 @@ export function isMapTilerPointHelperAvailable(): boolean {
   );
 }
 
+
+/** True when source, glow, and point layers for a shared point set are all mounted. */
+export function isSharedPointLayerSetComplete(
+  map: MapInstance,
+  ids: SharedPointLayerIds
+): boolean {
+  return (
+    !!map.getSource?.(ids.sourceId) &&
+    !!map.getLayer?.(ids.glowLayerId) &&
+    !!map.getLayer?.(ids.pointLayerId)
+  );
+}
+
+const DEFAULT_SHARED_POINT_LAYER_SET_WAIT_MS = 4_000;
+
+function idleOnce(map: MapInstance): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof map.once === 'function') {
+      map.once('idle', () => resolve());
+      return;
+    }
+    setTimeout(resolve, 50);
+  });
+}
+
+/** Wait for glow + point layers; re-run heal until the shared point set is complete. */
+export async function waitForSharedPointLayerSetComplete(
+  map: MapInstance,
+  ids: SharedPointLayerIds,
+  heal: () => void | Promise<void>,
+  maxWaitMs = DEFAULT_SHARED_POINT_LAYER_SET_WAIT_MS
+): Promise<boolean> {
+  if (isSharedPointLayerSetComplete(map, ids)) return true;
+
+  await heal();
+  if (isSharedPointLayerSetComplete(map, ids)) return true;
+
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    await idleOnce(map);
+    if (isSharedPointLayerSetComplete(map, ids)) return true;
+    await heal();
+    if (isSharedPointLayerSetComplete(map, ids)) return true;
+  }
+
+  return isSharedPointLayerSetComplete(map, ids);
+}
+
 /** Create a GeoJSON source with tolerance: 0 so points are not dropped at low zoom. */
 export function ensureSharedPointGeoJsonSource(
   map: MapInstance,
@@ -264,6 +313,15 @@ export interface SyncExistingSharedPointLayersOptions {
   embedPointScale?: number;
   referenceHeightPx?: number;
   glowBlur?: number;
+  /** Recreate missing glow/point layers when the set is incomplete. Default true. */
+  healIncompleteLayerSet?: boolean;
+  promoteId?: string;
+  mapProvider?: string | null;
+  useMapTilerPointHelper?: boolean;
+  selectionRingColor?: string;
+  selectionShadowColor?: string;
+  selectionPointStrokeWidth?: number;
+  layerSetWaitMs?: number;
 }
 
 /** Update data + paint on an existing shared point layer set. */
@@ -294,8 +352,34 @@ export async function syncExistingSharedPointLayers(
     referenceHeightPx,
   });
   const resolvedGlowBlur = resolveCompactGlowBlur(compactPoints, glowBlur);
+  const healIncompleteLayerSet = options.healIncompleteLayerSet !== false;
   const ok = await updateSharedPointSourceData(map, ids.sourceId, geojson, updateOptions);
-  if (ok) {
+
+  if (healIncompleteLayerSet && !isSharedPointLayerSetComplete(map, ids)) {
+    await createSharedPointLayersFromPaint({
+      map,
+      ids,
+      geojson,
+      paint,
+      circleOpacity: pointOpacity,
+      glowHoverOpacity,
+      glowBlur,
+      glowHitAreaScale,
+      compactPoints,
+      embedPointScale,
+      referenceHeightPx,
+      promoteId: options.promoteId,
+      mapProvider: options.mapProvider,
+      useMapTilerPointHelper: options.useMapTilerPointHelper,
+      useFeatureStateHover,
+      selectionRingColor: options.selectionRingColor,
+      selectionShadowColor: options.selectionShadowColor,
+      selectionPointStrokeWidth: options.selectionPointStrokeWidth,
+      layerSetWaitMs: options.layerSetWaitMs,
+    });
+  }
+
+  if (ok || map.getSource?.(ids.sourceId)) {
     let featureStateHover: SharedPointFeatureStateHoverOptions | undefined;
     if (useFeatureStateHover) {
       const { getGlowRadiusInterpolation } = await getLayerStylesModule();
@@ -309,6 +393,17 @@ export async function syncExistingSharedPointLayers(
         glowHoverOpacity
       );
     }
+    await ensureSharedPointLayerSetHealed(map, ids, {
+      paint: scaled.paint,
+      selectionRingColor: options.selectionRingColor,
+      selectionPointStrokeWidth: options.selectionPointStrokeWidth,
+      glowColorFallback: '#888888',
+      glowHoverOpacity,
+      useFeatureStateHover,
+      pointOpacity,
+      glowHitAreaScale: scaled.glowHitAreaScale,
+    });
+
     applySharedPointLayerPaint(map, { ...scaled.paint, featureStateHover });
     if (resolvedGlowBlur != null) {
       applySharedPointGlowBlur(map, ids.glowLayerId, resolvedGlowBlur);
@@ -363,6 +458,8 @@ export interface CreateSharedPointLayersFromPaintOptions {
   /** Explicit embed scale multiplier (overrides height detection). */
   embedPointScale?: number;
   referenceHeightPx?: number;
+  /** Max wait for MapTiler async point + glow mount. Default 4000ms. Set 0 in unit tests. */
+  layerSetWaitMs?: number;
 }
 
 /**
@@ -417,7 +514,7 @@ export async function createSharedPointLayersFromPaint(
     scaled.paint.strokeColorExpression ?? sharedPointStrokeColorExpression();
   const glowColorExpression = scaled.paint.glowColorExpression ?? paintColorFromProperty();
 
-  await createSharedPointLayerSet(map, {
+  const layerSetOptions = {
     ids,
     geojson,
     mapProvider,
@@ -437,6 +534,33 @@ export async function createSharedPointLayersFromPaint(
     selectionRingColor,
     selectionShadowColor,
     selectionPointStrokeWidth,
+  };
+
+  const healSharedPointLayerSet = async () => {
+    const pointExists = !!map.getLayer?.(ids.pointLayerId);
+    await createSharedPointLayerSet(map, {
+      ...layerSetOptions,
+      useMapTilerPointHelper: pointExists ? false : layerSetOptions.useMapTilerPointHelper,
+    });
+  };
+
+  await createSharedPointLayerSet(map, layerSetOptions);
+  await waitForSharedPointLayerSetComplete(
+    map,
+    ids,
+    healSharedPointLayerSet,
+    options.layerSetWaitMs ?? 4000
+  );
+
+  await ensureSharedPointLayerSetHealed(map, ids, {
+    paint: scaled.paint,
+    selectionRingColor,
+    selectionPointStrokeWidth,
+    glowColorFallback: '#888888',
+    glowHoverOpacity,
+    useFeatureStateHover,
+    pointOpacity: resolvedPointOpacity,
+    glowHitAreaScale: scaled.glowHitAreaScale,
   });
 
   applySharedPointLayerPaint(map, {

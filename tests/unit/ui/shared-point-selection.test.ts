@@ -30,16 +30,16 @@ function createMockMap() {
 describe('shared point selection', () => {
   it('tracks selection and moves the dedicated ring source', () => {
     const map = createMockMap();
-    const sourceId = 'venues-test';
+    const sourceId = 'points-test';
     map._sources.set(`${sourceId}-selection`, { data: null });
 
     setSharedPointSelection(map as never, sourceId, {
-      featureId: 'venue-a',
+      featureId: 'point-a',
       lngLat: { lng: -85.7, lat: 38.2 },
     });
 
     const state = getSharedPointSelection(map as never, sourceId);
-    expect(state?.featureId).toBe('venue-a');
+    expect(state?.featureId).toBe('point-a');
     expect(state?.lngLat).toEqual({ lng: -85.7, lat: 38.2 });
 
     const ringData = map._sources.get(`${sourceId}-selection`)?.data as {
@@ -50,11 +50,11 @@ describe('shared point selection', () => {
 
   it('clears selection state and ring source', () => {
     const map = createMockMap();
-    const sourceId = 'venues-test';
+    const sourceId = 'points-test';
     map._sources.set(`${sourceId}-selection`, { data: null });
 
     setSharedPointSelection(map as never, sourceId, {
-      featureId: 'venue-a',
+      featureId: 'point-a',
       lngLat: { lng: 1, lat: 2 },
     });
     clearSharedPointSelection(map as never, sourceId);
@@ -67,11 +67,11 @@ describe('shared point selection', () => {
   });
   it('copies selected feature properties onto the ring source', () => {
     const map = createMockMap();
-    const sourceId = 'venues-test';
+    const sourceId = 'points-test';
     map._sources.set(`${sourceId}-selection`, { data: null });
 
     setSharedPointSelection(map as never, sourceId, {
-      featureId: 'venue-a',
+      featureId: 'point-a',
       lngLat: { lng: -85.7, lat: 38.2 },
       properties: { type: 'partner', averageRating: 4.2 },
     });
@@ -86,14 +86,14 @@ describe('shared point selection', () => {
   });
   it('prefers source geometry over click lngLat when selecting', () => {
     const map = createMockMap();
-    const sourceId = 'venues-test';
+    const sourceId = 'points-test';
     const venueSource = {
       _data: {
         type: 'FeatureCollection',
         features: [
           {
             type: 'Feature',
-            properties: { slug: 'venue-a' },
+            properties: { slug: 'point-a' },
             geometry: { type: 'Point', coordinates: [-104.99, 39.7392] },
           },
         ],
@@ -103,11 +103,11 @@ describe('shared point selection', () => {
     map._sources.set(`${sourceId}-selection`, { data: null });
 
     setSharedPointSelection(map as never, sourceId, {
-      featureId: 'venue-a',
+      featureId: 'point-a',
       lngLat: { lng: -105.5, lat: 39.2 },
     });
 
-    expect(lookupSharedPointCoords(map as never, sourceId, 'venue-a')).toEqual({
+    expect(lookupSharedPointCoords(map as never, sourceId, 'point-a')).toEqual({
       lng: -104.99,
       lat: 39.7392,
     });
@@ -118,7 +118,7 @@ describe('shared point selection', () => {
   });
   it('clears dedicated hover overlay source on select', () => {
     const map = createMockMap();
-    const sourceId = 'venues-test';
+    const sourceId = 'points-test';
     map._sources.set(`${sourceId}-selection`, { data: null });
     map._sources.set(`${sourceId}-hover`, {
       data: {
@@ -130,11 +130,36 @@ describe('shared point selection', () => {
     });
 
     setSharedPointSelection(map as never, sourceId, {
-      featureId: 'venue-a',
+      featureId: 'point-a',
       lngLat: { lng: -85.7, lat: 38.2 },
     });
 
     const hoverData = map._sources.get(`${sourceId}-hover`)?.data as { features: unknown[] };
     expect(hoverData.features).toHaveLength(0);
+  });
+
+  it('lazy-mounts selection ring source when missing on select', () => {
+    const map = createMockMap();
+    const sourceId = 'points-test';
+    const pointLayerId = 'hero-venue-points';
+    map.getLayer = vi.fn((id: string) => (id === pointLayerId ? {} : undefined));
+    map.getPaintProperty = vi.fn(() => ['interpolate', ['linear'], ['zoom'], 10, 4]);
+    map.addSource = vi.fn((id: string) => {
+      map._sources.set(id, { data: null });
+    });
+    map.addLayer = vi.fn();
+
+    setSharedPointSelection(map as never, sourceId, {
+      featureId: 'point-a',
+      lngLat: { lng: -85.7, lat: 38.2 },
+    }, { pointLayerId });
+
+    expect(map.addSource).toHaveBeenCalledWith(
+      `${sourceId}-selection`,
+      expect.objectContaining({ type: 'geojson' })
+    );
+    expect(map.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: `${pointLayerId}-selection-ring` })
+    );
   });
 });
