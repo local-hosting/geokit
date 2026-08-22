@@ -22,7 +22,7 @@ describe('layer-stack', () => {
       getStyle: () => ({
         layers: [
           { id: 'gk-dataset-state-line', type: 'line' },
-          { id: 'gk-dataset-dma-fill', type: 'fill' },
+          { id: 'gk-dataset-territory-fill', type: 'fill' },
           { id: 'venues', type: 'circle' },
         ],
       }),
@@ -57,7 +57,7 @@ describe('layer-stack', () => {
   });
 
   it('stackGkOutlineLayersAboveDatasetFill stacks gk-dataset lines above fill', () => {
-    const fillId = datasetFillLayerId('dma');
+    const fillId = datasetFillLayerId('territory');
     const order = ['gk-dataset-state-line', fillId, 'gk-dataset-county-line', 'labels'];
     const map = {
       getStyle: () => ({ layers: order.map((id) => ({ id })) }),

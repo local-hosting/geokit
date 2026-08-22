@@ -222,3 +222,8 @@ const unsub = onMapReadyInContainer(containerEl, (mapElement, map) => {
   // decorate map, add layers, etc.
 });
 ```
+
+## Shared point layers (MapTiler)
+
+MapTiler `helpers.addPoint` mounts the point layer asynchronously. Geokit defers glow, selection ring, and hover setup until the point layer exists (`idle` retries), and `syncExistingSharedPointLayers` can heal an incomplete set (point without glow) on the next sync.
+

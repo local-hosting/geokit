@@ -1,8 +1,8 @@
 /**
- * Admin boundary outlines — polygon fill-outline on GeoJSON sources.
+ * Boundary outline layers — polygon fill-outline on GeoJSON sources.
  *
  * Client geojson-vt slices polygons at tile edges; fill-outline fragments at
- * continent zoom. State preset uses basemap admin borders for visuals at all zooms.
+ * continent zoom. State preset uses basemap border layers for visuals at all zooms.
  */
 
 import type { BoundaryMapLike } from './boundary-map';
