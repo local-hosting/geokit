@@ -2,8 +2,15 @@
  * Framework adapter types — shared across Vue, React, and Svelte.
  */
 
+import type { GkMapEventHandler, GkMapListenEvent } from '../../ui/utils/map-element-on.js';
+
 /** gk-map element surface used by host apps and adapters. */
 export type GkMapElement = HTMLElement & {
+  on<E extends GkMapListenEvent>(event: E, handler: GkMapEventHandler<E>): () => void;
+  off<E extends GkMapListenEvent>(event: E, handler: GkMapEventHandler<E>): void;
+  getBounds(): unknown;
+  getZoom(): number | undefined;
+  getCenter(): { lng: number; lat: number } | undefined;
   getMap(): unknown;
   hasSource?(sourceId: string): boolean;
   hasLayer?(layerId: string): boolean;

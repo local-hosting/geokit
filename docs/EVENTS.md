@@ -85,6 +85,18 @@ preloadSharedPointLayerStyles();
 | `gk-map-moveend` | Map camera finished moving (pan/zoom) | `{ map, element, bounds? }` |
 | `gk-map-click`   | Map background click (MapLibre click) | `{ lngLat?, map, element, originalEvent? }` — cancelable |
 
+### gk-map.on / gk-map.off (map.on ergonomics)
+
+Same events as \`gk-map-moveend\` and \`gk-map-click\`, exposed as lifecycle-safe methods on the \`gk-map\` element:
+
+\`\`\`ts
+const unbind = gkMap.on('moveend', detail => { /* detail.bounds */ });
+gkMap.off('moveend', handler);
+\`\`\`
+
+Prefer \`gkMap.on(...)\` or DOM \`addEventListener('gk-map-moveend')\` in apps — do not call \`getMap().on\` directly.
+
+
 ### Popup close reason (`gk-popup-closed` detail)
 
 `reason` is one of: `user` | `freeze` | `unload` | `clear-popups` | `restore-other-map` | `dma-pill` | `new-selection` | `programmatic`.
