@@ -102,3 +102,8 @@ export {
   syncSharedPointSelectionRingPaint,
   type EnsureSharedPointLayerSetHealedOptions,
 } from './utils/shared-point-heal.js';
+export {
+  createSharedPointMapOrchestrator,
+  type SharedPointMapOrchestrator,
+  type SharedPointMapOrchestratorOptions,
+} from './utils/shared-point-map-orchestrator.js';

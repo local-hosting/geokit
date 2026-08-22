@@ -1,6 +1,6 @@
 # Standalone map UI kit
 
-Geokit runs without the Fieldwise monorepo. Any app can install `@twinfile/geokit`, configure map providers, register dataset mounts, and compose maps from `gk-*` elements.
+Geokit is a standalone map UI kit. Any app can install `@twinfile/geokit`, configure map providers, register dataset mounts, and compose maps from `gk-*` elements.
 
 ## Minimal boot
 
@@ -61,7 +61,7 @@ registerLayerDatasetMount('territory', async ({ map, options }) => {
 | `registerLayerDatasetMount` registry | Mount implementations + CDN URLs |
 | Layer stack ordering, events, theme tokens | Product colors, entitlements, auth |
 
-Dataset ids are opaque strings. Geokit never imports Fieldwise or `@twinfile/fieldwise-platform`.
+Dataset ids are opaque strings. Geokit never imports host-app packages — mounts and CDN URLs are registered by the consumer.
 
 ## Demos
 
