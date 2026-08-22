@@ -875,7 +875,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@geokit/geotypes@workspace:packages/geotypes":
+"@geokit/geotypes@workspace:*, @geokit/geotypes@workspace:packages/geotypes":
   version: 0.0.0-use.local
   resolution: "@geokit/geotypes@workspace:packages/geotypes"
   dependencies:
@@ -4284,6 +4284,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "geokit@workspace:packages/core"
   dependencies:
+    "@geokit/geotypes": "workspace:*"
     "@maptiler/sdk": "npm:3.10.2"
     "@modelcontextprotocol/sdk": "npm:^1.29.0"
     "@turf/along": "npm:^7.3.0"

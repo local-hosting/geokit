@@ -17,6 +17,10 @@ import {
 import { ProviderCache, coordinateCacheKey } from './cache';
 import { RequestQueue } from './request-queue';
 import { requireAPIKey, assertResponseOk, retryOn429 } from './api-utils';
+import {
+  enrichPlaceSearchResult,
+  resolvePlaceSearchCategories,
+} from '../place-taxonomy.js';
 
 const PROVIDER_NAME = 'Google Places';
 
@@ -92,6 +96,7 @@ export class GooglePlacesAPIProvider extends BaseAPIProvider {
     try {
       // Use Find Place API if we have a query, otherwise use Nearby Search
       let url: string;
+      const categories = resolvePlaceSearchCategories(options, 'google-places');
       let params: URLSearchParams;
 
       if (query) {
@@ -119,6 +124,9 @@ export class GooglePlacesAPIProvider extends BaseAPIProvider {
         if (limit) {
           params.set('maxresults', Math.min(limit, 20).toString()); // Google max is 20 per request
         }
+        if (categories?.length) {
+          params.set('type', categories[0]);
+        }
       } else {
         throw new Error('Google Places API Provider: Either query or location (ll) is required');
       }
@@ -137,7 +145,9 @@ export class GooglePlacesAPIProvider extends BaseAPIProvider {
       }
 
       // Transform Google Places response to normalized PlaceSearchResult[]
-      const results = this.transformResults(data.candidates || data.results || []);
+      const results = this.transformResults(data.candidates || data.results || []).map(
+        (result) => enrichPlaceSearchResult(result, 'google-places')
+      );
 
       // Store in cache
       this.cache.set(cacheKey, results);
@@ -201,7 +211,9 @@ export class GooglePlacesAPIProvider extends BaseAPIProvider {
     if (options.radius) {
       parts.push(`r:${options.radius}`);
     }
-    if (options.categories && options.categories.length > 0) {
+    if (options.geotypes?.length) {
+      parts.push(`gt:${options.geotypes.join(',')}`);
+    } else if (options.categories && options.categories.length > 0) {
       parts.push(`cat:${options.categories.join(',')}`);
     }
     if (options.limit) {
