@@ -88,7 +88,7 @@ export function createSharedPointLayerController(
     const mapProvider = gkMap.getAttribute?.('provider');
     const useMapTilerPointHelper = mapProvider === 'maptiler';
 
-    const heal = async () => {
+    const syncLayers = async (healIncompleteLayerSet: boolean) => {
       await syncExistingSharedPointLayers({
         map: currentMap as never,
         ids,
@@ -99,18 +99,21 @@ export function createSharedPointLayerController(
         useMapTilerPointHelper,
         selectionRingColor,
         glowHoverOpacity,
-        healIncompleteLayerSet: true,
+        healIncompleteLayerSet,
       });
     };
 
     if (!isSharedPointLayerSetComplete(currentMap as never, ids)) {
-      await heal();
+      await syncLayers(true);
       await waitForSharedPointLayerSetComplete(
         currentMap as never,
         ids,
-        heal,
+        () => syncLayers(true),
         options.styleReadyTimeoutMs ?? 4000
       );
+    } else {
+      // Layers already mounted — still push latest GeoJSON (facet filters, etc.).
+      await syncLayers(false);
     }
 
     if (!isSharedPointLayerSetFullyComplete(currentMap as never, ids)) {
