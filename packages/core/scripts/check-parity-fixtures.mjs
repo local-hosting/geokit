@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const fixturePath = path.resolve(
   root,
-  '../geokit-swift/Tests/GeoKitCoreTests/Fixtures/parity-fixtures.json'
+  '../../geokit-swift/Tests/GeoKitCoreTests/Fixtures/parity-fixtures.json'
 );
 
 if (!fs.existsSync(path.join(root, 'dist/esm/utils/bounds/index.js'))) {

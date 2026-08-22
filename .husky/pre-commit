@@ -1,3 +1,4 @@
-yarn lint-staged
-yarn typecheck
-yarn test
+yarn workspace geokit exec lint-staged
+yarn workspace geokit run typecheck
+yarn workspace geokit run test
+yarn workspace @geokit/geotypes run test
