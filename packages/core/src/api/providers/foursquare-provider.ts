@@ -26,6 +26,10 @@ import {
   foursquarePlacesHeaders,
   normalizeFoursquarePlace,
 } from './foursquare-places';
+import {
+  enrichPlaceSearchResult,
+  resolvePlaceSearchCategories,
+} from '../place-taxonomy.js';
 import type { FoursquarePlaceRaw } from '../../types/foursquare-places';
 
 const PROVIDER_NAME = 'Foursquare';
@@ -183,7 +187,9 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
     if (options.radius) {
       parts.push(`r:${options.radius}`);
     }
-    if (options.categories && options.categories.length > 0) {
+    if (options.geotypes?.length) {
+      parts.push(`gt:${options.geotypes.join(',')}`);
+    } else if (options.categories && options.categories.length > 0) {
       parts.push(`cat:${options.categories.join(',')}`);
     }
     if (options.limit) {

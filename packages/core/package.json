@@ -22,6 +22,13 @@
       "require": "./dist/cjs/api/index.cjs",
       "default": "./dist/esm/api/index.js"
     },
+    "./api/place-taxonomy": {
+      "source": "./src/api/place-taxonomy.ts",
+      "types": "./dist/esm/api/place-taxonomy.d.ts",
+      "import": "./dist/esm/api/place-taxonomy.js",
+      "require": "./dist/cjs/api/place-taxonomy.cjs",
+      "default": "./dist/esm/api/place-taxonomy.js"
+    },
     "./api/providers/foursquare": {
       "source": "./src/api/providers/foursquare-provider.ts",
       "types": "./dist/esm/api/providers/foursquare-provider.d.ts",
@@ -535,6 +542,13 @@
       "import": "./dist/esm/ui/utils/gk-dma-layer-bind.js",
       "require": "./dist/cjs/ui/utils/gk-dma-layer-bind.cjs",
       "default": "./dist/esm/ui/utils/gk-dma-layer-bind.js"
+    },
+    "./types/place-taxonomy": {
+      "source": "./src/types/place-taxonomy.ts",
+      "types": "./dist/esm/types/place-taxonomy.d.ts",
+      "import": "./dist/esm/types/place-taxonomy.js",
+      "require": "./dist/cjs/types/place-taxonomy.cjs",
+      "default": "./dist/esm/types/place-taxonomy.js"
     }
   },
   "sideEffects": [
@@ -597,6 +611,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
+    "@geokit/geotypes": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",

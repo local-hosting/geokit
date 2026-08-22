@@ -97,6 +97,8 @@ export interface PlaceSearchOptions {
   ll?: Position;
   radius?: number;
   categories?: string[];
+  /** Canonical geotype acronym or slug (requires setPlaceTaxonomyResolver). */
+  geotypes?: string[];
   limit?: number;
   sort?: 'RELEVANCE' | 'RATING' | 'DISTANCE';
   openNow?: boolean;
@@ -113,6 +115,10 @@ export interface PlaceSearchResult {
   address?: string;
   location: Position;
   categories?: string[];
+  /** Canonical geotype slug from taxonomy resolver. */
+  geotype?: string;
+  /** 3-letter geotype acronym (e.g. RSE). */
+  geotypeAcronym?: string;
   distance?: number;
   rating?: number;
   priceLevel?: number;
