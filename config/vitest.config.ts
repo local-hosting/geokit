@@ -36,7 +36,28 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'dist/', '**/*.test.ts', '**/*.config.*'],
+      include: [
+        'src/utils/**/*.ts',
+        'src/api/providers/**/*.ts',
+        'src/config/env/**/*.ts',
+        'src/config/tile-cdn.ts',
+        'src/contract/**/*.ts',
+        'src/storage/**/*.ts',
+      ],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        '**/*.test.ts',
+        '**/*.config.*',
+        'src/**/*.d.ts',
+        'src/**/index.ts',
+      ],
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 60,
+        statements: 70,
+      },
     },
     env: {
       // Pass through environment variables to tests

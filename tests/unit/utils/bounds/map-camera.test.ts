@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  boundsToLngLatCorners,
   clampCenterToContainBoundsAtZoom,
+  fitMapToContainedBounds,
   focusPointKeepingBoundsVisible,
   getContainedFrameZoom,
+  lockMaxZoomToContainedFrame,
+  resolveContainedFrameZoom,
   type ContainedBoundsMap,
 } from '../../../../src/utils/bounds/map-camera.js';
 
@@ -40,5 +44,43 @@ describe('map-camera', () => {
     );
     expect(lng).toBeGreaterThan(CONTAIN_BOUNDS[0]);
     expect(lat).toBeGreaterThan(CONTAIN_BOUNDS[1]);
+  });
+});
+
+describe('map-camera framing helpers', () => {
+  it('converts bounds to lng/lat corners', () => {
+    expect(boundsToLngLatCorners(CONTAIN_BOUNDS)).toEqual([
+      [CONTAIN_BOUNDS[0], CONTAIN_BOUNDS[1]],
+      [CONTAIN_BOUNDS[2], CONTAIN_BOUNDS[3]],
+    ]);
+  });
+
+  it('locks max zoom from contained frame', () => {
+    const map = mockMap(6.5);
+    lockMaxZoomToContainedFrame(map, CONTAIN_BOUNDS);
+    expect(map.setMaxZoom).toHaveBeenCalledWith(6.5);
+  });
+
+  it('fits map to contained bounds and hooks moveend', () => {
+    const handlers = new Map<string, () => void>();
+    const map: ContainedBoundsMap = {
+      ...mockMap(7),
+      fitBounds: vi.fn(),
+      once: vi.fn((event, handler) => handlers.set(event, handler)),
+      off: vi.fn((event) => handlers.delete(event)),
+      getZoom: vi.fn(() => 7),
+    };
+    fitMapToContainedBounds(map, CONTAIN_BOUNDS);
+    expect(map.fitBounds).toHaveBeenCalled();
+    handlers.get('moveend')?.();
+    expect(map.setMaxZoom).toHaveBeenCalled();
+  });
+
+  it('resolveContainedFrameZoom respects existing max zoom cap', () => {
+    const map = {
+      ...mockMap(8),
+      getMaxZoom: vi.fn(() => 7.5),
+    };
+    expect(resolveContainedFrameZoom(map, CONTAIN_BOUNDS)).toBe(7.5);
   });
 });

@@ -215,3 +215,33 @@ describe('API Provider Registry', () => {
     });
   });
 });
+
+import {
+  clearAPIProviders,
+  getProvidersForCapability,
+  getRegisteredAPIProviders,
+  getSupportedCapabilities,
+  isCapabilitySupported,
+} from '../../../src/api/providers/registry';
+
+describe('registry introspection helpers', () => {
+  useCleanAPIRegistry();
+
+  it('lists providers, capabilities, and support checks', () => {
+    const provider = new MockAPIProvider(['isochrone', 'matrix']);
+    registerAPIProvider('stats-provider', provider);
+
+    expect(getRegisteredAPIProviders()).toContain('stats-provider');
+    expect(getSupportedCapabilities()).toEqual(expect.arrayContaining(['isochrone', 'matrix']));
+    expect(isCapabilitySupported('isochrone')).toBe(true);
+    expect(isCapabilitySupported('geocoding')).toBe(false);
+    expect(getProvidersForCapability('matrix')).toHaveLength(1);
+  });
+
+  it('clears all providers and capability routers', () => {
+    registerAPIProvider('temp', new MockAPIProvider(['directions']));
+    clearAPIProviders();
+    expect(getRegisteredAPIProviders()).toEqual([]);
+    expect(getProviderForCapability('directions')).toBeNull();
+  });
+});
