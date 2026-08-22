@@ -306,6 +306,9 @@ export function isMapStyleLoaded(map: MapInstance | null): boolean {
 export function isMapUsable(map: MapInstance | null | undefined): boolean {
   if (!map) return false;
   try {
+    if (typeof map.isStyleLoaded === 'function' && !map.isStyleLoaded()) {
+      return false;
+    }
     const style = map.getStyle?.();
     if (!style) return false;
     if (typeof style === 'object' && !(style as Record<string, unknown>).sources) return false;
