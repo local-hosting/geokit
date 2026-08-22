@@ -26,7 +26,7 @@ export type OutlineLayerConfig = {
   fillOpacity?: number;
 };
 
-const DATASET_ANCHOR_PREFIXES = ['gk-dataset-', 'venues', 'platform-'] as const;
+const DATASET_ANCHOR_PREFIXES = ['gk-dataset-'] as const;
 
 export function isDatasetAnchorLayer(layerId: string): boolean {
   return DATASET_ANCHOR_PREFIXES.some((prefix) => layerId.startsWith(prefix));
