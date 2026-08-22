@@ -48,6 +48,12 @@ import {
 } from './map-url-sync';
 import { bindGkMapSemanticEvents } from '../../../utils/map-semantic-events.js';
 import {
+  offGkMapEvent,
+  onGkMapEvent,
+  type GkMapEventHandler,
+  type GkMapListenEvent,
+} from '../../../utils/map-element-on.js';
+import {
   createTerrainZoomHandler,
   cleanupTerrain as cleanupTerrainFn,
   createBuildingsZoomHandler,
@@ -1381,6 +1387,36 @@ export class MapElement extends BaseElement {
 
   public setZoom(zoom: number): void {
     this.setAttribute('zoom', zoom.toString());
+  }
+
+
+  public on<E extends GkMapListenEvent>(
+    event: E,
+    handler: GkMapEventHandler<E>
+  ): () => void {
+    return onGkMapEvent(this, event, handler);
+  }
+
+  public off<E extends GkMapListenEvent>(
+    event: E,
+    handler: GkMapEventHandler<E>
+  ): void {
+    offGkMapEvent(this, event, handler);
+  }
+
+  public getBounds(): unknown {
+    const map = this.map as { getBounds?: () => unknown } | null;
+    return map?.getBounds?.();
+  }
+
+  public getZoom(): number | undefined {
+    const map = this.map as { getZoom?: () => number } | null;
+    return map?.getZoom?.();
+  }
+
+  public getCenter(): { lng: number; lat: number } | undefined {
+    const map = this.map as { getCenter?: () => { lng: number; lat: number } } | null;
+    return map?.getCenter?.();
   }
 
   public flyTo(lat: number, lng: number, zoom?: number): void {

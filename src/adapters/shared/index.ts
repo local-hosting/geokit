@@ -42,3 +42,5 @@ export {
   GK_FLY_TO_BOUNDS_EVENT,
   type GkFlyToBoundsDetail,
 } from './fly-to-bounds-events.js';
+export { onGkMapEvent, offGkMapEvent } from '../../ui/utils/map-element-on.js';
+export type { GkMapListenEvent, GkMapEventHandler, GkMapEventDetailMap } from '../../ui/utils/map-element-on.js';
