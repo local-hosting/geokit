@@ -2,7 +2,7 @@
  * Google Places API Provider
  *
  * Implements BaseAPIProvider for Google Places API
- * Provides place search for live MCP / store geocoding.
+ * Provides place search for live MCP geocoding.
  *
  * Ratings/reviews → pipeline enrichment ingest → host catalogs.
  */
@@ -57,7 +57,7 @@ export class GooglePlacesAPIProvider extends BaseAPIProvider {
   }
 
   /**
-   * Search for places/venues
+   * Search for places
    */
   async placeSearch(options: PlaceSearchOptions): Promise<PlaceSearchResult[]> {
     requireAPIKey(this.apiKey, `${PROVIDER_NAME} API Provider`);

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import {
   buildPopupContent,
@@ -9,7 +10,7 @@ describe('Popup content builders', () => {
     const el = buildPopupContent('T-Mobile Granite St &amp East Ave', {
       city: 'Las &amp; Vegas',
       state: 'NV',
-      'id:store-number': '123 &amp; 456',
+      'id:external-ref': '123 &amp; 456',
     });
 
     const title = el.querySelector('.geokit-popup-title');
@@ -37,12 +38,12 @@ describe('Popup content builders', () => {
 
   it('decodes numeric entities (e.g. &#x27;) in generic popup tags', () => {
     const el = buildPopupContentGeneric({
-      headline: 'Store O&#x27;Dneal &amp; Sons',
+      headline: 'Site O&#x27;Dneal &amp; Sons',
       tags: [{ label: 'Name', value: 'Louis O&#x27;Dneal &amp; Co' }],
     });
 
     const title = el.querySelector('.geokit-popup-title');
-    expect(title?.textContent).toContain("Store O'Dneal & Sons");
+    expect(title?.textContent).toContain("Site O'Dneal & Sons");
 
     const tag = el.querySelector('.geokit-popup-tag');
     expect(tag?.textContent).toContain("Louis O'Dnea");

@@ -103,7 +103,7 @@ export type ViewportH3PrioritizeOptions = {
   limit: number;
 };
 
-/** Pin viewport corners first, then fill toward center — keeps edge DMA shards under a cap. */
+/** Pin viewport corners first, then fill toward center — keeps edge cell shards under a cap. */
 export function prioritizeH3CellsForViewport(
   cells: string[],
   options: ViewportH3PrioritizeOptions

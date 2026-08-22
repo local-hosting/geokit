@@ -174,7 +174,7 @@ export function topoFeature<P extends Properties = GeoJSON.GeoJsonProperties>(
 
 /**
  * Merge (dissolve) multiple TopoJSON polygon objects into a single GeoJSON MultiPolygon.
- * Useful for combining counties into a DMA or states into a nation.
+ * Useful for combining counties into a region or states into a nation.
  *
  * @param topology - A parsed TopoJSON Topology
  * @param objects - Array of TopoJSON Polygon/MultiPolygon geometry objects to merge
@@ -183,7 +183,7 @@ export function topoFeature<P extends Properties = GeoJSON.GeoJsonProperties>(
  * @example
  * ```ts
  * const countyObjects = getCountyObjectsByDMA(topology, 'dallas-fort-worth');
- * const dmaShape = topoMerge(topology, countyObjects);
+ * const regionShape = topoMerge(topology, countyObjects);
  * ```
  */
 export function topoMerge(

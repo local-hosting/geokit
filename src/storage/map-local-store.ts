@@ -1,6 +1,6 @@
 /**
  * Per-map local persistence — camera, selected pin, and snapshot blobs.
- * Domain records (venues, markers) stay in the host app.
+ * Domain records (markers, domain records) stay in the host app.
  */
 
 import type {

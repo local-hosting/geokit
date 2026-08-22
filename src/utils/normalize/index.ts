@@ -52,7 +52,7 @@ export function normalize(text: string): string {
 
 /**
  * Normalize a name for comparison
- * Specialized normalization for geographic names (DMA names, city names, etc.)
+ * Specialized normalization for geographic names (region names, city names, etc.)
  * Handles common abbreviations and variations
  *
  * @param name - Name to normalize
