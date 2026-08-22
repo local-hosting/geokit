@@ -19,3 +19,5 @@ export type {
   MapMountMode,
   MapMountPolicyOptions,
 } from '../shared/index.js';
+
+export { createGkMapPointEvents } from './createGkMapPointEvents.js';

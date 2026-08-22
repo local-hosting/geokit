@@ -226,8 +226,8 @@ export class PopupElement extends MapChildElement {
     return showPointPopupApi(popup, map, lngLat, title, properties, provider, closeButton);
   }
 
-  public static fadeOutPopup(popup: any, onComplete?: () => void): void {
-    fadeOutPopupApi(popup, onComplete);
+  public static fadeOutPopup(popup: any, onComplete?: () => void, reason?: Parameters<typeof fadeOutPopupApi>[2]): void {
+    fadeOutPopupApi(popup, onComplete, reason);
   }
 
   public static closePopup(popup: any): Promise<void> {

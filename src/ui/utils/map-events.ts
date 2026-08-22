@@ -11,6 +11,8 @@ export interface GkPointEventDetail {
   }>;
   sourceId?: string;
   map?: unknown;
+  /** gk-map element that dispatched the event (preferred for routing). */
+  element?: HTMLElement;
 }
 
 export interface GkPointEventHandlers {
@@ -25,6 +27,18 @@ function detailFromEvent(event: Event): GkPointEventDetail {
   return ((event as CustomEvent).detail ?? {}) as GkPointEventDetail;
 }
 
+/** True when the event belongs to this gk-map (element identity beats map ref). */
+export function eventMatchesGkMap(
+  detail: GkPointEventDetail,
+  gkMap: HTMLElement | null | undefined
+): boolean {
+  if (!gkMap) return false;
+  if (detail.element) return detail.element === gkMap;
+  if (!detail.map) return true;
+  const ourMap = (gkMap as { getMap?: () => unknown }).getMap?.();
+  return !ourMap || detail.map === ourMap;
+}
+
 function matchesMap(detail: GkPointEventDetail, mapInstance: unknown | undefined): boolean {
   if (mapInstance == null) return true;
   return detail.map === mapInstance;
@@ -34,23 +48,28 @@ function matchesMap(detail: GkPointEventDetail, mapInstance: unknown | undefined
 export function bindGkPointLayerEvents(
   gkMap: HTMLElement,
   handlers: GkPointEventHandlers,
-  options: { mapInstance?: unknown } = {}
+  options: { mapInstance?: unknown; targetGkMap?: HTMLElement } = {}
 ): () => void {
-  const { mapInstance } = options;
+  const { mapInstance, targetGkMap } = options;
+
+  function shouldHandle(detail: GkPointEventDetail): boolean {
+    if (targetGkMap) return eventMatchesGkMap(detail, targetGkMap);
+    return matchesMap(detail, mapInstance);
+  }
 
   const onClick = (e: Event) => {
     const detail = detailFromEvent(e);
-    if (!matchesMap(detail, mapInstance)) return;
+    if (!shouldHandle(detail)) return;
     void handlers.onClick?.(detail);
   };
   const onHover = (e: Event) => {
     const detail = detailFromEvent(e);
-    if (!matchesMap(detail, mapInstance)) return;
+    if (!shouldHandle(detail)) return;
     handlers.onHover?.(detail);
   };
   const onHoverEnd = (e: Event) => {
     const detail = detailFromEvent(e);
-    if (!matchesMap(detail, mapInstance)) return;
+    if (!shouldHandle(detail)) return;
     handlers.onHoverEnd?.(detail);
   };
   const onFocus = (e: Event) => handlers.onFocus?.(e);

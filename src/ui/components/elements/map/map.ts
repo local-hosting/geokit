@@ -46,6 +46,7 @@ import {
   buildHashFromState,
   applyStateToMap,
 } from './map-url-sync';
+import { bindGkMapSemanticEvents } from '../../../utils/map-semantic-events.js';
 import {
   createTerrainZoomHandler,
   cleanupTerrain as cleanupTerrainFn,
@@ -131,6 +132,7 @@ export class MapElement extends BaseElement {
   private _urlSyncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private _hashChangeHandler: (() => void) | null = null;
   private _mapMoveEndHandler: (() => void) | null = null;
+  private _semanticEventsCleanup: (() => void) | null = null;
   private _isUpdatingFromUrl: boolean = false; // Prevent circular updates
 
   // Child element tracking
@@ -606,6 +608,7 @@ export class MapElement extends BaseElement {
 
         // Defer non-critical setup to avoid blocking first paint
         const deferredSetup = () => {
+          this.setupSemanticMapEvents();
           this.setupAutoHideControls();
           this.setupBearingClamp();
           this.setupUrlSync();
@@ -1052,6 +1055,17 @@ export class MapElement extends BaseElement {
       this.map.off('moveend', this._bearingClampHandler);
       this._bearingClampHandler = null;
     }
+  }
+
+  private setupSemanticMapEvents(): void {
+    this.cleanupSemanticMapEvents();
+    if (!this.map) return;
+    this._semanticEventsCleanup = bindGkMapSemanticEvents(this, this.map as any);
+  }
+
+  private cleanupSemanticMapEvents(): void {
+    this._semanticEventsCleanup?.();
+    this._semanticEventsCleanup = null;
   }
 
   /**

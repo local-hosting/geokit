@@ -81,6 +81,31 @@ preloadSharedPointLayerStyles();
 | `gk-theme-change`              | Theme attribute or class changed                                                                                                                    | `{ theme, themeName }`                                                                                   |
 | `gk-feature-selection-changed` | **Legacy** — selection via `updateFeatureSelection()` (`__selected` on source features). Prefer `gk-shared-point-selected` for shared point layers. | `{ sourceId, selectedId, previousSelectedId }` — `selectedId` is the new feature id or `null`            |
 | `gk-shared-point-selected`     | Shared point ring moved via click or `setSelectedPoint()`                                                                                           | `{ sourceId, featureId, previousFeatureId, lngLat, map, element }` — `featureId` is the new id or `null` |
+
+| `gk-map-moveend` | Map camera finished moving (pan/zoom) | `{ map, element, bounds? }` |
+| `gk-map-click`   | Map background click (MapLibre click) | `{ lngLat?, map, element, originalEvent? }` — cancelable |
+
+### Popup close reason (`gk-popup-closed` detail)
+
+`reason` is one of: `user` | `freeze` | `unload` | `clear-popups` | `restore-other-map` | `dma-pill` | `new-selection` | `programmatic`.
+
+Set programmatically via `setPopupCloseReason(popup, reason)` before `fadeOutPopup`.
+
+### Cross-map fly (`gk-fly-to-bounds`)
+
+| API | Detail |
+| --- | --- |
+| `dispatchGkFlyToBounds({ sourceId, bounds, market? })` | Fly request scoped to a card/map id |
+| `bindGkFlyToBounds(sourceId, handler)` | Listen in map card |
+
+### Adapter lifecycle helpers (`geokit/adapters/shared`)
+
+| Helper | Role |
+| --- | --- |
+| `bindGkMapPointEventsLifecycle(container, handlers)` | Wire `gk-point-*` on ready + unfreeze |
+| `bindGkMapMoveendLifecycle(container, handler)` | Wire `gk-map-moveend` on ready + unfreeze |
+| `bindGkVenueLayerStacking(gkMap, { venueMarketSlug })` | Restack venue layers on `gk-layer-ready` |
+
 | `gk-point-click`               | Click on a shared point layer (from `createSharedPointLayers`). Geokit moves the selection ring before this fires.                                  | `{ lngLat, features, sourceId, featureId, map, element, originalEvent }` — cancelable                    |
 | `controls-visibility-change`   | Controls visibility toggled                                                                                                                         | `{ visible }`                                                                                            |
 | `child-added`                  | Child element added (internal)                                                                                                                      | `{ element, tagName }` — does not bubble                                                                 |
