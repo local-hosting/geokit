@@ -29,3 +29,4 @@ export {
 export * from './map-semantic-events.js';
 export * from './venue-layer-stack-bind.js';
 export * from './popup-close-reason.js';
+export * from './map-element-on.js';
