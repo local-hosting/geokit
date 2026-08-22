@@ -1,4 +1,4 @@
-# Turf-backed geometry (`@twinfile/geokit/turf`)
+# Turf-backed geometry (`geokit/turf`)
 
 Measurement and containment via Turf.js. Parity Tier 1.5 with geokit-swift.
 

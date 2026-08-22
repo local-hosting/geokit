@@ -1,6 +1,6 @@
 # Standalone map UI kit
 
-Geokit is a standalone map UI kit. Any app can install `@twinfile/geokit`, configure map providers, register dataset mounts, and compose maps from `gk-*` elements.
+Geokit is a standalone map UI kit. Any app can install `geokit`, configure map providers, register dataset mounts, and compose maps from `gk-*` elements.
 
 ## Minimal boot
 
@@ -8,7 +8,7 @@ Geokit is a standalone map UI kit. Any app can install `@twinfile/geokit`, confi
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <link rel="stylesheet" href="/node_modules/@twinfile/geokit/dist/ui/theme.css" />
+    <link rel="stylesheet" href="/node_modules/geokit/dist/ui/theme.css" />
   </head>
   <body>
     <gk-map id="map" provider="maptiler" lat="39.8" lng="-98.5" zoom="4"></gk-map>
@@ -19,9 +19,9 @@ Geokit is a standalone map UI kit. Any app can install `@twinfile/geokit`, confi
 ```
 
 ```typescript
-import { configure } from '@twinfile/geokit/ui/core';
-import { registerLayerDatasetMount } from '@twinfile/geokit/geojson-loader';
-import '@twinfile/geokit/ui';
+import { configure } from 'geokit/ui/core';
+import { registerLayerDatasetMount } from 'geokit/geojson-loader';
+import 'geokit/ui';
 
 configure({
   maptiler: { apiKey: import.meta.env.MAPTILER_KEY },

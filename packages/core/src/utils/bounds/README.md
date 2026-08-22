@@ -2,6 +2,6 @@
 
 Parity Tier 1 with geokit-swift `GeoKitCore/Utils/bounds/`.
 
-Export: `@twinfile/geokit/bounds` or `@twinfile/geokit/core`.
+Export: `geokit/bounds` or `geokit/core`.
 
 See `docs/module-map.md`.

@@ -1,4 +1,4 @@
-# GeoKit contract (`@twinfile/geokit/contract`)
+# GeoKit contract (`geokit/contract`)
 
 Map lifecycle, static provider ids, and bootstrap. Mirrors **geokit-swift `GeoKitContract`**.
 

@@ -1,6 +1,6 @@
 # GeoKit module map (TypeScript ↔ Swift)
 
-Cross-platform layout for `@twinfile/geokit` and **geokit-swift**. See [`parity.md`](parity.md) for fixture tiers.
+Cross-platform layout for `geokit` and **geokit-swift**. See [`parity.md`](parity.md) for fixture tiers.
 
 ## Layer model
 
