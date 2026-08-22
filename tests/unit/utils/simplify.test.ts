@@ -1,6 +1,23 @@
 import { describe, it, expect } from 'vitest';
 import { simplify, simplifyMeters } from '../../../src/utils/simplify';
+import { simplifyGeometry, simplifyGeometryMeters } from '../../../src/utils/simplify/geometry';
 import { simplifyPolygonRingToMaxPoints } from '../../../src/utils/simplify/polygon';
+
+const samplePolygon = {
+  type: 'Polygon' as const,
+  coordinates: [
+    [
+      [-74.1, 40.6],
+      [-73.9, 40.6],
+      [-73.9, 40.601],
+      [-73.901, 40.602],
+      [-73.902, 40.603],
+      [-73.9, 40.8],
+      [-74.1, 40.8],
+      [-74.1, 40.6],
+    ],
+  ],
+};
 
 describe('simplify', () => {
   describe('simplify', () => {
@@ -67,6 +84,31 @@ describe('simplify', () => {
       const simplified100 = simplifyMeters(100)(polyline);
       const simplified1000 = simplifyMeters(1000)(polyline);
       expect(simplified100.length).toBeGreaterThanOrEqual(simplified1000.length);
+    });
+  });
+
+  describe('simplifyGeometry', () => {
+    it('simplifies polygon geometries with tolerance in degrees', () => {
+      const simplified = simplifyGeometry(0.01)(samplePolygon);
+      expect(simplified.type).toBe('Polygon');
+      expect(simplified.coordinates[0].length).toBeLessThanOrEqual(samplePolygon.coordinates[0].length);
+    });
+
+    it('returns original geometry for invalid input', () => {
+      const invalid = { type: 'Polygon', coordinates: undefined } as unknown as typeof samplePolygon;
+      expect(simplifyGeometry(0.01)(invalid)).toBe(invalid);
+    });
+
+    it('simplifies multipolygon geometries using meter tolerance', () => {
+      const multi = {
+        type: 'MultiPolygon' as const,
+        coordinates: [samplePolygon.coordinates],
+      };
+      const simplified = simplifyGeometryMeters(500)(multi);
+      expect(simplified.type).toBe('MultiPolygon');
+      expect(simplified.coordinates[0][0].length).toBeLessThanOrEqual(
+        samplePolygon.coordinates[0].length
+      );
     });
   });
 
