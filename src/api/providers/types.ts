@@ -40,7 +40,7 @@ export interface GeocodeOptions {
   types?: string[];
   proximity?: Position;
   bbox?: [number, number, number, number];
-  /** Request admin boundary polygons when the provider supports them (Mapbox). */
+  /** Request boundary polygons when the provider supports them (Mapbox). */
   polygons?: boolean;
 }
 
@@ -181,7 +181,7 @@ export abstract class BaseAPIProvider {
   directions?(options: DirectionsOptions): Promise<any>;
 
   /**
-   * Search for places/venues
+   * Search for places
    * Optional - only implement if provider supports this capability
    */
   placeSearch?(options: PlaceSearchOptions): Promise<PlaceSearchResult[]>;

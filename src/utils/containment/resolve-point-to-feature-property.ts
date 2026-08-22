@@ -3,7 +3,7 @@
  * Uses point-in-polygon first; falls back to nearest feature by centroid distance when PIP misses.
  *
  * Generic utility for any GeoJSON FeatureCollection with Polygon/MultiPolygon geometry.
- * Use case: resolve (lon, lat) to a property (e.g. dmaSlug, regionId) from boundary features.
+ * Use case: resolve (lon, lat) to a property (e.g. regionId, territoryId) from boundary features.
  */
 
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
@@ -36,13 +36,13 @@ function getGeometryCentroid(geom: Polygon | MultiPolygon): LatLon | null {
  *
  * @param point - Point in GeoJSON order [lon, lat]
  * @param features - GeoJSON features with Polygon or MultiPolygon geometry
- * @param propertyKey - Property key to extract (e.g. 'dmaSlug', 'regionId')
+ * @param propertyKey - Property key to extract (e.g. 'regionSlug', 'regionId')
  * @returns Property value of containing/nearest feature, or null
  *
  * @example
  * ```typescript
  * const features = countyFeatureCollection.features;
- * const dmaSlug = resolvePointToFeatureProperty([-74.0, 40.7], features, 'dmaSlug');
+ * const regionSlug = resolvePointToFeatureProperty([-74.0, 40.7], features, 'regionSlug');
  * ```
  */
 export function resolvePointToFeatureProperty<T = string>(

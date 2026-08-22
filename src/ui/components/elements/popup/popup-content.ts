@@ -69,13 +69,15 @@ export function buildPopupContent(title?: string, properties?: PointPopupPropert
     tagsContainer.setAttribute('class', 'geokit-popup-tags');
     let hasTags = false;
 
-    const idKeys = ['id:google-maps', 'id:store-sid', 'id:store-number'] as const;
+    const idKeys = Object.keys(properties)
+      .filter((key) => key.startsWith('id:'))
+      .sort();
     for (const key of idKeys) {
       const val = properties[key];
       if (val != null && val !== '') {
         const tag = document.createElement('span');
         tag.setAttribute('class', 'geokit-popup-tag');
-        tag.textContent = decodeHtmlEntitiesForText(val);
+        tag.textContent = decodeHtmlEntitiesForText(String(val));
         tagsContainer.appendChild(tag);
         hasTags = true;
       }

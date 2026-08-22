@@ -6,7 +6,7 @@ import type { Polygon, MultiPolygon, Position } from '../../types';
 const DEFAULT_MIN_HOLE_AREA_M2 = 10_000;
 /** Bbox long/short ratio above which a hole is treated as a sliver. */
 const DEFAULT_MAX_SLIVER_ASPECT = 50;
-/** Default off — callers opt in (e.g. DMA dissolve passes ~500). */
+/** Default off — callers opt in (e.g. region dissolve passes ~500). */
 const DEFAULT_MIN_HOLE_WIDTH_M2 = 0;
 
 export type StripDegenerateInteriorRingsOptions = {
@@ -113,7 +113,7 @@ function stripPolygonHoles(
 
 /**
  * Remove interior rings introduced by simplify/round (self-touch slivers, micro-loops).
- * Preserves large holes (e.g. counties in another DMA fully enclosed by this DMA).
+ * Preserves large holes (e.g. counties in another region fully enclosed by this region).
  */
 export function stripDegenerateInteriorRings(
   geometry: Polygon | MultiPolygon,

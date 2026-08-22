@@ -40,7 +40,7 @@ export const ADMIN_COUNTY_GEOJSON_SOURCE_OPTIONS = COUNTY_BOUNDARY_GEOJSON_SOURC
 /** @deprecated Use ZIP_BOUNDARY_GEOJSON_SOURCE_OPTIONS */
 export const ADMIN_ZIP_GEOJSON_SOURCE_OPTIONS = ZIP_BOUNDARY_GEOJSON_SOURCE_OPTIONS;
 
-/** Choropleth / region polygon sources (DMA, dissolved regions). */
+/** Choropleth / region polygon sources (dissolved regions). */
 export const CHOROPLETH_BOUNDARY_GEOJSON_SOURCE_OPTIONS = {
   tolerance: 0,
   buffer: 256,

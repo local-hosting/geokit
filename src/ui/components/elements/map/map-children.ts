@@ -63,7 +63,7 @@ export function filterIsochrones(
       if (isVisible !== filter.visible) return false;
     }
     if (filter.selection !== undefined) {
-      const isSelection = iso.getAttribute('data-venue-selection') === 'true';
+      const isSelection = iso.getAttribute('data-selection-overlay') === 'true';
       if (isSelection !== filter.selection) return false;
     }
     if (filter.dataAttribute) {
