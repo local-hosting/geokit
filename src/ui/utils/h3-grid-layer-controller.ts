@@ -43,25 +43,37 @@ export function createH3GridLayerController(spec: H3GridLayerPaintSpec) {
     ({ type: 'FeatureCollection', features: [] } satisfies FeatureCollection<Polygon>);
 
   function ensureLayers(map: H3GridLayerMap): void {
-    for (const legacyId of spec.legacyLayerIds ?? []) {
-      if (map.getLayer?.(legacyId)) map.removeLayer?.(legacyId);
+    const styleMap = map as { isStyleLoaded?: () => boolean };
+    if (
+      typeof styleMap.isStyleLoaded === 'function' &&
+      !styleMap.isStyleLoaded()
+    ) {
+      return;
     }
 
-    if (!map.getSource?.(spec.sourceId)) {
-      map.addSource?.(spec.sourceId, {
-        type: 'geojson',
-        data: empty,
-      });
-    }
+    try {
+      for (const legacyId of spec.legacyLayerIds ?? []) {
+        if (map.getLayer?.(legacyId)) map.removeLayer?.(legacyId);
+      }
 
-    const before = spec.resolveInsertBefore?.(map);
+      if (!map.getSource?.(spec.sourceId)) {
+        map.addSource?.(spec.sourceId, {
+          type: 'geojson',
+          data: empty,
+        });
+      }
 
-    if (!map.getLayer?.(spec.fillLayerId)) {
-      map.addLayer?.(spec.fillLayer, before);
-    }
+      const before = spec.resolveInsertBefore?.(map);
 
-    if (spec.lineLayerId && spec.lineLayer && !map.getLayer?.(spec.lineLayerId)) {
-      map.addLayer?.(spec.lineLayer, spec.fillLayerId);
+      if (!map.getLayer?.(spec.fillLayerId)) {
+        map.addLayer?.(spec.fillLayer, before);
+      }
+
+      if (spec.lineLayerId && spec.lineLayer && !map.getLayer?.(spec.lineLayerId)) {
+        map.addLayer?.(spec.lineLayer, spec.fillLayerId);
+      }
+    } catch {
+      /* style still loading or map torn down */
     }
   }
 
