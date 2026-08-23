@@ -16,7 +16,7 @@ import {
 } from '@geokit/api/types';
 import { ProviderCache, buildPlaceSearchCacheKey } from '@geokit/api';
 import { RequestQueue } from '@geokit/api';
-import { requireAPIKey, assertResponseOk, retryOn429 } from '@geokit/api';
+import { requireAPIKey, fetchWithRetry } from '@geokit/api';
 import {
   enrichPlaceSearchResult,
   resolvePlaceSearchCategories,
@@ -132,8 +132,7 @@ export class GooglePlacesAPIProvider extends BaseAPIProvider {
       }
 
       const fetchFn = () => fetch(`${url}?${params}`);
-      const response = await retryOn429(fetchFn, { providerName: PROVIDER_NAME });
-      await assertResponseOk(response, PROVIDER_NAME);
+      const response = await fetchWithRetry(fetchFn, PROVIDER_NAME);
 
       const data = await response.json();
 

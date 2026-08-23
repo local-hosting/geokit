@@ -4,8 +4,8 @@ import {
   registerAPIProvider,
   initAPIProvider,
   getProviderForCapability,
-} from '../../../src/api/providers/registry';
-import type { BaseAPIProvider, APICapability } from '../../../src/api/providers/types';
+} from '@geokit/api/registry';
+import type { BaseAPIProvider, APICapability } from '@geokit/api/types';
 import type { BaseUIProvider } from '../../../src/ui/providers/types';
 import { MockAPIProvider } from '../../mocks/mock-api-provider';
 import { MockUIProvider } from '../../mocks/mock-ui-provider';

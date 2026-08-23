@@ -53,8 +53,8 @@ export function scheduleMapboxApiInit(mapboxToken) {
   }
   const initMapbox = async () => {
     try {
-      const { registerAPIProvider, initAPIProvider } = await import('../../packages/core/src/api/providers/registry.ts');
-      const { MapboxAPIProvider } = await import('../../packages/core/src/api/providers/mapbox-provider.ts');
+      const { registerAPIProvider, initAPIProvider } = await import('@geokit/api/registry');
+      const { MapboxAPIProvider } = await import('@geokit/plugin-mapbox');
       registerAPIProvider('mapbox', new MapboxAPIProvider());
       await initAPIProvider('mapbox', { accessToken: mapboxToken });
     } catch (error) {

@@ -52,7 +52,7 @@ export class CompositeAPIProvider extends BaseAPIProvider {
   }
 
   async initialize(_config: MapProviderConfig): Promise<void> {
-    // Child providers are initialized by setup-capability-routers.
+    // Child providers are initialized by builtins bootstrap.
   }
 
   getCapabilities(): APICapability[] {

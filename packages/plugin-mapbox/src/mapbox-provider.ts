@@ -22,7 +22,7 @@ import {
 } from '@geokit/api/types';
 import { ProviderCache, coordinateCacheKey } from '@geokit/api';
 import { RequestQueue } from '@geokit/api';
-import { assertResponseOk, retryOn429 } from '@geokit/api';
+import { fetchWithRetry } from '@geokit/api';
 import type { FeatureCollection } from 'geojson';
 
 const PROVIDER_NAME = 'Mapbox';
@@ -136,18 +136,7 @@ export class MapboxAPIProvider extends BaseAPIProvider {
           headers: { Referer: 'http://localhost:5173/' },
         });
 
-      const response = await retryOn429(fetchFn, {
-        providerName: PROVIDER_NAME,
-      });
-
-      // Handle case where fetch returns undefined (network unavailable)
-      if (!response) {
-        throw new Error(
-          'Network request failed: fetch returned undefined. Network may be unavailable.'
-        );
-      }
-
-      await assertResponseOk(response, PROVIDER_NAME);
+      const response = await fetchWithRetry(fetchFn, PROVIDER_NAME);
 
       const data = await response.json();
       const result = data as FeatureCollection;
@@ -196,11 +185,13 @@ export class MapboxAPIProvider extends BaseAPIProvider {
       url.searchParams.set('alternatives', alternatives.toString());
       url.searchParams.set('access_token', this.accessToken!);
 
-      const response = await fetch(url.toString(), {
-        headers: { Referer: 'http://localhost:5173/' },
-      });
-
-      await assertResponseOk(response, PROVIDER_NAME);
+      const response = await fetchWithRetry(
+        () =>
+          fetch(url.toString(), {
+            headers: { Referer: 'http://localhost:5173/' },
+          }),
+        PROVIDER_NAME
+      );
 
       const data = await response.json();
 
@@ -261,11 +252,13 @@ export class MapboxAPIProvider extends BaseAPIProvider {
         url.searchParams.set('bbox', `${bbox[0]},${bbox[1]},${bbox[2]},${bbox[3]}`);
       }
 
-      const response = await fetch(url.toString(), {
-        headers: { Referer: 'http://localhost:5173/' },
-      });
-
-      await assertResponseOk(response, PROVIDER_NAME);
+      const response = await fetchWithRetry(
+        () =>
+          fetch(url.toString(), {
+            headers: { Referer: 'http://localhost:5173/' },
+          }),
+        PROVIDER_NAME
+      );
 
       const data = await response.json();
 
@@ -316,11 +309,13 @@ export class MapboxAPIProvider extends BaseAPIProvider {
         url.searchParams.set('types', types.join(','));
       }
 
-      const response = await fetch(url.toString(), {
-        headers: { Referer: 'http://localhost:5173/' },
-      });
-
-      await assertResponseOk(response, PROVIDER_NAME);
+      const response = await fetchWithRetry(
+        () =>
+          fetch(url.toString(), {
+            headers: { Referer: 'http://localhost:5173/' },
+          }),
+        PROVIDER_NAME
+      );
 
       const data = await response.json();
       const featureCollection = data as FeatureCollection;
