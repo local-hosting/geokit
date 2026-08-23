@@ -38,4 +38,15 @@ setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
 
 Legacy `geokit/api/*` import paths still re-export `@geokit/api` for backward compatibility.
 
+## Slim vs full install
+
+| Need | Install |
+|---|---|
+| Geo utils + map UI only | `geokit` |
+| Place search / geocoding / isochrones | `geokit` + `@geokit/api` |
+| POI taxonomy (RSE, vendor crosswalks) | + `@geokit/geotypes` |
+| OSM fallback plugin | + `@geokit/plugin-osm` |
+
+See [docs/migration-api.md](docs/migration-api.md) for import migration from legacy `geokit/api/*` paths.
+
 See [docs/plugins.md](docs/plugins.md) for plugin authoring.

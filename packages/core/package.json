@@ -1,7 +1,7 @@
 {
   "name": "geokit",
   "version": "0.2.33",
-  "description": "A functional, curried geospatial utility toolkit for browser and Node.js",
+  "description": "Geospatial utilities and map UI (slim core — add @geokit/api for place search providers)",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",
@@ -632,6 +632,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
+    "@geokit/api": "workspace:*",
     "@geokit/geotypes": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/jsdom": "^27.0.0",
@@ -670,7 +671,6 @@
     ]
   },
   "dependencies": {
-    "@geokit/api": "workspace:*",
     "@maptiler/sdk": "3.10.2",
     "@turf/along": "^7.3.0",
     "@turf/area": "^7.3.0",
@@ -703,11 +703,15 @@
     "topojson-simplify": "^3.0.3"
   },
   "peerDependencies": {
+    "@geokit/api": ">=0.1.0",
     "react": ">=18.0.0",
     "svelte": ">=4.0.0",
     "vue": ">=3.3.0"
   },
   "peerDependenciesMeta": {
+    "@geokit/api": {
+      "optional": true
+    },
     "react": {
       "optional": true
     },

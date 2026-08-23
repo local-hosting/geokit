@@ -10,7 +10,7 @@
  */
 
 import { MapChildElement } from '../../map-child-element';
-import { getProviderForCapability } from '../../../../api/providers/registry';
+import { getProviderForCapability } from '@geokit/api/registry';
 import { smoothFeatureCollection } from '../../../../utils/smoothing';
 import { debug } from '../../../utils/logger';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
