@@ -13,6 +13,7 @@ Optional provider packages extend `@geokit/api` without bloating the core `geoki
 | `@geokit/plugin-maptiler` | MapTiler geocoding |
 | `@geokit/plugin-here` | HERE Places discover search |
 | `@geokit/plugin-osm` | OpenStreetMap Overpass place search (no API key) |
+| `@geokit/plugin-esri` | Esri ArcGIS Places near-point search |
 | `@geokit/geotypes` | Taxonomy resolver (`RSE` → vendor category ids/tags) |
 
 ## Quick start
@@ -24,6 +25,7 @@ import { createGeokitTaxonomyResolver } from '@geokit/geotypes/geokit';
 import { registerFoursquarePlugin } from '@geokit/plugin-foursquare';
 import { registerGooglePlacesPlugin } from '@geokit/plugin-google';
 import { registerOsmPlugin } from '@geokit/plugin-osm';
+import { registerEsriPlacesPlugin } from '@geokit/plugin-esri';
 
 setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
 await registerFoursquarePlugin();
@@ -143,3 +145,16 @@ await rebuildCapabilityRouters();
 ```
 
 Set `HERE_API_KEY` or `GEOKIT_HERE_API_KEY`.
+
+
+## Opt-in: `@geokit/plugin-esri`
+
+Esri ArcGIS Places near-point search. Requires an Esri API key (`ESRI_API_KEY` or `GEOKIT_ESRI_API_KEY`).
+
+```typescript
+import { registerEsriPlacesPlugin } from '@geokit/plugin-esri';
+import { rebuildCapabilityRouters } from '@geokit/api';
+
+await registerEsriPlacesPlugin();
+await rebuildCapabilityRouters();
+```

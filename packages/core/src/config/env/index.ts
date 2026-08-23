@@ -10,6 +10,7 @@ export {
   MAP_REFERER_KEYS,
   MAP_STYLE_URL_KEYS,
   MAPTILER_KEY_KEYS,
+  ESRI_KEY_KEYS,
   ROUTING_TOKEN_KEYS,
   TILE_API_URL_KEYS,
   TILE_CDN_URL_KEYS,
@@ -44,6 +45,8 @@ export {
   resolveGeocodingApiKey,
   resolveMapHostBaseUrlFromEnv,
   resolveRoutingAccessToken,
+  resolveHereApiKey,
+  resolveEsriApiKey,
 } from './service-keys.js';
 
 export {

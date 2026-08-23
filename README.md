@@ -15,6 +15,7 @@ Yarn workspaces monorepo for the geospatial SDK and POI taxonomy.
 | [`@geokit/plugin-maptiler`](packages/plugin-maptiler/) | MapTiler geocoding |
 | [`@geokit/plugin-here`](packages/plugin-here/) | HERE Places discover search |
 | [`@geokit/plugin-osm`](packages/plugin-osm/) | OpenStreetMap Overpass place search |
+| [`@geokit/plugin-esri`](packages/plugin-esri/) | Esri ArcGIS Places near-point search |
 
 ## Commands
 

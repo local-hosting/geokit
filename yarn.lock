@@ -906,6 +906,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@geokit/plugin-esri@workspace:packages/plugin-esri":
+  version: 0.0.0-use.local
+  resolution: "@geokit/plugin-esri@workspace:packages/plugin-esri"
+  dependencies:
+    "@geokit/api": "workspace:*"
+    "@geokit/geotypes": "workspace:*"
+    geokit: "workspace:*"
+  peerDependencies:
+    "@geokit/api": "workspace:*"
+    geokit: "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@geokit/plugin-foursquare@workspace:*, @geokit/plugin-foursquare@workspace:packages/plugin-foursquare":
   version: 0.0.0-use.local
   resolution: "@geokit/plugin-foursquare@workspace:packages/plugin-foursquare"
@@ -923,6 +936,19 @@ __metadata:
   resolution: "@geokit/plugin-google@workspace:packages/plugin-google"
   dependencies:
     "@geokit/api": "workspace:*"
+    geokit: "workspace:*"
+  peerDependencies:
+    "@geokit/api": "workspace:*"
+    geokit: "workspace:*"
+  languageName: unknown
+  linkType: soft
+
+"@geokit/plugin-here@workspace:packages/plugin-here":
+  version: 0.0.0-use.local
+  resolution: "@geokit/plugin-here@workspace:packages/plugin-here"
+  dependencies:
+    "@geokit/api": "workspace:*"
+    "@geokit/geotypes": "workspace:*"
     geokit: "workspace:*"
   peerDependencies:
     "@geokit/api": "workspace:*"
