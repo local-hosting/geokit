@@ -118,7 +118,7 @@ Legacy imports still work:
 import { registerGeokitPlugin } from 'geokit/api/plugin'; // re-exports @geokit/api
 ```
 
-Built-in providers (Foursquare, Google, Mapbox, MapTiler) remain in `@geokit/api` for now. Future major versions may move them into `@geokit/plugin-*` packages.
+Default bootstrap (`registerDefaultPlugins`) registers Foursquare, Google, Mapbox, and MapTiler from their `@geokit/plugin-*` packages when env keys are present. HERE, OSM, and Esri are opt-in.
 
 ## Default plugin bundle
 
