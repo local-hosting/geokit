@@ -11,6 +11,7 @@ Optional provider packages extend `@geokit/api` without bloating the core `geoki
 | `@geokit/plugin-google` | Google Places search |
 | `@geokit/plugin-mapbox` | Mapbox geocoding, isochrone, directions |
 | `@geokit/plugin-maptiler` | MapTiler geocoding |
+| `@geokit/plugin-here` | HERE Places discover search |
 | `@geokit/plugin-osm` | OpenStreetMap Overpass place search (no API key) |
 | `@geokit/geotypes` | Taxonomy resolver (`RSE` → vendor category ids/tags) |
 
@@ -128,4 +129,17 @@ import { ensureCapabilityRoutersReady } from '@geokit/api/builtins';
 await ensureCapabilityRoutersReady();
 ```
 
-Opt-in plugins (OSM, future HERE) register separately via `registerGeokitPlugin()` or their package helper.
+Opt-in plugins (HERE, OSM) register separately via `registerGeokitPlugin()` or their package helper.
+
+
+## HERE plugin
+
+```typescript
+import { registerHerePlacesPlugin } from '@geokit/plugin-here';
+import { rebuildCapabilityRouters } from '@geokit/api';
+
+await registerHerePlacesPlugin();
+await rebuildCapabilityRouters();
+```
+
+Set `HERE_API_KEY` or `GEOKIT_HERE_API_KEY`.
