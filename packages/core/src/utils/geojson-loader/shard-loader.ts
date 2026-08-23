@@ -1,6 +1,8 @@
 import type { ViewportBounds } from '../h3/viewport.js';
+import { gridDisk } from 'h3-js';
 import {
   compactH3CellId,
+  expandH3CellId,
   h3CellsForViewportBounds,
   prioritizeH3CellsNearCenter,
 } from '../h3/index.js';
@@ -12,25 +14,101 @@ export type ViewportH3LoadOptions = {
   resolution: number;
   /** Cap shard requests — keeps center cells when tessellation is large. */
   maxCells?: number;
+  /** Include k-ring neighbors around viewport cells (default 0). */
+  neighborDiskK?: number;
+  /** Expand bounds by this fraction on each axis before tessellation. */
+  boundsPaddingFraction?: number;
 };
 
-export function h3CellIdsForViewportLoad(options: ViewportH3LoadOptions): string[] {
-  const raw = h3CellsForViewportBounds(options.bounds, {
-    resolution: options.resolution,
-    centerLat: options.centerLat,
-    centerLng: options.centerLng,
-  }).map((cell) => compactH3CellId(cell));
+function padViewportBounds(
+  bounds: ViewportBounds,
+  fraction: number
+): ViewportBounds {
+  if (fraction <= 0) return bounds;
+  const latSpan = bounds.north - bounds.south;
+  const lngSpan = bounds.east - bounds.west;
+  const padLat = latSpan * fraction;
+  const padLng = lngSpan * fraction;
+  return {
+    west: bounds.west - padLng,
+    east: bounds.east + padLng,
+    south: bounds.south - padLat,
+    north: bounds.north + padLat,
+  };
+}
 
-  const unique = [...new Set(raw.filter(Boolean))];
-  if (options.maxCells != null && unique.length > options.maxCells) {
-    return prioritizeH3CellsNearCenter(
-      unique,
+function expandViewportH3Neighbors(
+  core: string[],
+  neighborDiskK: number
+): string[] {
+  if (neighborDiskK <= 0 || core.length === 0) return core;
+  const expanded = new Set(core);
+  for (const cell of core) {
+    try {
+      for (const neighbor of gridDisk(expandH3CellId(cell), neighborDiskK)) {
+        const compact = compactH3CellId(neighbor);
+        if (compact) expanded.add(compact);
+      }
+    } catch {
+      /* skip invalid cell */
+    }
+  }
+  return [...expanded];
+}
+
+export function h3CellIdsForViewportLoad(options: ViewportH3LoadOptions): string[] {
+  const bounds = padViewportBounds(
+    options.bounds,
+    options.boundsPaddingFraction ?? 0
+  );
+  const neighborDiskK = options.neighborDiskK ?? 0;
+
+  const core = [
+    ...new Set(
+      h3CellsForViewportBounds(bounds, {
+        resolution: options.resolution,
+        centerLat: options.centerLat,
+        centerLng: options.centerLng,
+      })
+        .map((cell) => compactH3CellId(cell))
+        .filter(Boolean)
+    ),
+  ];
+
+  let cappedCore = core;
+  if (options.maxCells != null && core.length > options.maxCells) {
+    cappedCore = prioritizeH3CellsNearCenter(
+      core,
       options.centerLat,
       options.centerLng,
       options.maxCells
     );
   }
-  return unique;
+
+  let expanded = expandViewportH3Neighbors(cappedCore, neighborDiskK);
+  if (options.maxCells == null || expanded.length <= options.maxCells) {
+    return expanded;
+  }
+
+  const coreSet = new Set(cappedCore);
+  const haloBudget =
+    neighborDiskK > 0
+      ? Math.max(8, Math.ceil(options.maxCells * 0.75 * neighborDiskK))
+      : 0;
+  const maxTotal = options.maxCells + haloBudget;
+
+  if (expanded.length <= maxTotal) {
+    return expanded;
+  }
+
+  const neighbors = expanded.filter((cell) => !coreSet.has(cell));
+  const cappedNeighbors = prioritizeH3CellsNearCenter(
+    neighbors,
+    options.centerLat,
+    options.centerLng,
+    Math.max(0, maxTotal - cappedCore.length)
+  );
+  return [...cappedCore, ...cappedNeighbors];
 }
 
 /** Normalize catalog cell id — strip trailing f padding from h3-js indices. */
