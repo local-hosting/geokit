@@ -8,8 +8,8 @@ import {
   initAPIProvider,
   getProviderForCapability,
   _resetRegistries,
-} from '../src/providers/registry';
-import { GooglePlacesAPIProvider } from '../src/providers/google-places-provider';
+} from '@geokit/api/registry';
+import { GooglePlacesAPIProvider } from '../src/google-places-provider.js';
 
 describe('GooglePlacesAPIProvider', () => {
   let provider: GooglePlacesAPIProvider;

@@ -7,7 +7,11 @@ Optional provider packages extend `@geokit/api` without bloating the core `geoki
 | Package | Role |
 |---|---|
 | `@geokit/api` | Registry, composite routers, `registerGeokitPlugin()` |
-| `@geokit/plugin-osm` | Reference plugin — OpenStreetMap Overpass place search |
+| `@geokit/plugin-foursquare` | Foursquare Places search |
+| `@geokit/plugin-google` | Google Places search |
+| `@geokit/plugin-mapbox` | Mapbox geocoding, isochrone, directions |
+| `@geokit/plugin-maptiler` | MapTiler geocoding |
+| `@geokit/plugin-osm` | OpenStreetMap Overpass place search (no API key) |
 | `@geokit/geotypes` | Taxonomy resolver (`RSE` → vendor category ids/tags) |
 
 ## Quick start
@@ -16,9 +20,13 @@ Optional provider packages extend `@geokit/api` without bloating the core `geoki
 import { ensurePlaceSearchRouterReady } from '@geokit/api';
 import { setPlaceTaxonomyResolver } from '@geokit/api/place-taxonomy';
 import { createGeokitTaxonomyResolver } from '@geokit/geotypes/geokit';
+import { registerFoursquarePlugin } from '@geokit/plugin-foursquare';
+import { registerGooglePlacesPlugin } from '@geokit/plugin-google';
 import { registerOsmPlugin } from '@geokit/plugin-osm';
 
 setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
+await registerFoursquarePlugin();
+await registerGooglePlacesPlugin();
 await registerOsmPlugin();
 await ensurePlaceSearchRouterReady();
 
@@ -108,3 +116,16 @@ import { registerGeokitPlugin } from 'geokit/api/plugin'; // re-exports @geokit/
 ```
 
 Built-in providers (Foursquare, Google, Mapbox, MapTiler) remain in `@geokit/api` for now. Future major versions may move them into `@geokit/plugin-*` packages.
+
+## Default plugin bundle
+
+`@geokit/api/builtins` registers MapTiler, Mapbox, Foursquare, and Google when env keys are present:
+
+```typescript
+import { ensureCapabilityRoutersReady } from '@geokit/api/builtins';
+// or legacy: import from '@geokit/api/setup-capability-routers'
+
+await ensureCapabilityRoutersReady();
+```
+
+Opt-in plugins (OSM, future HERE) register separately via `registerGeokitPlugin()` or their package helper.
