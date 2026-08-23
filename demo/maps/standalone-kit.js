@@ -1,6 +1,6 @@
 import { setupMapsDemo } from '../shared/bootstrap-maps.js';
-import { registerLayerDatasetMount } from '../../src/utils/geojson-loader/registry.ts';
-import { paintColorFromProperty, SHARED_POINT_UNIFORM_GLOW_OPACITY } from '../../src/ui/utils/shared-point-paint.ts';
+import { registerLayerDatasetMount } from '../../packages/core/src/utils/geojson-loader/registry.ts';
+import { paintColorFromProperty, SHARED_POINT_UNIFORM_GLOW_OPACITY } from '../../packages/core/src/ui/utils/shared-point-paint.ts';
 
 const TERRITORY_GEOJSON = {
   type: 'FeatureCollection',

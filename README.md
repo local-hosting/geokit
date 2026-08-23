@@ -24,7 +24,8 @@ yarn install
 yarn build          # build geokit core
 yarn test           # core + api + geotypes + plugin-osm tests
 yarn typecheck      # all packages
-yarn workspace geokit run dev
+yarn demo              # interactive map demos (repo-root demo/)
+yarn workspace geokit run dev   # same demo server from core package
 yarn workspace @geokit/geotypes run sync   # slugs + acronyms + provider tables
 yarn workspace @geokit/geotypes run open   # Clay taxonomy preview
 ```
