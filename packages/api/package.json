@@ -61,16 +61,43 @@
     "test": "yarn run -T vitest run"
   },
   "devDependencies": {
-    "geokit": "workspace:*"
-  },
-  "peerDependencies": {
-    "geokit": "workspace:*"
-  },
-  "dependencies": {
+    "@geokit/core": "workspace:*",
     "@geokit/plugin-foursquare": "workspace:*",
     "@geokit/plugin-google": "workspace:*",
     "@geokit/plugin-mapbox": "workspace:*",
     "@geokit/plugin-maptiler": "workspace:*",
     "@geokit/plugin-osm": "workspace:*"
+  },
+  "peerDependencies": {
+    "@geokit/core": ">=0.2.33",
+    "@geokit/plugin-foursquare": ">=0.1.0",
+    "@geokit/plugin-google": ">=0.1.0",
+    "@geokit/plugin-mapbox": ">=0.1.0",
+    "@geokit/plugin-maptiler": ">=0.1.0",
+    "@geokit/plugin-osm": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@geokit/core": {
+      "optional": false
+    },
+    "@geokit/plugin-foursquare": {
+      "optional": true
+    },
+    "@geokit/plugin-google": {
+      "optional": true
+    },
+    "@geokit/plugin-mapbox": {
+      "optional": true
+    },
+    "@geokit/plugin-maptiler": {
+      "optional": true
+    },
+    "@geokit/plugin-osm": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
   }
 }

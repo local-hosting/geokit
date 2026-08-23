@@ -1,26 +1,40 @@
 import type { CapabilityRouterEnvOverrides } from './types/api-composite.js';
 import { getCapabilityRouter } from './providers/registry.js';
 import { rebuildCapabilityRouters, resetCapabilityRouterReady } from './providers/capability-router-rebuild.js';
-import { registerFoursquarePlugin } from '@geokit/plugin-foursquare';
-import { registerGooglePlacesPlugin } from '@geokit/plugin-google';
-import { registerMapTilerPlugin } from '@geokit/plugin-maptiler';
-import { registerMapboxPlugin } from '@geokit/plugin-mapbox';
 
 let capabilityRoutersReady: Promise<void> | null = null;
 let lastOverrides: CapabilityRouterEnvOverrides | undefined;
 
+type PluginRegistrar = (overrides?: CapabilityRouterEnvOverrides) => Promise<void> | void;
+
+async function registerOptionalPlugin(
+  moduleId: string,
+  exportName: string,
+  overrides?: CapabilityRouterEnvOverrides,
+): Promise<void> {
+  try {
+    const mod = (await import(moduleId)) as Record<string, unknown>;
+    const register = mod[exportName];
+    if (typeof register === 'function') {
+      await (register as PluginRegistrar)(overrides);
+    }
+  } catch {
+    // Optional plugin — consumer installs only the providers they need.
+  }
+}
+
 /** Register built-in provider plugins when env keys are present. */
 export async function registerDefaultPlugins(
-  overrides?: CapabilityRouterEnvOverrides
+  overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
-  await registerMapTilerPlugin(overrides);
-  await registerMapboxPlugin(overrides);
-  await registerFoursquarePlugin(overrides);
-  await registerGooglePlacesPlugin(overrides);
+  await registerOptionalPlugin('@geokit/plugin-maptiler', 'registerMapTilerPlugin', overrides);
+  await registerOptionalPlugin('@geokit/plugin-mapbox', 'registerMapboxPlugin', overrides);
+  await registerOptionalPlugin('@geokit/plugin-foursquare', 'registerFoursquarePlugin', overrides);
+  await registerOptionalPlugin('@geokit/plugin-google', 'registerGooglePlacesPlugin', overrides);
 }
 
 async function bootstrapCapabilityRouters(
-  overrides?: CapabilityRouterEnvOverrides
+  overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
   await registerDefaultPlugins(overrides);
   await rebuildCapabilityRouters();
@@ -37,7 +51,7 @@ function scheduleBootstrap(overrides?: CapabilityRouterEnvOverrides): Promise<vo
 
 /** Bootstrap default plugins and composite routers from env keys. */
 export function ensureCapabilityRoutersReady(
-  overrides?: CapabilityRouterEnvOverrides
+  overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
   if (overrides) {
     return scheduleBootstrap(overrides);
@@ -51,7 +65,7 @@ export function ensureCapabilityRoutersReady(
 async function requireCapabilityRouter(
   capability: 'geocoding' | 'placeSearch' | 'isochrone',
   overrides: CapabilityRouterEnvOverrides | undefined,
-  message: string
+  message: string,
 ): Promise<void> {
   await ensureCapabilityRoutersReady(overrides);
   if (!getCapabilityRouter(capability)) {
@@ -60,32 +74,32 @@ async function requireCapabilityRouter(
 }
 
 export function ensureGeocodingRouterReady(
-  overrides?: CapabilityRouterEnvOverrides
+  overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
   return requireCapabilityRouter(
     'geocoding',
     overrides,
-    'Geocoding is not configured. Set GEOKIT_MAP_API_KEY or a routing token.'
+    'Geocoding is not configured. Set GEOKIT_MAP_API_KEY or a routing token.',
   );
 }
 
 export function ensurePlaceSearchRouterReady(
-  overrides?: CapabilityRouterEnvOverrides
+  overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
   return requireCapabilityRouter(
     'placeSearch',
     overrides,
-    'Place search is not configured. Set FOURSQUARE_SERVICE_API_KEY, GOOGLE_PLACES_API_KEY, or register a placeSearch plugin.'
+    'Place search is not configured. Set FOURSQUARE_SERVICE_API_KEY, GOOGLE_PLACES_API_KEY, or register a placeSearch plugin.',
   );
 }
 
 export function ensureIsochroneRouterReady(
-  overrides?: CapabilityRouterEnvOverrides
+  overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
   return requireCapabilityRouter(
     'isochrone',
     overrides,
-    'Isochrone routing is not configured. Set GEOKIT_ROUTING_TOKEN or MAPBOX_TOKEN.'
+    'Isochrone routing is not configured. Set GEOKIT_ROUTING_TOKEN or MAPBOX_TOKEN.',
   );
 }
 

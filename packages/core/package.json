@@ -1,5 +1,5 @@
 {
-  "name": "geokit",
+  "name": "@geokit/core",
   "version": "0.2.33",
   "description": "Geospatial utilities and map UI (slim core \u2014 add @geokit/api for place search providers)",
   "type": "module",
@@ -489,6 +489,20 @@
       "import": "./dist/esm/utils/retry.js",
       "require": "./dist/cjs/utils/retry.cjs",
       "default": "./dist/esm/utils/retry.js"
+    },
+    "./api/registry": {
+      "source": "./src/integrations/api/registry.ts",
+      "types": "./dist/esm/integrations/api/registry.d.ts",
+      "import": "./dist/esm/integrations/api/registry.js",
+      "require": "./dist/esm/integrations/api/registry.js",
+      "default": "./dist/esm/integrations/api/registry.js"
+    },
+    "./api/setup-capability-routers": {
+      "source": "./src/integrations/api/setup-capability-routers.ts",
+      "types": "./dist/esm/integrations/api/setup-capability-routers.d.ts",
+      "import": "./dist/esm/integrations/api/setup-capability-routers.js",
+      "require": "./dist/esm/integrations/api/setup-capability-routers.js",
+      "default": "./dist/esm/integrations/api/setup-capability-routers.js"
     }
   },
   "sideEffects": [
@@ -548,7 +562,8 @@
   "license": "MIT",
   "packageManager": "yarn@4.18.0",
   "publishConfig": {
-    "registry": "https://registry.npmjs.org"
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
   },
   "devDependencies": {
     "@geokit/api": "workspace:*",
