@@ -11,6 +11,7 @@ export interface ChoroplethFillLayerSpec {
   sourceOptions?: Record<string, unknown>;
   fillColor: unknown;
   fillOpacity: unknown;
+  fillOutlineColor?: unknown;
   fillAntialiasOptions?: () => Record<string, unknown>;
 }
 
@@ -47,6 +48,9 @@ export function createChoroplethFillLayer(
       {
         'fill-color': spec.fillColor,
         'fill-opacity': spec.fillOpacity,
+        ...(spec.fillOutlineColor !== undefined
+          ? { 'fill-outline-color': spec.fillOutlineColor }
+          : {}),
       },
       spec.fillAntialiasOptions?.() ?? {}
     ),
