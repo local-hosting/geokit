@@ -70,6 +70,9 @@ import {
   whenStyleReady as whenStyleReadyFn,
   resizeAndRepaintMap as resizeAndRepaintMapFn,
   delayForWebGLRelease,
+  registerLiveMap,
+  unregisterLiveMap,
+  waitUntilCanCreateMap,
 } from './map-freeze';
 import { safeResizeMap } from '../../../utils/map-utils';
 import { resolveEmbedPointScale } from '../../../utils/embed-point-scale';
@@ -171,6 +174,9 @@ export class MapElement extends BaseElement {
   /** One-shot timeout: when placeholder shows Loading/Restoring, fire gk-map-stuck if still not ready after this ms */
   private _stuckCheckTimer: ReturnType<typeof setTimeout> | null = null;
   private static readonly STUCK_PLACEHOLDER_MS = STUCK_MS;
+
+  /** True when this element's map instance is counted toward the page WebGL budget. */
+  private _registeredForWebGLBudget = false;
 
   /** True after map has fired 'idle' (tiles painted). Used by map-collection for status. */
   public hasPainted: boolean = false;
@@ -432,9 +438,22 @@ export class MapElement extends BaseElement {
         interactive: this.getAttribute('interactive') !== 'false',
       };
 
-      // Create map; if browser is at WebGL context limit, createMap may throw
+      // Create map; if browser is at WebGL context limit, wait for pool eviction first
+      const canCreate = await waitUntilCanCreateMap();
+      if (!canCreate) {
+        debug.warn('[gk-map] WebGL budget full, deferring map creation');
+        this.showPlaceholder('Loading map...');
+        this.isInitialized = false;
+        this._isInitializing = false;
+        return;
+      }
+
       try {
         this.map = await provider.createMap(container, options);
+        if (!this._registeredForWebGLBudget) {
+          registerLiveMap();
+          this._registeredForWebGLBudget = true;
+        }
       } catch (err) {
         debug.warn('[gk-map] Map creation failed (e.g. too many WebGL contexts):', err);
         this.showPlaceholder('Loading map...');
@@ -2453,6 +2472,10 @@ export class MapElement extends BaseElement {
     this._mapCanvas = null;
     this.isInitialized = false;
     this.hasPainted = false;
+    if (this._registeredForWebGLBudget) {
+      unregisterLiveMap();
+      this._registeredForWebGLBudget = false;
+    }
     if (options.markFrozen) {
       this._isFrozen = true;
     }
@@ -3644,4 +3667,13 @@ export class MapElement extends BaseElement {
 // Register custom element
 if (!customElements.get('gk-map')) {
   customElements.define('gk-map', MapElement);
+}
+
+/** Vite HMR: tear down map instances so WebGL contexts are not leaked across reloads. */
+if (typeof import.meta !== 'undefined' && import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    document.querySelectorAll('gk-map').forEach((el) => {
+      void (el as MapElement).freeze?.();
+    });
+  });
 }
