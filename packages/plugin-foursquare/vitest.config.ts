@@ -15,6 +15,7 @@ export default defineConfig({
       '@geokit/api/registry': path.resolve(pkgRoot, '../api/src/providers/registry.ts'),
       '@geokit/api/setup-capability-routers': path.resolve(pkgRoot, '../api/src/providers/setup-capability-routers.ts'),
       '@geokit/api': path.resolve(pkgRoot, '../api/src/index.ts'),
+      '@geokit/geotypes/geokit': path.resolve(pkgRoot, '../geotypes/src/geokit-adapter.ts'),
       'geokit/config/env/service-keys': path.resolve(pkgRoot, '../core/src/config/env/service-keys.ts'),
       '../../../core/tests/fixtures/geojson': path.resolve(pkgRoot, '../core/tests/fixtures/geojson.ts'),
       '../../../core/tests/mocks/fetch': path.resolve(pkgRoot, '../core/tests/mocks/fetch.ts'),

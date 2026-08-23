@@ -86,6 +86,10 @@ function formatFoursquareAddress(location: FoursquarePlaceLocation): string | un
   return parts.length > 0 ? parts.join(', ') : undefined;
 }
 
+function foursquareCategoryValue(category: NonNullable<FoursquarePlaceRaw['categories']>[number]): string {
+  return category.fsq_category_id ?? category.id ?? category.name;
+}
+
 export function normalizeFoursquarePlace(place: FoursquarePlaceRaw): NormalizedFoursquarePlace {
   const id = place.fsq_place_id ?? place.fsq_id;
   if (!id) {
@@ -100,7 +104,7 @@ export function normalizeFoursquarePlace(place: FoursquarePlaceRaw): NormalizedF
     name: place.name,
     address: place.location ? formatFoursquareAddress(place.location) : undefined,
     location: longitude !== undefined && latitude !== undefined ? [longitude, latitude] : [0, 0],
-    categories: place.categories?.map((category) => category.name),
+    categories: place.categories?.map(foursquareCategoryValue),
     distance: place.distance,
     rating: place.rating,
     priceLevel: place.price,

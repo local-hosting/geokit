@@ -39,7 +39,7 @@ export interface FoursquarePlaceRaw {
   longitude?: number;
   geocodes?: { main?: { latitude: number; longitude: number } };
   location?: FoursquarePlaceLocation;
-  categories?: Array<{ name: string }>;
+  categories?: Array<{ name: string; fsq_category_id?: string; id?: string }>;
   distance?: number;
   rating?: number;
   price?: number;
