@@ -4107,10 +4107,13 @@ __metadata:
     vue: "npm:^3.5.13"
     zod: "npm:^3.25.0"
   peerDependencies:
+    "@geokit/api": ">=0.1.0"
     react: ">=18.0.0"
     svelte: ">=4.0.0"
     vue: ">=3.3.0"
   peerDependenciesMeta:
+    "@geokit/api":
+      optional: true
     react:
       optional: true
     svelte:
