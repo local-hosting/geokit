@@ -7,7 +7,7 @@
  * - 429 rate-limit retry with exponential backoff
  */
 
-import { delay } from 'geokit/utils/retry';
+import { delay } from '@geokit/core/utils/retry';
 
 // ---------------------------------------------------------------------------
 // API key validation

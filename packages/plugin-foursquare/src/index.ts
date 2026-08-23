@@ -1,5 +1,5 @@
 import { createKeyedPluginRegistrar, type GeokitAPIPlugin } from '@geokit/api/plugin';
-import { resolveFoursquareApiKey } from 'geokit/config/env/service-keys';
+import { resolveFoursquareApiKey } from '@geokit/core/config/env/service-keys';
 import type { CapabilityRouterEnvOverrides } from '@geokit/api/types/api-composite';
 import { FoursquareAPIProvider } from './foursquare-provider.js';
 

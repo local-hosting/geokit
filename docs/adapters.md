@@ -16,7 +16,7 @@ Peer dependencies (`vue`, `react`, `svelte`) are optional — install only the a
 ## Vue
 
 ```ts
-import { useGkMap, useGkMapEvents, useGkMapMount } from 'geokit/vue';
+import { useGkMap, useGkMapEvents, useGkMapMount } from '@geokit/core/vue';
 
 const containerRef = ref<HTMLElement | null>(null);
 const { shouldMount } = useGkMapMount(containerRef, { mode: 'when-visible-and-idle' });
@@ -43,7 +43,7 @@ import {
   useGkMapMount,
   useGkMapContainer,
   useGkScrollIdle,
-} from 'geokit/react';
+} from '@geokit/core/react';
 
 function MapCard({ container }: { container: HTMLElement | null }) {
   const { isScrollIdle, start, stop } = useGkScrollIdle();
@@ -64,7 +64,7 @@ function MapCard({ container }: { container: HTMLElement | null }) {
 
 ```svelte
 <script lang="ts">
-  import { createGkMap, createGkMapMount } from 'geokit/svelte';
+  import { createGkMap, createGkMapMount } from '@geokit/core/svelte';
   import { onDestroy } from 'svelte';
 
   let container: HTMLElement;
@@ -88,7 +88,7 @@ function MapCard({ container }: { container: HTMLElement | null }) {
 ## Shared headless API
 
 ```ts
-import { bindGkMapLifecycle, createMapMountPolicy } from 'geokit/adapters/shared';
+import { bindGkMapLifecycle, createMapMountPolicy } from '@geokit/core/adapters/shared';
 ```
 
 - `bindGkMapLifecycle(element, handlers)` — subscribe to `gk-map-ready`, `gk-map-unload`, freeze/unfreeze

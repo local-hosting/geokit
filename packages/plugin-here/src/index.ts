@@ -1,5 +1,5 @@
 import { createKeyedPluginRegistrar, type GeokitAPIPlugin } from '@geokit/api/plugin';
-import { resolveHereApiKey } from 'geokit/config/env/service-keys';
+import { resolveHereApiKey } from '@geokit/core/config/env/service-keys';
 import { HerePlacesAPIProvider } from './here-places-provider.js';
 
 export const herePlacesPlugin: GeokitAPIPlugin = {

@@ -1,5 +1,5 @@
 import { createKeyedPluginRegistrar, type GeokitAPIPlugin } from '@geokit/api/plugin';
-import { resolveEsriApiKey } from 'geokit/config/env/service-keys';
+import { resolveEsriApiKey } from '@geokit/core/config/env/service-keys';
 import { EsriPlacesAPIProvider } from './esri-places-provider.js';
 
 export const esriPlacesPlugin: GeokitAPIPlugin = {

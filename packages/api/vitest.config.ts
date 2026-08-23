@@ -25,9 +25,9 @@ const apiAliases: Record<string, string> = {
   '@geokit/plugin-google': path.resolve(pkgRoot, '../plugin-google/src/index.ts'),
   '@geokit/plugin-mapbox': path.resolve(pkgRoot, '../plugin-mapbox/src/index.ts'),
   '@geokit/plugin-maptiler': path.resolve(pkgRoot, '../plugin-maptiler/src/index.ts'),
-  'geokit/utils/retry': path.resolve(coreRoot, 'src/utils/retry.ts'),
-  'geokit/utils/cache': path.resolve(coreRoot, 'src/utils/cache.ts'),
-  'geokit/config/env/service-keys': path.resolve(coreRoot, 'src/config/env/service-keys.ts'),
+  '@geokit/core/utils/retry': path.resolve(coreRoot, 'src/utils/retry.ts'),
+  '@geokit/core/utils/cache': path.resolve(coreRoot, 'src/utils/cache.ts'),
+  '@geokit/core/config/env/service-keys': path.resolve(coreRoot, 'src/config/env/service-keys.ts'),
 };
 
 export default defineConfig({
