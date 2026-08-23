@@ -14,12 +14,12 @@
     "test": "yarn run -T vitest run"
   },
   "peerDependencies": {
-    "@geokit/api": "workspace:*",
-    "geokit": "workspace:*"
+    "@geokit/api": ">=0.1.0",
+    "@geokit/core": ">=0.2.33"
   },
   "devDependencies": {
     "@geokit/api": "workspace:*",
-    "geokit": "workspace:*"
+    "@geokit/core": "workspace:*"
   },
   "name": "@geokit/plugin-mapbox",
   "description": "Mapbox routing and geocoding plugin for geokit"

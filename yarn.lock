@@ -879,14 +879,111 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@geokit/api@workspace:packages/api"
   dependencies:
+    "@geokit/core": "workspace:*"
     "@geokit/plugin-foursquare": "workspace:*"
     "@geokit/plugin-google": "workspace:*"
     "@geokit/plugin-mapbox": "workspace:*"
     "@geokit/plugin-maptiler": "workspace:*"
     "@geokit/plugin-osm": "workspace:*"
-    geokit: "workspace:*"
   peerDependencies:
-    geokit: "workspace:*"
+    "@geokit/core": ">=0.2.33"
+    "@geokit/plugin-foursquare": ">=0.1.0"
+    "@geokit/plugin-google": ">=0.1.0"
+    "@geokit/plugin-mapbox": ">=0.1.0"
+    "@geokit/plugin-maptiler": ">=0.1.0"
+    "@geokit/plugin-osm": ">=0.1.0"
+  peerDependenciesMeta:
+    "@geokit/core":
+      optional: false
+    "@geokit/plugin-foursquare":
+      optional: true
+    "@geokit/plugin-google":
+      optional: true
+    "@geokit/plugin-mapbox":
+      optional: true
+    "@geokit/plugin-maptiler":
+      optional: true
+    "@geokit/plugin-osm":
+      optional: true
+  languageName: unknown
+  linkType: soft
+
+"@geokit/core@workspace:*, @geokit/core@workspace:packages/core":
+  version: 0.0.0-use.local
+  resolution: "@geokit/core@workspace:packages/core"
+  dependencies:
+    "@geokit/api": "workspace:*"
+    "@geokit/geotypes": "workspace:*"
+    "@maptiler/sdk": "npm:3.10.2"
+    "@modelcontextprotocol/sdk": "npm:^1.29.0"
+    "@turf/along": "npm:^7.3.0"
+    "@turf/area": "npm:^7.3.0"
+    "@turf/bbox": "npm:^7.3.0"
+    "@turf/bbox-polygon": "npm:^7.3.0"
+    "@turf/bearing": "npm:^7.3.0"
+    "@turf/boolean-contains": "npm:^7.3.0"
+    "@turf/boolean-point-in-polygon": "npm:^7.3.0"
+    "@turf/buffer": "npm:^7.3.0"
+    "@turf/center": "npm:^7.3.0"
+    "@turf/centroid": "npm:^7.3.0"
+    "@turf/convex": "npm:^7.3.0"
+    "@turf/destination": "npm:^7.3.0"
+    "@turf/difference": "npm:^7.3.1"
+    "@turf/helpers": "npm:^7.3.0"
+    "@turf/length": "npm:^7.3.0"
+    "@turf/line-intersect": "npm:^7.3.0"
+    "@turf/midpoint": "npm:^7.3.0"
+    "@turf/nearest-point-on-line": "npm:^7.3.0"
+    "@turf/point-to-line-distance": "npm:^7.3.0"
+    "@turf/simplify": "npm:^7.3.0"
+    "@turf/union": "npm:^7.3.1"
+    "@types/geojson": "npm:^7946.0.16"
+    "@types/jsdom": "npm:^27.0.0"
+    "@types/node": "npm:^24.10.1"
+    "@types/react": "npm:^19.0.0"
+    "@types/topojson-client": "npm:^3.1.5"
+    "@typescript-eslint/eslint-plugin": "npm:^8.47.0"
+    "@typescript-eslint/parser": "npm:^8.47.0"
+    "@vitest/browser": "npm:^2.1.8"
+    "@vitest/coverage-v8": "npm:^2.1.8"
+    dotenv: "npm:^17.2.3"
+    eslint: "npm:^9.39.1"
+    h3-js: "npm:^4.3.0"
+    happy-dom: "npm:^20.1.0"
+    husky: "npm:^9.1.7"
+    jsdom: "npm:^27.2.0"
+    latlon-geohash: "npm:^2.0.0"
+    lint-staged: "npm:^16.2.6"
+    lru-cache: "npm:^11.2.4"
+    mapbox-gl: "npm:^3.17.0"
+    patch-package: "npm:^8.0.1"
+    playwright: "npm:^1.56.1"
+    prettier: "npm:^3.6.2"
+    react: "npm:^19.0.0"
+    topojson-client: "npm:^3.1.0"
+    topojson-server: "npm:^3.0.1"
+    topojson-simplify: "npm:^3.0.3"
+    tsup: "npm:^8.5.0"
+    tsx: "npm:^4.20.5"
+    typescript: "npm:^5.9.3"
+    vite: "npm:^6.1.0"
+    vitest: "npm:^2.1.8"
+    vue: "npm:^3.5.13"
+    zod: "npm:^3.25.0"
+  peerDependencies:
+    "@geokit/api": ">=0.1.0"
+    react: ">=18.0.0"
+    svelte: ">=4.0.0"
+    vue: ">=3.3.0"
+  peerDependenciesMeta:
+    "@geokit/api":
+      optional: true
+    react:
+      optional: true
+    svelte:
+      optional: true
+    vue:
+      optional: true
   languageName: unknown
   linkType: soft
 
@@ -897,12 +994,12 @@ __metadata:
     "@bufbuild/protobuf": "npm:^2.6.0"
     "@bufbuild/protoc-gen-es": "npm:^2.6.0"
     "@geokit/api": "workspace:*"
+    "@geokit/core": "workspace:*"
     "@types/js-yaml": "npm:^4.0.9"
     commander: "npm:^14.0.0"
-    geokit: "workspace:*"
     js-yaml: "npm:^4.1.0"
   peerDependencies:
-    "@geokit/api": "workspace:*"
+    "@geokit/api": ">=0.1.0"
   languageName: unknown
   linkType: soft
 
@@ -911,11 +1008,11 @@ __metadata:
   resolution: "@geokit/plugin-esri@workspace:packages/plugin-esri"
   dependencies:
     "@geokit/api": "workspace:*"
+    "@geokit/core": "workspace:*"
     "@geokit/geotypes": "workspace:*"
-    geokit: "workspace:*"
   peerDependencies:
-    "@geokit/api": "workspace:*"
-    geokit: "workspace:*"
+    "@geokit/api": ">=0.1.0"
+    "@geokit/core": ">=0.2.33"
   languageName: unknown
   linkType: soft
 
@@ -924,10 +1021,10 @@ __metadata:
   resolution: "@geokit/plugin-foursquare@workspace:packages/plugin-foursquare"
   dependencies:
     "@geokit/api": "workspace:*"
-    geokit: "workspace:*"
+    "@geokit/core": "workspace:*"
   peerDependencies:
-    "@geokit/api": "workspace:*"
-    geokit: "workspace:*"
+    "@geokit/api": ">=0.1.0"
+    "@geokit/core": ">=0.2.33"
   languageName: unknown
   linkType: soft
 
@@ -936,10 +1033,10 @@ __metadata:
   resolution: "@geokit/plugin-google@workspace:packages/plugin-google"
   dependencies:
     "@geokit/api": "workspace:*"
-    geokit: "workspace:*"
+    "@geokit/core": "workspace:*"
   peerDependencies:
-    "@geokit/api": "workspace:*"
-    geokit: "workspace:*"
+    "@geokit/api": ">=0.1.0"
+    "@geokit/core": ">=0.2.33"
   languageName: unknown
   linkType: soft
 
@@ -948,11 +1045,11 @@ __metadata:
   resolution: "@geokit/plugin-here@workspace:packages/plugin-here"
   dependencies:
     "@geokit/api": "workspace:*"
+    "@geokit/core": "workspace:*"
     "@geokit/geotypes": "workspace:*"
-    geokit: "workspace:*"
   peerDependencies:
-    "@geokit/api": "workspace:*"
-    geokit: "workspace:*"
+    "@geokit/api": ">=0.1.0"
+    "@geokit/core": ">=0.2.33"
   languageName: unknown
   linkType: soft
 
@@ -961,10 +1058,10 @@ __metadata:
   resolution: "@geokit/plugin-mapbox@workspace:packages/plugin-mapbox"
   dependencies:
     "@geokit/api": "workspace:*"
-    geokit: "workspace:*"
+    "@geokit/core": "workspace:*"
   peerDependencies:
-    "@geokit/api": "workspace:*"
-    geokit: "workspace:*"
+    "@geokit/api": ">=0.1.0"
+    "@geokit/core": ">=0.2.33"
   languageName: unknown
   linkType: soft
 
@@ -973,10 +1070,10 @@ __metadata:
   resolution: "@geokit/plugin-maptiler@workspace:packages/plugin-maptiler"
   dependencies:
     "@geokit/api": "workspace:*"
-    geokit: "workspace:*"
+    "@geokit/core": "workspace:*"
   peerDependencies:
-    "@geokit/api": "workspace:*"
-    geokit: "workspace:*"
+    "@geokit/api": ">=0.1.0"
+    "@geokit/core": ">=0.2.33"
   languageName: unknown
   linkType: soft
 
@@ -985,11 +1082,11 @@ __metadata:
   resolution: "@geokit/plugin-osm@workspace:packages/plugin-osm"
   dependencies:
     "@geokit/api": "workspace:*"
+    "@geokit/core": "workspace:*"
     "@geokit/geotypes": "workspace:*"
-    geokit: "workspace:*"
   peerDependencies:
-    "@geokit/api": "workspace:*"
-    geokit: "workspace:*"
+    "@geokit/api": ">=0.1.0"
+    "@geokit/core": ">=0.2.33"
   languageName: unknown
   linkType: soft
 
@@ -4120,85 +4217,6 @@ __metadata:
     tsx: "npm:^4.20.5"
     typescript: "npm:^5.9.3"
     vitest: "npm:^2.1.8"
-  languageName: unknown
-  linkType: soft
-
-"geokit@workspace:*, geokit@workspace:packages/core":
-  version: 0.0.0-use.local
-  resolution: "geokit@workspace:packages/core"
-  dependencies:
-    "@geokit/api": "workspace:*"
-    "@geokit/geotypes": "workspace:*"
-    "@maptiler/sdk": "npm:3.10.2"
-    "@modelcontextprotocol/sdk": "npm:^1.29.0"
-    "@turf/along": "npm:^7.3.0"
-    "@turf/area": "npm:^7.3.0"
-    "@turf/bbox": "npm:^7.3.0"
-    "@turf/bbox-polygon": "npm:^7.3.0"
-    "@turf/bearing": "npm:^7.3.0"
-    "@turf/boolean-contains": "npm:^7.3.0"
-    "@turf/boolean-point-in-polygon": "npm:^7.3.0"
-    "@turf/buffer": "npm:^7.3.0"
-    "@turf/center": "npm:^7.3.0"
-    "@turf/centroid": "npm:^7.3.0"
-    "@turf/convex": "npm:^7.3.0"
-    "@turf/destination": "npm:^7.3.0"
-    "@turf/difference": "npm:^7.3.1"
-    "@turf/helpers": "npm:^7.3.0"
-    "@turf/length": "npm:^7.3.0"
-    "@turf/line-intersect": "npm:^7.3.0"
-    "@turf/midpoint": "npm:^7.3.0"
-    "@turf/nearest-point-on-line": "npm:^7.3.0"
-    "@turf/point-to-line-distance": "npm:^7.3.0"
-    "@turf/simplify": "npm:^7.3.0"
-    "@turf/union": "npm:^7.3.1"
-    "@types/geojson": "npm:^7946.0.16"
-    "@types/jsdom": "npm:^27.0.0"
-    "@types/node": "npm:^24.10.1"
-    "@types/react": "npm:^19.0.0"
-    "@types/topojson-client": "npm:^3.1.5"
-    "@typescript-eslint/eslint-plugin": "npm:^8.47.0"
-    "@typescript-eslint/parser": "npm:^8.47.0"
-    "@vitest/browser": "npm:^2.1.8"
-    "@vitest/coverage-v8": "npm:^2.1.8"
-    dotenv: "npm:^17.2.3"
-    eslint: "npm:^9.39.1"
-    h3-js: "npm:^4.3.0"
-    happy-dom: "npm:^20.1.0"
-    husky: "npm:^9.1.7"
-    jsdom: "npm:^27.2.0"
-    latlon-geohash: "npm:^2.0.0"
-    lint-staged: "npm:^16.2.6"
-    lru-cache: "npm:^11.2.4"
-    mapbox-gl: "npm:^3.17.0"
-    patch-package: "npm:^8.0.1"
-    playwright: "npm:^1.56.1"
-    prettier: "npm:^3.6.2"
-    react: "npm:^19.0.0"
-    topojson-client: "npm:^3.1.0"
-    topojson-server: "npm:^3.0.1"
-    topojson-simplify: "npm:^3.0.3"
-    tsup: "npm:^8.5.0"
-    tsx: "npm:^4.20.5"
-    typescript: "npm:^5.9.3"
-    vite: "npm:^6.1.0"
-    vitest: "npm:^2.1.8"
-    vue: "npm:^3.5.13"
-    zod: "npm:^3.25.0"
-  peerDependencies:
-    "@geokit/api": ">=0.1.0"
-    react: ">=18.0.0"
-    svelte: ">=4.0.0"
-    vue: ">=3.3.0"
-  peerDependenciesMeta:
-    "@geokit/api":
-      optional: true
-    react:
-      optional: true
-    svelte:
-      optional: true
-    vue:
-      optional: true
   languageName: unknown
   linkType: soft
 

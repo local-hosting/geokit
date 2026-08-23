@@ -1,22 +1,22 @@
 {
   "name": "geokit-monorepo",
   "private": true,
-  "description": "Geokit monorepo \u2014 geospatial SDK and POI taxonomy",
+  "description": "Geokit monorepo — geospatial SDK and POI taxonomy",
   "workspaces": [
     "packages/*"
   ],
   "packageManager": "yarn@4.18.0",
   "scripts": {
-    "build": "yarn workspace geokit run build",
+    "build": "yarn workspace @geokit/core run build",
     "build:all": "yarn workspaces foreach -Apt run build",
     "dev": "yarn demo",
     "test": "yarn workspaces foreach -Apt run test",
-    "test:core": "yarn workspace geokit run test",
+    "test:core": "yarn workspace @geokit/core run test",
     "test:geotypes": "yarn workspace @geokit/geotypes run test",
     "typecheck": "yarn workspaces foreach -Apt run typecheck",
-    "lint": "yarn workspace geokit run lint",
+    "lint": "yarn workspace @geokit/core run lint",
     "prepare": "husky",
-    "demo": "yarn workspace geokit run dev"
+    "demo": "yarn workspace @geokit/core run dev"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
