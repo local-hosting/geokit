@@ -8,7 +8,7 @@ import type {
   PlaceSearchResult,
   ReverseGeocodeOptions,
   ReverseGeocodeResult,
-} from '../../src/api/providers/types';
+} from '@geokit/api/types';
 import { polygonAroundPoint } from '../fixtures/geojson';
 
 export type MockIsochroneOptions = {

@@ -63,7 +63,7 @@ export async function rebuildCapabilityRouters(): Promise<void> {
   markCapabilityRoutersReady();
 }
 
-/** @internal setup-capability-routers plugin hook */
+/** @internal builtins plugin hook */
 export function _notifyPluginChainRebuild(): void {
   if (!capabilityRoutersReady) {
     return;

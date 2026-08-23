@@ -1,7 +1,7 @@
 {
   "name": "geokit",
   "version": "0.2.33",
-  "description": "Geospatial utilities and map UI (slim core — add @geokit/api for place search providers)",
+  "description": "Geospatial utilities and map UI (slim core \u2014 add @geokit/api for place search providers)",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",
@@ -14,73 +14,6 @@
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.cjs",
       "default": "./dist/esm/index.js"
-    },
-    "./api": {
-      "source": "./src/api/index.ts",
-      "types": "./dist/esm/api/index.d.ts",
-      "import": "./dist/esm/api/index.js",
-      "require": "./dist/cjs/api/index.cjs",
-      "default": "./dist/esm/api/index.js"
-    },
-    "./api/place-taxonomy": {
-      "source": "./src/api/place-taxonomy.ts",
-      "types": "./dist/esm/api/place-taxonomy.d.ts",
-      "import": "./dist/esm/api/place-taxonomy.js",
-      "require": "./dist/cjs/api/place-taxonomy.cjs",
-      "default": "./dist/esm/api/place-taxonomy.js"
-    },
-    "./api/providers/foursquare": {
-      "source": "./src/api/providers/foursquare-provider.ts",
-      "types": "./dist/esm/api/providers/foursquare-provider.d.ts",
-      "import": "./dist/esm/api/providers/foursquare-provider.js",
-      "require": "./dist/cjs/api/providers/foursquare-provider.cjs"
-    },
-    "./api/providers/foursquare-places": {
-      "source": "./src/api/providers/foursquare-places.ts",
-      "types": "./dist/esm/api/providers/foursquare-places.d.ts",
-      "import": "./dist/esm/api/providers/foursquare-places.js",
-      "require": "./dist/cjs/api/providers/foursquare-places.cjs",
-      "default": "./dist/esm/api/providers/foursquare-places.js"
-    },
-    "./api/providers/google-places": {
-      "source": "./src/api/providers/google-places-provider.ts",
-      "types": "./dist/esm/api/providers/google-places-provider.d.ts",
-      "import": "./dist/esm/api/providers/google-places-provider.js",
-      "require": "./dist/cjs/api/providers/google-places-provider.cjs"
-    },
-    "./api/providers/mapbox": {
-      "source": "./src/api/providers/mapbox-provider.ts",
-      "types": "./dist/esm/api/providers/mapbox-provider.d.ts",
-      "import": "./dist/esm/api/providers/mapbox-provider.js",
-      "require": "./dist/cjs/api/providers/mapbox-provider.cjs",
-      "default": "./dist/esm/api/providers/mapbox-provider.js"
-    },
-    "./api/providers/maptiler": {
-      "source": "./src/api/providers/maptiler-provider.ts",
-      "types": "./dist/esm/api/providers/maptiler-provider.d.ts",
-      "import": "./dist/esm/api/providers/maptiler-provider.js",
-      "require": "./dist/cjs/api/providers/maptiler-provider.cjs"
-    },
-    "./api/registry": {
-      "source": "./src/api/providers/registry.ts",
-      "types": "./dist/esm/api/providers/registry.d.ts",
-      "import": "./dist/esm/api/providers/registry.js",
-      "require": "./dist/cjs/api/providers/registry.cjs",
-      "default": "./dist/esm/api/providers/registry.js"
-    },
-    "./api/setup-capability-routers": {
-      "source": "./src/api/providers/setup-capability-routers.ts",
-      "types": "./dist/esm/api/providers/setup-capability-routers.d.ts",
-      "import": "./dist/esm/api/providers/setup-capability-routers.js",
-      "require": "./dist/cjs/api/providers/setup-capability-routers.cjs",
-      "default": "./dist/esm/api/providers/setup-capability-routers.js"
-    },
-    "./api/types": {
-      "source": "./src/api/providers/types.ts",
-      "types": "./dist/esm/api/providers/types.d.ts",
-      "import": "./dist/esm/api/providers/types.js",
-      "require": "./dist/cjs/api/providers/types.cjs",
-      "default": "./dist/esm/api/providers/types.js"
     },
     "./bounds": {
       "source": "./src/utils/bounds/index.ts",
@@ -543,13 +476,6 @@
       "require": "./dist/cjs/ui/utils/gk-dma-layer-bind.cjs",
       "default": "./dist/esm/ui/utils/gk-dma-layer-bind.js"
     },
-    "./types/place-taxonomy": {
-      "source": "./src/types/place-taxonomy.ts",
-      "types": "./dist/esm/types/place-taxonomy.d.ts",
-      "import": "./dist/esm/types/place-taxonomy.js",
-      "require": "./dist/cjs/types/place-taxonomy.cjs",
-      "default": "./dist/esm/types/place-taxonomy.js"
-    },
     "./utils/cache": {
       "source": "./src/utils/cache.ts",
       "types": "./dist/esm/utils/cache.d.ts",
@@ -563,13 +489,6 @@
       "import": "./dist/esm/utils/retry.js",
       "require": "./dist/cjs/utils/retry.cjs",
       "default": "./dist/esm/utils/retry.js"
-    },
-    "./api/plugin": {
-      "source": "./src/api/plugin.ts",
-      "types": "./dist/esm/api/plugin.d.ts",
-      "import": "./dist/esm/api/plugin.js",
-      "require": "./dist/cjs/api/plugin.cjs",
-      "default": "./dist/esm/api/plugin.js"
     }
   },
   "sideEffects": [

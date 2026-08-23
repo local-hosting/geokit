@@ -1,5 +1,6 @@
 /**
- * Geokit API plugin registry — optional provider packages (@geokit/plugin-*).
+ * Plugin registration — wraps API providers from @geokit/plugin-* packages.
+ * A plugin is metadata + factory; registerGeokitPlugin() installs the BaseAPIProvider.
  */
 
 import type { APICapability, BaseAPIProvider, MapProviderConfig } from './providers/types.js';

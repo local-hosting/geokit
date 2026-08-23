@@ -1,8 +1,8 @@
 /**
- * UI Provider Registry
+ * UI provider registry (map backends)
  *
- * Manages UI providers for map rendering
- * Multiple providers can be active simultaneously - each map uses its own provider
+ * MapTiler SDK, Mapbox GL JS, etc. — rendering only.
+ * HTTP geocoding/isochrones use @geokit/api/registry (API providers), not this registry.
  */
 
 import type { BaseUIProvider, MapProviderConfig } from './types';

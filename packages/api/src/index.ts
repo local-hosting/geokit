@@ -1,7 +1,6 @@
 /**
- * API Providers and Services
- *
- * Main entry point for API system
+ * @geokit/api — registry, composite routing, plugin hooks, shared HTTP utils.
+ * Vendor API provider classes live in @geokit/plugin-* packages.
  */
 
 // Re-export API providers (types, registry, implementations)

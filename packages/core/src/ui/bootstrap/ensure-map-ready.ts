@@ -71,7 +71,7 @@ export function prefetchMapTilerSdk(apiKey?: string): Promise<MapTilerSdkModule>
 async function initMapboxProvider(accessToken?: string, maptilerApiKey?: string): Promise<void> {
   try {
     const { ensureCapabilityRoutersReady } = await import(
-      '../../api/providers/setup-capability-routers'
+      '@geokit/api/builtins'
     );
     await ensureCapabilityRoutersReady({
       mapboxAccessToken: accessToken,
