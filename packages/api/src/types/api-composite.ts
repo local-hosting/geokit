@@ -15,4 +15,5 @@ export interface CapabilityRouterEnvOverrides {
   mapboxAccessToken?: string;
   foursquareApiKey?: string;
   googlePlacesApiKey?: string;
+  hereApiKey?: string;
 }
