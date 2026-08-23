@@ -9,6 +9,8 @@ import {
   getProviderForCapability,
   _resetRegistries,
 } from '@geokit/api/registry';
+import { setPlaceTaxonomyResolver } from '@geokit/api/place-taxonomy';
+import { createGeokitTaxonomyResolver } from '@geokit/geotypes/geokit';
 import { GooglePlacesAPIProvider } from '../src/google-places-provider.js';
 
 describe('GooglePlacesAPIProvider', () => {
@@ -300,6 +302,49 @@ describe('GooglePlacesAPIProvider', () => {
       expect(stats.size).toBe(0);
       expect(stats.hits).toBe(0);
       expect(stats.misses).toBe(0);
+    });
+  });
+
+
+  describe('geotypes integration', () => {
+    beforeEach(() => {
+      setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
+    });
+
+    it('searches places with geotypes and enriches results', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            results: [
+              {
+                place_id: 'google-place-99',
+                name: 'Electronics Hub',
+                geometry: { location: { lat: 36.16, lng: -86.78 } },
+                types: ['electronics_store', 'point_of_interest', 'establishment'],
+              },
+            ],
+            status: 'OK',
+          }),
+      } as Response);
+
+      await provider.initialize({ apiKey: 'test-api-key' });
+
+      const results = await provider.placeSearch({
+        ll: [-86.78, 36.16],
+        geotypes: ['RSE'],
+        radius: 800,
+      });
+
+      const fetchCall = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+      const url = String(fetchCall?.[0]);
+      expect(url).toContain('nearbysearch');
+      expect(url).toContain('type=electronics_store');
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.categories).toContain('electronics_store');
+      expect(results[0]?.geotype).toBe('electronics_store');
+      expect(results[0]?.geotypeAcronym).toBe('RSE');
     });
   });
 
