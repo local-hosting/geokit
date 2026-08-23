@@ -81,6 +81,18 @@ export const DEMO_SECTIONS = [
       },
     ],
   },
+  {
+    id: 'apps',
+    label: 'Apps',
+    items: [
+      {
+        id: 'protomap',
+        path: '/protomap/index.html',
+        label: 'Protomap',
+        description: 'Shareable pin + H3 cells, MapTiler search, hash URL (no Redis)',
+      },
+    ],
+  },
 ];
 
 /** @type {readonly string[]} */

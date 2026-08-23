@@ -1,15 +1,16 @@
-import '../../src/ui/theme.css';
+import '../../packages/core/src/ui/theme.css';
 import { mountDemoNavFromDocument } from './nav.js';
-import { configure } from '../../src/ui/providers/registry.ts';
+import { configure } from '../../packages/core/src/ui/providers/registry.ts';
 
 const ELEMENT_LOADERS = {
-  point: () => import('../../src/ui/components/elements/point/point'),
-  popup: () => import('../../src/ui/components/elements/popup/popup'),
-  isochrone: () => import('../../src/ui/components/elements/isochrone/isochrone'),
-  polygon: () => import('../../src/ui/components/elements/polygon.ts'),
-  layer: () => import('../../src/ui/components/elements/layer/layer.ts'),
-  h3: () => import('../../src/ui/components/elements/h3.ts'),
-  'navigation-control': () => import('../../src/ui/components/controls/navigation-control.ts'),
+  point: () => import('../../packages/core/src/ui/components/elements/point/point'),
+  popup: () => import('../../packages/core/src/ui/components/elements/popup/popup'),
+  isochrone: () => import('../../packages/core/src/ui/components/elements/isochrone/isochrone'),
+  polygon: () => import('../../packages/core/src/ui/components/elements/polygon.ts'),
+  layer: () => import('../../packages/core/src/ui/components/elements/layer/layer.ts'),
+  h3: () => import('../../packages/core/src/ui/components/elements/h3.ts'),
+  'navigation-control': () => import('../../packages/core/src/ui/components/controls/navigation-control.ts'),
+  marker: () => import('../../packages/core/src/ui/components/elements/marker.ts'),
 };
 
 /** @param {{ mountNav?: boolean, elements?: string[], useFullUi?: boolean }} [options] */
@@ -27,9 +28,9 @@ export async function setupMapsDemo(options = {}) {
   });
 
   if (useFullUi) {
-    await import('../../src/ui/index.ts');
+    await import('../../packages/core/src/ui/index.ts');
   } else {
-    await import('../../src/ui/core.ts');
+    await import('../../packages/core/src/ui/core.ts');
     if (elements.length > 0) {
       await Promise.all(
         elements.map((key) => {
@@ -52,8 +53,8 @@ export function scheduleMapboxApiInit(mapboxToken) {
   }
   const initMapbox = async () => {
     try {
-      const { registerAPIProvider, initAPIProvider } = await import('../../src/api/providers/registry.ts');
-      const { MapboxAPIProvider } = await import('../../src/api/providers/mapbox-provider.ts');
+      const { registerAPIProvider, initAPIProvider } = await import('../../packages/core/src/api/providers/registry.ts');
+      const { MapboxAPIProvider } = await import('../../packages/core/src/api/providers/mapbox-provider.ts');
       registerAPIProvider('mapbox', new MapboxAPIProvider());
       await initAPIProvider('mapbox', { accessToken: mapboxToken });
     } catch (error) {
