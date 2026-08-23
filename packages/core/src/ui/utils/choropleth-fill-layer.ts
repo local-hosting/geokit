@@ -75,6 +75,21 @@ export function removeChoroplethFillLayer(
   }
 }
 
+export type ChoroplethGeoJsonSource = {
+  setData?: (data: FeatureCollection) => void;
+};
+
+export function updateChoroplethFillLayerData(
+  map: ChoroplethFillLayerMap,
+  spec: Pick<ChoroplethFillLayerSpec, 'sourceId'>,
+  geojson: FeatureCollection
+): boolean {
+  const source = map.getSource?.(spec.sourceId) as ChoroplethGeoJsonSource | undefined;
+  if (!source?.setData) return false;
+  source.setData(geojson);
+  return true;
+}
+
 export function setChoroplethFillVisibility(
   map: ChoroplethFillLayerMap,
   spec: Pick<ChoroplethFillLayerSpec, 'fillLayerId' | 'fillOpacity'>,
