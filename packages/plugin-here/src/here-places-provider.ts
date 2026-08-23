@@ -9,7 +9,7 @@ import {
   type PlaceSearchOptions,
   type PlaceSearchResult,
 } from '@geokit/api/types';
-import { ProviderCache, coordinateCacheKey, RequestQueue, requireAPIKey, fetchWithRetry } from '@geokit/api';
+import { ProviderCache, buildPlaceSearchCacheKey, RequestQueue, requireAPIKey, fetchWithRetry } from '@geokit/api';
 import {
   enrichPlaceSearchResult,
   resolvePlaceSearchCategories,
@@ -140,15 +140,6 @@ export class HerePlacesAPIProvider extends BaseAPIProvider {
   }
 
   private getCacheKey(options: PlaceSearchOptions): string {
-    const parts = ['here'];
-    if (options.query) parts.push(`q:${options.query}`);
-    if (options.ll) {
-      parts.push(`ll:${coordinateCacheKey(options.ll[1], options.ll[0], [], 3)}`);
-    }
-    if (options.radius) parts.push(`r:${options.radius}`);
-    if (options.geotypes?.length) parts.push(`gt:${options.geotypes.join(',')}`);
-    else if (options.categories?.length) parts.push(`cat:${options.categories.join(',')}`);
-    if (options.limit) parts.push(`lim:${options.limit}`);
-    return parts.join(':');
+    return buildPlaceSearchCacheKey(options, 'here', []);
   }
 }

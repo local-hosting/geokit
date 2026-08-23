@@ -1,12 +1,6 @@
-import { registerGeokitPlugin, type GeokitAPIPlugin } from '@geokit/api/plugin';
-import { getAPIProvider, initAPIProvider } from '@geokit/api/registry';
+import { createKeyedPluginRegistrar, type GeokitAPIPlugin } from '@geokit/api/plugin';
 import { resolveEsriApiKey } from 'geokit/config/env/service-keys';
-import type { CapabilityRouterEnvOverrides } from '@geokit/api/types/api-composite';
 import { EsriPlacesAPIProvider } from './esri-places-provider.js';
-
-export type EsriPluginOverrides = CapabilityRouterEnvOverrides & {
-  esriApiKey?: string;
-};
 
 export const esriPlacesPlugin: GeokitAPIPlugin = {
   name: 'esri-places',
@@ -15,21 +9,13 @@ export const esriPlacesPlugin: GeokitAPIPlugin = {
   chain: { placeSearch: 'append' },
 };
 
-export async function registerEsriPlacesPlugin(
-  overrides?: EsriPluginOverrides
-): Promise<void> {
-  const apiKey = overrides?.esriApiKey ?? resolveEsriApiKey();
-  if (!apiKey) {
-    return;
+export const registerEsriPlacesPlugin = createKeyedPluginRegistrar(
+  esriPlacesPlugin,
+  (overrides) => {
+    const apiKey = overrides?.esriApiKey ?? resolveEsriApiKey();
+    return apiKey ? { apiKey } : null;
   }
-
-  if (getAPIProvider('esri-places')) {
-    await initAPIProvider('esri-places', { apiKey });
-    return;
-  }
-
-  await registerGeokitPlugin(esriPlacesPlugin, { apiKey });
-}
+);
 
 export {
   EsriPlacesAPIProvider,

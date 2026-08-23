@@ -10,6 +10,7 @@ import {
   removeAPIProvider,
 } from './providers/registry.js';
 import { _notifyPluginChainRebuild } from './providers/capability-router-rebuild.js';
+import type { CapabilityRouterEnvOverrides } from './types/api-composite.js';
 
 export type GeokitPluginChainPosition = 'prepend' | 'append';
 
@@ -127,4 +128,39 @@ export function applyPluginsToCapabilityChains(
 /** @internal test helper */
 export function _resetGeokitPlugins(): void {
   pluginRegistrations.length = 0;
+}
+
+export function createKeyedPluginRegistrar<O extends CapabilityRouterEnvOverrides = CapabilityRouterEnvOverrides>(
+  plugin: GeokitAPIPlugin,
+  resolveConfig: (overrides?: O) => MapProviderConfig | null | undefined
+): (overrides?: O) => Promise<void> {
+  return async (overrides) => {
+    const config = resolveConfig(overrides);
+    if (!config) {
+      return;
+    }
+
+    if (getAPIProvider(plugin.name)) {
+      await initAPIProvider(plugin.name, config);
+      return;
+    }
+
+    await registerGeokitPlugin(plugin, config);
+  };
+}
+
+export function createOptionalPluginRegistrar(
+  plugin: GeokitAPIPlugin,
+  config?: MapProviderConfig
+): () => Promise<void> {
+  return async () => {
+    if (getAPIProvider(plugin.name)) {
+      if (config) {
+        await initAPIProvider(plugin.name, config);
+      }
+      return;
+    }
+
+    await registerGeokitPlugin(plugin, config);
+  };
 }

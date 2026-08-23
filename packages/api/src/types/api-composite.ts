@@ -16,4 +16,5 @@ export interface CapabilityRouterEnvOverrides {
   foursquareApiKey?: string;
   googlePlacesApiKey?: string;
   hereApiKey?: string;
+  esriApiKey?: string;
 }
