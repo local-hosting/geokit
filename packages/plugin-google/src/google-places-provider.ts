@@ -14,7 +14,7 @@ import {
   type PlaceSearchOptions,
   type PlaceSearchResult,
 } from '@geokit/api/types';
-import { ProviderCache, coordinateCacheKey } from '@geokit/api';
+import { ProviderCache, buildPlaceSearchCacheKey } from '@geokit/api';
 import { RequestQueue } from '@geokit/api';
 import { requireAPIKey, assertResponseOk, retryOn429 } from '@geokit/api';
 import {
@@ -199,34 +199,10 @@ export class GooglePlacesAPIProvider extends BaseAPIProvider {
    * Generate cache key for place search request
    */
   private getCacheKey(options: PlaceSearchOptions): string {
-    const parts: string[] = ['gplaces'];
-
-    if (options.query) {
-      parts.push(`q:${options.query}`);
-    }
-    if (options.ll) {
-      // Round to 3 decimals (~111m precision) for cache key
-      parts.push(`ll:${coordinateCacheKey(options.ll[1], options.ll[0], [], 3)}`);
-    }
-    if (options.radius) {
-      parts.push(`r:${options.radius}`);
-    }
-    if (options.geotypes?.length) {
-      parts.push(`gt:${options.geotypes.join(',')}`);
-    } else if (options.categories && options.categories.length > 0) {
-      parts.push(`cat:${options.categories.join(',')}`);
-    }
-    if (options.limit) {
-      parts.push(`lim:${options.limit}`);
-    }
-    if (options.sort) {
-      parts.push(`sort:${options.sort}`);
-    }
-    if (options.openNow !== undefined) {
-      parts.push(`open:${options.openNow}`);
-    }
-
-    return parts.join(':');
+    return buildPlaceSearchCacheKey(options, 'gplaces', [
+      ...(options.sort ? [`sort:${options.sort}`] : []),
+      ...(options.openNow !== undefined ? [`open:${options.openNow}`] : []),
+    ]);
   }
 
   /**

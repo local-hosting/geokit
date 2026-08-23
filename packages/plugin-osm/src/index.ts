@@ -1,4 +1,4 @@
-import { registerGeokitPlugin, type GeokitAPIPlugin } from '@geokit/api/plugin';
+import { createOptionalPluginRegistrar, type GeokitAPIPlugin } from '@geokit/api/plugin';
 import { OsmAPIProvider } from './osm-provider.js';
 
 export const osmPlugin: GeokitAPIPlugin = {
@@ -8,9 +8,7 @@ export const osmPlugin: GeokitAPIPlugin = {
   chain: { placeSearch: 'append' },
 };
 
-export async function registerOsmPlugin(): Promise<void> {
-  await registerGeokitPlugin(osmPlugin);
-}
+export const registerOsmPlugin = createOptionalPluginRegistrar(osmPlugin);
 
 export { OsmAPIProvider } from './osm-provider.js';
 export type { OsmProviderConfig } from './osm-provider.js';
