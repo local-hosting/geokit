@@ -5,64 +5,71 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>geokit Protomap</title>
   <link rel="stylesheet" href="../shared/maps-shell.css">
-  <link rel="stylesheet" href="../shared/brutalist.css">
   <link rel="stylesheet" href="./protomap.css">
 </head>
 <body data-demo-active="protomap">
   <aside id="demo-nav" aria-label="Demo pages"></aside>
-  <div id="map-container" class="protomap-map-container">
+  <div id="map-container" class="protomap-map-container gk-map-chrome">
+    <button id="theme-toggle" class="theme-toggle" title="Toggle theme" type="button">
+      <span class="theme-icon">INV</span>
+    </button>
     <gk-map
       id="protomap-map"
       provider="maptiler"
       lat="39.8283"
       lng="-98.5795"
       zoom="4"
-      theme="dark"
-      map-style="dataviz-dark">
+      theme="light"
+      map-style="basic"
+      terrain-enabled="false"
+      hillshade-enabled="false"
+      buildings-enabled="false"
+      max-pitch="0"
+      pitch="0">
       <gk-navigation-control position="bottom-right"></gk-navigation-control>
-      <gk-marker id="protomap-marker" draggable="true" title="Location"></gk-marker>
+      <gk-marker id="protomap-marker" draggable="true" title="Location" color="#000000"></gk-marker>
     </gk-map>
-  </div>
 
-  <div id="protomap-app" class="protomap-app" aria-label="Protomap controls">
-    <div id="protomap-status" class="protomap-status" aria-live="polite"></div>
+    <div id="protomap-app" class="protomap-app" aria-label="Protomap controls">
+      <div id="protomap-status" class="protomap-status" aria-live="polite"></div>
 
-    <div id="protomap-search-panel" class="protomap-panel protomap-panel-top" hidden>
-      <input
-        id="protomap-search-input"
-        type="search"
-        placeholder="Search places…"
-        autocomplete="off"
-        aria-label="Search places" />
-      <ul id="protomap-search-results" class="protomap-menu" role="listbox"></ul>
-    </div>
-
-    <div id="protomap-infobar" class="protomap-infobar">
-      <div id="protomap-search-host" class="protomap-search-host">
+      <div id="protomap-search-panel" class="protomap-panel protomap-panel-top" hidden>
         <input
-          id="protomap-inline-search"
+          id="protomap-search-input"
           type="search"
-          placeholder="Search…"
+          placeholder="Search places…"
           autocomplete="off"
           aria-label="Search places" />
+        <ul id="protomap-search-results" class="protomap-menu" role="listbox"></ul>
       </div>
-      <div id="protomap-infobar-actions" class="protomap-infobar-actions">
-        <button type="button" id="protomap-route-btn" class="protomap-icon-btn" title="Open in maps apps" aria-label="Open in maps apps">↗</button>
-        <button type="button" id="protomap-map-btn" class="protomap-icon-btn" title="Recenter on pin" aria-label="Recenter on pin">◎</button>
-        <button type="button" id="protomap-share-btn" class="protomap-icon-btn" title="Copy link" aria-label="Copy link">⧉</button>
-        <button type="button" id="protomap-h3-btn" class="protomap-icon-btn" title="Copy H3" aria-label="Copy H3 cell">#</button>
-      </div>
-    </div>
 
-    <div id="protomap-launchbar" class="protomap-panel protomap-launchbar" hidden>
-      <h2 class="protomap-launchbar-title">Route with</h2>
-      <ul class="protomap-menu">
-        <li><button type="button" data-launch="apple">Apple Maps</button></li>
-        <li><button type="button" data-launch="google">Google Maps</button></li>
-        <li><button type="button" data-launch="osm">OpenStreetMap</button></li>
-        <li><button type="button" data-launch="waze">Waze</button></li>
-      </ul>
-      <button type="button" id="protomap-launch-close" class="protomap-btn-secondary">Close</button>
+      <div id="protomap-infobar" class="protomap-infobar">
+        <div id="protomap-search-host" class="protomap-search-host">
+          <input
+            id="protomap-inline-search"
+            type="search"
+            placeholder="Search…"
+            autocomplete="off"
+            aria-label="Search places" />
+        </div>
+        <div id="protomap-infobar-actions" class="protomap-infobar-actions">
+          <button type="button" id="protomap-route-btn" class="bk-btn" title="Open in maps apps" aria-label="Open in maps apps">Route</button>
+          <button type="button" id="protomap-map-btn" class="bk-btn" title="Recenter on pin" aria-label="Recenter on pin">Center</button>
+          <button type="button" id="protomap-share-btn" class="bk-btn" title="Copy link" aria-label="Copy link">Link</button>
+          <button type="button" id="protomap-h3-btn" class="bk-btn" title="Copy H3 cell" aria-label="Copy H3 cell">H3</button>
+        </div>
+      </div>
+
+      <div id="protomap-launchbar" class="protomap-panel protomap-launchbar" hidden>
+        <h2 class="protomap-launchbar-title">Route with</h2>
+        <ul class="protomap-menu">
+          <li><button type="button" data-launch="apple">Apple Maps</button></li>
+          <li><button type="button" data-launch="google">Google Maps</button></li>
+          <li><button type="button" data-launch="osm">OpenStreetMap</button></li>
+          <li><button type="button" data-launch="waze">Waze</button></li>
+        </ul>
+        <button type="button" id="protomap-launch-close" class="bk-btn secondary">Close</button>
+      </div>
     </div>
   </div>
 

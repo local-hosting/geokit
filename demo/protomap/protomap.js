@@ -91,15 +91,8 @@ function buildMapParam(zoom, lat, lng, pitch = 0, bearing = 0) {
   return value;
 }
 
-function colorFromH3(h3) {
-  let hash = 0;
-  for (let i = 0; i < h3.length; i++) {
-    hash = h3.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const r = (hash >> 0) & 0xff;
-  const g = (hash >> 8) & 0xff;
-  const b = (hash >> 16) & 0xff;
-  return `#${[r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('')}`;
+function colorFromH3(_h3) {
+  return '#000000';
 }
 
 function resolutionFromZoom(zoom) {
@@ -297,6 +290,32 @@ function flashButton(button) {
   setTimeout(() => button.classList.remove('success'), 1200);
 }
 
+function bindThemeToggle() {
+  const themeToggle = document.getElementById('theme-toggle');
+  const themeIcon = themeToggle?.querySelector('.theme-icon');
+
+  function updateThemeUI(themeName) {
+    const invert = themeName === 'dark';
+    document.body.classList.toggle('bk-invert', invert);
+    document.body.classList.toggle('light-theme', !invert);
+    if (themeIcon) themeIcon.textContent = invert ? 'WHT' : 'INV';
+  }
+
+  const initialTheme = mapElement?.getAttribute('theme') || 'light';
+  updateThemeUI(initialTheme);
+
+  themeToggle?.addEventListener('click', () => {
+    if (mapElement && typeof mapElement.toggleTheme === 'function') {
+      updateThemeUI(mapElement.toggleTheme());
+    }
+  });
+
+  mapElement?.addEventListener('gk-theme-change', (event) => {
+    const { themeName } = event.detail ?? {};
+    if (themeName) updateThemeUI(themeName);
+  });
+}
+
 async function copyText(text, button) {
   try {
     await navigator.clipboard.writeText(text);
@@ -325,6 +344,18 @@ function debounce(fn, ms) {
       fn(...args);
     }, ms);
   };
+}
+
+function geocodeFeatureLabel(feature) {
+  const props = feature.properties ?? {};
+  return (
+    feature.place_name ||
+    feature.text ||
+    props.place_name ||
+    props.label ||
+    props.name ||
+    'Unknown location'
+  );
 }
 
 async function runGeocode(query) {
@@ -360,11 +391,7 @@ async function runGeocode(query) {
     showSearchResults();
     for (const feature of features.slice(0, 5)) {
       const li = document.createElement('li');
-      const label =
-        feature.properties?.name ||
-        feature.properties?.label ||
-        feature.properties?.place_name ||
-        'Place';
+      const label = geocodeFeatureLabel(feature);
       li.textContent = label;
       li.addEventListener('click', () => {
         const coords = feature.geometry?.coordinates;
@@ -486,6 +513,7 @@ if (maptilerKey) {
 }
 
 bindUi();
+bindThemeToggle();
 
 mapElement?.addEventListener('gk-map-ready', onMapReady);
 
