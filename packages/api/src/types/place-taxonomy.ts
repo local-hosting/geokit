@@ -1,4 +1,4 @@
-export type PlaceSearchProvider = 'foursquare' | 'google-places' | 'here-places' | 'osm';
+export type PlaceSearchProvider = 'foursquare' | 'google-places' | 'here-places' | 'osm' | 'esri-places';
 
 export type GeotypeRef = string;
 
