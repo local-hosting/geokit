@@ -21,7 +21,7 @@ import {
   createSharedPointLayersFromPaint,
   syncExistingSharedPointLayers,
   preloadSharedPointLayerStyles,
-} from 'geokit/ui/shared-points';
+} from '@geokit/core/ui/shared-points';
 ```
 
 **First paint** — source exists, layers do not:
@@ -253,7 +253,7 @@ document.dispatchEvent(new CustomEvent('gk-clear-all-focus', { bubbles: true }))
 **Map ready only inside a container:**
 
 ```js
-import { onMapReadyInContainer } from 'geokit/ui';
+import { onMapReadyInContainer } from '@geokit/core/ui';
 
 const unsub = onMapReadyInContainer(containerEl, (mapElement, map) => {
   // decorate map, add layers, etc.

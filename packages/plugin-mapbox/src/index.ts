@@ -1,5 +1,5 @@
 import { createKeyedPluginRegistrar, type GeokitAPIPlugin } from '@geokit/api/plugin';
-import { resolveRoutingAccessToken } from 'geokit/config/env/service-keys';
+import { resolveRoutingAccessToken } from '@geokit/core/config/env/service-keys';
 import { MapboxAPIProvider } from './mapbox-provider.js';
 
 export const mapboxPlugin: GeokitAPIPlugin = {

@@ -7,7 +7,7 @@ Complex GeoJSON polygons (admin boundaries, dissolved regions) are triangulated 
 Use `buildChoroplethFillPaint` from `geokit/ui/choropleth-fill-paint` for fill layers:
 
 ```ts
-import { buildChoroplethFillPaint } from 'geokit/ui/choropleth-fill-paint';
+import { buildChoroplethFillPaint } from '@geokit/core/ui/choropleth-fill-paint';
 
 map.addLayer({
   id: 'region-fill',

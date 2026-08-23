@@ -19,8 +19,8 @@ Geokit is a standalone map UI kit. Any app can install `geokit`, configure map p
 ```
 
 ```typescript
-import { configure } from 'geokit/ui/core';
-import { registerLayerDatasetMount } from 'geokit/geojson-loader';
+import { configure } from '@geokit/core/ui/core';
+import { registerLayerDatasetMount } from '@geokit/core/geojson-loader';
 import 'geokit/ui';
 
 configure({

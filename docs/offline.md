@@ -91,9 +91,9 @@ import {
   MapOfflineDefaults,
   validateOfflinePrefetchRequest,
   resolveOfflineCoverage,
-} from 'geokit/contract';
+} from '@geokit/core/contract';
 
-import { MapLocalStore, MapOfflineTileCache, MapOfflineContextLoader } from 'geokit/storage';
+import { MapLocalStore, MapOfflineTileCache, MapOfflineContextLoader } from '@geokit/core/storage';
 ```
 
 ```swift

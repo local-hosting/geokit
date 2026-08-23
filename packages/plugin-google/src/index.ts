@@ -1,5 +1,5 @@
 import { createKeyedPluginRegistrar, type GeokitAPIPlugin } from '@geokit/api/plugin';
-import { resolveGooglePlacesApiKey } from 'geokit/config/env/service-keys';
+import { resolveGooglePlacesApiKey } from '@geokit/core/config/env/service-keys';
 import { GooglePlacesAPIProvider } from './google-places-provider.js';
 
 export const googlePlacesPlugin: GeokitAPIPlugin = {
