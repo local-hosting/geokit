@@ -1,7 +1,7 @@
 {
   "name": "geokit-monorepo",
   "private": true,
-  "description": "Geokit monorepo — geospatial SDK and POI taxonomy",
+  "description": "Geokit monorepo \u2014 geospatial SDK and POI taxonomy",
   "workspaces": [
     "packages/*"
   ],
@@ -10,10 +10,10 @@
     "build": "yarn workspace geokit run build",
     "build:all": "yarn workspaces foreach -Apt run build",
     "dev": "yarn workspace geokit run dev",
-    "test": "yarn workspaces foreach -Apt --include @geokit/api --include @geokit/plugin-foursquare --include @geokit/plugin-google --include @geokit/plugin-maptiler --include @geokit/plugin-mapbox --include @geokit/plugin-osm --include @geokit/geotypes --include geokit run test",
+    "test": "yarn workspaces foreach -Apt --include @geokit/api --include @geokit/plugin-foursquare --include @geokit/plugin-google --include @geokit/plugin-maptiler --include @geokit/plugin-mapbox --include @geokit/plugin-here --include @geokit/plugin-osm --include @geokit/geotypes --include geokit run test",
     "test:core": "yarn workspace geokit run test",
     "test:geotypes": "yarn workspace @geokit/geotypes run test",
-    "typecheck": "yarn workspaces foreach -Apt --include @geokit/geotypes --include @geokit/api --include @geokit/plugin-foursquare --include @geokit/plugin-google --include @geokit/plugin-maptiler --include @geokit/plugin-mapbox --include @geokit/plugin-osm --include geokit run typecheck",
+    "typecheck": "yarn workspaces foreach -Apt --include @geokit/geotypes --include @geokit/api --include @geokit/plugin-foursquare --include @geokit/plugin-google --include @geokit/plugin-maptiler --include @geokit/plugin-mapbox --include @geokit/plugin-here --include @geokit/plugin-osm --include geokit run typecheck",
     "lint": "yarn workspace geokit run lint",
     "prepare": "husky"
   },

@@ -13,6 +13,7 @@ Yarn workspaces monorepo for the geospatial SDK and POI taxonomy.
 | [`@geokit/plugin-google`](packages/plugin-google/) | Google Places search |
 | [`@geokit/plugin-mapbox`](packages/plugin-mapbox/) | Mapbox geocoding, isochrone, directions |
 | [`@geokit/plugin-maptiler`](packages/plugin-maptiler/) | MapTiler geocoding |
+| [`@geokit/plugin-here`](packages/plugin-here/) | HERE Places discover search |
 | [`@geokit/plugin-osm`](packages/plugin-osm/) | OpenStreetMap Overpass place search |
 
 ## Commands
@@ -49,6 +50,7 @@ Legacy `geokit/api/*` import paths still re-export `@geokit/api` for backward co
 | Geo utils + map UI only | `geokit` |
 | Place search / geocoding / isochrones | `geokit` + `@geokit/api` |
 | POI taxonomy (RSE, vendor crosswalks) | + `@geokit/geotypes` |
+| HERE place search plugin | + `@geokit/plugin-here` |
 | OSM fallback plugin | + `@geokit/plugin-osm` |
 
 See [docs/migration-api.md](docs/migration-api.md) for import migration from legacy `geokit/api/*` paths.
