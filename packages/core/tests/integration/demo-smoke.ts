@@ -6,10 +6,12 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, type Page } from 'playwright';
-import { DEMO_PAGES } from '../../demo/shared/pages.js';
+import * as demoPages from '../../../../demo/shared/pages.js';
+
+const DEMO_PAGES = demoPages.DEMO_PAGES;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '../..');
+const REPO_ROOT = path.resolve(__dirname, '../../../..');
 const PORT = 3001;
 const BASE = `http://127.0.0.1:${PORT}`;
 
@@ -39,11 +41,12 @@ async function waitForServer(url: string, timeoutMs = 120_000): Promise<void> {
 }
 
 function startDemoServer(): ChildProcess {
+  const viteBin = path.join(REPO_ROOT, 'node_modules/vite/bin/vite.js');
   return spawn(
-    'yarn',
-    ['vite', '--config', 'config/vite.demo.config.js', '--port', String(PORT), '--strictPort'],
+    process.execPath,
+    [viteBin, '--config', 'vite.demo.config.js', '--port', String(PORT), '--strictPort'],
     {
-      cwd: ROOT,
+      cwd: REPO_ROOT,
       stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env },
     }

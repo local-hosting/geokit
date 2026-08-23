@@ -9,13 +9,14 @@
   "scripts": {
     "build": "yarn workspace geokit run build",
     "build:all": "yarn workspaces foreach -Apt run build",
-    "dev": "yarn workspace geokit run dev",
+    "dev": "yarn demo",
     "test": "yarn workspaces foreach -Apt run test",
     "test:core": "yarn workspace geokit run test",
     "test:geotypes": "yarn workspace @geokit/geotypes run test",
     "typecheck": "yarn workspaces foreach -Apt run typecheck",
     "lint": "yarn workspace geokit run lint",
-    "prepare": "husky"
+    "prepare": "husky",
+    "demo": "yarn workspace geokit run dev"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

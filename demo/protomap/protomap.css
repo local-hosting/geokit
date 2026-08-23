@@ -1,0 +1,176 @@
+.protomap-map-container {
+  position: relative;
+}
+
+.protomap-app {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.protomap-status {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  right: 0.75rem;
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--demo-text-muted, #94a3b8);
+  text-align: center;
+  pointer-events: none;
+}
+
+.protomap-panel {
+  pointer-events: auto;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  backdrop-filter: blur(6px);
+  max-width: 22rem;
+  margin: 0.75rem auto;
+  padding: 0.5rem;
+}
+
+.protomap-panel-top {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.75rem;
+  right: 0.75rem;
+}
+
+.protomap-infobar {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.75rem;
+  right: 0.75rem;
+  max-width: 28rem;
+  margin: 0 auto;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  pointer-events: auto;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  padding: 0.35rem 0.5rem;
+  backdrop-filter: blur(6px);
+}
+
+.protomap-search-host {
+  flex: 1;
+  min-width: 0;
+}
+
+.protomap-search-host input,
+.protomap-panel input[type="search"] {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  color: #f8fafc;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.35rem;
+  outline: none;
+}
+
+.protomap-infobar-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.protomap-icon-btn {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 6px;
+  background: rgba(30, 41, 59, 0.8);
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.protomap-icon-btn:hover {
+  background: rgba(51, 65, 85, 0.95);
+}
+
+.protomap-icon-btn.success {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.protomap-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.protomap-menu li button,
+.protomap-menu li {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  border: none;
+  background: transparent;
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 0.875rem;
+  border-radius: 4px;
+}
+
+.protomap-menu li button:hover,
+.protomap-menu li:hover {
+  background: rgba(51, 65, 85, 0.6);
+}
+
+.protomap-launchbar {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(18rem, calc(100% - 1.5rem));
+}
+
+.protomap-launchbar-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.protomap-btn-secondary {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 6px;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.protomap-btn-secondary:hover {
+  background: rgba(51, 65, 85, 0.5);
+}
+
+body.demo-has-nav .protomap-infobar {
+  top: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  body.demo-has-nav .protomap-infobar {
+    left: calc(var(--demo-nav-width, 12rem) + 0.75rem);
+  }
+
+  body.demo-has-nav .protomap-panel-top {
+    left: calc(var(--demo-nav-width, 12rem) + 0.75rem);
+  }
+}
