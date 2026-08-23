@@ -9,13 +9,14 @@ Yarn workspaces monorepo for the geospatial SDK and POI taxonomy.
 | [`geokit`](packages/core/) | Core geo utilities and map UI |
 | [`@geokit/api`](packages/api/) | Place search providers, composite routing, taxonomy hooks |
 | [`@geokit/geotypes`](packages/geotypes/) | POI taxonomy (YAML, proto, slugs, acronyms) |
+| [`@geokit/plugin-osm`](packages/plugin-osm/) | Optional OSM Overpass place search plugin |
 
 ## Commands
 
 ```bash
 yarn install
 yarn build          # build geokit core
-yarn test           # core + api + geotypes tests
+yarn test           # core + api + geotypes + plugin-osm tests
 yarn typecheck      # all packages
 yarn workspace geokit run dev
 yarn workspace @geokit/geotypes run sync   # slugs + acronyms + provider tables
@@ -36,3 +37,5 @@ setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
 ```
 
 Legacy `geokit/api/*` import paths still re-export `@geokit/api` for backward compatibility.
+
+See [docs/plugins.md](docs/plugins.md) for plugin authoring.
