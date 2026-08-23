@@ -49,6 +49,11 @@
       "types": "./src/builtins.ts",
       "import": "./src/builtins.ts",
       "default": "./src/builtins.ts"
+    },
+    "./setup-capability-routers": {
+      "types": "./src/setup-capability-routers.ts",
+      "import": "./src/setup-capability-routers.ts",
+      "default": "./src/setup-capability-routers.ts"
     }
   },
   "scripts": {
