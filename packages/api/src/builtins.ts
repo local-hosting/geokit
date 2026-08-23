@@ -23,7 +23,7 @@ async function tryRegisterPlugin(
   }
 }
 
-/** Register built-in provider plugins when env keys are present. */
+/** Register map + routing plugins (MapTiler, Mapbox). */
 export async function registerDefaultPlugins(
   overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
@@ -37,6 +37,12 @@ export async function registerDefaultPlugins(
     'registerMapboxPlugin',
     overrides,
   );
+}
+
+/** Register place-search plugins (Foursquare, Google). Loaded on demand. */
+export async function registerPlaceSearchPlugins(
+  overrides?: CapabilityRouterEnvOverrides,
+): Promise<void> {
   await tryRegisterPlugin(
     () => import('@geokit/plugin-foursquare'),
     'registerFoursquarePlugin',
@@ -99,9 +105,11 @@ export function ensureGeocodingRouterReady(
   );
 }
 
-export function ensurePlaceSearchRouterReady(
+export async function ensurePlaceSearchRouterReady(
   overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
+  await registerPlaceSearchPlugins(overrides);
+  await rebuildCapabilityRouters();
   return requireCapabilityRouter(
     'placeSearch',
     overrides,
