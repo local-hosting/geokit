@@ -9,6 +9,7 @@ import {
   registerAPIProvider,
   removeAPIProvider,
 } from './providers/registry.js';
+import { _notifyPluginChainRebuild } from './providers/capability-router-rebuild.js';
 
 export type GeokitPluginChainPosition = 'prepend' | 'append';
 
@@ -27,15 +28,8 @@ export interface GeokitPluginRegistration {
 }
 
 const pluginRegistrations: GeokitPluginRegistration[] = [];
-let onPluginChange: (() => void) | null = null;
-
-/** @internal setup-capability-routers subscribes to rebuild composite chains. */
-export function _setPluginChangeHandler(handler: (() => void) | null): void {
-  onPluginChange = handler;
-}
-
 function notifyPluginChange(): void {
-  onPluginChange?.();
+  _notifyPluginChainRebuild();
 }
 
 /**

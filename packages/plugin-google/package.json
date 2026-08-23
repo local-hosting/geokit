@@ -1,0 +1,31 @@
+{
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./foursquare-places": {
+      "types": "./src/foursquare-places.ts",
+      "import": "./src/foursquare-places.ts",
+      "default": "./src/foursquare-places.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
+    "test": "yarn run -T vitest run"
+  },
+  "peerDependencies": {
+    "@geokit/api": "workspace:*",
+    "geokit": "workspace:*"
+  },
+  "devDependencies": {
+    "@geokit/api": "workspace:*",
+    "geokit": "workspace:*"
+  },
+  "name": "@geokit/plugin-google",
+  "description": "Google Places search plugin for geokit"
+}

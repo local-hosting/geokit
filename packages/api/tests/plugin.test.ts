@@ -12,9 +12,9 @@ import {
   type GeokitAPIPlugin,
 } from '../src/plugin';
 import {
-  ensurePlaceSearchRouterReady,
+  rebuildCapabilityRouters,
   resetCapabilityRouterReady,
-} from '../src/providers/setup-capability-routers';
+} from '../src/providers/capability-router-rebuild';
 
 describe('registerGeokitPlugin', () => {
   beforeEach(() => {
@@ -44,7 +44,7 @@ describe('registerGeokitPlugin', () => {
     };
 
     await registerGeokitPlugin(plugin);
-    await ensurePlaceSearchRouterReady();
+    await rebuildCapabilityRouters();
 
     expect(getRegisteredAPIProviders()).toContain('mock-places');
     const router = getCapabilityRouter('placeSearch');
@@ -64,7 +64,7 @@ describe('registerGeokitPlugin', () => {
     };
 
     await registerGeokitPlugin(plugin);
-    await ensurePlaceSearchRouterReady();
+    await rebuildCapabilityRouters();
     expect(getRegisteredAPIProviders()).toContain('mock-places');
 
     unregisterGeokitPlugin('mock-places');

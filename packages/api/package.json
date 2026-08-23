@@ -74,6 +74,11 @@
       "types": "./src/plugin.ts",
       "import": "./src/plugin.ts",
       "default": "./src/plugin.ts"
+    },
+    "./builtins": {
+      "types": "./src/builtins.ts",
+      "import": "./src/builtins.ts",
+      "default": "./src/builtins.ts"
     }
   },
   "scripts": {
@@ -85,5 +90,12 @@
   },
   "peerDependencies": {
     "geokit": "workspace:*"
+  },
+  "dependencies": {
+    "@geokit/plugin-foursquare": "workspace:*",
+    "@geokit/plugin-google": "workspace:*",
+    "@geokit/plugin-mapbox": "workspace:*",
+    "@geokit/plugin-maptiler": "workspace:*",
+    "@geokit/plugin-osm": "workspace:*"
   }
 }
