@@ -39,6 +39,9 @@ See [architecture-providers.md](architecture-providers.md) for API provider vs p
 | `geokit/api/registry` | `@geokit/api/registry` |
 | `geokit/api/providers/foursquare` | `@geokit/plugin-foursquare` |
 | `geokit/api/plugin` | `@geokit/api/plugin` |
+| `geokit/api/setup-capability-routers` | `@geokit/api/setup-capability-routers` |
+| `geokit/api/types` | `@geokit/api/types` |
+
 
 ## Bootstrap example
 

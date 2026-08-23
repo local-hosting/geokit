@@ -16,6 +16,7 @@ export function pluginVitestAliases(
     '@geokit/api/types/api-composite': path.resolve(apiRoot, 'src/types/api-composite.ts'),
     '@geokit/api/plugin': path.resolve(apiRoot, 'src/plugin.ts'),
     '@geokit/api/registry': path.resolve(apiRoot, 'src/providers/registry.ts'),
+    '@geokit/api/setup-capability-routers': path.resolve(apiRoot, 'src/setup-capability-routers.ts'),
     '@geokit/api/builtins': path.resolve(apiRoot, 'src/builtins.ts'),
     '@geokit/api': path.resolve(apiRoot, 'src/index.ts'),
     'geokit/config/env/service-keys': path.resolve(coreRoot, 'src/config/env/service-keys.ts'),
