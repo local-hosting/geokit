@@ -467,8 +467,6 @@ export class IsochroneElement extends MapChildElement {
       return;
     }
 
-    this.currentCacheKey = cacheKey;
-
     let result: GeoJSON.FeatureCollection | null = null;
 
     if (canUseStoredData) {
@@ -478,6 +476,19 @@ export class IsochroneElement extends MapChildElement {
       // Get API provider that supports isochrone (optional when app uses stored data only)
       const provider = getProviderForCapability('isochrone');
       if (!provider) {
+        this.dispatchEvent(
+          new CustomEvent('isochrone-error', {
+            detail: {
+              error: new Error('No isochrone provider configured'),
+              lat,
+              lng,
+              time,
+              mode,
+              element: this,
+            },
+            bubbles: true,
+          })
+        );
         return;
       }
 
@@ -658,6 +669,9 @@ export class IsochroneElement extends MapChildElement {
           }
         }
       }
+
+      // Mark successful render so duplicate fetches short-circuit until inputs change.
+      this.currentCacheKey = cacheKey;
 
       // Dispatch event immediately after we have the data
       // This allows demographics to start calculating concurrently with map rendering
