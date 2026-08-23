@@ -7,10 +7,10 @@
 
 import { getBounds, boundsToObject } from '../../utils/bounds';
 import { getUIProvider, getUIProviderByName } from '../providers/registry';
-import { getProviderForCapability } from '../../api/providers/registry';
+import { getProviderForCapability } from '@geokit/api/registry';
 import { debug } from '../utils/logger';
 import type { BaseUIProvider, MapInstance, MapEvent } from '../providers/types';
-import type { APICapability } from '../../api/providers/types';
+import type { APICapability } from '@geokit/api/types';
 
 /**
  * Base class for all map UI components

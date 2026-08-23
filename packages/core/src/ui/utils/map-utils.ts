@@ -20,8 +20,8 @@
 
 import type { MapInstance } from '../providers/types';
 import type { Feature } from '../../types';
-import type { IsochroneOptions } from '../../api/providers/types';
-import { getProviderForCapability } from '../../api/providers/registry';
+import type { IsochroneOptions } from '@geokit/api/types';
+import { getProviderForCapability } from '@geokit/api/registry';
 
 // ============================================================================
 // DOM Navigation Utilities
