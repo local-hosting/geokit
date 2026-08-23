@@ -36,6 +36,11 @@ export const GOOGLE_PLACES_KEY_KEYS = [
   'GEOKIT_GOOGLE_PLACES_KEY',
 ] as const;
 
+export const HERE_KEY_KEYS = [
+  'HERE_API_KEY',
+  'GEOKIT_HERE_API_KEY',
+] as const;
+
 export const FOURSQUARE_KEY_KEYS = [
   'FOURSQUARE_SERVICE_API_KEY',
   'FOURSQUARE_API_KEY',
