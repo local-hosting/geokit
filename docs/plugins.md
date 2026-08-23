@@ -1,12 +1,14 @@
 # Geokit API plugins
 
-Optional provider packages extend `@geokit/api` without bloating the core `geokit` install.
+> **Plugins wrap API providers.** A plugin (`GeokitAPIPlugin`) registers a `BaseAPIProvider` into `@geokit/api/registry`. UI map backends are a separate layer — see [architecture-providers.md](architecture-providers.md).
+
+Optional plugin packages extend `@geokit/api` without bloating the core `geokit` install.
 
 ## Package shape
 
 | Package | Role |
 |---|---|
-| `@geokit/api` | Registry, composite routers, `registerGeokitPlugin()` |
+| `@geokit/api` | API registry, composite routers, `registerGeokitPlugin()` (no vendor classes) |
 | `@geokit/plugin-foursquare` | Foursquare Places search |
 | `@geokit/plugin-google` | Google Places search |
 | `@geokit/plugin-mapbox` | Mapbox geocoding, isochrone, directions |
@@ -110,14 +112,6 @@ Use `setPlaceTaxonomyResolver(createGeokitTaxonomyResolver())` before place sear
 - Config: `{ overpassUrl?: string }` (default `https://overpass-api.de/api/interpreter`)
 - Requires `ll` + `geotypes` or `categories` with OSM tag mappings
 
-## Backward compatibility
-
-Legacy imports still work:
-
-```typescript
-import { registerGeokitPlugin } from 'geokit/api/plugin'; // re-exports @geokit/api
-```
-
 Default bootstrap (`registerDefaultPlugins`) registers Foursquare, Google, Mapbox, and MapTiler from their `@geokit/plugin-*` packages when env keys are present. HERE, OSM, and Esri are opt-in.
 
 ## Default plugin bundle
@@ -126,8 +120,6 @@ Default bootstrap (`registerDefaultPlugins`) registers Foursquare, Google, Mapbo
 
 ```typescript
 import { ensureCapabilityRoutersReady } from '@geokit/api/builtins';
-// or legacy: import from '@geokit/api/setup-capability-routers'
-
 await ensureCapabilityRoutersReady();
 ```
 

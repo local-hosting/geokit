@@ -1,3 +1,7 @@
+# UI providers (map backends)
+
+> **Not API providers.** Map rendering only (MapTiler SDK, Mapbox GL JS). HTTP geocoding/isochrones use `@geokit/api` and `@geokit/plugin-*`. See [architecture-providers.md](architecture-providers.md).
+
 # Map provider alignment
 
 Static and runtime map providers differ by platform but share the same **contract layer** role.
@@ -68,7 +72,7 @@ Legend: **✅** both providers · **🟡** partial / provider-specific config ·
 | Point / bounds / auto fit | ✅ | ✅ | `src/static-map/providers/` |
 | Overlays (paths, markers) | ✅ | ✅ | |
 
-### API capabilities (separate from map GL provider)
+### API capabilities (separate registry — not UI providers)
 
 | Capability | MapTiler | Mapbox | Notes |
 |------------|----------|--------|-------|
