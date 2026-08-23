@@ -1,106 +1,118 @@
+/**
+ * Protomap app chrome — brutalist square system (matches demo/shared/brutalist.css).
+ */
+
 .protomap-map-container {
   position: relative;
+  isolation: isolate;
 }
 
 .protomap-app {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 20;
+  z-index: 10;
 }
 
 .protomap-status {
   position: absolute;
-  bottom: 0.75rem;
-  left: 0.75rem;
-  right: 0.75rem;
-  max-width: 28rem;
-  margin: 0 auto;
-  padding: 0.35rem 0.6rem;
-  font-size: 0.75rem;
-  color: var(--demo-text-muted, #94a3b8);
-  text-align: center;
+  bottom: 12px;
+  left: 12px;
+  z-index: 12;
+  margin: 0;
+  padding: 8px 10px;
+  max-width: min(28rem, calc(100% - 24px));
+  font-family: var(--bk-mono);
+  font-size: 11px;
+  color: var(--bk-fg);
+  background: var(--bk-bg);
+  border: var(--bk-border);
+  border-radius: 0;
   pointer-events: none;
 }
 
-.protomap-panel {
+.protomap-panel,
+.protomap-infobar {
   pointer-events: auto;
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  border-radius: 8px;
-  backdrop-filter: blur(6px);
-  max-width: 22rem;
-  margin: 0.75rem auto;
-  padding: 0.5rem;
+  background: var(--bk-bg);
+  color: var(--bk-fg);
+  border: var(--bk-border);
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.protomap-panel {
+  max-width: 32rem;
+  margin: 0;
+  padding: 0;
+  z-index: 13;
 }
 
 .protomap-panel-top {
   position: absolute;
-  top: 0.5rem;
-  left: 0.75rem;
-  right: 0.75rem;
+  top: 68px;
+  left: 12px;
+  right: 12px;
+  max-width: 32rem;
+  margin: 0 auto;
+}
+
+#protomap-search-panel input[type='search'] {
+  display: none;
 }
 
 .protomap-infobar {
   position: absolute;
-  top: 0.5rem;
-  left: 0.75rem;
-  right: 0.75rem;
-  max-width: 28rem;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 11;
+  max-width: 32rem;
   margin: 0 auto;
   display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  pointer-events: auto;
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  border-radius: 8px;
-  padding: 0.35rem 0.5rem;
-  backdrop-filter: blur(6px);
+  gap: 0;
+  align-items: stretch;
+  padding: 0;
 }
 
 .protomap-search-host {
   flex: 1;
   min-width: 0;
+  border-right: var(--bk-border);
 }
 
 .protomap-search-host input,
-.protomap-panel input[type="search"] {
+.protomap-panel input[type='search'] {
   width: 100%;
   box-sizing: border-box;
   border: none;
-  background: transparent;
-  color: #f8fafc;
-  font-size: 0.9rem;
-  padding: 0.4rem 0.35rem;
+  border-radius: 0;
+  background: var(--bk-bg);
+  color: var(--bk-fg);
+  font-family: var(--bk-mono);
+  font-size: 12px;
+  padding: 10px 12px;
   outline: none;
 }
 
 .protomap-infobar-actions {
   display: flex;
-  gap: 0.25rem;
   flex-shrink: 0;
 }
 
-.protomap-icon-btn {
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  border-radius: 6px;
-  background: rgba(30, 41, 59, 0.8);
-  color: #e2e8f0;
-  cursor: pointer;
-  font-size: 0.85rem;
-  line-height: 1;
+.protomap-infobar-actions .bk-btn {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  border-left: var(--bk-border);
+  border-radius: 0;
+  padding: 8px 10px;
 }
 
-.protomap-icon-btn:hover {
-  background: rgba(51, 65, 85, 0.95);
-}
-
-.protomap-icon-btn.success {
-  border-color: #22c55e;
-  color: #22c55e;
+.protomap-infobar-actions .bk-btn.success {
+  background: var(--bk-fg);
+  color: var(--bk-bg);
 }
 
 .protomap-menu {
@@ -109,23 +121,58 @@
   padding: 0;
 }
 
-.protomap-menu li button,
 .protomap-menu li {
+  border-top: var(--bk-border);
+}
+
+.protomap-menu li:first-child {
+  border-top: none;
+}
+
+/* Geocode result rows (plain li) */
+#protomap-search-results li {
+  display: block;
+  padding: 16px 18px;
+  min-height: 52px;
+  box-sizing: border-box;
+  font-family: var(--bk-font);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+#protomap-search-results li:hover {
+  background: var(--bk-fg);
+  color: var(--bk-bg);
+}
+
+.protomap-menu li button {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 0.55rem 0.65rem;
+  padding: 14px 16px;
+  min-height: 48px;
+  box-sizing: border-box;
   border: none;
-  background: transparent;
-  color: #e2e8f0;
+  border-radius: 0;
+  background: var(--bk-bg);
+  color: var(--bk-fg);
+  font-family: var(--bk-font);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   cursor: pointer;
-  font-size: 0.875rem;
-  border-radius: 4px;
+  line-height: 1.35;
 }
 
-.protomap-menu li button:hover,
-.protomap-menu li:hover {
-  background: rgba(51, 65, 85, 0.6);
+.protomap-menu li button:hover {
+  background: var(--bk-fg);
+  color: var(--bk-bg);
 }
 
 .protomap-launchbar {
@@ -134,43 +181,34 @@
   left: 50%;
   transform: translate(-50%, -50%);
   width: min(18rem, calc(100% - 1.5rem));
+  padding: 0;
 }
 
 .protomap-launchbar-title {
-  margin: 0 0 0.5rem;
-  font-size: 0.8rem;
+  margin: 0;
+  padding: 12px;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #94a3b8;
+  letter-spacing: 0.06em;
+  color: var(--bk-fg);
   text-align: center;
+  border-bottom: var(--bk-border);
 }
 
-.protomap-btn-secondary {
-  display: block;
+.protomap-launchbar .bk-btn {
   width: 100%;
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  border-radius: 6px;
-  background: transparent;
-  color: #cbd5e1;
-  cursor: pointer;
+  border: none;
+  border-top: var(--bk-border);
+  border-radius: 0;
 }
 
-.protomap-btn-secondary:hover {
-  background: rgba(51, 65, 85, 0.5);
+/* Keep map canvas under chrome; nav.css pins INV top-right when demo nav is open */
+.protomap-map-container .theme-toggle {
+  z-index: 12;
 }
 
-body.demo-has-nav .protomap-infobar {
-  top: 0.5rem;
-}
-
-@media (min-width: 768px) {
-  body.demo-has-nav .protomap-infobar {
-    left: calc(var(--demo-nav-width, 12rem) + 0.75rem);
-  }
-
-  body.demo-has-nav .protomap-panel-top {
-    left: calc(var(--demo-nav-width, 12rem) + 0.75rem);
-  }
+.protomap-map-container gk-map {
+  position: relative;
+  z-index: 1;
 }
