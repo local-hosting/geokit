@@ -7,7 +7,7 @@ Yarn workspaces monorepo for the geospatial SDK and POI taxonomy.
 | Package | Description |
 |---|---|
 | [`geokit`](packages/core/) | Core geo utilities and map UI |
-| [`@geokit/api`](packages/api/) | Place search providers, composite routing, taxonomy hooks |
+| [`@geokit/api`](packages/api/) | API registry, composite routing, plugin hooks, taxonomy |
 | [`@geokit/geotypes`](packages/geotypes/) | POI taxonomy (YAML, proto, slugs, acronyms) |
 | [`@geokit/plugin-foursquare`](packages/plugin-foursquare/) | Foursquare Places search |
 | [`@geokit/plugin-google`](packages/plugin-google/) | Google Places search |
@@ -16,6 +16,17 @@ Yarn workspaces monorepo for the geospatial SDK and POI taxonomy.
 | [`@geokit/plugin-here`](packages/plugin-here/) | HERE Places discover search |
 | [`@geokit/plugin-osm`](packages/plugin-osm/) | OpenStreetMap Overpass place search |
 | [`@geokit/plugin-esri`](packages/plugin-esri/) | Esri ArcGIS Places near-point search |
+
+
+## Terminology: API providers, plugins, UI providers
+
+Geokit uses three distinct layers — see [docs/architecture-providers.md](docs/architecture-providers.md):
+
+| Layer | Package | Role |
+|-------|---------|------|
+| **API provider** | `@geokit/api` + `@geokit/plugin-*` | HTTP: place search, geocoding, isochrones |
+| **Plugin** | `@geokit/plugin-*` | npm install boundary + registration wrapper |
+| **UI provider** | `geokit` (`src/ui/providers/`) | Map rendering (MapTiler / Mapbox GL) |
 
 ## Commands
 
@@ -43,8 +54,6 @@ setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
 // placeSearch({ geotypes: ['RSE'], ll: [...] }) → Foursquare/Google category params
 ```
 
-Legacy `geokit/api/*` import paths still re-export `@geokit/api` for backward compatibility.
-
 ## Slim vs full install
 
 | Need | Install |
@@ -55,6 +64,8 @@ Legacy `geokit/api/*` import paths still re-export `@geokit/api` for backward co
 | HERE place search plugin | + `@geokit/plugin-here` |
 | OSM fallback plugin | + `@geokit/plugin-osm` |
 
-See [docs/migration-api.md](docs/migration-api.md) for import migration from legacy `geokit/api/*` paths.
+See [docs/architecture-providers.md](docs/architecture-providers.md) for the three-layer model.
+
+See [docs/migration-api.md](docs/migration-api.md) for import migration.
 
 See [docs/plugins.md](docs/plugins.md) for plugin authoring.

@@ -10,7 +10,8 @@ Cross-platform layout for `geokit` and **geokit-swift**. See [`parity.md`](parit
 | Turf | `src/utils/turf/` | `GeoKitCore/Utils/*` | Measurement & containment (Tier 1.5) |
 | Contract | `src/contract/` | `GeoKitContract` | Map lifecycle, provider ids, bootstrap |
 | UI | `src/ui/` | `GeoKitUI` | Map components, theme, layer stack |
-| Providers | `src/api/`, `src/ui/providers/` | `GeoKitUIMapbox`, `GeoKitUI/Providers/` | Mapbox, MapTiler, Apple |
+| API plugins | `packages/api/`, `packages/plugin-*/` | — | HTTP: place search, geocoding, isochrones |
+| UI providers | `src/ui/providers/` | `GeoKitUIMapbox`, `GeoKitUI/Providers/` | Map rendering: MapTiler, Mapbox, Apple |
 
 ## Core (Tier 1)
 
@@ -46,7 +47,8 @@ Cross-platform layout for `geokit` and **geokit-swift**. See [`parity.md`](parit
 | Node export | TS path | Swift path |
 |-------------|---------|------------|
 | `@geokit/ui` | `src/ui/` | `GeoKitUI/` |
-| `@geokit/api` | `src/api/` | — (Node/browser HTTP providers) |
+| `@geokit/api` | `packages/api/` | — (registry, routing, plugin hooks) |
+| `@geokit/plugin-*` | `packages/plugin-*/` | — (vendor API provider implementations) |
 | Mapbox map surface | `src/ui/providers/mapbox-provider.ts` | `GeoKitUIMapbox/` |
 | Apple Maps | — | `GeoKitUI/Providers/Apple/` |
 
