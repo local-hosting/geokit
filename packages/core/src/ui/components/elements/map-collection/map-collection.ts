@@ -9,7 +9,12 @@ import { BaseElement } from '../../base-element';
 import { type MapElement } from '../map/map';
 import { getProviderConfig } from '../../../providers/registry';
 import { debug } from '../../../utils/logger';
-import { delayForWebGLRelease, getMaxActiveMaps } from '../map/map-freeze';
+import {
+  delayForWebGLRelease,
+  getLiveMapCount,
+  getMaxActiveMaps,
+  getWebGLMapBudget,
+} from '../map/map-freeze';
 
 interface SlotInfo {
   slotElement: HTMLElement;
@@ -34,9 +39,8 @@ const SCROLL_DEBOUNCE_MS = 300;
 // Extended debounce when user is actively scrolling (detected via rapid intersection changes)
 const SCROLL_ACTIVE_DEBOUNCE_MS = 500;
 
-// Activate this many maps in parallel. First visible maps (e.g. 4) all start loading together for faster first paint.
-// Stay under typical WebGL context limits (8–16); pool-size on scrolling demo is 10.
-const CONCURRENT_ACTIVATION_BATCH = 4;
+// Serialize activations — MapTiler allocates ~2 WebGL contexts per map; parallel createMap races teardown.
+const CONCURRENT_ACTIVATION_BATCH = 1;
 
 // Retry configuration for failed map loads
 const MAX_FAIL_COUNT = 3; // Max retries before giving up
@@ -393,11 +397,26 @@ export class MapCollectionElement extends BaseElement {
     }
   }
 
-  /** Freeze up to `count` invisible maps to free WebGL slots; short delay between each. */
+  /** Freeze up to `count` maps to free WebGL slots; short delay between each. */
   private async makeRoomFor(count: number): Promise<void> {
     for (let i = 0; i < count; i++) {
-      await this.deactivateOneInvisible();
-      await new Promise((r) => setTimeout(r, 50));
+      const frozen = await this.deactivateOneForPool();
+      if (!frozen) break;
+      await delayForWebGLRelease();
+    }
+  }
+
+  /**
+   * IntersectionObserver uses a large rootMargin; clamp slots outside the strict activation band
+   * so pool eviction can freeze maps that scrolled off-screen but remain IO-"visible".
+   */
+  private clampAllSlotVisibility(vh: number, margin: number): void {
+    for (const s of this.getAllSlots()) {
+      const rect = s.slotElement.getBoundingClientRect();
+      const inStrictViewport = rect.bottom > -margin && rect.top < vh + margin;
+      if (!inStrictViewport) {
+        s.isVisible = false;
+      }
     }
   }
 
@@ -435,6 +454,7 @@ export class MapCollectionElement extends BaseElement {
     this.syncActiveCount();
     const now = Date.now();
     const { vh, margin } = this.getViewportConstants();
+    this.clampAllSlotVisibility(vh, margin);
     const sorted = this.getVisibleInactiveSlotsSorted(now, vh, margin);
 
     try {
@@ -454,7 +474,7 @@ export class MapCollectionElement extends BaseElement {
       for (let i = 0; i < toActivate.length; i += CONCURRENT_ACTIVATION_BATCH) {
         const batch = toActivate.slice(i, i + CONCURRENT_ACTIVATION_BATCH);
         while (this.activeCount >= this.effectivePoolSize && batch.length > 0) {
-          const frozen = await this.deactivateOneInvisible();
+          const frozen = await this.deactivateOneForPool();
           if (!frozen) break;
           await delayForWebGLRelease();
         }
@@ -526,12 +546,16 @@ export class MapCollectionElement extends BaseElement {
     try {
       let reserved = false;
       await this.runPoolExclusive(async () => {
-        while (this.activeCount >= this.effectivePoolSize) {
+        while (
+          this.activeCount >= this.effectivePoolSize ||
+          getLiveMapCount() >= getWebGLMapBudget()
+        ) {
           if (!slotInfo.isVisible) return;
-          const frozen = await this.deactivateOneInvisible();
+          const frozen = await this.deactivateOneForPool();
           if (!frozen) {
             mapCollectionDebug('activateSlot: pool full, cannot make room', {
               activeCount: this.activeCount,
+              liveMaps: getLiveMapCount(),
               poolSize: this.effectivePoolSize,
               visibleCount: this.getManySlots((s) => s.isVisible).length,
             });
@@ -583,38 +607,40 @@ export class MapCollectionElement extends BaseElement {
   }
 
   /**
-   * Freeze ONE invisible slot - returns true if successful
-   * Picks the furthest from viewport center
-   * Now async to properly wait for WebGL context release
-   *
-   * IMPORTANT: Only freezes maps that have scrolled off the page.
-   * Does NOT freeze maps when the collection itself is hidden (e.g., view switch).
+   * Freeze one active slot to free a WebGL context.
+   * Prefers maps outside the strict activation viewport, then furthest from center.
    */
-  private async deactivateOneInvisible(): Promise<boolean> {
+  private async deactivateOneForPool(): Promise<boolean> {
     if (this.isCollectionHidden()) return false;
 
-    const viewportCenter = window.innerHeight / 2;
-    const candidates = this.getManySlots((s) => s.isActive && !s.isVisible)
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 0;
+    const margin = ACTIVATION_VIEWPORT_MARGIN_PX;
+    const viewportCenter = vh / 2;
+
+    const candidates = this.getManySlots((s) => s.isActive)
       .map((s) => {
         const rect = s.slotElement.getBoundingClientRect();
+        const inStrictViewport = rect.bottom > -margin && rect.top < vh + margin;
         const distance = Math.abs(rect.top + rect.height / 2 - viewportCenter);
-        return { slotInfo: s, distance };
+        return { slotInfo: s, distance, inStrictViewport };
       })
-      .sort((a, b) => b.distance - a.distance);
+      .sort((a, b) => {
+        if (a.inStrictViewport !== b.inStrictViewport) {
+          return a.inStrictViewport ? 1 : -1;
+        }
+        return b.distance - a.distance;
+      });
 
-    if (candidates.length > 0) {
-      const toFreeze = candidates[0].slotInfo;
-      const slotId = this.getSlotId(toFreeze.slotElement);
+    if (candidates.length === 0) return false;
 
-      // Await freeze to ensure WebGL context is released before creating new maps
-      await toFreeze.mapElement.freeze();
-      toFreeze.isActive = false;
-      this.activeCount--;
-      debug.log('[gk-map-collection] frozen', { slotId, activeCount: this.activeCount });
-      return true;
-    }
+    const toFreeze = candidates[0].slotInfo;
+    const slotId = this.getSlotId(toFreeze.slotElement);
 
-    return false;
+    await toFreeze.mapElement.freeze();
+    toFreeze.isActive = false;
+    this.activeCount = Math.max(0, this.activeCount - 1);
+    debug.log('[gk-map-collection] frozen', { slotId, activeCount: this.activeCount });
+    return true;
   }
 
   private getSlotId(element: HTMLElement): string {
@@ -946,8 +972,10 @@ export class MapCollectionElement extends BaseElement {
       }
     }
 
-    if (actualActive !== this.activeCount) {
-      this.activeCount = actualActive;
+    const liveMaps = getLiveMapCount();
+    const reconciled = Math.max(actualActive, liveMaps);
+    if (reconciled !== this.activeCount) {
+      this.activeCount = reconciled;
     }
   }
 
@@ -975,4 +1003,18 @@ export class MapCollectionElement extends BaseElement {
 
 if (!customElements.get('gk-map-collection')) {
   customElements.define('gk-map-collection', MapCollectionElement);
+}
+
+/** Vite HMR: release WebGL contexts before the module reloads. */
+if (typeof import.meta !== 'undefined' && import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    document.querySelectorAll('gk-map-collection').forEach((el) => {
+      const collection = el as MapCollectionElement;
+      void collection.freezeAll?.();
+    });
+    document.querySelectorAll('gk-map').forEach((el) => {
+      const map = el as MapElement;
+      void map.freeze?.();
+    });
+  });
 }
