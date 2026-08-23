@@ -41,6 +41,12 @@ export const HERE_KEY_KEYS = [
   'GEOKIT_HERE_API_KEY',
 ] as const;
 
+export const ESRI_KEY_KEYS = [
+  'ESRI_API_KEY',
+  'ARCGIS_API_KEY',
+  'GEOKIT_ESRI_API_KEY',
+] as const;
+
 export const FOURSQUARE_KEY_KEYS = [
   'FOURSQUARE_SERVICE_API_KEY',
   'FOURSQUARE_API_KEY',
