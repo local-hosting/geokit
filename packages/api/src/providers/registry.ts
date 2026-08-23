@@ -78,6 +78,27 @@ export function getAPIProvider(name: string): BaseAPIProvider | null {
   return apiProviders.get(name) || null;
 }
 
+/**
+ * Remove a registered API provider and rebuild the capability index.
+ */
+export function removeAPIProvider(name: string): void {
+  const provider = apiProviders.get(name);
+  if (!provider) {
+    return;
+  }
+
+  apiProviders.delete(name);
+
+  for (const [capability, providers] of capabilityIndex.entries()) {
+    const next = providers.filter((entry) => entry !== provider);
+    if (next.length > 0) {
+      capabilityIndex.set(capability, next);
+    } else {
+      capabilityIndex.delete(capability);
+    }
+  }
+}
+
 // For testing: reset registries
 export function _resetRegistries(): void {
   apiProviders.clear();

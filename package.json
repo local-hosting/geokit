@@ -10,10 +10,10 @@
     "build": "yarn workspace geokit run build",
     "build:all": "yarn workspaces foreach -Apt run build",
     "dev": "yarn workspace geokit run dev",
-    "test": "yarn workspace geokit run test && yarn workspace @geokit/api run test && yarn workspace @geokit/geotypes run test",
+    "test": "yarn workspace geokit run test && yarn workspace @geokit/api run test && yarn workspace @geokit/geotypes run test && yarn workspace @geokit/plugin-osm run test",
     "test:core": "yarn workspace geokit run test",
     "test:geotypes": "yarn workspace @geokit/geotypes run test",
-    "typecheck": "yarn workspace @geokit/geotypes run typecheck && yarn workspace @geokit/api run typecheck && yarn workspace geokit run typecheck",
+    "typecheck": "yarn workspace @geokit/geotypes run typecheck && yarn workspace @geokit/api run typecheck && yarn workspace @geokit/plugin-osm run typecheck && yarn workspace geokit run typecheck",
     "lint": "yarn workspace geokit run lint",
     "prepare": "husky"
   },
