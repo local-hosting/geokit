@@ -9,7 +9,11 @@ Yarn workspaces monorepo for the geospatial SDK and POI taxonomy.
 | [`geokit`](packages/core/) | Core geo utilities and map UI |
 | [`@geokit/api`](packages/api/) | Place search providers, composite routing, taxonomy hooks |
 | [`@geokit/geotypes`](packages/geotypes/) | POI taxonomy (YAML, proto, slugs, acronyms) |
-| [`@geokit/plugin-osm`](packages/plugin-osm/) | Optional OSM Overpass place search plugin |
+| [`@geokit/plugin-foursquare`](packages/plugin-foursquare/) | Foursquare Places search |
+| [`@geokit/plugin-google`](packages/plugin-google/) | Google Places search |
+| [`@geokit/plugin-mapbox`](packages/plugin-mapbox/) | Mapbox geocoding, isochrone, directions |
+| [`@geokit/plugin-maptiler`](packages/plugin-maptiler/) | MapTiler geocoding |
+| [`@geokit/plugin-osm`](packages/plugin-osm/) | OpenStreetMap Overpass place search |
 
 ## Commands
 

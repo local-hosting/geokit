@@ -8,3 +8,4 @@
 export * from './providers/index.js';
 export * from './place-taxonomy.js';
 export * from './plugin.js';
+export * from './builtins.js';

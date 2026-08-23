@@ -8,8 +8,8 @@ import {
   initAPIProvider,
   getProviderForCapability,
   _resetRegistries,
-} from '../src/providers/registry';
-import { MapTilerAPIProvider } from '../src/providers/maptiler-provider';
+} from '@geokit/api/registry';
+import { MapTilerAPIProvider } from '../src/maptiler-provider.js';
 
 describe('MapTilerAPIProvider', () => {
   let provider: MapTilerAPIProvider;

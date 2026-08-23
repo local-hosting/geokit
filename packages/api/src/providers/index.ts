@@ -8,14 +8,15 @@
 export * from './types';
 export * from './registry';
 export { CompositeAPIProvider, createCompositeAPIProvider } from './composite-provider';
+export { rebuildCapabilityRouters, resetCapabilityRouterReady } from './capability-router-rebuild.js';
 export {
   ensureCapabilityRoutersReady,
   ensureGeocodingRouterReady,
   ensurePlaceSearchRouterReady,
   ensureIsochroneRouterReady,
-  resetCapabilityRouterReady,
   resetGeocodingRouterReady,
-} from './setup-capability-routers';
+  registerDefaultPlugins,
+} from '../builtins.js';
 
 // Export cache utilities for custom providers
 export {
@@ -36,8 +37,8 @@ export {
   type RateLimitRetryOptions,
 } from './api-utils';
 
-// Export provider implementations
-export { MapboxAPIProvider } from './mapbox-provider';
-export { MapTilerAPIProvider } from './maptiler-provider';
-export { GooglePlacesAPIProvider } from './google-places-provider';
-export { FoursquareAPIProvider } from './foursquare-provider';
+// Backward-compat provider re-exports (implemented in plugin packages)
+export { FoursquareAPIProvider } from '@geokit/plugin-foursquare';
+export { GooglePlacesAPIProvider } from '@geokit/plugin-google';
+export { MapboxAPIProvider } from '@geokit/plugin-mapbox';
+export { MapTilerAPIProvider } from '@geokit/plugin-maptiler';

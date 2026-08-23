@@ -8,8 +8,8 @@ import {
   initAPIProvider,
   getProviderForCapability,
   _resetRegistries,
-} from '../src/providers/registry';
-import { FoursquareAPIProvider } from '../src/providers/foursquare-provider';
+} from '@geokit/api/registry';
+import { FoursquareAPIProvider } from '../src/foursquare-provider.js';
 
 describe('FoursquareAPIProvider', () => {
   let provider: FoursquareAPIProvider;

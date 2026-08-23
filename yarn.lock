@@ -879,6 +879,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@geokit/api@workspace:packages/api"
   dependencies:
+    "@geokit/plugin-foursquare": "workspace:*"
+    "@geokit/plugin-google": "workspace:*"
+    "@geokit/plugin-mapbox": "workspace:*"
+    "@geokit/plugin-maptiler": "workspace:*"
+    "@geokit/plugin-osm": "workspace:*"
     geokit: "workspace:*"
   peerDependencies:
     geokit: "workspace:*"
@@ -901,7 +906,55 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@geokit/plugin-osm@workspace:packages/plugin-osm":
+"@geokit/plugin-foursquare@workspace:*, @geokit/plugin-foursquare@workspace:packages/plugin-foursquare":
+  version: 0.0.0-use.local
+  resolution: "@geokit/plugin-foursquare@workspace:packages/plugin-foursquare"
+  dependencies:
+    "@geokit/api": "workspace:*"
+    geokit: "workspace:*"
+  peerDependencies:
+    "@geokit/api": "workspace:*"
+    geokit: "workspace:*"
+  languageName: unknown
+  linkType: soft
+
+"@geokit/plugin-google@workspace:*, @geokit/plugin-google@workspace:packages/plugin-google":
+  version: 0.0.0-use.local
+  resolution: "@geokit/plugin-google@workspace:packages/plugin-google"
+  dependencies:
+    "@geokit/api": "workspace:*"
+    geokit: "workspace:*"
+  peerDependencies:
+    "@geokit/api": "workspace:*"
+    geokit: "workspace:*"
+  languageName: unknown
+  linkType: soft
+
+"@geokit/plugin-mapbox@workspace:*, @geokit/plugin-mapbox@workspace:packages/plugin-mapbox":
+  version: 0.0.0-use.local
+  resolution: "@geokit/plugin-mapbox@workspace:packages/plugin-mapbox"
+  dependencies:
+    "@geokit/api": "workspace:*"
+    geokit: "workspace:*"
+  peerDependencies:
+    "@geokit/api": "workspace:*"
+    geokit: "workspace:*"
+  languageName: unknown
+  linkType: soft
+
+"@geokit/plugin-maptiler@workspace:*, @geokit/plugin-maptiler@workspace:packages/plugin-maptiler":
+  version: 0.0.0-use.local
+  resolution: "@geokit/plugin-maptiler@workspace:packages/plugin-maptiler"
+  dependencies:
+    "@geokit/api": "workspace:*"
+    geokit: "workspace:*"
+  peerDependencies:
+    "@geokit/api": "workspace:*"
+    geokit: "workspace:*"
+  languageName: unknown
+  linkType: soft
+
+"@geokit/plugin-osm@workspace:*, @geokit/plugin-osm@workspace:packages/plugin-osm":
   version: 0.0.0-use.local
   resolution: "@geokit/plugin-osm@workspace:packages/plugin-osm"
   dependencies:
