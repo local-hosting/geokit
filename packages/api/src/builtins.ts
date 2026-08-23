@@ -7,14 +7,14 @@ let lastOverrides: CapabilityRouterEnvOverrides | undefined;
 
 type PluginRegistrar = (overrides?: CapabilityRouterEnvOverrides) => Promise<void> | void;
 
-async function registerOptionalPlugin(
-  moduleId: string,
+async function tryRegisterPlugin(
+  load: () => Promise<{ register?: PluginRegistrar }>,
   exportName: string,
   overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
   try {
-    const mod = (await import(moduleId)) as Record<string, unknown>;
-    const register = mod[exportName];
+    const mod = await load();
+    const register = mod[exportName as keyof typeof mod];
     if (typeof register === 'function') {
       await (register as PluginRegistrar)(overrides);
     }
@@ -27,10 +27,26 @@ async function registerOptionalPlugin(
 export async function registerDefaultPlugins(
   overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
-  await registerOptionalPlugin('@geokit/plugin-maptiler', 'registerMapTilerPlugin', overrides);
-  await registerOptionalPlugin('@geokit/plugin-mapbox', 'registerMapboxPlugin', overrides);
-  await registerOptionalPlugin('@geokit/plugin-foursquare', 'registerFoursquarePlugin', overrides);
-  await registerOptionalPlugin('@geokit/plugin-google', 'registerGooglePlacesPlugin', overrides);
+  await tryRegisterPlugin(
+    () => import('@geokit/plugin-maptiler'),
+    'registerMapTilerPlugin',
+    overrides,
+  );
+  await tryRegisterPlugin(
+    () => import('@geokit/plugin-mapbox'),
+    'registerMapboxPlugin',
+    overrides,
+  );
+  await tryRegisterPlugin(
+    () => import('@geokit/plugin-foursquare'),
+    'registerFoursquarePlugin',
+    overrides,
+  );
+  await tryRegisterPlugin(
+    () => import('@geokit/plugin-google'),
+    'registerGooglePlacesPlugin',
+    overrides,
+  );
 }
 
 async function bootstrapCapabilityRouters(
