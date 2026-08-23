@@ -28,17 +28,17 @@ yarn add geokit @geokit/api @geokit/geotypes
 yarn add @geokit/plugin-osm
 ```
 
+See [architecture-providers.md](architecture-providers.md) for API provider vs plugin vs UI provider terminology.
+
 ## Import changes
 
-| Before (still works, deprecated) | Preferred |
+| Before (removed) | Preferred |
 |---|---|
 | `geokit/api` | `@geokit/api` |
 | `geokit/api/place-taxonomy` | `@geokit/api/place-taxonomy` |
 | `geokit/api/registry` | `@geokit/api/registry` |
-| `geokit/api/providers/foursquare` | `@geokit/api/providers/foursquare` |
+| `geokit/api/providers/foursquare` | `@geokit/plugin-foursquare` |
 | `geokit/api/plugin` | `@geokit/api/plugin` |
-
-Legacy `geokit/api/*` paths remain as thin re-exports for one major version but require `@geokit/api` to be installed.
 
 ## Bootstrap example
 
@@ -67,6 +67,4 @@ await ensurePlaceSearchRouterReady();
 
 ## Breaking changes
 
-None for imports in 0.3.x — shims preserve `geokit/api/*`. The breaking change is **install topology**: map UI features that call providers (`gk-isochrone`, geocoding helpers) need `@geokit/api` installed at runtime.
-
-Future 1.0 may remove `geokit/api/*` re-exports entirely.
+**0.3.x breaking:** `geokit/api/*` re-exports are removed. Import from `@geokit/api` and `@geokit/plugin-*` directly. Map UI features that call providers (`gk-isochrone`, geocoding helpers) still need `@geokit/api` (and relevant plugins) installed at runtime.
