@@ -1,4 +1,4 @@
-import type { BaseAPIProvider } from './types.js';
+import type { APICapability, BaseAPIProvider } from './types.js';
 import type { CapabilityRouterEnvOverrides } from '../types/api-composite.js';
 import {
   resolveFoursquareApiKey,
@@ -6,6 +6,11 @@ import {
   resolveGooglePlacesApiKey,
   resolveRoutingAccessToken,
 } from 'geokit/config/env/service-keys';
+import {
+  applyPluginsToCapabilityChains,
+  getGeokitPluginRegistrations,
+  _setPluginChangeHandler,
+} from '../plugin.js';
 import { createCompositeAPIProvider } from './composite-provider.js';
 import { FoursquareAPIProvider } from './foursquare-provider.js';
 import { GooglePlacesAPIProvider } from './google-places-provider.js';
@@ -20,6 +25,7 @@ import {
 } from './registry.js';
 
 let capabilityRoutersReady: Promise<void> | null = null;
+let lastOverrides: CapabilityRouterEnvOverrides | undefined;
 
 async function ensureMapboxProvider(accessToken?: string): Promise<BaseAPIProvider | null> {
   const token = accessToken ?? resolveRoutingAccessToken();
@@ -38,6 +44,48 @@ async function ensureMapboxProvider(accessToken?: string): Promise<BaseAPIProvid
 
   await initAPIProvider('mapbox', { accessToken: token });
   return mapbox;
+}
+
+async function initRegisteredPlugins(): Promise<void> {
+  for (const registration of getGeokitPluginRegistrations()) {
+    if (registration.initialized) {
+      continue;
+    }
+    await initAPIProvider(registration.plugin.name, {});
+    registration.initialized = true;
+  }
+}
+
+function registerCompositeRouters(chains: Partial<Record<APICapability, BaseAPIProvider[]>>): void {
+  if (chains.geocoding?.length) {
+    registerCapabilityRouter(
+      'geocoding',
+      createCompositeAPIProvider({
+        name: 'composite:geocoding',
+        chains: { geocoding: chains.geocoding },
+      })
+    );
+  }
+
+  if (chains.placeSearch?.length) {
+    registerCapabilityRouter(
+      'placeSearch',
+      createCompositeAPIProvider({
+        name: 'composite:placeSearch',
+        chains: { placeSearch: chains.placeSearch },
+      })
+    );
+  }
+
+  if (chains.isochrone?.length) {
+    registerCapabilityRouter(
+      'isochrone',
+      createCompositeAPIProvider({
+        name: 'composite:isochrone',
+        chains: { isochrone: chains.isochrone },
+      })
+    );
+  }
 }
 
 async function registerCapabilityRouters(overrides?: CapabilityRouterEnvOverrides): Promise<void> {
@@ -89,55 +137,44 @@ async function registerCapabilityRouters(overrides?: CapabilityRouterEnvOverride
     }
   }
 
-  if (geocodingChain.length > 0) {
-    registerCapabilityRouter(
-      'geocoding',
-      createCompositeAPIProvider({
-        name: 'composite:geocoding',
-        chains: { geocoding: geocodingChain },
-      })
-    );
-  }
+  await initRegisteredPlugins();
 
-  if (placeSearchChain.length > 0) {
-    registerCapabilityRouter(
-      'placeSearch',
-      createCompositeAPIProvider({
-        name: 'composite:placeSearch',
-        chains: { placeSearch: placeSearchChain },
-      })
-    );
-  }
+  const chains: Partial<Record<APICapability, BaseAPIProvider[]>> = {
+    geocoding: geocodingChain,
+    placeSearch: placeSearchChain,
+    isochrone: isochroneChain,
+  };
+  applyPluginsToCapabilityChains(chains);
+  registerCompositeRouters(chains);
+}
 
-  if (isochroneChain.length > 0) {
-    registerCapabilityRouter(
-      'isochrone',
-      createCompositeAPIProvider({
-        name: 'composite:isochrone',
-        chains: { isochrone: isochroneChain },
-      })
-    );
-  }
+function scheduleCapabilityBootstrap(overrides?: CapabilityRouterEnvOverrides): Promise<void> {
+  lastOverrides = overrides;
+  capabilityRoutersReady = registerCapabilityRouters(overrides).catch((error) => {
+    capabilityRoutersReady = null;
+    throw error;
+  });
+  return capabilityRoutersReady;
 }
 
 function runCapabilityBootstrap(overrides?: CapabilityRouterEnvOverrides): Promise<void> {
   if (overrides) {
-    capabilityRoutersReady = registerCapabilityRouters(overrides).catch((error) => {
-      capabilityRoutersReady = null;
-      throw error;
-    });
-    return capabilityRoutersReady;
+    return scheduleCapabilityBootstrap(overrides);
   }
 
   if (!capabilityRoutersReady) {
-    capabilityRoutersReady = registerCapabilityRouters().catch((error) => {
-      capabilityRoutersReady = null;
-      throw error;
-    });
+    return scheduleCapabilityBootstrap();
   }
 
   return capabilityRoutersReady;
 }
+
+_setPluginChangeHandler(() => {
+  if (!capabilityRoutersReady) {
+    return;
+  }
+  scheduleCapabilityBootstrap(lastOverrides);
+});
 
 /** Bootstrap all capability routers that env keys allow. Re-runs when overrides are passed. */
 export function ensureCapabilityRoutersReady(
@@ -168,14 +205,14 @@ export function ensureGeocodingRouterReady(
   );
 }
 
-/** Register place search fallback chain (Foursquare → Google). */
+/** Register place search fallback chain (Foursquare → Google → plugins). */
 export function ensurePlaceSearchRouterReady(
   overrides?: CapabilityRouterEnvOverrides
 ): Promise<void> {
   return requireCapabilityRouter(
     'placeSearch',
     overrides,
-    'Place search is not configured. Set FOURSQUARE_SERVICE_API_KEY or GOOGLE_PLACES_API_KEY.'
+    'Place search is not configured. Set FOURSQUARE_SERVICE_API_KEY, GOOGLE_PLACES_API_KEY, or register a placeSearch plugin.'
   );
 }
 
@@ -193,6 +230,7 @@ export function ensureIsochroneRouterReady(
 /** @internal test helper */
 export function resetCapabilityRouterReady(): void {
   capabilityRoutersReady = null;
+  lastOverrides = undefined;
 }
 
 /** @internal test helper */

@@ -69,6 +69,11 @@
       "types": "./src/types/place-taxonomy.ts",
       "import": "./src/types/place-taxonomy.ts",
       "default": "./src/types/place-taxonomy.ts"
+    },
+    "./plugin": {
+      "types": "./src/plugin.ts",
+      "import": "./src/plugin.ts",
+      "default": "./src/plugin.ts"
     }
   },
   "scripts": {

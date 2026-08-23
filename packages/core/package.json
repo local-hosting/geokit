@@ -563,6 +563,13 @@
       "import": "./dist/esm/utils/retry.js",
       "require": "./dist/cjs/utils/retry.cjs",
       "default": "./dist/esm/utils/retry.js"
+    },
+    "./api/plugin": {
+      "source": "./src/api/plugin.ts",
+      "types": "./dist/esm/api/plugin.d.ts",
+      "import": "./dist/esm/api/plugin.js",
+      "require": "./dist/cjs/api/plugin.cjs",
+      "default": "./dist/esm/api/plugin.js"
     }
   },
   "sideEffects": [
