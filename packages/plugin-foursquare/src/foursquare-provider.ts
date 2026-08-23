@@ -106,13 +106,13 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
       query,
       ll,
       radius,
-      categories,
       limit = 10,
       sort,
       openNow,
       minPrice,
       maxPrice,
     } = options;
+    const categories = resolvePlaceSearchCategories(options, 'foursquare') ?? options.categories;
 
     try {
       const url = buildFoursquarePlacesSearchUrl({
@@ -142,22 +142,24 @@ export class FoursquareAPIProvider extends BaseAPIProvider {
 
       const data = (await response.json()) as { results?: unknown[] };
 
-      const results = (data.results ?? []).map((place) => {
-        const normalized = normalizeFoursquarePlace(place as FoursquarePlaceRaw);
-        return {
-          id: normalized.id,
-          name: normalized.name,
-          address: normalized.address,
-          location: normalized.location,
-          categories: normalized.categories ?? [],
-          distance: normalized.distance,
-          rating: normalized.rating,
-          priceLevel: normalized.priceLevel,
-          hours: normalized.hours,
-          contact: normalized.contact,
-          raw: normalized.raw,
-        };
-      });
+      const results = (data.results ?? [])
+        .map((place) => {
+          const normalized = normalizeFoursquarePlace(place as FoursquarePlaceRaw);
+          return {
+            id: normalized.id,
+            name: normalized.name,
+            address: normalized.address,
+            location: normalized.location,
+            categories: normalized.categories ?? [],
+            distance: normalized.distance,
+            rating: normalized.rating,
+            priceLevel: normalized.priceLevel,
+            hours: normalized.hours,
+            contact: normalized.contact,
+            raw: normalized.raw,
+          };
+        })
+        .map((result) => enrichPlaceSearchResult(result, 'foursquare'));
 
       // Store in cache
       this.cache.set(cacheKey, results);
