@@ -19,7 +19,7 @@ import {
 } from '@geokit/api/types';
 import { ProviderCache, coordinateCacheKey } from '@geokit/api';
 import { RequestQueue } from '@geokit/api';
-import { requireAPIKey, assertResponseOk, retryOn429 } from '@geokit/api';
+import { requireAPIKey, fetchWithRetry } from '@geokit/api';
 import type { FeatureCollection } from 'geojson';
 
 const PROVIDER_NAME = 'MapTiler';
@@ -116,11 +116,7 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
           headers: { Referer: 'http://localhost:5173/' },
         });
 
-      const response = await retryOn429(fetchFn, {
-        providerName: PROVIDER_NAME,
-      });
-
-      await assertResponseOk(response, PROVIDER_NAME);
+      const response = await fetchWithRetry(fetchFn, PROVIDER_NAME);
 
       const data = await response.json();
 
@@ -187,11 +183,7 @@ export class MapTilerAPIProvider extends BaseAPIProvider {
           headers: { Referer: 'http://localhost:5173/' },
         });
 
-      const response = await retryOn429(fetchFn, {
-        providerName: PROVIDER_NAME,
-      });
-
-      await assertResponseOk(response, PROVIDER_NAME);
+      const response = await fetchWithRetry(fetchFn, PROVIDER_NAME);
 
       const data = await response.json();
       const featureCollection = data as FeatureCollection;

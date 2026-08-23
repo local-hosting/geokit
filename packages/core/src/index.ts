@@ -391,9 +391,6 @@ export {
   getBoundsFromArea,
 } from './utils/spatial';
 
-// API Providers
-export * from './api';
-
 
 // TopoJSON conversion utilities
 export type {

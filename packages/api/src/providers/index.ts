@@ -37,8 +37,3 @@ export {
   type RateLimitRetryOptions,
 } from './api-utils';
 
-// Backward-compat provider re-exports (implemented in plugin packages)
-export { FoursquareAPIProvider } from '@geokit/plugin-foursquare';
-export { GooglePlacesAPIProvider } from '@geokit/plugin-google';
-export { MapboxAPIProvider } from '@geokit/plugin-mapbox';
-export { MapTilerAPIProvider } from '@geokit/plugin-maptiler';

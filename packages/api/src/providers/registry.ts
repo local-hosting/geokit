@@ -1,8 +1,8 @@
 /**
- * API Provider Registry
+ * API provider registry
  *
- * Manages API providers with capability-based routing
- * Multiple API providers can be active simultaneously
+ * Stores BaseAPIProvider instances for HTTP capabilities (geocoding, place search, isochrones).
+ * Not the UI map backend registry — see geokit src/ui/providers/registry.ts.
  */
 
 import type { BaseAPIProvider, APICapability, MapProviderConfig } from './types';

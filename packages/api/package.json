@@ -15,40 +15,10 @@
       "import": "./src/place-taxonomy.ts",
       "default": "./src/place-taxonomy.ts"
     },
-    "./providers/foursquare": {
-      "types": "./src/providers/foursquare-provider.ts",
-      "import": "./src/providers/foursquare-provider.ts",
-      "default": "./src/providers/foursquare-provider.ts"
-    },
-    "./providers/foursquare-places": {
-      "types": "./src/providers/foursquare-places.ts",
-      "import": "./src/providers/foursquare-places.ts",
-      "default": "./src/providers/foursquare-places.ts"
-    },
-    "./providers/google-places": {
-      "types": "./src/providers/google-places-provider.ts",
-      "import": "./src/providers/google-places-provider.ts",
-      "default": "./src/providers/google-places-provider.ts"
-    },
-    "./providers/mapbox": {
-      "types": "./src/providers/mapbox-provider.ts",
-      "import": "./src/providers/mapbox-provider.ts",
-      "default": "./src/providers/mapbox-provider.ts"
-    },
-    "./providers/maptiler": {
-      "types": "./src/providers/maptiler-provider.ts",
-      "import": "./src/providers/maptiler-provider.ts",
-      "default": "./src/providers/maptiler-provider.ts"
-    },
     "./registry": {
       "types": "./src/providers/registry.ts",
       "import": "./src/providers/registry.ts",
       "default": "./src/providers/registry.ts"
-    },
-    "./setup-capability-routers": {
-      "types": "./src/providers/setup-capability-routers.ts",
-      "import": "./src/providers/setup-capability-routers.ts",
-      "default": "./src/providers/setup-capability-routers.ts"
     },
     "./types": {
       "types": "./src/providers/types.ts",
