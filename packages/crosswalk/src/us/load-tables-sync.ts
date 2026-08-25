@@ -11,7 +11,7 @@ import {
 } from '../../generated/us/index.ts';
 import { US_CROSSWALK_TABLE_NAMES } from './table-names.js';
 import { createUsTableLookups } from './tables.js';
-import { setUsCrosswalkRegistry } from '../registry.js';
+import { setUsCrosswalkRegistry } from '../load/registry.js';
 
 /** Test / sync path — loads every US table via static imports. */
 export function loadAllUsCrosswalkTablesSync(): void {

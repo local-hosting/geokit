@@ -13,11 +13,11 @@ export type {
 
 export { US_CROSSWALK_TABLE_NAMES, US_CROSSWALK_PRESETS } from './us/table-names.js';
 
-export { loadCrosswalk, loadUsCrosswalk, loadUsCrosswalkSync, resetCrosswalkForTest } from './load.js';
+export { loadCrosswalk, loadUsCrosswalk, loadUsCrosswalkSync, resetCrosswalkForTest } from './load/load.js';
 export {
   crosswalk,
   type CrosswalkOptions,
-} from './crosswalk.js';
+} from './lookup/crosswalk.js';
 export {
   dmaForH3,
   dmaForPoint,
@@ -31,7 +31,7 @@ export {
   zipsForH3,
   zipsInDma,
   countiesInDma,
-} from './convert.js';
+} from './lookup/convert.js';
 export { compactH3CellId, expandH3CellId } from './h3/cell-id.js';
 export { ensureH3Projection, isH3ProjectionLoaded } from './h3/project.js';
 export {
@@ -40,4 +40,26 @@ export {
   getLoadedCrosswalkTableNames,
   requireUsCrosswalkLookups,
   getUsCrosswalkTables,
-} from './registry.js';
+} from './load/registry.js';
+
+export {
+  buildCellToDmaMap,
+  buildH3ToDmaMap,
+  buildDmaMarketCellsIndex,
+  buildDmaCellFeatureCollection,
+  mergeDmaCellFeatures,
+  collectCellIdsForDmaSlugs,
+  resolveDmaSlugsForViewportCells,
+  buildCellToRegionMap,
+  buildRegionMarketCellsIndex,
+  buildRegionCellFeatureCollection,
+  mergeRegionCellFeatures,
+  collectCellIdsForRegionSlugs,
+  resolveRegionSlugsForViewportCells,
+  canonicalRegionH3CellId,
+  normalizeRegionSlug,
+  type DmaMarketCellsIndex,
+  type RegionMarketCellsIndex,
+  type RegionCellFeatureOptions,
+} from './h3/market-cells.js';
+

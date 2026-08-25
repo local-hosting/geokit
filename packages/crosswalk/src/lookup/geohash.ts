@@ -1,6 +1,6 @@
 /** Minimal geohash encode — no external dependency. */
 
-import type { LatLon } from './types.js';
+import type { LatLon } from '../types.js';
 
 const BASE32 = '0123456789bcdefghjkmnpqrstuvwxyz';
 

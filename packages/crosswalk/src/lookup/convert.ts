@@ -1,6 +1,6 @@
-import { compactH3CellId } from './h3/cell-id.js';
-import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from './h3/project.js';
-import { requireUsCrosswalkLookups } from './registry.js';
+import { compactH3CellId } from '../h3/cell-id.js';
+import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from '../h3/project.js';
+import { requireUsCrosswalkLookups } from '../load/registry.js';
 
 const DEFAULT_H3_RESOLUTION = 5;
 

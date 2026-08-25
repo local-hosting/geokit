@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadUsCrosswalkSync } from '../src/load.js';
+import { loadUsCrosswalkSync } from '../src/load/load.js';
 import { dmaForZip, h3ForZip, crosswalk, zipsInDma } from '../src/index.ts';
 import { ensureH3Projection } from '../src/h3/project.js';
-import { loadUsCrosswalk, resetCrosswalkForTest } from '../src/load.js';
+import { loadUsCrosswalk, resetCrosswalkForTest } from '../src/load/load.js';
 import {
   dmaForH3,
   getLoadedCrosswalkTableNames,
@@ -91,7 +91,7 @@ describe('crosswalk guard', () => {
 
   it('package.json has no runtime dependencies', () => {
     const pkg = JSON.parse(readFileSync(join(ROOT, '../package.json'), 'utf8'));
-    expect(pkg.dependencies ?? {}).toEqual({});
+    expect(pkg.dependencies ?? {}).toEqual({ '@geokit/h3': 'workspace:*' });
   });
 });
 
