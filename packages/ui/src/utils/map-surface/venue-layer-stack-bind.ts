@@ -26,10 +26,11 @@ export function restackVenueLayersAboveDmaFill(
   const fillLayerId = datasetFillLayerId(dataset);
   const lineLayerId = dmaLineLayerId(dataset);
   stackGkOutlineLayersAboveDatasetFill(map, fillLayerId);
-  stackLayersAboveAnchor(map, [ids.glowLayerId, ids.pointLayerId], fillLayerId);
   if (map.getLayer?.(lineLayerId)) {
-    stackLayersAboveAnchor(map, [lineLayerId], ids.pointLayerId);
+    stackLayersAboveAnchor(map, [lineLayerId], fillLayerId);
   }
+  const venueAnchor = map.getLayer?.(lineLayerId) ? lineLayerId : fillLayerId;
+  stackLayersAboveAnchor(map, [ids.glowLayerId, ids.pointLayerId], venueAnchor);
 }
 
 export function restackVenueLayersForMarket(
