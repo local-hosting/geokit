@@ -1,7 +1,7 @@
 {
   "name": "@geokit/ui",
   "version": "0.2.33",
-  "description": "Geokit map UI — Web Components, layer controllers, and framework adapters",
+  "description": "Geokit map UI \u2014 Web Components, layer controllers, and framework adapters",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",
@@ -14,13 +14,6 @@
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.cjs",
       "default": "./dist/esm/index.js"
-    },
-    "./core": {
-      "source": "./src/core.ts",
-      "types": "./dist/esm/core.d.ts",
-      "import": "./dist/esm/core.js",
-      "require": "./dist/cjs/core.cjs",
-      "default": "./dist/esm/core.js"
     },
     "./theme.css": {
       "source": "./src/theme.css",
@@ -143,6 +136,90 @@
       "require": "./dist/cjs/utils/geojson-source-options.cjs",
       "default": "./dist/esm/utils/geojson-source-options.js"
     },
+    "./fill-antialias": {
+      "source": "./src/utils/fill-antialias.ts",
+      "types": "./dist/esm/utils/fill-antialias.d.ts",
+      "import": "./dist/esm/utils/fill-antialias.js",
+      "require": "./dist/cjs/utils/fill-antialias.cjs",
+      "default": "./dist/esm/utils/fill-antialias.js"
+    },
+    "./map-terrain-disable": {
+      "source": "./src/utils/map-terrain-disable.ts",
+      "types": "./dist/esm/utils/map-terrain-disable.d.ts",
+      "import": "./dist/esm/utils/map-terrain-disable.js",
+      "require": "./dist/cjs/utils/map-terrain-disable.cjs",
+      "default": "./dist/esm/utils/map-terrain-disable.js"
+    },
+    "./map-events": {
+      "source": "./src/utils/map-events.ts",
+      "types": "./dist/esm/utils/map-events.d.ts",
+      "import": "./dist/esm/utils/map-events.js",
+      "require": "./dist/cjs/utils/map-events.cjs",
+      "default": "./dist/esm/utils/map-events.js"
+    },
+    "./map-utils": {
+      "source": "./src/utils/map-utils.ts",
+      "types": "./dist/esm/utils/map-utils.d.ts",
+      "import": "./dist/esm/utils/map-utils.js",
+      "require": "./dist/cjs/utils/map-utils.cjs",
+      "default": "./dist/esm/utils/map-utils.js"
+    },
+    "./h3-grid-layer-controller": {
+      "source": "./src/utils/h3-grid-layer-controller.ts",
+      "types": "./dist/esm/utils/h3-grid-layer-controller.d.ts",
+      "import": "./dist/esm/utils/h3-grid-layer-controller.js",
+      "require": "./dist/cjs/utils/h3-grid-layer-controller.cjs",
+      "default": "./dist/esm/utils/h3-grid-layer-controller.js"
+    },
+    "./lazy-choropleth-controller": {
+      "source": "./src/utils/lazy-choropleth-controller.ts",
+      "types": "./dist/esm/utils/lazy-choropleth-controller.d.ts",
+      "import": "./dist/esm/utils/lazy-choropleth-controller.js",
+      "require": "./dist/cjs/utils/lazy-choropleth-controller.cjs",
+      "default": "./dist/esm/utils/lazy-choropleth-controller.js"
+    },
+    "./shared-point-map-orchestrator": {
+      "source": "./src/utils/shared-point-map-orchestrator.ts",
+      "types": "./dist/esm/utils/shared-point-map-orchestrator.d.ts",
+      "import": "./dist/esm/utils/shared-point-map-orchestrator.js",
+      "require": "./dist/cjs/utils/shared-point-map-orchestrator.cjs",
+      "default": "./dist/esm/utils/shared-point-map-orchestrator.js"
+    },
+    "./shared-point-layer-controller": {
+      "source": "./src/utils/shared-point-layer-controller.ts",
+      "types": "./dist/esm/utils/shared-point-layer-controller.d.ts",
+      "import": "./dist/esm/utils/shared-point-layer-controller.js",
+      "require": "./dist/cjs/utils/shared-point-layer-controller.cjs",
+      "default": "./dist/esm/utils/shared-point-layer-controller.js"
+    },
+    "./shared-point-controller": {
+      "source": "./src/utils/shared-point-layer-controller.ts",
+      "types": "./dist/esm/utils/shared-point-layer-controller.d.ts",
+      "import": "./dist/esm/utils/shared-point-layer-controller.js",
+      "require": "./dist/cjs/utils/shared-point-layer-controller.cjs",
+      "default": "./dist/esm/utils/shared-point-layer-controller.js"
+    },
+    "./gk-dma-layer-bind": {
+      "source": "./src/utils/gk-dma-layer-bind.ts",
+      "types": "./dist/esm/utils/gk-dma-layer-bind.d.ts",
+      "import": "./dist/esm/utils/gk-dma-layer-bind.js",
+      "require": "./dist/cjs/utils/gk-dma-layer-bind.cjs",
+      "default": "./dist/esm/utils/gk-dma-layer-bind.js"
+    },
+    "./feature-state-hover": {
+      "source": "./src/utils/feature-state-hover.ts",
+      "types": "./dist/esm/utils/feature-state-hover.d.ts",
+      "import": "./dist/esm/utils/feature-state-hover.js",
+      "require": "./dist/cjs/utils/feature-state-hover.cjs",
+      "default": "./dist/esm/utils/feature-state-hover.js"
+    },
+    "./debug/layer-draw-profiler": {
+      "source": "./src/debug/layer-draw-profiler.ts",
+      "types": "./dist/esm/debug/layer-draw-profiler.d.ts",
+      "import": "./dist/esm/debug/layer-draw-profiler.js",
+      "require": "./dist/cjs/debug/layer-draw-profiler.cjs",
+      "default": "./dist/esm/debug/layer-draw-profiler.js"
+    },
     "./outline-ops": {
       "source": "./src/utils/outline-ops.ts",
       "types": "./dist/esm/utils/outline-ops.d.ts",
@@ -193,6 +270,63 @@
       "types": "./dist/esm/dev-proxy/maptiler-dev-proxy.d.ts",
       "import": "./dist/esm/dev-proxy/maptiler-dev-proxy.js",
       "default": "./dist/esm/dev-proxy/maptiler-dev-proxy.js"
+    },
+    "./elements-lite": {
+      "source": "./src/elements-lite.ts",
+      "types": "./dist/esm/elements-lite.d.ts",
+      "import": "./dist/esm/elements-lite.js",
+      "require": "./dist/cjs/elements-lite.cjs",
+      "default": "./dist/esm/elements-lite.js"
+    },
+    "./storage": {
+      "types": "./src/storage/index.ts",
+      "import": "./src/storage/index.ts",
+      "default": "./src/storage/index.ts"
+    },
+    "./geojson-loader": {
+      "types": "./src/geojson-loader/index.ts",
+      "import": "./src/geojson-loader/index.ts",
+      "default": "./src/geojson-loader/index.ts"
+    },
+    "./config/map-style": {
+      "types": "./src/config/map-style.ts",
+      "import": "./src/config/map-style.ts",
+      "default": "./src/config/map-style.ts"
+    },
+    "./config/tile-cdn": {
+      "types": "./src/config/tile-cdn.ts",
+      "import": "./src/config/tile-cdn.ts",
+      "default": "./src/config/tile-cdn.ts"
+    },
+    "./config/maptiler-dev-proxy": {
+      "types": "./src/config/maptiler-dev-proxy.ts",
+      "import": "./src/config/maptiler-dev-proxy.ts",
+      "default": "./src/config/maptiler-dev-proxy.ts"
+    },
+    "./storage/map-local-store": {
+      "types": "./src/storage/map-local-store.ts",
+      "import": "./src/storage/map-local-store.ts",
+      "default": "./src/storage/map-local-store.ts"
+    },
+    "./storage/map-offline-tile-cache": {
+      "types": "./src/storage/map-offline-tile-cache.ts",
+      "import": "./src/storage/map-offline-tile-cache.ts",
+      "default": "./src/storage/map-offline-tile-cache.ts"
+    },
+    "./storage/indexed-db": {
+      "types": "./src/storage/indexed-db.ts",
+      "import": "./src/storage/indexed-db.ts",
+      "default": "./src/storage/indexed-db.ts"
+    },
+    "./storage/map-offline-context-loader": {
+      "types": "./src/storage/map-offline-context-loader.ts",
+      "import": "./src/storage/map-offline-context-loader.ts",
+      "default": "./src/storage/map-offline-context-loader.ts"
+    },
+    "./geojson-loader/shard-loader": {
+      "types": "./src/geojson-loader/shard-loader.ts",
+      "import": "./src/geojson-loader/shard-loader.ts",
+      "default": "./src/geojson-loader/shard-loader.ts"
     }
   },
   "sideEffects": [
@@ -233,11 +367,14 @@
   },
   "dependencies": {
     "@geokit/core": "workspace:*",
+    "@geokit/env": "workspace:*",
+    "@geokit/h3": "workspace:*",
     "@maptiler/sdk": "3.10.2",
     "mapbox-gl": "^3.17.0"
   },
   "peerDependencies": {
     "@geokit/service": ">=0.1.0",
+    "h3-js": "^4.3.0",
     "react": ">=18.0.0",
     "svelte": ">=4.0.0",
     "vue": ">=3.3.0"

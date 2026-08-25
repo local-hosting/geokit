@@ -7,18 +7,18 @@ import {
   getUIProvider,
   _resetRegistries,
 } from '../../../src/providers/registry';
-import type { BaseUIProvider, ServiceConfig } from '../../../src/providers/types';
+import type { BaseUIProvider, UIProviderConfig } from '../../../src/providers/types';
 
 // Mock provider for testing
 class MockUIProvider implements BaseUIProvider {
-  private config: ServiceConfig | null = null;
+  private config: UIProviderConfig | null = null;
   private initialized = false;
 
   getName(): string {
     return 'mock';
   }
 
-  async initialize(config: ServiceConfig): Promise<void> {
+  async initialize(config: UIProviderConfig): Promise<void> {
     this.config = { ...(this.config ?? {}), ...config };
     this.initialized = true;
   }

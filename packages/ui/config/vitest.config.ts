@@ -9,15 +9,15 @@ const coreAliases: Record<string, string> = {
   '@geokit/core/coordinates': path.join(coreDist, 'utils/coordinates/index.js'),
   '@geokit/core/geojson': path.join(coreDist, 'utils/geojson/index.js'),
   '@geokit/core/geojson-loader': path.join(coreDist, 'utils/geojson-loader/index.js'),
-  '@geokit/core/h3': path.join(coreDist, 'utils/h3/index.js'),
+  '@geokit/h3': path.join(uiRoot, '../h3/src/index.ts'),
   '@geokit/core/simplify': path.join(coreDist, 'utils/simplify/index.js'),
-  '@geokit/core/config/tile-cdn': path.join(coreDist, 'config/tile-cdn.js'),
+  '@geokit/ui/config/tile-cdn': path.join(uiRoot, 'src/config/tile-cdn.ts'),
   '@geokit/core/config/maptiler-dev-proxy': path.join(coreDist, 'config/maptiler-dev-proxy.js'),
   '@geokit/core/types/layer-datasets': path.join(coreDist, 'types/layer-datasets.js'),
   '@geokit/core/types/cell-layers.types': path.join(coreDist, 'types/cell-layers.types.js'),
   '@geokit/core/storage/map-offline-context-loader': path.join(coreDist, 'storage/map-offline-context-loader.js'),
   '@geokit/core/types': path.join(coreDist, 'types/index.js'),
-  '@geokit/core': path.join(coreDist, 'index.js'),
+  './elements-lite.js': path.join(coreDist, 'index.js'),
 };
 
 export default defineConfig({
