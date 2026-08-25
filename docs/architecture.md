@@ -6,7 +6,7 @@ Geokit uses **provider** in three layers. Each has its own registry — they are
 |-------|----------|------|
 | **Service** | `@geokit/service` + `services/*` | HTTP: place search, geocoding, isochrones, directions |
 | **Plugin** | `GeokitServicePlugin` in each `services/*` package | npm install boundary + `registerGeokitPlugin()` |
-| **UI provider** | `@geokit/core` → `src/ui/providers/` | Map rendering (MapTiler SDK, Mapbox GL JS) |
+| **UI provider** | `@geokit/ui` (`src/providers/`) | Map rendering (MapTiler SDK, Mapbox GL JS) |
 
 ```text
 @geokit/foursquare          ← service package
@@ -23,7 +23,10 @@ Say **service**, **plugin**, or **UI provider** — not bare "provider".
 
 | Package | Path |
 |---------|------|
+| `@geokit/env` | `packages/env/` |
+| `@geokit/h3` | `packages/h3/` |
 | `@geokit/core` | `packages/core/` |
+| `@geokit/ui` | `packages/ui/` |
 | `@geokit/service` | `packages/service/` |
 | `@geokit/crosswalk` | `packages/crosswalk/` |
 | `@geokit/foursquare`, `@geokit/google`, `@geokit/mapbox`, `@geokit/maptiler`, `@geokit/here`, `@geokit/osm`, `@geokit/esri` | `services/*/` |
@@ -32,7 +35,7 @@ Say **service**, **plugin**, or **UI provider** — not bare "provider".
 
 | Need | Packages |
 |------|----------|
-| Geo utils + map UI | `@geokit/core` |
+|  `@geokit/core` | `@geokit/core` |
 | Place search / geocoding / isochrones | + `@geokit/service` |
 | Vendor APIs | + one or more `services/*` packages |
 
@@ -56,7 +59,7 @@ await ensurePlaceSearchRouterReady();
 
 | Concern | Import | Example |
 |---------|--------|---------|
-| Draw map | `@geokit/core` UI | `MapboxUIProvider`, `<gk-map provider="mapbox">` |
+| Draw map | `@geokit/ui` | `MapboxUIProvider`, `<gk-map provider="mapbox">` |
 | HTTP APIs | `@geokit/mapbox` | `MapboxService` (geocode, isochrone, directions) |
 
 `<gk-isochrone>` uses the **service** registry (`getServiceForCapability('isochrone')`), not the UI provider registry.
@@ -89,10 +92,10 @@ await registerGeokitPlugin(herePlacesPlugin, { apiKey: process.env.HERE_API_KEY 
 
 Thin lifecycle glue over Web Components — optional peer deps per framework:
 
-- `@geokit/core/vue`
-- `@geokit/core/react`
-- `@geokit/core/svelte`
-- `@geokit/core/adapters/shared`
+- `@geokit/ui/vue`
+- `@geokit/ui/react`
+- `@geokit/ui/svelte`
+- `@geokit/ui/adapters/shared`
 
 ## Import migration
 
@@ -106,3 +109,17 @@ Legacy `geokit/api/*` re-exports are removed. Use:
 | `geokit/api/providers/foursquare` | `@geokit/foursquare` |
 
 Do not import vendor service classes from `@geokit/service` — import from the `services/*` package.
+
+## Import tiers (tree-shaking)
+
+| Tier | Package / subpath | Pulls `h3-js`? |
+|------|-------------------|----------------|
+| Distance / bounds | `@geokit/core/distance`, `@geokit/core/bounds` | No |
+| Spatial H3 decode | `@geokit/core/spatial/decode` | Yes (via `@geokit/h3`) |
+| Env keys | `@geokit/env`, `@geokit/env/service-keys` | No |
+| H3 lite | `@geokit/h3/lite` | No |
+| H3 full | `@geokit/h3` | Yes (peer) |
+| UI map | `@geokit/ui`, `@geokit/ui/elements-lite` | Via optional chunks |
+| Service builtins | `@geokit/service/builtins` | No (explicit import) |
+
+Run `yarn workspace @geokit/core bundle-smoke` in CI to guard distance-only bundles.

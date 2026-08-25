@@ -82,7 +82,7 @@ Use `gkMap.on('moveend', handler)` / `gkMap.off(...)` or `addEventListener('gk-m
 
 ## Shared point layers
 
-Import from `@geokit/core/ui/shared-points`:
+Import from `@geokit/ui/shared-points`:
 
 - `createSharedPointLayersFromPaint` — first paint
 - `syncExistingSharedPointLayers` — updates after source/layers exist

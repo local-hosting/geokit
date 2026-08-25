@@ -6,7 +6,10 @@ Yarn workspaces monorepo for the geospatial SDK.
 
 | Package | Path | Description |
 |---------|------|-------------|
-| `@geokit/core` | `packages/core/` | Core geo utilities and map UI |
+| `@geokit/env` | `packages/env/` | Service keys and map credential bootstrap |
+| `@geokit/h3` | `packages/h3/` | H3 hex grid geometry (peer: `h3-js`) |
+| `@geokit/core` | `packages/core/` | Core geo utilities (slim; no map UI) |
+| `@geokit/ui` | `packages/ui/` | Map Web Components, storage, adapters |
 | `@geokit/service` | `packages/service/` | API registry, composite routing, plugin hooks |
 | `@geokit/crosswalk` | `packages/crosswalk/` | Geo identity crosswalk (H3, ZIP, DMA, …) |
 | `@geokit/foursquare` | `services/foursquare/` | Foursquare Places search |
@@ -39,6 +42,7 @@ Package API reference: [packages/core/README.md](packages/core/README.md).
 
 | Need | Install |
 |------|---------|
-| Geo utils + map UI only | `@geokit/core` |
+| Geo utils only | `@geokit/core` |
+| Map UI | `@geokit/ui` |
 | Place search / geocoding / isochrones | + `@geokit/service` |
 | Vendor APIs | + `services/*` packages as needed |
