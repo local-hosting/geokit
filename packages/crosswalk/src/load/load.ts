@@ -15,18 +15,19 @@ function resolveTableNames(options: LoadCrosswalkOptions): readonly typeof US_CR
 
 function shouldProjectH3(options: LoadCrosswalkOptions): boolean {
   if (options.projectH3 !== undefined) return options.projectH3;
+  if (options.spine === 'geohash') return false;
   return options.spine === 'h3' || options.spine === undefined;
 }
 
 export async function loadUsCrosswalk(options: LoadCrosswalkOptions = {}): Promise<void> {
-  await loadUsCrosswalkTableNames(resolveTableNames(options));
+  await loadUsCrosswalkTableNames(resolveTableNames(options), options.spine);
   if (shouldProjectH3(options)) {
     await ensureH3Projection();
   }
 }
 
-export function loadUsCrosswalkSync(): void {
-  loadAllUsCrosswalkTablesSync();
+export function loadUsCrosswalkSync(spine?: LoadCrosswalkOptions['spine']): void {
+  loadAllUsCrosswalkTablesSync(spine);
 }
 
 export async function loadCrosswalk(
