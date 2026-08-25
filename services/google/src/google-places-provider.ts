@@ -5,11 +5,6 @@
 import { CachedService } from '@geokit/service';
 import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@geokit/service/types';
 import { fetchWithRetry } from '@geokit/service';
-import {
-  enrichPlaceSearchResult,
-  resolvePlaceSearchCategories,
-} from '@geokit/service/place-taxonomy';
-
 const SERVICE_LABEL = 'Google Places';
 
 export class GooglePlacesService extends CachedService<PlaceSearchResult[]> {
@@ -44,7 +39,7 @@ export class GooglePlacesService extends CachedService<PlaceSearchResult[]> {
 
   private async placeSearchInternal(options: PlaceSearchOptions): Promise<PlaceSearchResult[]> {
     const { query, ll, radius, limit = 10 } = options;
-    const categories = resolvePlaceSearchCategories(options, 'google-places');
+    const categories = options.categories;
     let url: string;
     let params: URLSearchParams;
 
@@ -86,8 +81,7 @@ export class GooglePlacesService extends CachedService<PlaceSearchResult[]> {
     }
 
     return (data.candidates || data.results || [])
-      .map((place: Record<string, unknown>) => this.transformResult(place))
-      .map((result: PlaceSearchResult) => enrichPlaceSearchResult(result, 'google-places'));
+      .map((place: Record<string, unknown>) => this.transformResult(place));
   }
 
   private transformResult(place: Record<string, unknown>): PlaceSearchResult {

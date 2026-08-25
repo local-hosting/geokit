@@ -5,7 +5,6 @@
 
 // Re-export API providers (types, registry, implementations)
 export * from './services/index.js';
-export * from './place-taxonomy.js';
 export * from './plugin.js';
 export * from './place-search-cache.js';
 export * from './builtins.js';

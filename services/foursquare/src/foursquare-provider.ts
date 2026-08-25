@@ -21,10 +21,6 @@ import {
   foursquarePlacesHeaders,
   normalizeFoursquarePlace,
 } from './foursquare-places.js';
-import {
-  enrichPlaceSearchResult,
-  resolvePlaceSearchCategories,
-} from '@geokit/service/place-taxonomy';
 import type { FoursquarePlaceRaw } from './types/foursquare-places.js';
 
 const PROVIDER_NAME = 'Foursquare';
@@ -106,7 +102,7 @@ export class FoursquareService extends Service {
       minPrice,
       maxPrice,
     } = options;
-    const categories = resolvePlaceSearchCategories(options, 'foursquare') ?? options.categories;
+    const categories = options.categories;
 
     try {
       const url = buildFoursquarePlacesSearchUrl({
@@ -148,8 +144,7 @@ export class FoursquareService extends Service {
             contact: normalized.contact,
             raw: normalized.raw,
           };
-        })
-        .map((result) => enrichPlaceSearchResult(result, 'foursquare'));
+        });
 
       // Store in cache
       this.cache.set(cacheKey, results);

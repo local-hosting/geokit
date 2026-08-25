@@ -5,11 +5,6 @@
 import { Service } from '@geokit/service';
 import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@geokit/service/types';
 import { ProviderCache, buildPlaceSearchCacheKey, RequestQueue, requireAPIKey, fetchWithRetry } from '@geokit/service';
-import {
-  enrichPlaceSearchResult,
-  resolvePlaceSearchCategories,
-} from '@geokit/service/place-taxonomy';
-
 const PROVIDER_NAME = 'HERE Places';
 const DISCOVER_BASE = 'https://discover.search.hereapi.com/v1/discover';
 
@@ -118,7 +113,7 @@ export class HerePlacesService extends Service {
     options: PlaceSearchOptions,
     cacheKey: string
   ): Promise<PlaceSearchResult[]> {
-    const categories = resolvePlaceSearchCategories(options, 'here-places') ?? options.categories;
+    const categories = options.categories;
     const url = buildHereDiscoverUrl(options, this.apiKey!, categories);
 
     const response = await fetchWithRetry(() => fetch(url), PROVIDER_NAME);
@@ -126,8 +121,7 @@ export class HerePlacesService extends Service {
 
     const results = (payload.items ?? [])
       .map(normalizeHereDiscoverItem)
-      .filter((result): result is PlaceSearchResult => result !== null)
-      .map((result) => enrichPlaceSearchResult(result, 'here-places'));
+      .filter((result): result is PlaceSearchResult => result !== null);
 
     this.cache.set(cacheKey, results);
     return results;

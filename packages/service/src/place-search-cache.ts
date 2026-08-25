@@ -20,9 +20,6 @@ export function buildPlaceSearchCacheKey(
   }
   if (options.radius) {
     parts.push(`r:${options.radius}`);
-  }
-  if (options.geotypes?.length) {
-    parts.push(`gt:${options.geotypes.join(',')}`);
   } else if (options.categories?.length) {
     parts.push(`cat:${options.categories.join(',')}`);
   }
