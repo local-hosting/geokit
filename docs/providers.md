@@ -15,7 +15,7 @@ Swift mirror: [`geokit-swift/docs/providers.md`](../../geokit-swift/docs/provide
 | Env default | `GEOKIT_MAP_PROVIDER`, `MAP_PROVIDER` (`@geokit/env`) | same + `Info.plist` |
 | Per-map override | `<gk-map provider="…">` | `MapContentRequest.mapProviderId` |
 
-Default on web: **maptiler** (`packages/ui/src/config/tile-cdn.ts`). Default on Swift: **mapbox**.
+Default on web: **maptiler** (`resolveMapProviderIdFromEnv` in `@geokit/env`). Default on Swift: **mapbox**.
 
 ## Runtime surfaces
 

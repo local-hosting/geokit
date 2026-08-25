@@ -24,13 +24,12 @@ Yarn workspaces monorepo for the geospatial SDK.
 
 See [docs/README.md](docs/README.md). Start with [docs/architecture.md](docs/architecture.md) for the three-layer model.
 
-Breaking imports: [docs/import-migration.md](docs/import-migration.md). 
-
 ## Commands
 
 ```bash
 yarn install
-yarn build          # build @geokit/core
+yarn build          # build @geokit/core and @geokit/ui
+yarn build:all      # build every workspace package
 yarn test           # all workspaces
 yarn typecheck      # all workspaces
 yarn demo           # interactive map demos (demo/)

@@ -42,12 +42,19 @@ Say **service**, **plugin**, or **UI provider** — not bare "provider".
 
 ## Bootstrap
 
-**Defaults** (`@geokit/service/builtins`): MapTiler, Mapbox, Foursquare, Google when env keys are present.
+**`ensureCapabilityRoutersReady()`** (`@geokit/service/builtins`): registers MapTiler + Mapbox routing plugins when env keys are present (geocoding, isochrone, directions).
+
+**`ensurePlaceSearchRouterReady()`**: loads Foursquare + Google place-search plugins on demand, then rebuilds routers.
+
+**Capability-specific helpers**: `ensureGeocodingRouterReady()`, `ensureIsochroneRouterReady()`.
 
 **Opt-in**: HERE, OSM, Esri — register explicitly.
 
 ```typescript
-import { ensureCapabilityRoutersReady, ensurePlaceSearchRouterReady } from '@geokit/service/builtins';
+import {
+  ensureCapabilityRoutersReady,
+  ensurePlaceSearchRouterReady,
+} from '@geokit/service/builtins';
 import { registerOsmPlugin } from '@geokit/osm';
 
 await ensureCapabilityRoutersReady();
@@ -98,20 +105,7 @@ Thin lifecycle glue over Web Components — optional peer deps per framework:
 - `@geokit/ui/svelte`
 - `@geokit/ui/adapters/shared`
 
-See [import-migration.md](import-migration.md) for the full breaking-change table.
-
-## Import migration
-
-Legacy `geokit/api/*` re-exports are removed. Use:
-
-| Before | After |
-|--------|-------|
-| `geokit/api` | `@geokit/service` |
-| `geokit/api/registry` | `@geokit/service/registry` |
-| `geokit/api/plugin` | `@geokit/service/plugin` |
-| `geokit/api/providers/foursquare` | `@geokit/foursquare` |
-
-Do not import vendor service classes from `@geokit/service` — import from the `services/*` package.
+Import vendor service classes from `services/*` packages, not from `@geokit/service`.
 
 ## Import tiers (tree-shaking)
 
@@ -122,7 +116,9 @@ Do not import vendor service classes from `@geokit/service` — import from the 
 | Env keys | `@geokit/env`, `@geokit/env/service-keys` | No |
 | H3 lite | `@geokit/h3/lite` | No |
 | H3 full | `@geokit/h3` | Yes (peer) |
+| H3 (legacy) | `@geokit/core/h3` | Yes — deprecated re-export of `@geokit/h3` |
 | UI map | `@geokit/ui`, `@geokit/ui/elements-lite` | Via optional chunks |
 | Service builtins | `@geokit/service/builtins` | No (explicit import) |
+| Crosswalk | `@geokit/crosswalk`, `@geokit/crosswalk/us` | Via `@geokit/h3` when H3 lookups used |
 
-Run `yarn workspace @geokit/core bundle-smoke` in CI to guard distance-only bundles.
+Run `yarn workspace @geokit/core bundle-smoke` (included in `test:all`) to guard distance-only bundles.

@@ -29,6 +29,7 @@ export type CrosswalkResult = {
 export type CrosswalkInput =
   | { lat: number; lon: number }
   | { h3Cell: string }
+  | { geohash: string }
   | { zip: string }
   | { dmaSlug: string }
   | { countyFips: string }
@@ -54,6 +55,9 @@ export type UsCrosswalkTables = {
   h3ToDma: Readonly<Record<string, string>>;
   h3R5ToZips: Readonly<Record<string, readonly string[]>>;
   zipToH3R5: Readonly<Record<string, string>>;
+  geohashToDma: Readonly<Record<string, string>>;
+  geohashP8ToZips: Readonly<Record<string, readonly string[]>>;
+  zipToGeohashP8: Readonly<Record<string, string>>;
   dmaToZips: Readonly<Record<string, readonly string[]>>;
   dmaToCounties?: Readonly<Record<string, readonly string[]>>;
   countyToDma?: Readonly<Record<string, string>>;

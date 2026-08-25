@@ -36,6 +36,7 @@ Use `gkMap.on('moveend', handler)` / `gkMap.off(...)` or `addEventListener('gk-m
 | `gk-point-blur` | Deselected | `{ map }` — cancelable |
 | `gk-point-hover` | Pointer entered | `{ pointId, pointName, lngLat, map, pointElement }` — cancelable |
 | `gk-point-hover-end` | Pointer left | `{ map, pointElement }` — cancelable |
+| `gk-point-data-changed` | Point data updated inside `gk-point-layer` | (no detail) |
 
 ## gk-layer / gk-point-layer
 
@@ -45,6 +46,7 @@ Use `gkMap.on('moveend', handler)` / `gkMap.off(...)` or `addEventListener('gk-m
 | `gk-layer-mouseenter` | Pointer entered feature | `{ feature, lngLat, layerId, sourceId }` |
 | `gk-layer-mouseleave` | Pointer left layer | `{ layerId, sourceId }` |
 | `gk-layer-ready` | Dataset drawn | `{ dataset, sourceId, layerId, featureCount? }` |
+| `gk-layer-shard` | Viewport shard rendered | `{ cellId?, featureCount, layer }` |
 
 ## gk-isochrone
 
@@ -60,7 +62,7 @@ Use `gkMap.on('moveend', handler)` / `gkMap.off(...)` or `addEventListener('gk-m
 | Event | When | Detail |
 |-------|------|--------|
 | `popup-opened` | Shown | `{ lat, lng, content, element }` |
-| `gk-popup-closed` | Closed | `{ popup, map }` |
+| `gk-popup-closed` | Closed | `{ popup, map, reason }` |
 
 ## Other elements
 
@@ -71,7 +73,7 @@ Use `gkMap.on('moveend', handler)` / `gkMap.off(...)` or `addEventListener('gk-m
 | `gk-polyline` | `polyline-created`, `polyline-click` | |
 | `gk-marker` | `marker-created`, `marker-click`, `marker-dragend` | |
 | `gk-h3` | `h3-created` | |
-| `gk-geolocate` | `geolocate`, `geolocate-error`, `track-user-location-start/end` | |
+| `gk-control-geolocate` | `geolocate`, `geolocate-error`, `track-user-location-start`, `track-user-location-end` | |
 
 ## Document events
 

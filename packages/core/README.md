@@ -1,6 +1,6 @@
 # @geokit/core
 
-Slim geospatial utilities for browser and Node.js. Map UI lives in `@geokit/ui`; H3 geometry in `@geokit/h3`; env keys in `@geokit/env`. See [docs/import-migration.md](../../docs/import-migration.md).
+Slim geospatial utilities for browser and Node.js. Map UI lives in `@geokit/ui`; H3 geometry in `@geokit/h3`; env keys in `@geokit/env`. See [docs/architecture.md](../../docs/architecture.md) for package layout and import tiers.
 
 A functional, curried geospatial utility toolkit for browser and Node.js.
 
