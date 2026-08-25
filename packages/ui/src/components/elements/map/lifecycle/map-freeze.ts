@@ -56,7 +56,21 @@ export function whenStyleReady(map: MapLike | null, timeout: number = 2000): Pro
     map.on?.('style.load', handleStyleLoad);
     map.on?.('load', handleLoad);
 
+    const isSurfaceAlive = () => {
+      const getContainer = (map as { getContainer?: () => HTMLElement | null }).getContainer;
+      if (typeof getContainer !== 'function') return true;
+      const container = getContainer.call(map);
+      return container != null && container.isConnected;
+    };
+
     const checkReady = () => {
+      if (!isSurfaceAlive()) {
+        clearTimeout(timeoutId);
+        map.off?.('style.load', handleStyleLoad);
+        map.off?.('load', handleLoad);
+        resolve();
+        return;
+      }
       if (map.isStyleLoaded?.()) {
         clearTimeout(timeoutId);
         map.off?.('style.load', handleStyleLoad);
