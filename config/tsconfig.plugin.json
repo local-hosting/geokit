@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@geokit/service": [
+        "../../packages/service/src/index.ts"
+      ],
+      "@geokit/service/*": [
+        "../../packages/service/src/*"
+      ],
+      "@geokit/geotypes/geokit": [
+        "../../packages/geotypes/src/geokit-adapter.ts"
+      ],
+      "geokit/*": [
+        "../../packages/core/src/*"
+      ]
+    }
+  }
+}

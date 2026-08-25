@@ -4,6 +4,4 @@ Map lifecycle, static provider ids, and bootstrap. Mirrors **geokit-swift `GeoKi
 
 Application adapters live in host apps.
 
-See `docs/module-map.md` and `docs/providers.md`.
-
-See `docs/offline.md` for offline map contract.
+See `docs/providers.md` and `docs/offline.md`.

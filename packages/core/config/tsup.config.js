@@ -37,7 +37,7 @@ function srcEntries(ignore = new Set()) {
 const cjsIgnore = new Set(['src/utils/performance/worker-pool.ts']);
 
 async function copyThemeCss() {
-  const src = join(geokitRoot, 'src/ui/theme.css');
+  const src = join(geokitRoot, '../ui/src/theme.css');
   for (const dest of [
     join(geokitRoot, 'dist/ui/theme.css'),
     join(geokitRoot, 'dist/esm/ui/theme.css'),

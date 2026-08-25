@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buffer, bufferPoint, bufferLine, bufferPolygon } from '../../../src/utils/buffer';
+import { bufferPoint } from '../../../src/utils/buffer/buffer-point';
+import { buffer, bufferLine, bufferPolygon } from '../../../src/utils/buffer/buffer-turf';
 import type { Polygon } from '../../../src/utils/types';
 
 describe('buffer', () => {

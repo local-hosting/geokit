@@ -777,7 +777,7 @@ This package is designed to work in both browser and Node.js environments. It us
 
 Import from `geokit/ui`. Custom elements (`gk-map`, `gk-point`, `gk-layer`, …) emit `gk-*` events for app integration.
 
-See [docs/EVENTS.md](./docs/EVENTS.md) for the full event reference.
+See [docs/events.md](../../docs/events.md) for the event reference.
 
 ## Development
 
@@ -817,9 +817,10 @@ The pre-commit hook will automatically run on staged files when you commit. File
 
 GeoKit Swift (`geokit-swift`) shares core geo math via fixture tests.
 
-- [Module map](docs/module-map.md) — folder layout ↔ Swift targets
-- [Parity tiers](docs/parity.md) — what is and is not cross-platform
-- [Providers](docs/providers.md) — Mapbox / MapTiler / Apple alignment
+- [Architecture](../../docs/architecture.md) — services, plugins, UI providers
+- [Parity](../../docs/parity.md) — TypeScript ↔ Swift layout and fixtures
+- [Providers](../../docs/providers.md) — MapTiler / Mapbox / Apple map backends
+- [Events](../../docs/events.md) — `gk-*` custom events
 
 ```bash
 yarn verify:parity   # build + fixture check + Swift GeoKitCoreTests

@@ -17,6 +17,10 @@ import {
   geohashAreaBounds,
   geohashPointNeighbors,
   geohashAreaNeighbors,
+  geohashTruncate,
+  geohashParent,
+  geohashToPolygon,
+  rollupGeohashMap,
 } from '../../../src/utils/geohash';
 
 describe('geohash', () => {
@@ -243,4 +247,24 @@ describe('geohash', () => {
       });
     });
   });
+  describe('hierarchy and polygon', () => {
+    it('truncates geohash to parent precision', () => {
+      const hash = encodeGeohash(8)(nyc);
+      expect(geohashTruncate(hash, 5)).toBe(hash.slice(0, 5));
+      expect(geohashParent(hash)).toBe(hash.slice(0, hash.length - 1));
+    });
+
+    it('builds polygon from geohash bounds', () => {
+      const polygon = geohashToPolygon('dr5r');
+      expect(polygon?.type).toBe('Polygon');
+      expect(polygon?.coordinates[0]?.length).toBeGreaterThan(3);
+    });
+
+    it('rolls up geohash maps by precision', () => {
+      const native = { dr5regw3: ['01009'], dr5regw4: ['02108'] };
+      const rolled = rollupGeohashMap(native, 5);
+      expect(Object.keys(rolled).length).toBeGreaterThan(0);
+    });
+  });
+
 });

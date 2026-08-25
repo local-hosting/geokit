@@ -14,6 +14,7 @@ export {
 
 // Boundary operations
 export { h3ToBoundary, h3ToPolygon } from './boundary';
+export { unwrapPolygonRingLongitudes } from './unwrap-ring-longitudes.js';
 
 // Hierarchy operations
 export { h3ToParent, h3ToChildren } from './hierarchy';
@@ -64,7 +65,8 @@ export {
   h3AreaNeighbors,
 } from './type-safe';
 
-export { compactH3CellId, expandH3CellId, normalizeH3CellToResolution } from './cell-id';
+export { compactH3CellId, expandH3CellId } from './cell-id';
+export { normalizeH3CellToResolution } from './cell-id-resolution.js';
 
 export {
   h3ResolutionFromZoom,

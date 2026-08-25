@@ -14,6 +14,17 @@ export {
   geohashNeighborsObj,
 } from './neighbors';
 export { validateGeohash, geohashesInBounds } from './validation';
+export { geohashPrecision, geohashTruncate, geohashParent } from './hierarchy';
+export { geohashToPolygon } from './polygon';
+export {
+  invertGeohashMap,
+  rollupGeohashMap,
+  keyToParentGeohash,
+  rollupGeohashToZips,
+  type GeohashMultiMap,
+  type InvertGeohashMapOptions,
+} from './cell-crosswalk';
+
 
 // Type-safe functions
 export {

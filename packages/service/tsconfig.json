@@ -1,0 +1,12 @@
+{
+  "extends": "../../config/tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "geokit/*": ["../core/src/*"],
+      "@twinfile/geotypes/geokit": ["../../../geotypes/src/geokit-adapter.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}

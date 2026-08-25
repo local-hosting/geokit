@@ -362,7 +362,7 @@ export type { LineSegment } from './utils/intersection';
 export { lineIntersection, linesIntersect } from './utils/intersection';
 
 // Buffer utilities
-export { buffer, bufferPoint, bufferLine, bufferPolygon } from './utils/buffer';
+export { bufferPoint } from './utils/buffer/buffer-point';
 
 // Spatial index interoperability utilities
 export {
