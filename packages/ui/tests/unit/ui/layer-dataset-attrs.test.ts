@@ -6,7 +6,7 @@ import {
   collectPassthroughDatasetAttrs,
   isPassthroughDatasetAttr,
   CORE_GK_LAYER_ATTRS,
-} from '../../../src/components/elements/layer/layer-dataset-attrs.js';
+} from '../../../src/components/elements/layer/layer-dataset-attrs';
 
 describe('layer-dataset-attrs', () => {
   it('forwards app-specific attrs without hardcoding geography names', () => {
@@ -21,6 +21,12 @@ describe('layer-dataset-attrs', () => {
     expect(attrs['region']).toBe('midwest');
     expect(attrs['region-id']).toBe('west');
     expect(attrs['layer-dataset']).toBeUndefined();
+  });
+
+  it('treats empty boolean passthrough attrs as true', () => {
+    const el = document.createElement('div');
+    el.setAttribute('show-outlines', '');
+    expect(collectPassthroughDatasetAttrs(el)['show-outlines']).toBe('true');
   });
 
   it('treats core gk-layer attrs as non-passthrough', () => {
