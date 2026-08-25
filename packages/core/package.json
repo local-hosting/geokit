@@ -374,7 +374,6 @@
     "access": "restricted"
   },
   "devDependencies": {
-    "@twinfile/geotypes": "portal:../geotypes",
     "@geokit/service": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/jsdom": "^27.0.0",

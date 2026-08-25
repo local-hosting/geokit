@@ -25,7 +25,6 @@ Say **service**, **plugin**, or **UI provider** — not bare "provider".
 |---------|------|
 | `@geokit/core` | `packages/core/` |
 | `@geokit/service` | `packages/service/` |
-| `@geokit/geotypes` | `packages/geotypes/` |
 | `@geokit/crosswalk` | `packages/crosswalk/` |
 | `@geokit/foursquare`, `@geokit/google`, `@geokit/mapbox`, `@geokit/maptiler`, `@geokit/here`, `@geokit/osm`, `@geokit/esri` | `services/*/` |
 
@@ -35,7 +34,6 @@ Say **service**, **plugin**, or **UI provider** — not bare "provider".
 |------|----------|
 | Geo utils + map UI | `@geokit/core` |
 | Place search / geocoding / isochrones | + `@geokit/service` |
-| POI taxonomy (`geotypes: ['RSE']`) | + `@geokit/geotypes` |
 | Vendor APIs | + one or more `services/*` packages |
 
 ## Bootstrap
@@ -46,28 +44,13 @@ Say **service**, **plugin**, or **UI provider** — not bare "provider".
 
 ```typescript
 import { ensureCapabilityRoutersReady, ensurePlaceSearchRouterReady } from '@geokit/service/builtins';
-import { setPlaceTaxonomyResolver } from '@geokit/service/place-taxonomy';
-import { createGeokitTaxonomyResolver } from '@geokit/geotypes/geokit';
 import { registerOsmPlugin } from '@geokit/osm';
 
-setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
 await ensureCapabilityRoutersReady();
 await registerOsmPlugin();
 await ensurePlaceSearchRouterReady();
 ```
 
-Search by geotype:
-
-```typescript
-import { getCapabilityRouter } from '@geokit/service/registry';
-
-const placeSearch = getCapabilityRouter('placeSearch');
-await placeSearch?.placeSearch?.({
-  ll: [-86.78, 36.16],
-  geotypes: ['RSE'],
-  radius: 1500,
-});
-```
 
 ## Same vendor, two jobs
 
