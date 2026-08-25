@@ -3,8 +3,6 @@ import path from 'node:path';
 export function pluginVitestAliases(repoRoot: string): Record<string, string> {
   const serviceRoot = path.join(repoRoot, 'packages/service');
   const coreRoot = path.join(repoRoot, 'packages/core');
-  const geotypesRoot = path.join(repoRoot, 'packages/geotypes');
-
   return {
     '@geokit/service/types': path.join(serviceRoot, 'src/services/types.ts'),
     '@geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
@@ -17,7 +15,6 @@ export function pluginVitestAliases(repoRoot: string): Record<string, string> {
     '@geokit/service/builtins': path.join(serviceRoot, 'src/builtins.ts'),
     '@geokit/service': path.join(serviceRoot, 'src/index.ts'),
     '@geokit/core/config/env/service-keys': path.join(coreRoot, 'src/config/env/service-keys.ts'),
-    '@geokit/geotypes/geokit': path.join(geotypesRoot, 'src/geokit-adapter.ts'),
     '@geokit/core/utils/retry': path.join(coreRoot, 'src/utils/retry.ts'),
     '@geokit/core/utils/cache': path.join(coreRoot, 'src/utils/cache.ts'),
     '../../../core/tests/fixtures/geojson': path.join(coreRoot, 'tests/fixtures/geojson.ts'),
@@ -54,9 +51,3 @@ export function serviceVitestAliases(repoRoot: string): Record<string, string> {
   };
 }
 
-export function geotypesVitestAliases(repoRoot: string): Record<string, string> {
-  const serviceRoot = path.join(repoRoot, 'packages/service');
-
-  return {
-  };
-}

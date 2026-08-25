@@ -1,6 +1,6 @@
 # Geokit monorepo
 
-Yarn workspaces monorepo for the geospatial SDK and POI taxonomy.
+Yarn workspaces monorepo for the geospatial SDK.
 
 ## Packages
 
@@ -8,7 +8,6 @@ Yarn workspaces monorepo for the geospatial SDK and POI taxonomy.
 |---------|------|-------------|
 | `@geokit/core` | `packages/core/` | Core geo utilities and map UI |
 | `@geokit/service` | `packages/service/` | API registry, composite routing, plugin hooks |
-| `@geokit/geotypes` | `packages/geotypes/` | POI taxonomy (YAML, proto, slugs, acronyms) |
 | `@geokit/crosswalk` | `packages/crosswalk/` | Geo identity crosswalk (H3, ZIP, DMA, …) |
 | `@geokit/foursquare` | `services/foursquare/` | Foursquare Places search |
 | `@geokit/google` | `services/google/` | Google Places search |
@@ -32,23 +31,9 @@ yarn typecheck      # all workspaces
 yarn demo           # interactive map demos (demo/)
 ```
 
-```bash
-yarn workspace @geokit/geotypes run sync   # slugs + acronyms + provider tables
-yarn workspace @geokit/geotypes run open   # Clay taxonomy preview
-```
 
 Package API reference: [packages/core/README.md](packages/core/README.md).
 
-## Place taxonomy
-
-```typescript
-import { setPlaceTaxonomyResolver } from '@geokit/service/place-taxonomy';
-import { createGeokitTaxonomyResolver } from '@geokit/geotypes/geokit';
-
-setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
-
-// placeSearch({ geotypes: ['RSE'], ll: [...] }) → Foursquare/Google category params
-```
 
 ## Slim vs full install
 
@@ -56,5 +41,4 @@ setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
 |------|---------|
 | Geo utils + map UI only | `@geokit/core` |
 | Place search / geocoding / isochrones | + `@geokit/service` |
-| POI taxonomy | + `@geokit/geotypes` |
 | Vendor APIs | + `services/*` packages as needed |

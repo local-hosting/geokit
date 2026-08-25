@@ -9,7 +9,6 @@ import {
 describe('@geokit/osm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
   });
 
   it('parses OSM tags', () => {

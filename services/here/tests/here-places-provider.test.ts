@@ -8,7 +8,6 @@ import {
 describe('@geokit/here', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
   });
 
 
