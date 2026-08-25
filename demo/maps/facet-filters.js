@@ -1,5 +1,5 @@
 import { setupMapsDemo } from '../shared/bootstrap-maps.js';
-import { buildFacetFilterExpression } from '../../packages/core/src/ui/map-facet-filters.ts';
+import { buildFacetFilterExpression } from '../../packages/ui/src/map-facet-filters.ts';
 
 const mapElement = document.getElementById('facet-filters-map');
 const logEl = document.getElementById('log');
