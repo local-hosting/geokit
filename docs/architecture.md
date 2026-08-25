@@ -35,7 +35,8 @@ Say **service**, **plugin**, or **UI provider** — not bare "provider".
 
 | Need | Packages |
 |------|----------|
-|  `@geokit/core` | `@geokit/core` |
+| Geo utils only | `@geokit/core` |
+| Map UI | `@geokit/ui` |
 | Place search / geocoding / isochrones | + `@geokit/service` |
 | Vendor APIs | + one or more `services/*` packages |
 
@@ -96,6 +97,8 @@ Thin lifecycle glue over Web Components — optional peer deps per framework:
 - `@geokit/ui/react`
 - `@geokit/ui/svelte`
 - `@geokit/ui/adapters/shared`
+
+See [import-migration.md](import-migration.md) for the full breaking-change table.
 
 ## Import migration
 
