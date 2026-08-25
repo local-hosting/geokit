@@ -7,7 +7,7 @@
 /**
  * Base provider configuration
  */
-export interface ServiceConfig {
+export interface UIProviderConfig {
   apiKey?: string;
   accessToken?: string;
   /** Full MapLibre style.json URL — overrides built-in theme/style names. */
@@ -213,7 +213,7 @@ export interface MapInstance {
  * Only one UI provider is active at a time
  */
 export abstract class BaseUIProvider {
-  protected config: ServiceConfig | null = null;
+  protected config: UIProviderConfig | null = null;
   protected sdk: any = null;
 
   /**
@@ -224,7 +224,7 @@ export abstract class BaseUIProvider {
   /**
    * Initialize the provider (load SDK, set config, etc.)
    */
-  abstract initialize(config: ServiceConfig): Promise<void>;
+  abstract initialize(config: UIProviderConfig): Promise<void>;
 
   /**
    * Create a map instance

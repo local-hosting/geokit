@@ -1,8 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const { createSharedPointLayers } = vi.hoisted(() => ({
+const layerStylesMock = vi.hoisted(() => ({
   createSharedPointLayers: vi.fn(),
+  ensureSharedPointSelectionRingLayer: vi.fn(),
+  getGlowRadiusInterpolation: () => ['literal', 12],
+  multiplyRadiusExpression: (base: unknown, scale: number) => ['*', base, scale],
 }));
+
+const { createSharedPointLayers } = layerStylesMock;
 
 vi.mock('../../../src/utils/map-utils', () => ({
   updateSourceData: vi.fn(() => true),
@@ -13,11 +18,9 @@ vi.mock('../../../src/utils/shared-point-heal.js', () => ({
   isSharedPointLayerSetFullyComplete: vi.fn(() => true),
 }));
 
-vi.mock('../../../src/utils/layer-styles', () => ({
-  createSharedPointLayers,
-  getGlowRadiusInterpolation: () => ['literal', 12],
-  multiplyRadiusExpression: (base: unknown, scale: number) => ['*', base, scale],
-}));
+vi.mock('../../../src/utils/layers/styles/index.js', () => layerStylesMock);
+vi.mock('../../../src/utils/layer-styles', () => layerStylesMock);
+vi.mock('../../../src/utils/layer-styles.js', () => layerStylesMock);
 
 import {
   buildSharedPointFeatureStateHoverPaint,

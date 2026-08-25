@@ -3,7 +3,7 @@ import type {
   Service,
   GeocodeOptions,
   IsochroneOptions,
-  ServiceConfig,
+  UIProviderConfig,
   PlaceSearchOptions,
   PlaceSearchResult,
   ReverseGeocodeOptions,
@@ -24,7 +24,7 @@ export type MockIsochroneOptions = {
  * Tracks fetch count and supports in-memory caching like real providers.
  */
 export class MockAPIProvider implements Service {
-  protected config: ServiceConfig | null = null;
+  protected config: UIProviderConfig | null = null;
   private initialized = false;
   private readonly cache = new Map<string, GeoJSON.FeatureCollection>();
   private fetchCount = 0;
@@ -40,7 +40,7 @@ export class MockAPIProvider implements Service {
     return 'mock-api';
   }
 
-  async initialize(config: ServiceConfig): Promise<void> {
+  async initialize(config: UIProviderConfig): Promise<void> {
     this.config = config;
     this.initialized = true;
   }
@@ -101,7 +101,7 @@ export class MockAPIProvider implements Service {
     this.cache.clear();
   }
 
-  getConfig(): ServiceConfig | null {
+  getConfig(): UIProviderConfig | null {
     return this.config;
   }
 

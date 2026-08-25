@@ -2,9 +2,9 @@
  * Map child element filter helpers (Single Responsibility: filter points/polygons/isochrones by criteria)
  */
 
-import type { PointElement } from '../point/point';
-import type { PolygonElement } from '../polygon';
-import type { IsochroneElement } from '../isochrone/isochrone';
+import type { PointElement } from '../../point/point';
+import type { PolygonElement } from '../../polygon';
+import type { IsochroneElement } from '../../isochrone/isochrone';
 
 export function filterPoints(
   elements: HTMLElement[],

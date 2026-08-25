@@ -26,7 +26,7 @@ export {
   sanitizeMapHashFlatView,
   type MapUrlSyncHandle,
   type UrlHashState,
-} from '../../components/elements/map/map-url-sync.js';
+} from '../../components/elements/map/surface/map-url-sync.js';
 
 export {
   onGkMapReadyDocument,

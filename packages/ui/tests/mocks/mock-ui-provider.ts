@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import type { BaseUIProvider, ServiceConfig } from '../../src/ui/providers/types';
+import type { BaseUIProvider, UIProviderConfig } from '../../src/ui/providers/types';
 
 /** Minimal UI provider stub for registry and component integration tests. */
 export class MockUIProvider implements BaseUIProvider {
@@ -7,7 +7,7 @@ export class MockUIProvider implements BaseUIProvider {
     return 'mock-ui';
   }
 
-  async initialize(_config: ServiceConfig): Promise<void> {}
+  async initialize(_config: UIProviderConfig): Promise<void> {}
 
   async createMap(_container: HTMLElement, _options: Record<string, unknown>): Promise<unknown> {
     return {

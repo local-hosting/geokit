@@ -2,7 +2,7 @@
  * gk-layer dataset registry — host app registers mounts via registerLayerDatasetMount() at boot.
  */
 
-import { resolveLayerDatasetMount } from '@geokit/core/geojson-loader';
+import { resolveLayerDatasetMount } from '@geokit/ui/geojson-loader';
 import type {
   LayerDatasetContext,
   LayerDatasetHandle,
@@ -75,4 +75,4 @@ export {
   registerLayerDatasetMount,
   unregisterLayerDatasetMount,
   clearLayerDatasetMounts,
-} from '@geokit/core/geojson-loader';
+} from '@geokit/ui/geojson-loader';

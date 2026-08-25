@@ -9,7 +9,7 @@ import { wrapMapResize } from '../utils/map-utils';
 import { getProviderConfig } from './registry.js';
 import { BaseUIProvider } from './types';
 import type {
-  ServiceConfig,
+  UIProviderConfig,
   MapOptions,
   ControlOptions,
   MarkerOptions,
@@ -19,7 +19,7 @@ import type {
 export class MapboxUIProvider extends BaseUIProvider {
   protected sdk: any = null;
   private sdkLoadPromise: Promise<any> | null = null;
-  protected config: ServiceConfig | null = null;
+  protected config: UIProviderConfig | null = null;
 
   getName(): string {
     return 'mapbox';
@@ -30,7 +30,7 @@ export class MapboxUIProvider extends BaseUIProvider {
     return null;
   }
 
-  async initialize(config: ServiceConfig): Promise<void> {
+  async initialize(config: UIProviderConfig): Promise<void> {
     this.config = config;
 
     // Return existing promise if already loading
