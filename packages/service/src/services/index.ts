@@ -10,14 +10,6 @@ export { Service, CachedService, type CachedServiceOptions } from './service.js'
 export * from './registry';
 export { CompositeService, createCompositeService } from './composite-service';
 export { rebuildCapabilityRouters, resetCapabilityRouterReady } from './capability-router-rebuild.js';
-export {
-  ensureCapabilityRoutersReady,
-  ensureGeocodingRouterReady,
-  ensurePlaceSearchRouterReady,
-  ensureIsochroneRouterReady,
-  resetGeocodingRouterReady,
-  registerDefaultPlugins,
-} from '../builtins.js';
 
 // Export cache utilities for custom providers
 export {

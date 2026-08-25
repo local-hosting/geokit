@@ -2,12 +2,12 @@ import type { ServiceCapability } from '../services/types.js';
 import type { Service } from '../services/service.js';
 
 /** Ordered provider list per capability for fallback routing. */
-export type CapabilityProviderChain = Partial<Record<ServiceCapability, Service[]>>;
+export type CapabilityServiceChain = Partial<Record<ServiceCapability, Service[]>>;
 
 export interface CompositeServiceOptions {
   /** Registry name, e.g. composite:geocoding */
   name: string;
-  chains: CapabilityProviderChain;
+  chains: CapabilityServiceChain;
 }
 
 /** Optional env overrides for capability router bootstrap (browser init). */
