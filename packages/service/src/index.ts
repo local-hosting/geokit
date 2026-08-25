@@ -7,5 +7,4 @@
 export * from './services/index.js';
 export * from './plugin.js';
 export * from './place-search-cache.js';
-export * from './builtins.js';
 export * from './setup-capability-routers.js';
