@@ -5,7 +5,7 @@
  * HTTP geocoding/isochrones use @geokit/service/registry (API providers), not this registry.
  */
 
-import type { BaseUIProvider, ServiceConfig } from './types';
+import type { BaseUIProvider, UIProviderConfig } from './types';
 
 /**
  * UI Providers Registry
@@ -20,7 +20,7 @@ let defaultUIProvider: BaseUIProvider | null = null;
 /**
  * Global provider configurations
  */
-const providerConfigs = new Map<string, ServiceConfig>();
+const providerConfigs = new Map<string, UIProviderConfig>();
 
 /**
  * Configure global settings for providers
@@ -36,7 +36,7 @@ const providerConfigs = new Map<string, ServiceConfig>();
  * });
  * ```
  */
-export function configure(config: Record<string, ServiceConfig>): void {
+export function configure(config: Record<string, UIProviderConfig>): void {
   for (const [provider, providerConfig] of Object.entries(config)) {
     const existing = providerConfigs.get(provider);
     providerConfigs.set(provider, { ...existing, ...providerConfig });
@@ -48,7 +48,7 @@ export function configure(config: Record<string, ServiceConfig>): void {
  * @param name - Provider name
  * @returns Provider configuration or undefined
  */
-export function getProviderConfig(name: string): ServiceConfig | undefined {
+export function getProviderConfig(name: string): UIProviderConfig | undefined {
   return providerConfigs.get(name);
 }
 
@@ -70,7 +70,7 @@ export function registerUIProvider(name: string, provider: BaseUIProvider): void
  */
 export async function setUIProvider(
   name: string,
-  config?: ServiceConfig
+  config?: UIProviderConfig
 ): Promise<BaseUIProvider> {
   const provider = uiProviders.get(name);
 
@@ -107,7 +107,7 @@ export async function setUIProvider(
  */
 export async function getProviderByName(
   name: string,
-  config?: ServiceConfig
+  config?: UIProviderConfig
 ): Promise<BaseUIProvider> {
   const provider = uiProviders.get(name);
 

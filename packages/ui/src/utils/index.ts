@@ -1,3 +1,9 @@
+export * from './boundaries/index.js';
+export * from './choropleth/index.js';
+export * from './shared-points/index.js';
+export * from './map-surface/index.js';
+export * from './paint/index.js';
+export * from './layers/styles/index.js';
 /**
  * UI Utilities
  *

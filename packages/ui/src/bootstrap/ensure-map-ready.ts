@@ -104,7 +104,7 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
     : null;
 
   const geokitStep = performance.now();
-  await import('../core');
+  await import('../elements-lite');
   const { configure, registerUIProvider, setUIProvider, getUIProviderByName } = await import(
     '../providers/registry'
   );

@@ -7,7 +7,7 @@
  * the script must set window.maptilersdk.
  */
 
-import { buildMaptilerStyleUrl } from '@geokit/core/config/tile-cdn';
+import { buildMaptilerStyleUrl } from '@geokit/ui/config/tile-cdn';
 import {
   inlineMapTilerTileJsonSources,
   rewriteMapTilerStyleResourceUrls,
@@ -35,7 +35,7 @@ function loadScriptAndGetGlobal(url: string, globalName: string): Promise<unknow
   });
 }
 import type {
-  ServiceConfig,
+  UIProviderConfig,
   MapOptions,
   ControlOptions,
   MarkerOptions,
@@ -136,7 +136,7 @@ import { withSuppressedMaptilerConsole } from './maptiler-console-suppress.js';
 export class MapTilerUIProvider extends BaseUIProvider {
   protected sdk: any = null;
   private sdkLoadPromise: Promise<any> | null = null;
-  protected config: ServiceConfig | null = null;
+  protected config: UIProviderConfig | null = null;
 
   getName(): string {
     return 'maptiler';
@@ -152,7 +152,7 @@ export class MapTilerUIProvider extends BaseUIProvider {
     return null;
   }
 
-  async initialize(config: ServiceConfig): Promise<void> {
+  async initialize(config: UIProviderConfig): Promise<void> {
     this.config = { ...(this.config ?? {}), ...config };
 
     // Return existing promise if already loading

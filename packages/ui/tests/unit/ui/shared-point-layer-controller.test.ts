@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   attachSharedPointHoverGlowRadiusSync: vi.fn(() => () => {}),
 }));
 
-vi.mock('../../../src/utils/shared-point-sync.js', () => ({
+vi.mock('../../../src/utils/shared-points/shared-point-sync.js', () => ({
   attachSharedPointHoverGlowRadiusSync: mocks.attachSharedPointHoverGlowRadiusSync,
   createSharedPointLayersFromPaint: vi.fn(async () => {}),
   ensureSharedPointGeoJsonSource: vi.fn(),
@@ -22,12 +22,12 @@ vi.mock('../../../src/utils/shared-point-sync.js', () => ({
   waitForSharedPointLayerSetComplete: mocks.waitForSharedPointLayerSetComplete,
 }));
 
-vi.mock('../../../src/utils/shared-point-heal.js', () => ({
+vi.mock('../../../src/utils/shared-points/shared-point-heal.js', () => ({
   ensureSharedPointLayerSetHealed: mocks.ensureSharedPointLayerSetHealed,
   isSharedPointLayerSetFullyComplete: mocks.isSharedPointLayerSetFullyComplete,
 }));
 
-import { createSharedPointLayerController } from '../../../src/utils/shared-point-layer-controller.js';
+import { createSharedPointLayerController } from '../../../src/utils/shared-points/shared-point-layer-controller.js';
 
 const EMPTY_FC: FeatureCollection = { type: 'FeatureCollection', features: [] };
 const ONE_FC: FeatureCollection = {
