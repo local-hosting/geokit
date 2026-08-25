@@ -1,4 +1,4 @@
-import type { MapElementLike } from './map-element-like.js';
+import type { MapElementLike } from './map-element-like';
 
 /** Access methods defined later in the MapElement mixin chain. */
 export function mapEl(self: unknown): MapElementLike {

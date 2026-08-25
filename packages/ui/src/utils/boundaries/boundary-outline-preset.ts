@@ -11,8 +11,8 @@ import {
   refreshBoundaryOutlineData,
   removeBoundaryOutlineLayer,
   type BoundaryOutlineLayerConfig,
-} from './boundary-outline-layer.js';
-import { type BoundaryMapLike, isBoundaryMapReady } from './boundary-map.js';
+} from './boundary-outline-layer';
+import { type BoundaryMapLike, isBoundaryMapReady } from './boundary-map';
 
 export type BoundaryOutlinePresetKind = 'county' | 'state' | 'city' | 'zip';
 
@@ -162,4 +162,4 @@ export const refreshCityBoundaries = (
   config: Pick<CityBoundaryConfig, 'polygonSourceId' | 'lineSourceId'>
 ) => refreshBoundaryOutlineForPreset(map, cities, config, { fallbackToInput: true })!;
 
-export type { BoundaryOutlineLayerConfig } from './boundary-outline-layer.js';
+export type { BoundaryOutlineLayerConfig } from './boundary-outline-layer';

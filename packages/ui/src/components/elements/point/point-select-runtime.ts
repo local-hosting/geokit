@@ -28,7 +28,7 @@ import {
   clearSelectedVisual,
 } from './point-selection';
 
-import { pointEl } from './point-el.js';
+import { pointEl } from './point-el';
 const { debug } = createGeokitLogger('point');
 
 export interface PointOptions {
@@ -55,7 +55,7 @@ export interface PointOptions {
   pointName?: string;
 }
 
-import { PointLayersRuntime } from './point-layers-runtime.js';
+import { PointLayersRuntime } from './point-layers-runtime';
 
 export class PointSelectRuntime extends PointLayersRuntime {
   protected canonicalPointFeature(fallback: GeoJSON.Feature): GeoJSON.Feature | null {

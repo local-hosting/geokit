@@ -1,9 +1,9 @@
-export * from './boundaries/index.js';
-export * from './choropleth/index.js';
-export * from './shared-points/index.js';
-export * from './map-surface/index.js';
-export * from './paint/index.js';
-export * from './layers/styles/index.js';
+export * from './boundaries/index';
+export * from './choropleth/index';
+export * from './shared-points/index';
+export * from './map-surface/index';
+export * from './paint/index';
+export * from './layers/styles/index';
 /**
  * UI Utilities
  *
@@ -30,9 +30,9 @@ export {
   restackVenueLayersForMarket,
   restackVenueLayersAboveDmaFill,
   type BindGkVenueLayerStackingOptions,
-} from './venue-layer-stack-bind.js';
+} from './venue-layer-stack-bind';
 
-export * from './map-semantic-events.js';
-export * from './venue-layer-stack-bind.js';
-export * from './popup-close-reason.js';
-export * from './map-element-on.js';
+export * from './map-semantic-events';
+export * from './venue-layer-stack-bind';
+export * from './popup-close-reason';
+export * from './map-element-on';

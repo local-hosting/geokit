@@ -1,7 +1,7 @@
 import {
   onGkMapReadyOnce,
   type GkMapReadyOnceOptions,
-} from '../shared/map-document-events.js';
+} from '../shared/map-document-events';
 
 export type CreateGkMapReadyOnceOptions = GkMapReadyOnceOptions & {
   getEnabled?: () => boolean;

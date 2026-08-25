@@ -1,5 +1,5 @@
-import { boundaryOutlinePreset, refreshBoundaryOutlineForPreset, type BoundaryOutlinePresetKind } from './boundary-outline-preset.js';
-import type { OutlineLayerOps } from '../../components/elements/layer/layer-dataset-shared.js';
+import { boundaryOutlinePreset, refreshBoundaryOutlineForPreset, type BoundaryOutlinePresetKind } from './boundary-outline-preset';
+import type { OutlineLayerOps } from '../../components/elements/layer/layer-dataset-shared';
 
 export function createOutlineOps(kind: BoundaryOutlinePresetKind): OutlineLayerOps {
   const preset = boundaryOutlinePreset(kind);

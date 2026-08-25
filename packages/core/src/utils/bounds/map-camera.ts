@@ -3,7 +3,7 @@
  * Framework-agnostic; usable by browse cards, MCP hosts, and embedded maps.
  */
 
-import type { Bounds } from '../../types/index.js';
+import type { Bounds } from '../../types/index';
 
 export const DEFAULT_CONTAINED_FRAME_PADDING = 40;
 

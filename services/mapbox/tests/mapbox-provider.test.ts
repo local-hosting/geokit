@@ -8,7 +8,7 @@ import {
   initService,
   getServiceForCapability,
 } from '@geokit/service/registry';
-import { MapboxService } from '../src/mapbox-service.js';
+import { MapboxService } from '../src/mapbox-service';
 import { useCleanAPIRegistry } from './setup/registries.ts';
 import { isochroneFeatureCollection } from '../../../core/tests/fixtures/geojson';
 import { mockGlobalFetchJson } from '../../../core/tests/mocks/fetch';

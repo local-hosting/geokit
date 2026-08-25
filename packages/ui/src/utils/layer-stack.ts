@@ -1,1 +1,1 @@
-export * from './map-surface/layer-stack.js';
+export * from './map-surface/layer-stack';

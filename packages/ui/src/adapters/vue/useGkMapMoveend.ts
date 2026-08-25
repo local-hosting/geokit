@@ -1,6 +1,6 @@
 import { onUnmounted, watch, type Ref } from 'vue';
-import type { GkMapMoveEndDetail } from '../../utils/map-semantic-events.js';
-import { bindGkMapMoveendLifecycle } from '../shared/moveend-lifecycle.js';
+import type { GkMapMoveEndDetail } from '../../utils/map-semantic-events';
+import { bindGkMapMoveendLifecycle } from '../shared/moveend-lifecycle';
 
 export function useGkMapMoveend(
   containerRef: Ref<HTMLElement | null>,

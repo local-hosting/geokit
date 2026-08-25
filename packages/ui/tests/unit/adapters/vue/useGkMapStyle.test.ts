@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { effectScope, ref } from 'vue';
-import { useGkMapStyle } from '../../../../src/adapters/vue/useGkMapStyle.js';
-import type { GkMapElement } from '../../../../src/adapters/shared/types.js';
+import { useGkMapStyle } from '../../../../src/adapters/vue/useGkMapStyle';
+import type { GkMapElement } from '../../../../src/adapters/shared/types';
 
 describe('useGkMapStyle', () => {
   it('sets map-style when style ref changes', async () => {

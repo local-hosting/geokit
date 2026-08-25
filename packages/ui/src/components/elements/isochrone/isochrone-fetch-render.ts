@@ -21,7 +21,7 @@ import {
   type FillAntialiasMap,
 } from '../../../utils/choropleth-fill-paint';
 
-import { isochroneEl } from './isochrone-el.js';
+import { isochroneEl } from './isochrone-el';
 export interface IsochroneOptions {
   lat: number;
   lng: number;
@@ -35,7 +35,7 @@ export interface IsochroneOptions {
   data?: GeoJSON.FeatureCollection;
 }
 
-import { IsochroneBase } from './isochrone-base.js';
+import { IsochroneBase } from './isochrone-base';
 
 export class IsochroneFetchRender extends IsochroneBase {
   protected async fetchAndRenderIsochrone(): Promise<void> {

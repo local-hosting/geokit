@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GeospatialWorkerPool } from '../../../../src/utils/performance/worker-pool.js';
+import { GeospatialWorkerPool } from '../../../../src/utils/performance/worker-pool';
 
 type WorkerHandler = {
   onmessage: ((event: MessageEvent) => void) | null;
@@ -93,7 +93,7 @@ import {
   getWorkerPool,
   intersectPolygonsAsync,
   polygonToH3Async,
-} from '../../../../src/utils/performance/worker-pool.js';
+} from '../../../../src/utils/performance/worker-pool';
 
 describe('worker pool async helpers', () => {
   afterEach(() => {

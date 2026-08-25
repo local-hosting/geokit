@@ -1,1 +1,1 @@
-export * from './map-surface/scroll-idle.js';
+export * from './map-surface/scroll-idle';

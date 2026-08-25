@@ -4,9 +4,9 @@ import {
   createKeyedPluginRegistrar,
   createOptionalPluginRegistrar,
   type GeokitServicePlugin,
-} from '../src/plugin.js';
-import { _resetRegistries, getService } from '../src/services/registry.js';
-import { Service, type ServiceCapability, type ServiceConfig } from '../src/services/types.js';
+} from '../src/plugin';
+import { _resetRegistries, getService } from '../src/services/registry';
+import { Service, type ServiceCapability, type ServiceConfig } from '../src/services/types';
 
 class StubProvider extends Service {
   getName(): string {

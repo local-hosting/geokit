@@ -1,6 +1,6 @@
 import { onUnmounted, ref, watch, type Ref } from 'vue';
-import { createMapMountPolicy } from '../shared/mount-policy.js';
-import type { MapMountPolicyOptions } from '../shared/types.js';
+import { createMapMountPolicy } from '../shared/mount-policy';
+import type { MapMountPolicyOptions } from '../shared/types';
 
 export type UseGkMapMountOptions = MapMountPolicyOptions & {
   /** App-wide scroll idle ref from a host scroll gate composable. */

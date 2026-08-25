@@ -9,7 +9,7 @@ import {
   getServiceForCapability,
   _resetRegistries,
 } from '@geokit/service/registry';
-import { FoursquareService } from '../src/foursquare-service.js';
+import { FoursquareService } from '../src/foursquare-service';
 
 describe('FoursquareService', () => {
   let provider: FoursquareService;

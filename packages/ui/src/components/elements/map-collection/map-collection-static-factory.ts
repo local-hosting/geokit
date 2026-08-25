@@ -66,7 +66,7 @@ function mapCollectionDebug(msg: string, data?: Record<string, unknown>): void {
   }
 }
 
-import { MapCollectionObservers } from './map-collection-observers.js';
+import { MapCollectionObservers } from './map-collection-observers';
 
 export class MapCollectionElement extends MapCollectionObservers {
   public refresh(): void {

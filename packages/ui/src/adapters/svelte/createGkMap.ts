@@ -1,6 +1,6 @@
-import { bindGkMapLifecycle } from '../shared/map-lifecycle.js';
-import type { GkMapElement, GkMapLifecycleHandlers } from '../shared/types.js';
-import { createStore } from './subscribe.js';
+import { bindGkMapLifecycle } from '../shared/map-lifecycle';
+import type { GkMapElement, GkMapLifecycleHandlers } from '../shared/types';
+import { createStore } from './subscribe';
 
 export type CreateGkMapOptions = GkMapLifecycleHandlers;
 

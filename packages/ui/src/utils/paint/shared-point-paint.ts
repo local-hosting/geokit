@@ -11,7 +11,7 @@ import {
   buildOpacityWithHoverExpression,
   HOVER_CONFIG,
   scaleRadiusForHover,
-} from '../map-surface/feature-state-hover.js';
+} from '../map-surface/feature-state-hover';
 
 /** Min point radius (px). Safari needs ≥2px or circles can vanish when zoomed out. */
 export const SHARED_POINT_MIN_RADIUS_PX = 2.8;

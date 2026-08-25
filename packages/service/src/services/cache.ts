@@ -1,1 +1,1 @@
-export * from './http/cache.js';
+export * from './http/cache';

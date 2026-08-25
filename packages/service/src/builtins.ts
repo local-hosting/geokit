@@ -1,6 +1,6 @@
-import type { CapabilityRouterEnvOverrides } from './types/api-composite.js';
-import { getCapabilityRouter } from './services/registry.js';
-import { rebuildCapabilityRouters, resetCapabilityRouterReady } from './services/capability-router-rebuild.js';
+import type { CapabilityRouterEnvOverrides } from './types/api-composite';
+import { getCapabilityRouter } from './services/registry';
+import { rebuildCapabilityRouters, resetCapabilityRouterReady } from './services/capability-router-rebuild';
 
 let capabilityRoutersReady: Promise<void> | null = null;
 let lastOverrides: CapabilityRouterEnvOverrides | undefined;

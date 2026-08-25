@@ -1,1 +1,1 @@
-export * from './map-surface/geodesic-circle.js';
+export * from './map-surface/geodesic-circle';

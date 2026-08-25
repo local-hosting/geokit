@@ -3,7 +3,7 @@ import {
   HerePlacesService,
   buildHereDiscoverUrl,
   normalizeHereDiscoverItem,
-} from '../src/here-places-service.js';
+} from '../src/here-places-service';
 
 describe('@geokit/here', () => {
   beforeEach(() => {

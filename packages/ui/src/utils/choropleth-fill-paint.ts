@@ -1,1 +1,1 @@
-export * from './paint/choropleth-fill-paint.js';
+export * from './paint/choropleth-fill-paint';

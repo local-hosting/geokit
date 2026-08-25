@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
   onGkMapReadyOnce,
   type GkMapReadyOnceOptions,
-} from '../shared/map-document-events.js';
+} from '../shared/map-document-events';
 
 export type UseGkMapReadyOnceOptions = GkMapReadyOnceOptions & {
   enabled?: boolean;

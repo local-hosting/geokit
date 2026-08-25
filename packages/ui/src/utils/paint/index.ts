@@ -1,2 +1,2 @@
-export * from './choropleth-fill-paint.js';
-export * from './shared-point-paint.js';
+export * from './choropleth-fill-paint';
+export * from './shared-point-paint';

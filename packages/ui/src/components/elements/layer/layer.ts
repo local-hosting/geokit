@@ -48,7 +48,7 @@ export type {
 import {
   collectPassthroughDatasetAttrs,
   isPassthroughDatasetAttr,
-} from './layer-dataset-attrs.js';
+} from './layer-dataset-attrs';
 import {
   mountLayerDataset,
   normalizeLayerDatasetId,

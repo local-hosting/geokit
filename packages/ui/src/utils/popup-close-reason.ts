@@ -1,1 +1,1 @@
-export * from './map-surface/popup-close-reason.js';
+export * from './map-surface/popup-close-reason';

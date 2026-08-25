@@ -3,7 +3,7 @@
  */
 
 import type { MapInstance } from '../../providers/types';
-import type { ApplySharedPointPaintOptions, SharedPointLayerIds } from '../paint/shared-point-paint.js';
+import type { ApplySharedPointPaintOptions, SharedPointLayerIds } from '../paint/shared-point-paint';
 import {
   applySharedPointLayerPaint,
   paintColorFromProperty,
@@ -13,7 +13,7 @@ import {
   SHARED_POINT_GLOW_HIT_AREA_SCALE,
   SHARED_POINT_RADIUS_EXPRESSION,
   type SharedPointFeatureStateHoverOptions,
-} from '../paint/shared-point-paint.js';
+} from '../paint/shared-point-paint';
 
 const SHARED_POINT_GLOW_RADIUS_SCALE = 4;
 
@@ -75,7 +75,7 @@ export function resolveSharedPointLayerIdForSource(
 }
 
 async function importLayerStyles() {
-  return import('../layers/styles/index.js');
+  return import('../layers/styles/index');
 }
 
 function readPointRadiusFromMap(map: MapInstance, pointLayerId: string): unknown[] {

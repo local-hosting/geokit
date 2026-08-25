@@ -18,13 +18,13 @@ import {
   type ApplySharedPointPaintOptions,
   type SharedPointFeatureStateHoverOptions,
   type SharedPointLayerIds,
-} from '../paint/shared-point-paint.js';
-import { ensureSharedPointLayerSetHealed } from './shared-point-heal.js';
+} from '../paint/shared-point-paint';
+import { ensureSharedPointLayerSetHealed } from './shared-point-heal';
 import {
   applyEmbedScaleToSharedPointLayerOptions,
   COMPACT_EMBED_GLOW_BLUR,
   COMPACT_EMBED_MIN_RADIUS_PX,
-} from '../map-surface/embed-point-scale.js';
+} from '../map-surface/embed-point-scale';
 
 function resolveCompactGlowBlur(compactPoints?: boolean, glowBlur?: number): number | undefined {
   if (glowBlur != null) return glowBlur;
@@ -286,7 +286,7 @@ export async function createSharedPointLayerSet(
   const useHelper =
     useMapTilerPointHelper ?? (mapProvider === 'maptiler' && isMapTilerPointHelperAvailable());
 
-  const { createSharedPointLayers } = await import('../layers/styles/index.js');
+  const { createSharedPointLayers } = await import('../layers/styles/index');
 
   createSharedPointLayers({
     map,
@@ -415,7 +415,7 @@ export async function syncExistingSharedPointLayers(
 export { applySharedPointLayerPaint, attachSharedPointHoverGlowRadiusSync };
 
 async function importLayerStylesModule() {
-  return import('../layers/styles/index.js');
+  return import('../layers/styles/index');
 }
 
 type LayerStylesModule = Awaited<ReturnType<typeof importLayerStylesModule>>;

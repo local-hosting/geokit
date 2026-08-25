@@ -1,13 +1,13 @@
-import type { Bounds } from '../types/index.js';
+import type { Bounds } from '../types/index';
 import type {
   MapStaticAutoSnapshotArgs,
   MapStaticBoundsSnapshotArgs,
   MapStaticSnapshotAdapter,
   MapStaticSnapshotArgs,
   ResolvedMapStaticProvider,
-} from '../types/static-map.js';
-import { resolveMapboxStaticStyle } from '../config/map-style.js';
-import type { MapRenderDimensions, MapStyleId, MapViewport } from '../types/static-map.js';
+} from '../types/static-map';
+import { resolveMapboxStaticStyle } from '../config/map-style';
+import type { MapRenderDimensions, MapStyleId, MapViewport } from '../types/static-map';
 
 export const DEFAULT_MAP_STYLE: MapStyleId = resolveMapboxStaticStyle();
 
@@ -88,8 +88,8 @@ export function buildMapMarkdownImage(args: {
   return `![${alt}](${args.imageUrl})`;
 }
 
-export * from './dimensions.js';
-export * from './region-path.js';
-export * from './overlays.js';
-export { mapboxStaticAdapter, MAPBOX_DEFAULT_STYLE } from './providers/mapbox.js';
-export { maptilerStaticAdapter, MAPTILER_DEFAULT_STYLE } from './providers/maptiler.js';
+export * from './dimensions';
+export * from './region-path';
+export * from './overlays';
+export { mapboxStaticAdapter, MAPBOX_DEFAULT_STYLE } from './providers/mapbox';
+export { maptilerStaticAdapter, MAPTILER_DEFAULT_STYLE } from './providers/maptiler';

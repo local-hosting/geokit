@@ -1,6 +1,6 @@
-import type { ViewportBounds } from '../viewport/viewport-bounds.js';
+import type { ViewportBounds } from '../viewport/viewport-bounds';
 
-export type { ViewportBounds } from '../viewport/viewport-bounds.js';
+export type { ViewportBounds } from '../viewport/viewport-bounds';
 
 /** Approximate WGS84 bounds from map center + zoom (for viewport prefetch before MapLibre is ready). */
 export function approximateViewportBoundsFromCenterZoom(

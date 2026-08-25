@@ -66,7 +66,7 @@ function mapCollectionDebug(msg: string, data?: Record<string, unknown>): void {
   }
 }
 
-import { mapCollectionEl } from './map-collection-el.js';
+import { mapCollectionEl } from './map-collection-el';
 export class MapCollectionBase extends BaseElement {
   static observedAttributes = [
     'pool-size',

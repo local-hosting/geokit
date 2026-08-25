@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { bindGkMapPointEventsLifecycle } from '../../../../src/adapters/shared/point-events-lifecycle.js';
+import { bindGkMapPointEventsLifecycle } from '../../../../src/adapters/shared/point-events-lifecycle';
 
 describe('bindGkMapPointEventsLifecycle', () => {
   it('wires on gk-map-ready and re-wires on gk-map-unfreeze', () => {

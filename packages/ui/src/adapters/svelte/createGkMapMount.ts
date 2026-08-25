@@ -1,6 +1,6 @@
-import { createMapMountPolicy } from '../shared/mount-policy.js';
-import type { MapMountPolicyOptions } from '../shared/types.js';
-import { createStore } from './subscribe.js';
+import { createMapMountPolicy } from '../shared/mount-policy';
+import type { MapMountPolicyOptions } from '../shared/types';
+import { createStore } from './subscribe';
 
 export type GkMapMountState = {
   shouldMount: boolean;

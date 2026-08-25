@@ -1,1 +1,1 @@
-export * from './boundaries/boundary-map.js';
+export * from './boundaries/boundary-map';

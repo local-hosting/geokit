@@ -14,13 +14,13 @@ import {
   STATE_BOUNDARY_GEOJSON_SOURCE_OPTIONS,
   ZIP_BOUNDARY_GEOJSON_SOURCE_OPTIONS,
   BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS,
-} from '../map-surface/geojson-source-options.js';
+} from '../map-surface/geojson-source-options';
 import {
   hasBoundaryOutlineLineLayers,
   restoreBasemapBorders,
   suppressBasemapBorders,
   type BoundaryMapLike,
-} from './boundary-map.js';
+} from './boundary-map';
 
 /** Nearly invisible fill so interactive layers remain queryable. */
 export const BOUNDARY_OUTLINE_HIT_FILL_OPACITY = 0.01;

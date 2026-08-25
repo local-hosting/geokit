@@ -119,5 +119,5 @@ export type {
 
 export * from '@geokit/service/types/api-composite';
 
-export type * from './static-map.js';
-export * from './map-display.js';
+export type * from './static-map';
+export * from './map-display';

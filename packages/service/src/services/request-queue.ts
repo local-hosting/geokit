@@ -1,1 +1,1 @@
-export * from './http/request-queue.js';
+export * from './http/request-queue';

@@ -2,7 +2,7 @@ import { onUnmounted, unref, watch, type ComputedRef, type Ref } from 'vue';
 import {
   onGkMapReadyOnce,
   type GkMapReadyOnceOptions,
-} from '../shared/map-document-events.js';
+} from '../shared/map-document-events';
 
 export type UseGkMapReadyOnceOptions = Omit<GkMapReadyOnceOptions, 'onReady'> & {
   onReady: (event: Event) => void;

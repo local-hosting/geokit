@@ -5,31 +5,31 @@
  * Use these utilities to create consistent, scalable point and glow layers.
  */
 
-import type { MapInstance } from '../../../providers/types.js';
+import type { MapInstance } from '../../../providers/types';
 import type { Feature } from '@geokit/core/types';
 import { getFeatureId } from '@geokit/core/geojson';
-import { getCSSVariable, getCSSVariableNumber } from '../../map-surface/theme.js';
-import { debug } from '../../map-surface/logger.js';
-import { HOVER_CONFIG, type HoverStateHandlers } from '../../map-surface/feature-state-hover.js';
+import { getCSSVariable, getCSSVariableNumber } from '../../map-surface/theme';
+import { debug } from '../../map-surface/logger';
+import { HOVER_CONFIG, type HoverStateHandlers } from '../../map-surface/feature-state-hover';
 import {
   buildSharedPointFeatureStateHoverPaint,
   expandInterpolateCaseMultiply,
-} from '../../paint/shared-point-paint.js';
-import { resolveSharedPointLayerIdForSource } from '../../shared-points/shared-point-heal.js';
+} from '../../paint/shared-point-paint';
+import { resolveSharedPointLayerIdForSource } from '../../shared-points/shared-point-heal';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-import type { SharedPointLayersConfig, CircleStyleOptions } from './types.js';
+import type { SharedPointLayersConfig, CircleStyleOptions } from './types';
 import {
   getPointRadiusInterpolation, getGlowRadiusInterpolation, SELECTION_RING_STROKE_WIDTH, SELECTION_RING_GAP_PX,
-} from './circle-glow.js';
-import { offsetRadiusInterpolation } from './category-expressions.js';
-import { omitNil } from './circle-glow.js';
+} from './circle-glow';
+import { offsetRadiusInterpolation } from './category-expressions';
+import { omitNil } from './circle-glow';
 import {
   resolveGlowBlur, resolveGlowOpacity, resolveSharedGlowColor, resolveDefaultLayerColor, resolveDefaultStrokeColor,
-} from './types.js';
+} from './types';
 
 /**
  * Create shared glow + point layers with explicit layer IDs and full paint control.

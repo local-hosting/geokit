@@ -1,1 +1,1 @@
-export * from './shared-points/shared-point-sync.js';
+export * from './shared-points/shared-point-sync';

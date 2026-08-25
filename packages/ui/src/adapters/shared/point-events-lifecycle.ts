@@ -1,6 +1,6 @@
-import { bindGkPointLayerEvents, type GkPointEventHandlers } from '../../utils/map-events.js';
-import { bindGkMapContainerLifecycle } from './container-lifecycle.js';
-import type { GkMapLifecycleDetail } from './types.js';
+import { bindGkPointLayerEvents, type GkPointEventHandlers } from '../../utils/map-events';
+import { bindGkMapContainerLifecycle } from './container-lifecycle';
+import type { GkMapLifecycleDetail } from './types';
 
 /**
  * Bind gk-point-* handlers for every gk-map inside a container.

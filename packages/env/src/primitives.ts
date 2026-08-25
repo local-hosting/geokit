@@ -1,6 +1,6 @@
 /// <reference path="./import-meta.d.ts" />
 
-import type { GeokitEnv } from './types/env.js';
+import type { GeokitEnv } from './types/env';
 
 export function envTrim(env: GeokitEnv, key: string): string | undefined {
   const value = env[key]?.trim();

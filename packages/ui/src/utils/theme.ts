@@ -1,1 +1,1 @@
-export * from './map-surface/theme.js';
+export * from './map-surface/theme';

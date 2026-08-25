@@ -3,7 +3,7 @@
  */
 
 import type { FeatureCollection } from 'geojson';
-import { buildChoroplethFillPaint } from '../paint/choropleth-fill-paint.js';
+import { buildChoroplethFillPaint } from '../paint/choropleth-fill-paint';
 
 export interface ChoroplethFillLayerSpec {
   sourceId: string;

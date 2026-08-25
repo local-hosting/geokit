@@ -3,7 +3,7 @@
  */
 
 import type { FeatureCollection } from 'geojson';
-import { assertBoundaryLayerOrder } from './boundary-map.js';
+import { assertBoundaryLayerOrder } from './boundary-map';
 
 export interface BoundaryOutlineMap {
   getZoom?(): number;

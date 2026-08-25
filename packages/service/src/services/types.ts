@@ -4,7 +4,7 @@
 
 import type { Position } from 'geojson';
 
-export { Service, CachedService, type CachedServiceOptions } from './service.js';
+export { Service, CachedService, type CachedServiceOptions } from './service';
 
 export type ServiceCapability = 'isochrone' | 'geocoding' | 'directions' | 'placeSearch';
 

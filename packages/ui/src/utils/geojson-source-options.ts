@@ -1,1 +1,1 @@
-export * from './map-surface/geojson-source-options.js';
+export * from './map-surface/geojson-source-options';

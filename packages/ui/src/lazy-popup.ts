@@ -14,7 +14,7 @@
 // Cached lazy loader
 // ---------------------------------------------------------------------------
 
-type PopupModule = typeof import('./components/elements/popup/popup.js');
+type PopupModule = typeof import('./components/elements/popup/popup');
 
 let _cached: PopupModule | null = null;
 let _loading: Promise<PopupModule> | null = null;
@@ -22,7 +22,7 @@ let _loading: Promise<PopupModule> | null = null;
 /** Trigger background fetch of the popup module. */
 export function preloadPopupModule(): void {
   if (_cached || _loading) return;
-  _loading = import('./components/elements/popup/popup.js').then(m => {
+  _loading = import('./components/elements/popup/popup').then(m => {
     _cached = m;
     return m;
   });
@@ -122,10 +122,10 @@ export function onClearPopupsEvent(
 
 const POPUP_CLOSED_EVENT = 'gk-popup-closed';
 
-import type { PopupCloseReason } from './utils/popup-close-reason.js';
+import type { PopupCloseReason } from './utils/popup-close-reason';
 
-export type { PopupCloseReason } from './utils/popup-close-reason.js';
-export { setPopupCloseReason, takePopupCloseReason, peekPopupCloseReason } from './utils/popup-close-reason.js';
+export type { PopupCloseReason } from './utils/popup-close-reason';
+export { setPopupCloseReason, takePopupCloseReason, peekPopupCloseReason } from './utils/popup-close-reason';
 
 export type PopupClosedDetail = {
   popup?: unknown;

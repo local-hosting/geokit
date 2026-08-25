@@ -1,5 +1,5 @@
 import { createElement, forwardRef, type HTMLAttributes, type ReactNode } from 'react';
-import type { GkMapElement } from '../shared/types.js';
+import type { GkMapElement } from '../shared/types';
 
 export type GkMapProps = HTMLAttributes<HTMLElement> & {
   children?: ReactNode;

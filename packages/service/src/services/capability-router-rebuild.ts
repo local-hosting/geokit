@@ -1,1 +1,1 @@
-export * from './routing/capability-router-rebuild.js';
+export * from './routing/capability-router-rebuild';

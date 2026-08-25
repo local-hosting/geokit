@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { FeatureCollection } from 'geojson';
-import { updateChoroplethFillLayerData } from '../../../src/utils/choropleth-fill-layer.js';
+import { updateChoroplethFillLayerData } from '../../../src/utils/choropleth-fill-layer';
 
 describe('updateChoroplethFillLayerData', () => {
   it('updates geojson source data when setData is available', () => {

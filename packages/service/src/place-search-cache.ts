@@ -2,8 +2,8 @@
  * Shared cache-key builder for placeSearch providers.
  */
 
-import type { PlaceSearchOptions } from './services/types.js';
-import { coordinateCacheKey } from './services/cache.js';
+import type { PlaceSearchOptions } from './services/types';
+import { coordinateCacheKey } from './services/cache';
 
 export function buildPlaceSearchCacheKey(
   options: PlaceSearchOptions,

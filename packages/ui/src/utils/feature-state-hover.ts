@@ -1,1 +1,1 @@
-export * from './map-surface/feature-state-hover.js';
+export * from './map-surface/feature-state-hover';

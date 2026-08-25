@@ -3,11 +3,11 @@
  */
 
 import type { FeatureCollection } from 'geojson';
-import type { ApplySharedPointPaintOptions, SharedPointLayerIds } from '../paint/shared-point-paint.js';
+import type { ApplySharedPointPaintOptions, SharedPointLayerIds } from '../paint/shared-point-paint';
 import {
   ensureSharedPointLayerSetHealed,
   isSharedPointLayerSetFullyComplete,
-} from './shared-point-heal.js';
+} from './shared-point-heal';
 import {
   attachSharedPointHoverGlowRadiusSync,
   createSharedPointLayersFromPaint,
@@ -18,7 +18,7 @@ import {
   syncExistingSharedPointLayers,
   tearDownSharedPointLayers,
   waitForSharedPointLayerSetComplete,
-} from './shared-point-sync.js';
+} from './shared-point-sync';
 
 export interface SharedPointLayerMap {
   getSource(id: string): { setData?(data: unknown): void } | undefined;

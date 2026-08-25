@@ -4,7 +4,7 @@ import {
   buildOverpassPlaceSearchQuery,
   normalizeOverpassElement,
   parseOsmTag,
-} from '../src/osm-service.js';
+} from '../src/osm-service';
 
 describe('@geokit/osm', () => {
   beforeEach(() => {

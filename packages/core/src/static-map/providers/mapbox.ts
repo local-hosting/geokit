@@ -1,25 +1,25 @@
-import type { Bounds } from '../../types/index.js';
+import type { Bounds } from '../../types/index';
 import type { Position } from 'geojson';
 import type {
   MapStaticAutoSnapshotArgs,
   MapStaticBoundsSnapshotArgs,
   MapStaticSnapshotAdapter,
   MapStaticSnapshotArgs,
-} from '../../types/static-map.js';
-import { resolveMapboxStaticStyle } from '../../config/map-style.js';
-import type { MapStyleId } from '../../types/static-map.js';
+} from '../../types/static-map';
+import { resolveMapboxStaticStyle } from '../../config/map-style';
+import type { MapStyleId } from '../../types/static-map';
 import {
   DEFAULT_REGION_PATH_STYLE,
   encodePolyline,
   simplifyGeometryRings,
   type MapRegionPathStyle,
-} from '../region-path.js';
+} from '../region-path';
 import {
   staticMapDimensions,
   staticMapImageSuffix,
   staticMapPaddingPx,
   staticMapRefererHeaders,
-} from '../dimensions.js';
+} from '../dimensions';
 
 const MAPBOX_STATIC_BASE = 'https://api.mapbox.com/styles/v1';
 

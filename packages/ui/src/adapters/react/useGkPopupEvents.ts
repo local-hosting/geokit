@@ -3,7 +3,7 @@ import {
   onClearPopupsEvent,
   onPopupClosedEvent,
   type PopupClosedDetail,
-} from '../../lazy-popup.js';
+} from '../../lazy-popup';
 
 export type UseGkPopupEventsOptions = {
   sourceId: string;

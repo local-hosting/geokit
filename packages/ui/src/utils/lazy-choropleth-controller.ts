@@ -1,1 +1,1 @@
-export * from './choropleth/lazy-choropleth-controller.js';
+export * from './choropleth/lazy-choropleth-controller';

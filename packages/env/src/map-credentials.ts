@@ -1,13 +1,13 @@
-import type { MapStaticProviderId } from './types/map-provider.js';
-import type { GeokitEnv } from './types/env.js';
+import type { MapStaticProviderId } from './types/map-provider';
+import type { GeokitEnv } from './types/env';
 import {
   MAPBOX_KEY_KEYS,
   MAP_GENERIC_API_KEY_KEYS,
   MAP_PROVIDER_KEYS,
   MAP_REFERER_KEYS,
   MAPTILER_KEY_KEYS,
-} from './types/env.js';
-import { firstEnv, readRuntimeEnv } from './primitives.js';
+} from './types/env';
+import { firstEnv, readRuntimeEnv } from './primitives';
 
 export type MapProviderEnv = GeokitEnv;
 

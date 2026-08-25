@@ -1,1 +1,1 @@
-export * from './map-surface/map-semantic-events.js';
+export * from './map-surface/map-semantic-events';

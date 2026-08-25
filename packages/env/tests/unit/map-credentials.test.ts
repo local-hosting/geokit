@@ -5,7 +5,7 @@ import {
   resolveMapRefererFromEnv,
   resolveMapboxKeyFromEnv,
   resolveMaptilerKeyFromEnv,
-} from '../../src/map-credentials.js';
+} from '../../src/map-credentials';
 
 describe('map-credentials', () => {
   it('resolves maptiler and mapbox keys from env', () => {

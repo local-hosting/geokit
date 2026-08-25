@@ -131,7 +131,7 @@ function isValidStyleForSetStyle(style: unknown): boolean {
   return false;
 }
 
-import { withSuppressedMaptilerConsole } from './maptiler-console-suppress.js';
+import { withSuppressedMaptilerConsole } from './maptiler-console-suppress';
 
 export class MapTilerUIProvider extends BaseUIProvider {
   protected sdk: any = null;

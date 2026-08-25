@@ -4,7 +4,7 @@ import {
   fetchWithRetry,
   requireAPIKey,
   retryOn429,
-} from '../src/services/api-utils.js';
+} from '../src/services/api-utils';
 
 describe('api-utils', () => {
   afterEach(() => {

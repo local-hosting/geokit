@@ -1,6 +1,6 @@
-import type { CrosswalkCountry, CrosswalkSpine, UsCrosswalkTables } from '../types.js';
-import type { UsTableLookups } from '../us/tables.js';
-import type { UsCrosswalkTableName } from '../us/table-names.js';
+import type { CrosswalkCountry, CrosswalkSpine, UsCrosswalkTables } from '../types';
+import type { UsTableLookups } from '../us/tables';
+import type { UsCrosswalkTableName } from '../us/table-names';
 
 let usTables: UsCrosswalkTables | null = null;
 let usLookups: UsTableLookups | null = null;

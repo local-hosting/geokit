@@ -3,7 +3,7 @@
  * Centralized configuration for the entire library
  */
 
-import { resolveMapboxKeyFromEnv, resolveMaptilerKeyFromEnv } from './env/index.js';
+import { resolveMapboxKeyFromEnv, resolveMaptilerKeyFromEnv } from './env/index';
 
 export interface GeokitConfig {
   // Default providers

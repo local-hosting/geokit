@@ -9,8 +9,8 @@ import {
   MAP_GENERIC_API_KEY_KEYS,
   ROUTING_TOKEN_KEYS,
   type GeokitEnv,
-} from './types/env.js';
-import { firstEnv, readRuntimeEnv, stripTrailingSlash } from './primitives.js';
+} from './types/env';
+import { firstEnv, readRuntimeEnv, stripTrailingSlash } from './primitives';
 
 export const DEFAULT_MAP_HOST_URL = 'http://localhost:3002';
 

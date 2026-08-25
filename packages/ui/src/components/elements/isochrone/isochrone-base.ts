@@ -21,7 +21,7 @@ import {
   type FillAntialiasMap,
 } from '../../../utils/choropleth-fill-paint';
 
-import { isochroneEl } from './isochrone-el.js';
+import { isochroneEl } from './isochrone-el';
 export interface IsochroneOptions {
   lat: number;
   lng: number;

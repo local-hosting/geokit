@@ -1,4 +1,4 @@
-import { bindDocumentEvents, type DocumentEventBinding } from '../shared/document-events.js';
+import { bindDocumentEvents, type DocumentEventBinding } from '../shared/document-events';
 
 /** Register document/window listeners; call stop() from onDestroy. */
 export function createGkDocumentEvents(

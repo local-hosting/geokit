@@ -1,7 +1,7 @@
 {
   "name": "@geokit/ui",
   "version": "0.2.33",
-  "description": "Geokit map UI \u2014 Web Components, layer controllers, and framework adapters",
+  "description": "Geokit map UI — Web Components, layer controllers, and framework adapters",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",
