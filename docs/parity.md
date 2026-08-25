@@ -6,10 +6,12 @@ Canonical Swift notes: [`geokit-swift/docs/parity.md`](../../geokit-swift/docs/p
 
 | Layer | TypeScript | Swift |
 |-------|------------|-------|
-| Core | `packages/core/src/core/`, `src/utils/*` | `GeoKitCore` |
-| Turf | `src/utils/turf/` | `GeoKitCore/Utils/*` |
-| Contract | `src/contract/` | `GeoKitContract` |
-| UI | `src/ui/` | `GeoKitUI`, `GeoKitUIMapbox` |
+| Core utils | `packages/core/src/utils/*` | `GeoKitCore` |
+| H3 | `packages/h3/src/` | `GeoKitCore` H3 subset |
+| Turf | `packages/core/src/utils/turf/` | `GeoKitCore/Utils/*` |
+| Contract | `packages/core/src/contract/` | `GeoKitContract` |
+| UI | `packages/ui/src/` | `GeoKitUI`, `GeoKitUIMapbox` |
+| Env | `packages/env/src/` | — |
 | Services | `packages/service/`, `services/*/` | — |
 
 ## Fixture contract
@@ -22,9 +24,10 @@ Canonical Swift notes: [`geokit-swift/docs/parity.md`](../../geokit-swift/docs/p
 
 | Tier | Scope | Parity |
 |------|-------|--------|
-| 1 | Bounds, distance, bearing, coordinates, H3, geohash, GeoJSON | Shared fixtures |
+| 1 | Bounds, distance, bearing, coordinates, geohash, GeoJSON | Shared fixtures |
+| 1 | H3 (`@geokit/h3`) | Shared fixtures where Swift implements H3 |
 | 1.5 | `@geokit/core/turf` | Shared fixtures; Swift line/polygon buffers unsupported |
-| 2 | `@geokit/core/contract`, `ensureMapReady` | Partial |
+| 2 | `@geokit/core/contract`, `ensureMapReady` (`@geokit/ui`) | Partial |
 | 3 | Service registry, MCP tools, extended Turf | Node-only |
 
 **Epsilon:** lat/lon ±0.0001; H3 and geohash ids exact match.
