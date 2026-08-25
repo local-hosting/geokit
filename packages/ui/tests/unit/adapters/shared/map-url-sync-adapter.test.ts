@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   bindMapMoveendUrlSync,
   sanitizeMapHashFlatView,
-} from '../../../../src/components/elements/map/map-url-sync.js';
+} from '../../../../src/components/elements/map/map-url-sync';
 
 describe('map url sync helpers', () => {
   it('sanitizeMapHashFlatView strips pitch and bearing', () => {

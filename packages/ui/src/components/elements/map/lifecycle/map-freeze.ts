@@ -2,7 +2,7 @@
  * Map freeze/unfreeze helpers (Single Responsibility: style ready, resize, WebGL release delay)
  */
 
-import { safeResizeMap } from '../../../../utils/map-surface/map-utils.js';
+import { safeResizeMap } from '../../../../utils/map-surface/map-utils';
 
 type MapLike = {
   isStyleLoaded?: () => boolean;

@@ -1,1 +1,1 @@
-export * from './routing/composite-service.js';
+export * from './routing/composite-service';

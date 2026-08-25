@@ -4,7 +4,7 @@
  */
 
 // Re-export API providers (types, registry, implementations)
-export * from './services/index.js';
-export * from './plugin.js';
-export * from './place-search-cache.js';
-export * from './setup-capability-routers.js';
+export * from './services/index';
+export * from './plugin';
+export * from './place-search-cache';
+export * from './setup-capability-routers';

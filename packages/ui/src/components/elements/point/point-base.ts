@@ -28,7 +28,7 @@ import {
   clearSelectedVisual,
 } from './point-selection';
 
-import { pointEl } from './point-el.js';
+import { pointEl } from './point-el';
 const { debug } = createGeokitLogger('point');
 
 export interface PointOptions {

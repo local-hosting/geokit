@@ -1,5 +1,5 @@
-export type { GeokitEnv, EnvAliasGroup } from './types/env.js';
-export type { MapStaticProviderId } from './types/map-provider.js';
+export type { GeokitEnv, EnvAliasGroup } from './types/env';
+export type { MapStaticProviderId } from './types/map-provider';
 export {
   FOURSQUARE_KEY_KEYS,
   GOOGLE_PLACES_KEY_KEYS,
@@ -16,7 +16,7 @@ export {
   ROUTING_TOKEN_KEYS,
   TILE_API_URL_KEYS,
   TILE_CDN_URL_KEYS,
-} from './types/env.js';
+} from './types/env';
 
 export {
   envTrim,
@@ -26,9 +26,9 @@ export {
   readViteEnv,
   stripTrailingSlash,
   writeEnvKeys,
-} from './primitives.js';
+} from './primitives';
 
-export { applyGeokitEnvAliases } from './aliases.js';
+export { applyGeokitEnvAliases } from './aliases';
 
 export {
   resolveDedicatedMapKeysFromEnv,
@@ -38,7 +38,7 @@ export {
   resolveMapRefererFromEnv,
   resolveMaptilerKeyFromEnv,
   type MapProviderEnv,
-} from './map-credentials.js';
+} from './map-credentials';
 
 export {
   DEFAULT_MAP_HOST_URL,
@@ -49,5 +49,5 @@ export {
   resolveRoutingAccessToken,
   resolveHereApiKey,
   resolveEsriApiKey,
-} from './service-keys.js';
+} from './service-keys';
 

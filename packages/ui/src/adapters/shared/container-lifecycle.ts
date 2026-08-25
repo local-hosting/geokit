@@ -2,8 +2,8 @@ import {
   onMapReadyInContainer,
   onMapUnloadInContainer,
   onMapUnfreezeInContainer,
-} from '../../utils/map-utils.js';
-import type { GkMapLifecycleDetail } from './types.js';
+} from '../../utils/map-utils';
+import type { GkMapLifecycleDetail } from './types';
 
 export type GkMapContainerHandlers = {
   onReady?: (detail: GkMapLifecycleDetail) => void | Promise<void>;

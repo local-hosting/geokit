@@ -66,8 +66,8 @@ function mapCollectionDebug(msg: string, data?: Record<string, unknown>): void {
   }
 }
 
-import { mapCollectionEl } from './map-collection-el.js';
-import { MapCollectionBase } from './map-collection-base.js';
+import { mapCollectionEl } from './map-collection-el';
+import { MapCollectionBase } from './map-collection-base';
 
 export class MapCollectionPool extends MapCollectionBase {
   protected async processVisibilityChanges(): Promise<void> {

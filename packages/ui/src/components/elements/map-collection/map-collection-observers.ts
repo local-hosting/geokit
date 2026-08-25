@@ -66,9 +66,9 @@ function mapCollectionDebug(msg: string, data?: Record<string, unknown>): void {
   }
 }
 
-import { MapCollectionPool } from './map-collection-pool.js';
+import { MapCollectionPool } from './map-collection-pool';
 
-import { mapCollectionEl } from './map-collection-el.js';
+import { mapCollectionEl } from './map-collection-el';
 export class MapCollectionObservers extends MapCollectionPool {
   protected handleNewMaps(): void {
     const mapElements = Array.from(mapCollectionEl(this).querySelectorAll('gk-map')) as MapElement[];

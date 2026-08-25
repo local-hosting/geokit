@@ -14,7 +14,7 @@ import {
 import {
   MapOfflineTileCache,
   type MapOfflinePrefetchOptions,
-} from './map-offline-tile-cache.js';
+} from './map-offline-tile-cache';
 
 export interface MapOfflineContextLoaderConfig {
   urlTemplate: string;

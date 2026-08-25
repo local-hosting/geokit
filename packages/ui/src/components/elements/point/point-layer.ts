@@ -18,12 +18,12 @@ import {
   ensureSharedPointGeoJsonSource,
   tearDownSharedPointLayers,
   updateSharedPointSourceData,
-} from '../../../utils/shared-point-sync.js';
+} from '../../../utils/shared-point-sync';
 import {
   paintColorFromProperty,
   SHARED_POINT_GLOW_BLUR,
   SHARED_POINT_UNIFORM_GLOW_OPACITY,
-} from '../../../utils/shared-point-paint.js';
+} from '../../../utils/shared-point-paint';
 import type {
   LayerClickEventDetail,
   LayerMouseEnterEventDetail,

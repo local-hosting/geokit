@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import dotenv from 'dotenv';
-import type { GeokitEnv } from './types/env.js';
-import { applyGeokitEnvAliases } from './aliases.js';
+import type { GeokitEnv } from './types/env';
+import { applyGeokitEnvAliases } from './aliases';
 
 function mergeDotenvFile(env: GeokitEnv, dotenvPath: string): void {
   if (!existsSync(dotenvPath)) return;

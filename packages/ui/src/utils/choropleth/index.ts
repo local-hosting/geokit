@@ -1,3 +1,3 @@
-export * from './choropleth-feature-state-controller.js';
-export * from './choropleth-fill-layer.js';
-export * from './lazy-choropleth-controller.js';
+export * from './choropleth-feature-state-controller';
+export * from './choropleth-fill-layer';
+export * from './lazy-choropleth-controller';

@@ -1,1 +1,1 @@
-export * from './map-surface/route-progress-gradient.js';
+export * from './map-surface/route-progress-gradient';

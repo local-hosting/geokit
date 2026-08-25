@@ -1,5 +1,5 @@
-import { createScrollIdle } from '../../utils/scroll-idle.js';
-import { createStore } from './subscribe.js';
+import { createScrollIdle } from '../../utils/scroll-idle';
+import { createStore } from './subscribe';
 
 const DEFAULT_IDLE_MS = 350;
 let listenerCount = 0;

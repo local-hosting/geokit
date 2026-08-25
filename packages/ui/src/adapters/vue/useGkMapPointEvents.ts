@@ -1,6 +1,6 @@
 import { onUnmounted, watch, type Ref } from 'vue';
-import type { GkPointEventHandlers } from '../../utils/map-events.js';
-import { bindGkMapPointEventsLifecycle } from '../shared/point-events-lifecycle.js';
+import type { GkPointEventHandlers } from '../../utils/map-events';
+import { bindGkMapPointEventsLifecycle } from '../shared/point-events-lifecycle';
 
 /** Lifecycle-aware gk-point-* binding for maps inside a container (pool-safe). */
 export function useGkMapPointEvents(

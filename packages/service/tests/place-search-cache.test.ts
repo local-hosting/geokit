@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPlaceSearchCacheKey } from '../src/place-search-cache.js';
+import { buildPlaceSearchCacheKey } from '../src/place-search-cache';
 
 describe('buildPlaceSearchCacheKey', () => {
   it('builds a stable key from common placeSearch options', () => {

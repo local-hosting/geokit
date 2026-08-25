@@ -1,1 +1,1 @@
-export * from './lifecycle/map-freeze.js';
+export * from './lifecycle/map-freeze';

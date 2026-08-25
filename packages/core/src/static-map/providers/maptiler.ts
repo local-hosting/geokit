@@ -1,23 +1,23 @@
-import type { Bounds } from '../../types/index.js';
+import type { Bounds } from '../../types/index';
 import type { Position } from 'geojson';
 import type {
   MapStaticAutoSnapshotArgs,
   MapStaticBoundsSnapshotArgs,
   MapStaticSnapshotAdapter,
   MapStaticSnapshotArgs,
-} from '../../types/static-map.js';
-import type { MapStyleId } from '../../types/static-map.js';
+} from '../../types/static-map';
+import type { MapStyleId } from '../../types/static-map';
 import {
   DEFAULT_REGION_PATH_STYLE,
   simplifyGeometryRings,
   type MapRegionPathStyle,
-} from '../region-path.js';
-import { resolveMaptilerStaticMapsBase } from '../../config/tile-cdn.js';
+} from '../region-path';
+import { resolveMaptilerStaticMapsBase } from '../../config/tile-cdn';
 import {
   staticMapDimensions,
   staticMapImageSuffix,
   staticMapRefererHeaders,
-} from '../dimensions.js';
+} from '../dimensions';
 
 export const MAPTILER_DEFAULT_STYLE: MapStyleId = 'dataviz-dark';
 

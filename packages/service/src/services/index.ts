@@ -6,10 +6,10 @@
 
 // Re-export types and registry
 export * from './types';
-export { Service, CachedService, type CachedServiceOptions } from './service.js';
+export { Service, CachedService, type CachedServiceOptions } from './service';
 export * from './registry';
 export { CompositeService, createCompositeService } from './composite-service';
-export { rebuildCapabilityRouters, resetCapabilityRouterReady } from './capability-router-rebuild.js';
+export { rebuildCapabilityRouters, resetCapabilityRouterReady } from './capability-router-rebuild';
 
 // Export cache utilities for custom providers
 export {

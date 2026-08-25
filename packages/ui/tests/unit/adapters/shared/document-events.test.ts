@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { bindDocumentEvents } from '../../../../src/adapters/shared/document-events.js';
+import { bindDocumentEvents } from '../../../../src/adapters/shared/document-events';
 
 describe('bindDocumentEvents', () => {
   it('registers listeners and removes them on cleanup', () => {

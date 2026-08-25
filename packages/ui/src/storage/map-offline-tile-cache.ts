@@ -20,7 +20,7 @@ import {
   idbGet,
   idbGetAll,
   idbPut,
-} from './indexed-db.js';
+} from './indexed-db';
 
 export const TILE_CACHE_NAME = 'geokit-tiles-v1';
 const DEFAULT_CONCURRENCY = 8;

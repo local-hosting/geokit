@@ -92,7 +92,7 @@ export {
   type SharedPointLayerControllerOptions,
   type SharedPointGkMap,
   type SharedPointLayerMap,
-} from './utils/shared-point-layer-controller.js';
+} from './utils/shared-point-layer-controller';
 
 export {
   ensureSharedPointLayerSetHealed,
@@ -101,11 +101,11 @@ export {
   syncSharedPointGlowPaint,
   syncSharedPointSelectionRingPaint,
   type EnsureSharedPointLayerSetHealedOptions,
-} from './utils/shared-point-heal.js';
+} from './utils/shared-point-heal';
 export {
   createSharedPointMapOrchestrator,
   type SharedPointMapOrchestrator,
   type SharedPointMapOrchestratorOptions,
-} from './utils/shared-point-map-orchestrator.js';
+} from './utils/shared-point-map-orchestrator';
 
-export { bindGkVenueLayerStacking, restackVenueLayersForMarket } from './utils/venue-layer-stack-bind.js';
+export { bindGkVenueLayerStacking, restackVenueLayersForMarket } from './utils/venue-layer-stack-bind';

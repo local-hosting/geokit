@@ -6,7 +6,7 @@ import {
   fillAntialiasForMap,
   type FillAntialiasMap,
   type FillAntialiasOptions,
-} from '../map-surface/fill-antialias.js';
+} from '../map-surface/fill-antialias';
 
 export type ChoroplethFillPaintInput = {
   'fill-color': unknown;
@@ -38,4 +38,4 @@ export function buildChoroplethFillPaint(
   };
 }
 
-export type { FillAntialiasMap, FillAntialiasOptions } from '../map-surface/fill-antialias.js';
+export type { FillAntialiasMap, FillAntialiasOptions } from '../map-surface/fill-antialias';

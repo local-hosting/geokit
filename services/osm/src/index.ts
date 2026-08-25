@@ -1,5 +1,5 @@
 import { createOptionalPluginRegistrar, type GeokitServicePlugin } from '@geokit/service/plugin';
-import { OsmService } from './osm-service.js';
+import { OsmService } from './osm-service';
 
 export const osmPlugin: GeokitServicePlugin = {
   name: 'osm',
@@ -10,5 +10,5 @@ export const osmPlugin: GeokitServicePlugin = {
 
 export const registerOsmPlugin = createOptionalPluginRegistrar(osmPlugin);
 
-export { OsmService } from './osm-service.js';
-export type { OsmProviderConfig } from './osm-service.js';
+export { OsmService } from './osm-service';
+export type { OsmProviderConfig } from './osm-service';

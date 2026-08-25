@@ -3,8 +3,8 @@
  * Not the UI map backend registry — see geokit src/ui/providers/registry.ts.
  */
 
-import type { ServiceCapability, ServiceConfig } from './types.js';
-import type { Service } from './service.js';
+import type { ServiceCapability, ServiceConfig } from './types';
+import type { Service } from './service';
 
 const services = new Map<string, Service>();
 const capabilityIndex = new Map<ServiceCapability, Service[]>();

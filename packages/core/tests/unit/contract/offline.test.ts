@@ -5,7 +5,7 @@ import {
   validateOfflinePrefetchRequest,
   enumerateOfflineTileCoordinates,
   estimateOfflineTileCount,
-} from '../../../src/contract/offline.js';
+} from '../../../src/contract/offline';
 
 describe('contract/offline', () => {
   it('clamps web prefetch zoom to budget', () => {

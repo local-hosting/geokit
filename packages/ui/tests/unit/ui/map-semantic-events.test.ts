@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { bindGkMapSemanticEvents } from '../../../src/utils/map-semantic-events.js';
+import { bindGkMapSemanticEvents } from '../../../src/utils/map-semantic-events';
 
 describe('bindGkMapSemanticEvents', () => {
   it('dispatches gk-map-moveend and gk-map-click', () => {

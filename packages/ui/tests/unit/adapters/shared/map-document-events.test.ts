@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { onGkMapReadyOnce } from '../../../../src/adapters/shared/map-document-events.js';
+import { onGkMapReadyOnce } from '../../../../src/adapters/shared/map-document-events';
 
 describe('onGkMapReadyOnce', () => {
   it('fires once and respects filter', () => {

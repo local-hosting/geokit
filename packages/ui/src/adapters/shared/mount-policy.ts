@@ -1,5 +1,5 @@
-import { createScrollIdle } from '../../utils/scroll-idle.js';
-import type { MapMountMode, MapMountPolicy, MapMountPolicyOptions } from './types.js';
+import { createScrollIdle } from '../../utils/scroll-idle';
+import type { MapMountMode, MapMountPolicy, MapMountPolicyOptions } from './types';
 
 const DEFAULT_SCROLL_IDLE_MS = 350;
 const DEFAULT_VISIBLE_STABLE_MS = 200;

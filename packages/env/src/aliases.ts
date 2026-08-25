@@ -1,6 +1,6 @@
-import { GEOKIT_ENV_ALIAS_GROUPS } from './types/env.js';
-import type { GeokitEnv } from './types/env.js';
-import { firstEnv } from './primitives.js';
+import { GEOKIT_ENV_ALIAS_GROUPS } from './types/env';
+import type { GeokitEnv } from './types/env';
+import { firstEnv } from './primitives';
 
 export function applyGeokitEnvAliases(env: GeokitEnv): GeokitEnv {
   const result = { ...env };

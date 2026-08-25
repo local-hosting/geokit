@@ -67,4 +67,4 @@ function mapCollectionDebug(msg: string, data?: Record<string, unknown>): void {
 }
 
 
-export { MapCollectionElement } from './map-collection-static-factory.js';
+export { MapCollectionElement } from './map-collection-static-factory';

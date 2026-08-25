@@ -1,6 +1,6 @@
-import { getCenter } from './get-center.js';
-import type { Bounds } from '../../types/index.js';
-import type { MapViewport } from '../../types/static-map.js';
+import { getCenter } from './get-center';
+import type { Bounds } from '../../types/index';
+import type { MapViewport } from '../../types/static-map';
 
 const MIN_ZOOM = 0;
 const MAX_ZOOM = 22;

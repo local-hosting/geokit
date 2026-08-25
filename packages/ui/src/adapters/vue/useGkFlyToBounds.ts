@@ -1,5 +1,5 @@
 import { onUnmounted, watch, type Ref } from 'vue';
-import { bindGkFlyToBounds, type GkFlyToBoundsDetail } from '../shared/fly-to-bounds-events.js';
+import { bindGkFlyToBounds, type GkFlyToBoundsDetail } from '../shared/fly-to-bounds-events';
 
 export function useGkFlyToBounds(
   sourceId: Ref<string>,
@@ -22,4 +22,4 @@ export function useGkFlyToBounds(
   });
 }
 
-export { dispatchGkFlyToBounds } from '../shared/fly-to-bounds-events.js';
+export { dispatchGkFlyToBounds } from '../shared/fly-to-bounds-events';

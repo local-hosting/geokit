@@ -5,27 +5,27 @@
  * For full H3 geometry use `@geokit/h3`.
  */
 
-export { compactH3CellId, expandH3CellId } from './cell/cell-id.js';
+export { compactH3CellId, expandH3CellId } from './cell/cell-id';
 export {
   invertCellMap,
   invertH3ToZips,
   type H3CellMultiMap,
   type H3ToZips,
   type InvertCellMapOptions,
-} from './cell/cell-crosswalk-invert.js';
-export { unwrapPolygonRingLongitudes } from './geometry/unwrap-ring-longitudes.js';
+} from './cell/cell-crosswalk-invert';
+export { unwrapPolygonRingLongitudes } from './geometry/unwrap-ring-longitudes';
 export {
   h3ResolutionFromZoom,
   H3_RESOLUTION_FROM_ZOOM_MIN,
   H3_RESOLUTION_FROM_ZOOM_MAX,
   H3_RESOLUTION_FROM_ZOOM_FACTOR,
   type H3ResolutionFromZoomOptions,
-} from './geometry/resolution-from-zoom.js';
-export type { ViewportBounds } from './viewport/viewport-bounds.js';
+} from './geometry/resolution-from-zoom';
+export type { ViewportBounds } from './viewport/viewport-bounds';
 export {
   approximateViewportBoundsFromCenterZoom,
   mapViewportBounds,
-} from './viewport/map-viewport.js';
-export * from './cell/cell-fade.js';
-export * from './session/cursor-dwell.js';
-export * from './session/session-loaded.js';
+} from './viewport/map-viewport';
+export * from './cell/cell-fade';
+export * from './session/cursor-dwell';
+export * from './session/session-loaded';

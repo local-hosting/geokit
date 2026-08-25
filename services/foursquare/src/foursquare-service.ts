@@ -20,8 +20,8 @@ import {
   buildFoursquarePlacesSearchUrl,
   foursquarePlacesHeaders,
   normalizeFoursquarePlace,
-} from './foursquare-places.js';
-import type { FoursquarePlaceRaw } from './types/foursquare-places.js';
+} from './foursquare-places';
+import type { FoursquarePlaceRaw } from './types/foursquare-places';
 
 const PROVIDER_NAME = 'Foursquare';
 

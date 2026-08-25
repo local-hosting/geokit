@@ -2,7 +2,7 @@
  * Map terrain and 3D buildings (Single Responsibility: setup/cleanup terrain and buildings by zoom)
  */
 
-import { debug } from '../../../../utils/map-surface/logger.js';
+import { debug } from '../../../../utils/map-surface/logger';
 import { getProviderConfig } from '../../../../providers/registry';
 import type { MapInstance } from '../../../../providers/types';
 

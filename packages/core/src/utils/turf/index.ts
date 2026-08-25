@@ -3,11 +3,11 @@
  * Mirrors geokit-swift GeoKitCore measurement modules.
  */
 
-export * from '../containment/index.js';
-export * from '../centroid/index.js';
-export * from '../area/index.js';
-export * from '../length/index.js';
-export * from '../buffer/index.js';
-export * from '../conversions/index.js';
-export { bboxToPolygon, bboxToPolygonGeometry } from '../bounds/bbox-to-polygon.js';
-export { getBounds } from '../bounds/get-bounds.js';
+export * from '../containment/index';
+export * from '../centroid/index';
+export * from '../area/index';
+export * from '../length/index';
+export * from '../buffer/index';
+export * from '../conversions/index';
+export { bboxToPolygon, bboxToPolygonGeometry } from '../bounds/bbox-to-polygon';
+export { getBounds } from '../bounds/get-bounds';

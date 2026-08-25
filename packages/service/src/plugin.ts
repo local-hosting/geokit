@@ -3,16 +3,16 @@
  * A plugin is metadata + factory; registerGeokitPlugin() installs the Service.
  */
 
-import type { ServiceCapability, ServiceConfig } from './services/types.js';
-import type { Service } from './services/service.js';
+import type { ServiceCapability, ServiceConfig } from './services/types';
+import type { Service } from './services/service';
 import {
   getService,
   initService,
   registerService,
   removeService,
-} from './services/registry.js';
-import { _notifyPluginChainRebuild } from './services/capability-router-rebuild.js';
-import type { CapabilityRouterEnvOverrides } from './types/api-composite.js';
+} from './services/registry';
+import { _notifyPluginChainRebuild } from './services/capability-router-rebuild';
+import type { CapabilityRouterEnvOverrides } from './types/api-composite';
 
 export type GeokitPluginChainPosition = 'prepend' | 'append';
 

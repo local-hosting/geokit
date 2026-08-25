@@ -9,7 +9,7 @@ import {
   setChoroplethFillVisibility,
   type ChoroplethFillLayerMap,
   type ChoroplethFillLayerSpec,
-} from './choropleth-fill-layer.js';
+} from './choropleth-fill-layer';
 
 export type LazyChoroplethControllerOptions = {
   spec: ChoroplethFillLayerSpec;

@@ -1,6 +1,6 @@
 import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@geokit/service/plugin';
 import { resolveHereApiKey } from '@geokit/env/service-keys';
-import { HerePlacesService } from './here-places-service.js';
+import { HerePlacesService } from './here-places-service';
 
 export const herePlacesPlugin: GeokitServicePlugin = {
   name: 'here-places',
@@ -17,4 +17,4 @@ export const registerHerePlacesPlugin = createKeyedPluginRegistrar(
   }
 );
 
-export { HerePlacesService, buildHereDiscoverUrl, normalizeHereDiscoverItem } from './here-places-service.js';
+export { HerePlacesService, buildHereDiscoverUrl, normalizeHereDiscoverItem } from './here-places-service';

@@ -1,1 +1,1 @@
-export * from './map-surface/fill-antialias.js';
+export * from './map-surface/fill-antialias';

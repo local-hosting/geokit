@@ -1,5 +1,5 @@
 import { watch, type ComputedRef, type Ref } from 'vue';
-import type { GkMapElement } from '../shared/types.js';
+import type { GkMapElement } from '../shared/types';
 
 /** Keep gk-map map-style attribute in sync with a reactive style id/url. */
 export function useGkMapStyle(

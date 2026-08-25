@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateFitBoundsViewport } from '../../../../src/utils/bounds/fit-viewport.js';
+import { calculateFitBoundsViewport } from '../../../../src/utils/bounds/fit-viewport';
 
 describe('calculateFitBoundsViewport', () => {
   it('fits Boston bounds into a 600x400 viewport', () => {

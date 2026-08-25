@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   expandInterpolateCaseMultiply,
   sharedPointGlowRadiusFromPointExpression,
-} from '../../../src/utils/shared-point-paint.js';
+} from '../../../src/utils/shared-point-paint';
 
 describe('sharedPointGlowRadiusFromPointExpression', () => {
   it('expands brand-scaled point radius for MapTiler-safe glow', () => {

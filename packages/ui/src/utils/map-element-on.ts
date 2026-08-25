@@ -1,1 +1,1 @@
-export * from './map-surface/map-element-on.js';
+export * from './map-surface/map-element-on';

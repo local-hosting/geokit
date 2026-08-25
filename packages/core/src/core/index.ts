@@ -28,7 +28,7 @@ export type {
   H3Point,
   H3Area,
   SpatialIndex,
-} from '../types/index.js';
+} from '../types/index';
 
 export {
   EARTH_RADIUS_METERS,
@@ -56,12 +56,12 @@ export {
   DEFAULT_BUFFER_STEPS,
   SECONDS_PER_MINUTE,
   SECONDS_PER_DEGREE,
-} from '../constants.js';
+} from '../constants';
 
-export * from '../utils/bounds/index.js';
-export * from '../utils/bearing/index.js';
-export * from '../utils/coordinates/index.js';
-export * from '../utils/distance/index.js';
-export * from '../utils/h3/index.js';
-export * from '../utils/geohash/index.js';
-export * from '../utils/geojson/index.js';
+export * from '../utils/bounds/index';
+export * from '../utils/bearing/index';
+export * from '../utils/coordinates/index';
+export * from '../utils/distance/index';
+export * from '../utils/h3/index';
+export * from '../utils/geohash/index';
+export * from '../utils/geojson/index';

@@ -3,7 +3,7 @@ import {
   dispatchClearPopupsEvent,
   onClearPopupsEvent,
   onPopupClosedEvent,
-} from '../../../src/lazy-popup.js';
+} from '../../../src/lazy-popup';
 
 describe('lazy-popup events', () => {
   it('onClearPopupsEvent ignores own sourceId', () => {

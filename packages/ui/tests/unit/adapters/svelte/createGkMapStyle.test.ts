@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createGkMapStyle } from '../../../../src/adapters/svelte/createGkMapStyle.js';
-import type { GkMapElement } from '../../../../src/adapters/shared/types.js';
+import { createGkMapStyle } from '../../../../src/adapters/svelte/createGkMapStyle';
+import type { GkMapElement } from '../../../../src/adapters/shared/types';
 
 describe('createGkMapStyle', () => {
   it('sync sets map-style attribute on gk-map element', () => {

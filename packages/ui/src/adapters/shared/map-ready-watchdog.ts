@@ -1,5 +1,5 @@
-import type { GkMapElement } from './types.js';
-import { getGkMapInstance, isGkMapRenderable } from './gk-map-render-state.js';
+import type { GkMapElement } from './types';
+import { getGkMapInstance, isGkMapRenderable } from './gk-map-render-state';
 
 export type MapReadyWatchdogOptions = {
   maxMs?: number;

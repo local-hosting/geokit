@@ -1,4 +1,4 @@
-import type { UsCrosswalkTables } from '../types.js';
+import type { UsCrosswalkTables } from '../types';
 
 const EMPTY_STRING_MAP: Readonly<Record<string, string>> = {};
 const EMPTY_STRING_ARRAY_MAP: Readonly<Record<string, readonly string[]>> = {};

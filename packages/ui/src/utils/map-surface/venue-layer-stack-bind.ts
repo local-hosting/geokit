@@ -2,8 +2,8 @@ import {
   datasetFillLayerId,
   stackGkOutlineLayersAboveDatasetFill,
   stackLayersAboveAnchor,
-} from './layer-stack.js';
-import type { SharedPointLayerIds } from '../paint/shared-point-paint.js';
+} from './layer-stack';
+import type { SharedPointLayerIds } from '../paint/shared-point-paint';
 
 type MapWithStyle = Parameters<typeof stackLayersAboveAnchor>[0];
 

@@ -3,7 +3,7 @@
  * Map bootstrap and surface lifecycle: @geokit/ui or @geokit/core/ui (re-export).
  */
 
-export type { MapStaticProviderId } from '../types/map-provider.js';
+export type { MapStaticProviderId } from '../types/map-provider';
 
 export type {
   MapCameraFrame,
@@ -21,7 +21,7 @@ export type {
   MapOfflineTileCoordinate,
   MapOfflineCoverage,
   MapOfflinePolicyErrorCode,
-} from './offline.js';
+} from './offline';
 
 export {
   MapOfflineDefaults,
@@ -37,7 +37,7 @@ export {
   buildOfflineTileUrl,
   defaultOfflineZoomRangeForMap,
   resolveOfflineBoundsFromPins,
-} from './offline.js';
+} from './offline';
 
 export { MapLocalStore, type MapSnapshotRecord } from '@geokit/ui/storage/map-local-store';
 

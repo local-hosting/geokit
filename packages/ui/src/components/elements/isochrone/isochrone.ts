@@ -35,4 +35,4 @@ export interface IsochroneOptions {
 }
 
 
-export { IsochroneElement } from './isochrone-static-factory.js';
+export { IsochroneElement } from './isochrone-static-factory';

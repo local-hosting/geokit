@@ -1,6 +1,6 @@
-import { buildPlaceSearchCacheKey } from '../place-search-cache.js';
-import { ProviderCache } from './cache.js';
-import { RequestQueue } from './request-queue.js';
+import { buildPlaceSearchCacheKey } from '../place-search-cache';
+import { ProviderCache } from './cache';
+import { RequestQueue } from './request-queue';
 import type {
   DirectionsOptions,
   GeocodeOptions,
@@ -11,7 +11,7 @@ import type {
   ReverseGeocodeResult,
   ServiceCapability,
   ServiceConfig,
-} from './types.js';
+} from './types';
 
 /** Base class for outbound geospatial HTTP integrations. */
 export abstract class Service {

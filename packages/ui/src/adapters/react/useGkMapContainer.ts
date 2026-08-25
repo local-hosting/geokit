@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { bindGkMapContainerLifecycle } from '../shared/container-lifecycle.js';
-import type { GkMapContainerHandlers } from '../shared/container-lifecycle.js';
+import { bindGkMapContainerLifecycle } from '../shared/container-lifecycle';
+import type { GkMapContainerHandlers } from '../shared/container-lifecycle';
 
 /** Container-scoped gk-map ready / unload / unfreeze (map pool). */
 export function useGkMapContainer(

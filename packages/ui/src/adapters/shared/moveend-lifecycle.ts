@@ -1,5 +1,5 @@
-import type { GkMapMoveEndDetail } from '../../utils/map-semantic-events.js';
-import { bindGkMapContainerLifecycle } from './container-lifecycle.js';
+import type { GkMapMoveEndDetail } from '../../utils/map-semantic-events';
+import { bindGkMapContainerLifecycle } from './container-lifecycle';
 
 /** Attach gk-map-moveend listener when map inside container is ready/unfrozen. */
 export function bindGkMapMoveendLifecycle(
@@ -37,5 +37,5 @@ export function bindGkMapMoveendLifecycle(
 }
 
 /** Document-level fly-to listener scoped by sourceId. */
-export { bindGkFlyToBounds, dispatchGkFlyToBounds, GK_FLY_TO_BOUNDS_EVENT } from './fly-to-bounds-events.js';
-export type { GkFlyToBoundsDetail } from './fly-to-bounds-events.js';
+export { bindGkFlyToBounds, dispatchGkFlyToBounds, GK_FLY_TO_BOUNDS_EVENT } from './fly-to-bounds-events';
+export type { GkFlyToBoundsDetail } from './fly-to-bounds-events';

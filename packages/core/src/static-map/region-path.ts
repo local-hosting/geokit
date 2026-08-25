@@ -1,8 +1,8 @@
-import type { LatLon } from '../types/index.js';
-import { simplifyPolygonRingToMaxPoints } from '../utils/simplify/index.js';
+import type { LatLon } from '../types/index';
+import { simplifyPolygonRingToMaxPoints } from '../utils/simplify/index';
 import type { Position } from 'geojson';
 
-import type { MapRegionPathStyle } from '../types/static-map.js';
+import type { MapRegionPathStyle } from '../types/static-map';
 export type { MapRegionPathStyle };
 
 /** Hex colors — encoded as %23 in static path strings (literal # breaks URLs). */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { multiplyRadiusExpression } from '../../../src/utils/layer-styles.js';
+import { multiplyRadiusExpression } from '../../../src/utils/layer-styles';
 
 describe('multiplyRadiusExpression', () => {
   it('scales interpolate expressions by multiplying stops', () => {

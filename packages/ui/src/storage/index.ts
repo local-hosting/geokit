@@ -5,9 +5,9 @@ export {
   SNAPSHOT_STORE,
   OFFLINE_REGIONS_STORE,
   idbGetAll,
-} from './indexed-db.js';
+} from './indexed-db';
 
-export { MapLocalStore, type MapSnapshotRecord } from './map-local-store.js';
+export { MapLocalStore, type MapSnapshotRecord } from './map-local-store';
 
 export {
   MapOfflineTileCache,
@@ -15,10 +15,10 @@ export {
   type MapOfflinePrefetchOptions,
   type MapOfflinePrefetchProgress,
   type OfflineRegionRecord,
-} from './map-offline-tile-cache.js';
+} from './map-offline-tile-cache';
 
 export {
   MapOfflineContextLoader,
   type MapOfflineContextLoaderConfig,
   type MapOfflineHostPrefetchHook,
-} from './map-offline-context-loader.js';
+} from './map-offline-context-loader';

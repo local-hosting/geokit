@@ -2,8 +2,8 @@
  * Static map snapshot types (provider-agnostic).
  */
 
-import type { Bounds } from './index.js';
-import type { MapStaticProviderId } from './map-provider.js';
+import type { Bounds } from './index';
+import type { MapStaticProviderId } from './map-provider';
 
 export type MapStaticFormat = 'png' | 'jpg' | 'webp';
 

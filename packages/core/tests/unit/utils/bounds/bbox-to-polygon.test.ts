@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bboxToPolygon, bboxToPolygonGeometry } from '../../../../src/utils/bounds/bbox-to-polygon.js';
+import { bboxToPolygon, bboxToPolygonGeometry } from '../../../../src/utils/bounds/bbox-to-polygon';
 
 const bounds: [number, number, number, number] = [-74.1, 40.6, -73.9, 40.8];
 

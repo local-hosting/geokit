@@ -12,10 +12,10 @@ import {
   ZIP_TO_H3_R5,
   ZIP_TO_STATE,
 } from '../../generated/us/index.ts';
-import { US_CROSSWALK_TABLE_NAMES } from './table-names.js';
-import { createUsTableLookups } from './tables.js';
-import { setUsCrosswalkRegistry } from '../load/registry.js';
-import type { CrosswalkSpine } from '../types.js';
+import { US_CROSSWALK_TABLE_NAMES } from './table-names';
+import { createUsTableLookups } from './tables';
+import { setUsCrosswalkRegistry } from '../load/registry';
+import type { CrosswalkSpine } from '../types';
 
 /** Test / sync path — loads every US table via static imports. */
 export function loadAllUsCrosswalkTablesSync(spine: CrosswalkSpine = 'h3'): void {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import * as turf from '../../../../src/utils/turf/index.js';
+import * as turf from '../../../../src/utils/turf/index';
 
 describe('turf barrel exports', () => {
   it('re-exports core measurement utilities', () => {

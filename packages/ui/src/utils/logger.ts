@@ -1,1 +1,1 @@
-export * from './map-surface/logger.js';
+export * from './map-surface/logger';

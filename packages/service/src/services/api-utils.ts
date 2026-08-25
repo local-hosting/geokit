@@ -1,1 +1,1 @@
-export * from './http/api-utils.js';
+export * from './http/api-utils';

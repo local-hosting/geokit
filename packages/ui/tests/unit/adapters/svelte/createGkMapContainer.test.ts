@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createGkMapContainer } from '../../../../src/adapters/svelte/createGkMapContainer.js';
-import type { GkMapElement } from '../../../../src/adapters/shared/types.js';
+import { createGkMapContainer } from '../../../../src/adapters/svelte/createGkMapContainer';
+import type { GkMapElement } from '../../../../src/adapters/shared/types';
 
 describe('createGkMapContainer', () => {
   it('forwards ready events for maps in container', () => {

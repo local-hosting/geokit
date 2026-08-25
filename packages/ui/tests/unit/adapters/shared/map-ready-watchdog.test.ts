@@ -2,8 +2,8 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import {
   scheduleMapReadyWatchdog,
   tryForceGkMapReady,
-} from '../../../../src/adapters/shared/map-ready-watchdog.js';
-import type { GkMapElement } from '../../../../src/adapters/shared/types.js';
+} from '../../../../src/adapters/shared/map-ready-watchdog';
+import type { GkMapElement } from '../../../../src/adapters/shared/types';
 
 describe('map-ready-watchdog', () => {
   beforeEach(() => {

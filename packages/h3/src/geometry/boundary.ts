@@ -1,9 +1,9 @@
 import { cellToBoundary } from 'h3-js';
-import type { LatLon, Polygon } from '../types.js';
+import type { LatLon, Polygon } from '../types';
 import { expandH3CellId } from '../cell/cell-id';
-import { unwrapPolygonRingLongitudes } from './unwrap-ring-longitudes.js';
+import { unwrapPolygonRingLongitudes } from './unwrap-ring-longitudes';
 
-export { unwrapPolygonRingLongitudes } from './unwrap-ring-longitudes.js';
+export { unwrapPolygonRingLongitudes } from './unwrap-ring-longitudes';
 
 type LonLat = [number, number];
 

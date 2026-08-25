@@ -1,1 +1,1 @@
-export * from './map-surface/map-viewport.js';
+export * from './map-surface/map-viewport';

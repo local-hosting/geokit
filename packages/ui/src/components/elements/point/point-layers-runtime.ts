@@ -28,7 +28,7 @@ import {
   clearSelectedVisual,
 } from './point-selection';
 
-import { pointEl } from './point-el.js';
+import { pointEl } from './point-el';
 const { debug } = createGeokitLogger('point');
 
 export interface PointOptions {
@@ -55,7 +55,7 @@ export interface PointOptions {
   pointName?: string;
 }
 
-import { PointBase } from './point-base.js';
+import { PointBase } from './point-base';
 
 export class PointLayersRuntime extends PointBase {
   protected addPoint(): void {
