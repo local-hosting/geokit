@@ -1,9 +1,9 @@
-import type { UsCrosswalkTables } from '../types.js';
-import { compactH3CellId } from '../h3/cell-id.js';
+import type { UsCrosswalkTables } from '../types';
+import { compactH3CellId } from '../h3/cell-id';
 import {
   GEOHASH_ZIP_INDEX_PRECISION,
   geohashCellIdForLookup,
-} from '../geohash/cell-id.js';
+} from '../geohash/cell-id';
 
 function canonicalDmaSlug(raw: string | undefined): string | undefined {
   if (!raw) return undefined;

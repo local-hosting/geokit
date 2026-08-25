@@ -6,7 +6,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, type Page } from 'playwright';
-import * as demoPages from '../../../../demo/shared/pages.js';
+import * as demoPages from '../../../../demo/shared/pages';
 
 const DEMO_PAGES = demoPages.DEMO_PAGES;
 

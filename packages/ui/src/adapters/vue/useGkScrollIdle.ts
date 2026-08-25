@@ -1,5 +1,5 @@
 import { readonly, ref } from 'vue';
-import { createScrollIdle } from '../../utils/scroll-idle.js';
+import { createScrollIdle } from '../../utils/scroll-idle';
 
 const DEFAULT_IDLE_MS = 350;
 

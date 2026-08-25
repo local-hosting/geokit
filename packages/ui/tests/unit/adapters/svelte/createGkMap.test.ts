@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createGkMap } from '../../../../src/adapters/svelte/createGkMap.js';
-import type { GkMapElement } from '../../../../src/adapters/shared/types.js';
+import { createGkMap } from '../../../../src/adapters/svelte/createGkMap';
+import type { GkMapElement } from '../../../../src/adapters/shared/types';
 
 describe('createGkMap', () => {
   it('tracks ready state via subscribe', () => {

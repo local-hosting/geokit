@@ -5,7 +5,7 @@ import {
   resolveMapStyleUrlFromEnv,
   resolveMaptilerStaticMapsBase,
   resolveTileApiUrlFromEnv,
-} from '../../../src/config/tile-cdn.js';
+} from '../../../src/config/tile-cdn';
 
 describe('tile CDN env', () => {
   it('reads GEOKIT_MAP_STYLE_URL', () => {

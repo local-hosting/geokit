@@ -1,1 +1,1 @@
-export * from './boundaries/boundary-outline-preset.js';
+export * from './boundaries/boundary-outline-preset';

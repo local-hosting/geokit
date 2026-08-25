@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGkMapMount } from '../../../../src/adapters/svelte/createGkMapMount.js';
+import { createGkMapMount } from '../../../../src/adapters/svelte/createGkMapMount';
 
 describe('createGkMapMount', () => {
   it('immediate mode mounts immediately', () => {

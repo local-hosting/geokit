@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createMapMountPolicy } from '../../../../src/adapters/shared/mount-policy.js';
+import { createMapMountPolicy } from '../../../../src/adapters/shared/mount-policy';
 
 describe('createMapMountPolicy', () => {
   it('immediate mode mounts right away', () => {

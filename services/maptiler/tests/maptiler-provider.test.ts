@@ -9,7 +9,7 @@ import {
   getServiceForCapability,
   _resetRegistries,
 } from '@geokit/service/registry';
-import { MapTilerService } from '../src/maptiler-service.js';
+import { MapTilerService } from '../src/maptiler-service';
 
 describe('MapTilerService', () => {
   let provider: MapTilerService;

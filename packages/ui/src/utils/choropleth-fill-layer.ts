@@ -1,1 +1,1 @@
-export * from './choropleth/choropleth-fill-layer.js';
+export * from './choropleth/choropleth-fill-layer';

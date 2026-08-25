@@ -1,4 +1,4 @@
-import type { LatLon, Polygon } from '../types.js';
+import type { LatLon, Polygon } from '../types';
 
 /** Bbox-center centroid for polygon rings (lightweight; no Turf). */
 export function polygonCentroid(polygon: Polygon): LatLon | null {

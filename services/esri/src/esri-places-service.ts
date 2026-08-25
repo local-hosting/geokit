@@ -9,7 +9,7 @@ import {
   ESRI_PLACES_NEAR_POINT,
   type EsriPlaceRaw,
   type EsriPlacesNearPointResponse,
-} from './types/esri-places.js';
+} from './types/esri-places';
 
 const SERVICE_LABEL = 'Esri Places';
 const ESRI_CATEGORY_ID_PATTERN = /^[0-9a-f]{24}$/i;

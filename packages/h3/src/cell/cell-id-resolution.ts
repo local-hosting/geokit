@@ -1,5 +1,5 @@
 import { cellToLatLng, cellToParent, getResolution, latLngToCell } from 'h3-js';
-import { compactH3CellId, expandH3CellId } from '../cell/cell-id.js';
+import { compactH3CellId, expandH3CellId } from '../cell/cell-id';
 
 /** Roll a cell id up/down to a target H3 resolution (compact id out). Requires h3-js. */
 export function normalizeH3CellToResolution(cellId: string, resolution: number): string {

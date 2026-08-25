@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createGkLayerEvents } from '../../../../src/adapters/svelte/createGkLayerEvents.js';
+import { createGkLayerEvents } from '../../../../src/adapters/svelte/createGkLayerEvents';
 
 describe('createGkLayerEvents', () => {
   it('binds handlers on matching descendant layer', () => {

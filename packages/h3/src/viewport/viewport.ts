@@ -9,9 +9,9 @@ import { h3ToCoordinates } from '../geometry/core';
 import { h3ToPolygon } from '../geometry/boundary';
 import { polygonToH3 } from '../geometry/polygon';
 import { h3CellFadeProperties } from '../cell/cell-fade';
-import type { ViewportBounds } from '../viewport/viewport-bounds.js';
+import type { ViewportBounds } from '../viewport/viewport-bounds';
 
-export type { ViewportBounds } from '../viewport/viewport-bounds.js';
+export type { ViewportBounds } from '../viewport/viewport-bounds';
 
 export type CellLayerViewport = {
   bounds: ViewportBounds;

@@ -1,11 +1,11 @@
-import type { ServiceCapability } from '../types.js';
-import type { Service } from '../service.js';
-import { createCompositeService } from '../routing/composite-service.js';
+import type { ServiceCapability } from '../types';
+import type { Service } from '../service';
+import { createCompositeService } from '../routing/composite-service';
 import {
   applyPluginsToCapabilityChains,
   getGeokitPluginRegistrations,
-} from '../../plugin.js';
-import { getCapabilityRouter, initService, registerCapabilityRouter } from '../registry.js';
+} from '../../plugin';
+import { getCapabilityRouter, initService, registerCapabilityRouter } from '../registry';
 
 let capabilityRoutersReady: Promise<void> | null = null;
 

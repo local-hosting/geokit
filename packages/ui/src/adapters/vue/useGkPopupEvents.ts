@@ -3,7 +3,7 @@ import {
   onClearPopupsEvent,
   onPopupClosedEvent,
   type PopupClosedDetail,
-} from '../../lazy-popup.js';
+} from '../../lazy-popup';
 
 export type UseGkPopupEventsOptions = {
   /** This map/card identifier (e.g. market slug). Ignores own clear events. */

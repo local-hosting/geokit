@@ -2,8 +2,8 @@
  * H3 marketCells index — winner-takes-all cell → region slug mapping.
  */
 
-import { compactH3CellId, expandH3CellId } from '../cell/cell-id.js';
-import { h3ToPolygon } from '../geometry/boundary.js';
+import { compactH3CellId, expandH3CellId } from '../cell/cell-id';
+import { h3ToPolygon } from '../geometry/boundary';
 
 export type RegionMarketCellsIndex = {
   marketCells: Record<string, string[]>;

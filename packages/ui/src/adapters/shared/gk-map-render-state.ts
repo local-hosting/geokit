@@ -1,4 +1,4 @@
-import type { GkMapElement } from './types.js';
+import type { GkMapElement } from './types';
 
 type MapStyleLike = {
   isStyleLoaded?: () => boolean;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createApp, defineComponent, ref, type Ref } from 'vue';
-import { useGkMapMount } from '../../../../src/adapters/vue/useGkMapMount.js';
+import { useGkMapMount } from '../../../../src/adapters/vue/useGkMapMount';
 
 function mountUseGkMapMount(
   setupFn: (api: ReturnType<typeof useGkMapMount>) => void,

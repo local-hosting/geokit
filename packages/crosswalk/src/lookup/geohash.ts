@@ -1,11 +1,11 @@
 /** Minimal geohash encode/decode — no external dependency. */
 
-import type { LatLon } from '../types.js';
+import type { LatLon } from '../types';
 import {
   GEOHASH_ZIP_INDEX_PRECISION,
   geohashCellIdForLookup,
   normalizeGeohashCellId,
-} from '../geohash/cell-id.js';
+} from '../geohash/cell-id';
 
 const BASE32 = '0123456789bcdefghjkmnpqrstuvwxyz';
 

@@ -27,7 +27,7 @@ vi.mock('../../../src/utils/shared-points/shared-point-heal.js', () => ({
   isSharedPointLayerSetFullyComplete: mocks.isSharedPointLayerSetFullyComplete,
 }));
 
-import { createSharedPointLayerController } from '../../../src/utils/shared-points/shared-point-layer-controller.js';
+import { createSharedPointLayerController } from '../../../src/utils/shared-points/shared-point-layer-controller';
 
 const EMPTY_FC: FeatureCollection = { type: 'FeatureCollection', features: [] };
 const ONE_FC: FeatureCollection = {

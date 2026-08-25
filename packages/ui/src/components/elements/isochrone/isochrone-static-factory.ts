@@ -34,7 +34,7 @@ export interface IsochroneOptions {
   data?: GeoJSON.FeatureCollection;
 }
 
-import { IsochroneUpgrade } from './isochrone-upgrade.js';
+import { IsochroneUpgrade } from './isochrone-upgrade';
 
 export class IsochroneElement extends IsochroneUpgrade {
   get time(): number {

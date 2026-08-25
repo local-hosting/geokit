@@ -1,1 +1,1 @@
-export * from './map-surface/embed-point-scale.js';
+export * from './map-surface/embed-point-scale';

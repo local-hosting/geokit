@@ -1,1 +1,1 @@
-export * from './shared-points/shared-point-features.js';
+export * from './shared-points/shared-point-features';

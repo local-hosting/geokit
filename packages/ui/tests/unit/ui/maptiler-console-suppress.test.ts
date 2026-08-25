@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isMaptilerSdkBannerMessage,
   withSuppressedMaptilerConsole,
-} from '../../../src/providers/maptiler-console-suppress.js';
+} from '../../../src/providers/maptiler-console-suppress';
 
 describe('maptiler-console-suppress', () => {
   it('detects MapTiler SDK banner messages', () => {

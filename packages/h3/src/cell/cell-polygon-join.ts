@@ -1,6 +1,6 @@
 import type { MultiPolygon, Polygon, Position } from 'geojson';
-import type { LatLon } from '../types.js';
-import { polygonCentroid } from '../geometry/polygon-centroid.js';
+import type { LatLon } from '../types';
+import { polygonCentroid } from '../geometry/polygon-centroid';
 import { coordinatesToH3 } from '../geometry/core';
 import { compactH3CellId } from '../cell/cell-id';
 import { polygonToH3 } from '../geometry/polygon';

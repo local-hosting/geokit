@@ -2,7 +2,7 @@
  * Shared static map image dimension helpers for MCP provider adapters.
  */
 
-import type { MapRenderDimensions } from '../types/static-map.js';
+import type { MapRenderDimensions } from '../types/static-map';
 
 export function staticMapDimensions(dims?: Partial<MapRenderDimensions>): MapRenderDimensions {
   return {

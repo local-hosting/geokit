@@ -1,1 +1,1 @@
-export * from './boundaries/outline-ops.js';
+export * from './boundaries/outline-ops';

@@ -8,7 +8,7 @@ import {
   lockMaxZoomToContainedFrame,
   resolveContainedFrameZoom,
   type ContainedBoundsMap,
-} from '../../../../src/utils/bounds/map-camera.js';
+} from '../../../../src/utils/bounds/map-camera';
 
 const CONTAIN_BOUNDS: [number, number, number, number] = [-96, 29, -93, 31];
 

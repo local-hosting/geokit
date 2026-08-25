@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { bindGkMapLifecycle } from '../../../../src/adapters/shared/map-lifecycle.js';
-import type { GkMapElement } from '../../../../src/adapters/shared/types.js';
+import { bindGkMapLifecycle } from '../../../../src/adapters/shared/map-lifecycle';
+import type { GkMapElement } from '../../../../src/adapters/shared/types';
 
 describe('bindGkMapLifecycle', () => {
   it('forwards gk-map-ready and cleans up', () => {

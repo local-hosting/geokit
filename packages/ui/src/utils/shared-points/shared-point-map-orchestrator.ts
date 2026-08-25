@@ -7,11 +7,11 @@ import {
   createSharedPointLayerController,
   type SharedPointLayerController,
   type SharedPointLayerControllerOptions,
-} from './shared-point-layer-controller.js';
+} from './shared-point-layer-controller';
 import {
   ensureGeodesicRadiusRingLayers,
   updateGeodesicRadiusRingData,
-} from '../map-surface/geodesic-circle.js';
+} from '../map-surface/geodesic-circle';
 
 export type SharedPointMapLike = {
   getSource?(id: string): unknown;

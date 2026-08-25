@@ -7,7 +7,7 @@
  * <gk-map lat="40.7128" lng="-74.006" zoom="10" style="streets"></gk-map>
  */
 
-import { resolveSharedPointLayerIdForSource } from '../../../utils/shared-point-heal.js';
+import { resolveSharedPointLayerIdForSource } from '../../../utils/shared-point-heal';
 import { BaseElement } from '../../base-element';
 import {
   registerUIProvider,
@@ -46,13 +46,13 @@ import {
   buildHashFromState,
   applyStateToMap,
 } from './surface/map-url-sync';
-import { bindGkMapSemanticEvents } from '../../../utils/map-semantic-events.js';
+import { bindGkMapSemanticEvents } from '../../../utils/map-semantic-events';
 import {
   offGkMapEvent,
   onGkMapEvent,
   type GkMapEventHandler,
   type GkMapListenEvent,
-} from '../../../utils/map-element-on.js';
+} from '../../../utils/map-element-on';
 import {
   createTerrainZoomHandler,
   cleanupTerrain as cleanupTerrainFn,
@@ -88,8 +88,8 @@ import {
   DEFAULT_SHARED_POINT_ID_PROPERTIES,
 } from '../../../utils/layer-styles';
 
-import { MapStyleSetup } from './map-style-setup.js';
-import { mapEl } from './map-el.js';
+import { MapStyleSetup } from './map-style-setup';
+import { mapEl } from './map-el';
 
 export class MapControlsState extends MapStyleSetup {
   public setControlsVisible(visible: boolean): void {

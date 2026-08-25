@@ -1,1 +1,1 @@
-export * from './surface/map-url-sync.js';
+export * from './surface/map-url-sync';

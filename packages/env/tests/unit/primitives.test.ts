@@ -7,7 +7,7 @@ import {
   readViteEnv,
   stripTrailingSlash,
   writeEnvKeys,
-} from '../../src/primitives.js';
+} from '../../src/primitives';
 
 describe('env primitives', () => {
   it('trims env values and treats empty strings as undefined', () => {

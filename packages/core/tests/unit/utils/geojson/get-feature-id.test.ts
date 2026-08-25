@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getFeatureId } from '../../../../src/utils/geojson/get-feature-id.js';
+import { getFeatureId } from '../../../../src/utils/geojson/get-feature-id';
 
 describe('getFeatureId', () => {
   it('returns id from common property names', () => {

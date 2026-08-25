@@ -15,7 +15,7 @@ import {
   takePopupCloseReason,
   type PopupCloseReason,
   setPopupCloseReason,
-} from '../../../utils/popup-close-reason.js';
+} from '../../../utils/popup-close-reason';
 import {
   buildPopupContent,
   buildPopupContentGeneric,

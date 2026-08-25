@@ -1,4 +1,4 @@
-import type { UsCrosswalkTableName } from './us/table-names.js';
+import type { UsCrosswalkTableName } from './us/table-names';
 
 export type LatLon = readonly [number, number];
 

@@ -2,8 +2,8 @@
  * Optional H3 projection via h3-js (peer dependency).
  */
 
-import type { LatLon } from '../types.js';
-import { compactH3CellId, expandH3CellId } from './cell-id.js';
+import type { LatLon } from '../types';
+import { compactH3CellId, expandH3CellId } from './cell-id';
 
 type LatLngToCell = (lat: number, lon: number, resolution: number) => string;
 type CellToLatLng = (cell: string) => [number, number];

@@ -6,7 +6,7 @@
  */
 
 import { wrapMapResize } from '../utils/map-utils';
-import { getProviderConfig } from './registry.js';
+import { getProviderConfig } from './registry';
 import { BaseUIProvider } from './types';
 import type {
   UIProviderConfig,

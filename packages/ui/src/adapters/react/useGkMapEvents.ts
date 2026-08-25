@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 import {
   bindGkPointLayerEvents,
   type GkPointEventHandlers,
-} from '../../utils/map-events.js';
-import type { GkMapElement } from '../shared/types.js';
+} from '../../utils/map-events';
+import type { GkMapElement } from '../shared/types';
 
 export type UseGkMapEventsOptions = {
   mapInstance?: unknown;

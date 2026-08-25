@@ -5,12 +5,12 @@ import type {
   CrosswalkSpine,
   GeoKind,
   LatLon,
-} from '../types.js';
-import { geohashCellIdForLookup } from '../geohash/cell-id.js';
-import { geohashCellToLatLon, geohashForLatLon, geohashForPoint } from './geohash.js';
-import { compactH3CellId } from '../h3/cell-id.js';
-import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from '../h3/project.js';
-import { requireUsCrosswalkLookups, getCrosswalkSpine } from '../load/registry.js';
+} from '../types';
+import { geohashCellIdForLookup } from '../geohash/cell-id';
+import { geohashCellToLatLon, geohashForLatLon, geohashForPoint } from './geohash';
+import { compactH3CellId } from '../h3/cell-id';
+import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from '../h3/project';
+import { requireUsCrosswalkLookups, getCrosswalkSpine } from '../load/registry';
 
 const DEFAULT_H3_RESOLUTION = 5;
 

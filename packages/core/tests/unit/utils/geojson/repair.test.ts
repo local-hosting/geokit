@@ -4,7 +4,7 @@ import {
   repairFeatureCollection,
   repairGeoJSON,
   repairGeometry,
-} from '../../../../src/utils/geojson/repair.js';
+} from '../../../../src/utils/geojson/repair';
 
 describe('geojson repair', () => {
   it('closes unclosed polygon rings and removes invalid positions', () => {

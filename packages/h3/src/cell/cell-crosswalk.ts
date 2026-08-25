@@ -6,7 +6,7 @@ import {
   type H3CellMultiMap,
   type H3ToZips,
   type InvertCellMapOptions,
-} from '../cell/cell-crosswalk-invert.js';
+} from '../cell/cell-crosswalk-invert';
 
 export type { H3CellMultiMap, H3ToZips, InvertCellMapOptions };
 export { invertCellMap, invertH3ToZips };

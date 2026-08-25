@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createGkPopupEvents } from '../../../../src/adapters/svelte/createGkPopupEvents.js';
-import { dispatchClearPopupsEvent } from '../../../../src/lazy-popup.js';
+import { createGkPopupEvents } from '../../../../src/adapters/svelte/createGkPopupEvents';
+import { dispatchClearPopupsEvent } from '../../../../src/lazy-popup';
 
 describe('createGkPopupEvents', () => {
   it('clears popups from other maps only', () => {

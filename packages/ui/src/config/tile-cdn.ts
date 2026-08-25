@@ -5,7 +5,7 @@
 import {
   createMapTilerDevTransformRequest,
   type MapTilerTransformRequest,
-} from './maptiler-dev-proxy.js';
+} from './maptiler-dev-proxy';
 import { firstEnv, readRuntimeEnv } from '@geokit/env/primitives';
 import type { GeokitEnv } from '@geokit/env';
 import { MAP_STYLE_URL_KEYS, TILE_API_URL_KEYS, TILE_CDN_URL_KEYS } from '@geokit/env';

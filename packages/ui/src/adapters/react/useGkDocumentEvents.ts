@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { bindDocumentEvents, type DocumentEventBinding } from '../shared/document-events.js';
+import { bindDocumentEvents, type DocumentEventBinding } from '../shared/document-events';
 
 /** Register document/window listeners with automatic cleanup. */
 export function useGkDocumentEvents(

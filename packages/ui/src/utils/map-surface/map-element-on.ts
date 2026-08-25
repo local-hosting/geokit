@@ -2,7 +2,7 @@
  * Lifecycle-safe map listeners on gk-map — map.on ergonomics over gk-map-* DOM events.
  */
 
-import type { GkMapClickDetail, GkMapMoveEndDetail } from './map-semantic-events.js';
+import type { GkMapClickDetail, GkMapMoveEndDetail } from './map-semantic-events';
 
 export type GkMapListenEvent = 'moveend' | 'click';
 

@@ -1,9 +1,9 @@
-import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from '../h3/project.js';
+import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from '../h3/project';
 import {
   geohashForPoint,
   pointForGeohash,
-} from './geohash.js';
-import { requireUsCrosswalkLookups } from '../load/registry.js';
+} from './geohash';
+import { requireUsCrosswalkLookups } from '../load/registry';
 
 const DEFAULT_H3_RESOLUTION = 5;
 
@@ -71,6 +71,6 @@ export function pointForZip(zip: string): readonly [number, number] | undefined 
   return pointForH3(h3);
 }
 
-export { geohashForPoint, geohashForLatLon, pointForGeohash, geohashCellToLatLon } from './geohash.js';
-export { decodeGeohash } from './geohash.js';
-export { crosswalk } from './crosswalk.js';
+export { geohashForPoint, geohashForLatLon, pointForGeohash, geohashCellToLatLon } from './geohash';
+export { decodeGeohash } from './geohash';
+export { crosswalk } from './crosswalk';

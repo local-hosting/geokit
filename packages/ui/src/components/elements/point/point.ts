@@ -55,4 +55,4 @@ export interface PointOptions {
 }
 
 
-export { PointElement } from './point-static-factory.js';
+export { PointElement } from './point-static-factory';

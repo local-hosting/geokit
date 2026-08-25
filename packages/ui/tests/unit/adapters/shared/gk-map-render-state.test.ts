@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   getGkMapInstance,
   isGkMapRenderable,
-} from '../../../../src/adapters/shared/gk-map-render-state.js';
-import type { GkMapElement } from '../../../../src/adapters/shared/types.js';
+} from '../../../../src/adapters/shared/gk-map-render-state';
+import type { GkMapElement } from '../../../../src/adapters/shared/types';
 
 describe('gk-map-render-state', () => {
   it('getGkMapInstance returns map from element', () => {

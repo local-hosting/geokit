@@ -5,27 +5,27 @@
  * Use these utilities to create consistent, scalable point and glow layers.
  */
 
-import type { MapInstance } from '../../../providers/types.js';
+import type { MapInstance } from '../../../providers/types';
 import type { Feature } from '@geokit/core/types';
 import { getFeatureId } from '@geokit/core/geojson';
-import { getCSSVariable, getCSSVariableNumber } from '../../map-surface/theme.js';
-import { debug } from '../../map-surface/logger.js';
-import { HOVER_CONFIG, type HoverStateHandlers } from '../../map-surface/feature-state-hover.js';
+import { getCSSVariable, getCSSVariableNumber } from '../../map-surface/theme';
+import { debug } from '../../map-surface/logger';
+import { HOVER_CONFIG, type HoverStateHandlers } from '../../map-surface/feature-state-hover';
 import {
   buildSharedPointFeatureStateHoverPaint,
   expandInterpolateCaseMultiply,
-} from '../../paint/shared-point-paint.js';
-import { resolveSharedPointLayerIdForSource } from '../../shared-points/shared-point-heal.js';
+} from '../../paint/shared-point-paint';
+import { resolveSharedPointLayerIdForSource } from '../../shared-points/shared-point-heal';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-import type { SharedPointLayersConfig } from './types.js';
-import { createSharedPointLayers, EMPTY_GEOJSON, type GeoJSONSourceWithSetData } from './shared-point-layers.js';
-import { getHoverGlowRadiusInterpolation, getPointRadiusInterpolation } from './circle-glow.js';
-import { GLOW_HIT_PADDING_PX, HOVER_GLOW_PADDING_PX, offsetRadiusInterpolation } from './category-expressions.js';
-import { resolveDefaultLayerColor, resolveGlowBlur, resolveSharedGlowColor } from './types.js';
+import type { SharedPointLayersConfig } from './types';
+import { createSharedPointLayers, EMPTY_GEOJSON, type GeoJSONSourceWithSetData } from './shared-point-layers';
+import { getHoverGlowRadiusInterpolation, getPointRadiusInterpolation } from './circle-glow';
+import { GLOW_HIT_PADDING_PX, HOVER_GLOW_PADDING_PX, offsetRadiusInterpolation } from './category-expressions';
+import { resolveDefaultLayerColor, resolveGlowBlur, resolveSharedGlowColor } from './types';
 export function createSharedPointLayersWithHover(
   config: SharedPointLayersConfig & { promoteId: string }
 ): HoverStateHandlers {

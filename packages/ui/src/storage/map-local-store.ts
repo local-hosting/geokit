@@ -15,7 +15,7 @@ import {
   idbDelete,
   idbGet,
   idbPut,
-} from './indexed-db.js';
+} from './indexed-db';
 
 export interface MapSnapshotRecord {
   mapId: string;

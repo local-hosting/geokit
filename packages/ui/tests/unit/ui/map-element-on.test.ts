@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { bindGkMapSemanticEvents } from '../../../src/utils/map-semantic-events.js';
-import { offGkMapEvent, onGkMapEvent } from '../../../src/utils/map-element-on.js';
+import { bindGkMapSemanticEvents } from '../../../src/utils/map-semantic-events';
+import { offGkMapEvent, onGkMapEvent } from '../../../src/utils/map-element-on';
 
 describe('map-element-on', () => {
   it('onGkMapEvent receives gk-map-moveend detail', () => {

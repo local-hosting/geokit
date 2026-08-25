@@ -1,23 +1,23 @@
-export { createGkMap, type CreateGkMapOptions, type GkMapState } from './createGkMap.js';
-export { createGkMapEvents, type CreateGkMapEventsOptions } from './createGkMapEvents.js';
+export { createGkMap, type CreateGkMapOptions, type GkMapState } from './createGkMap';
+export { createGkMapEvents, type CreateGkMapEventsOptions } from './createGkMapEvents';
 export {
   createGkMapMount,
   type CreateGkMapMountOptions,
   type GkMapMountState,
-} from './createGkMapMount.js';
-export { createGkMapContainer } from './createGkMapContainer.js';
-export { createGkDocumentEvents } from './createGkDocumentEvents.js';
-export { createGkPopupEvents, type CreateGkPopupEventsOptions } from './createGkPopupEvents.js';
-export { createGkScrollIdle, type GkScrollIdleState } from './createGkScrollIdle.js';
-export { createGkMapReadyOnce, type CreateGkMapReadyOnceOptions } from './createGkMapReadyOnce.js';
-export { createGkMapStyle } from './createGkMapStyle.js';
-export { createGkLayerEvents, type GkLayerEventHandlers } from './createGkLayerEvents.js';
+} from './createGkMapMount';
+export { createGkMapContainer } from './createGkMapContainer';
+export { createGkDocumentEvents } from './createGkDocumentEvents';
+export { createGkPopupEvents, type CreateGkPopupEventsOptions } from './createGkPopupEvents';
+export { createGkScrollIdle, type GkScrollIdleState } from './createGkScrollIdle';
+export { createGkMapReadyOnce, type CreateGkMapReadyOnceOptions } from './createGkMapReadyOnce';
+export { createGkMapStyle } from './createGkMapStyle';
+export { createGkLayerEvents, type GkLayerEventHandlers } from './createGkLayerEvents';
 export type {
   GkMapElement,
   GkMapLifecycleDetail,
   GkMapLifecycleHandlers,
   MapMountMode,
   MapMountPolicyOptions,
-} from '../shared/index.js';
+} from '../shared/index';
 
-export { createGkMapPointEvents } from './createGkMapPointEvents.js';
+export { createGkMapPointEvents } from './createGkMapPointEvents';

@@ -1,5 +1,5 @@
 import type { FeatureCollection } from 'geojson';
-import type { CompositeServiceOptions } from '../../types/api-composite.js';
+import type { CompositeServiceOptions } from '../../types/api-composite';
 import {
   type ServiceCapability,
   type GeocodeOptions,
@@ -9,8 +9,8 @@ import {
   type PlaceSearchResult,
   type ReverseGeocodeOptions,
   type ReverseGeocodeResult,
-} from '../types.js';
-import { Service } from '../service.js';
+} from '../types';
+import { Service } from '../service';
 
 function isUsableGeocodeResult(result: unknown): result is FeatureCollection {
   if (!result || typeof result !== 'object') {

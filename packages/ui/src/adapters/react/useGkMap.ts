@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { bindGkMapLifecycle } from '../shared/map-lifecycle.js';
-import type { GkMapElement, GkMapLifecycleHandlers } from '../shared/types.js';
+import { bindGkMapLifecycle } from '../shared/map-lifecycle';
+import type { GkMapElement, GkMapLifecycleHandlers } from '../shared/types';
 
 export type UseGkMapOptions = GkMapLifecycleHandlers;
 

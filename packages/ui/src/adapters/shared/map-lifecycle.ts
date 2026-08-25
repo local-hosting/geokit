@@ -1,4 +1,4 @@
-import type { GkMapElement, GkMapLifecycleDetail, GkMapLifecycleHandlers } from './types.js';
+import type { GkMapElement, GkMapLifecycleDetail, GkMapLifecycleHandlers } from './types';
 
 const LIFECYCLE_EVENTS = {
   ready: 'gk-map-ready',

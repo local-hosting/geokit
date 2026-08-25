@@ -1,1 +1,1 @@
-export * from './map-surface/map-terrain-disable.js';
+export * from './map-surface/map-terrain-disable';

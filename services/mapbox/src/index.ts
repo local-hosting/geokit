@@ -1,6 +1,6 @@
 import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@geokit/service/plugin';
 import { resolveRoutingAccessToken } from '@geokit/env/service-keys';
-import { MapboxService } from './mapbox-service.js';
+import { MapboxService } from './mapbox-service';
 
 export const mapboxPlugin: GeokitServicePlugin = {
   name: 'mapbox',
@@ -17,4 +17,4 @@ export const registerMapboxPlugin = createKeyedPluginRegistrar(
   }
 );
 
-export { MapboxService } from './mapbox-service.js';
+export { MapboxService } from './mapbox-service';

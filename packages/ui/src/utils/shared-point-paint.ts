@@ -1,1 +1,1 @@
-export * from './paint/shared-point-paint.js';
+export * from './paint/shared-point-paint';

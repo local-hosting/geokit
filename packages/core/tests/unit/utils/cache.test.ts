@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GeoCache, ProviderCache, coordinateCacheKey, roundForCacheKey } from '../../../src/utils/cache.js';
+import { GeoCache, ProviderCache, coordinateCacheKey, roundForCacheKey } from '../../../src/utils/cache';
 
 describe('GeoCache', () => {
   it('stores, retrieves, and tracks hit/miss stats', () => {

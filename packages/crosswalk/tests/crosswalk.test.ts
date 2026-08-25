@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadUsCrosswalkSync } from '../src/load/load.js';
+import { loadUsCrosswalkSync } from '../src/load/load';
 import { dmaForGeohash, dmaForZip, geohashForZip, h3ForZip, crosswalk, zipsInDma } from '../src/index.ts';
-import { ensureH3Projection } from '../src/h3/project.js';
-import { loadUsCrosswalk, resetCrosswalkForTest } from '../src/load/load.js';
+import { ensureH3Projection } from '../src/h3/project';
+import { loadUsCrosswalk, resetCrosswalkForTest } from '../src/load/load';
 import {
   dmaForH3,
   getLoadedCrosswalkTableNames,

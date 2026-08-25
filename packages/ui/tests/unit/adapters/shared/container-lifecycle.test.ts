@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { bindGkMapContainerLifecycle } from '../../../../src/adapters/shared/container-lifecycle.js';
-import type { GkMapElement } from '../../../../src/adapters/shared/types.js';
+import { bindGkMapContainerLifecycle } from '../../../../src/adapters/shared/container-lifecycle';
+import type { GkMapElement } from '../../../../src/adapters/shared/types';
 
 describe('bindGkMapContainerLifecycle', () => {
   it('forwards ready/unload/unfreeze only for maps inside the container', async () => {

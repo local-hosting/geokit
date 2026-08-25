@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { bindGkPointLayerEvents } from '../../../src/utils/map-events.js';
+import { bindGkPointLayerEvents } from '../../../src/utils/map-events';
 
 describe('map-events', () => {
   it('bindGkPointLayerEvents forwards matching map events', () => {

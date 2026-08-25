@@ -54,7 +54,7 @@ export interface PointOptions {
   pointName?: string;
 }
 
-import { PointAccessorsApi } from './point-accessors-api.js';
+import { PointAccessorsApi } from './point-accessors-api';
 
 export class PointElement extends PointAccessorsApi {
   static create(options: PointOptions): PointElement {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createGkScrollIdle } from '../../../../src/adapters/svelte/createGkScrollIdle.js';
+import { createGkScrollIdle } from '../../../../src/adapters/svelte/createGkScrollIdle';
 
 describe('createGkScrollIdle', () => {
   it('notifies subscribers when scroll idle state changes', () => {

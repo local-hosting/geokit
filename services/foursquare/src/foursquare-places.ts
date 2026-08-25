@@ -6,7 +6,7 @@ import {
   type FoursquarePlacesSearchParams,
   type FoursquarePlacesSearchResponse,
   type NormalizedFoursquarePlace,
-} from './types/foursquare-places.js';
+} from './types/foursquare-places';
 
 import { resolveFoursquareApiKey } from '@geokit/env';
 
