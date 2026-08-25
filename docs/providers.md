@@ -28,4 +28,4 @@ Default on web: **maptiler** (`src/config/index.ts`). Default on Swift: **mapbox
 
 ## Choropleth fills
 
-Semi-transparent polygon fills can show triangulation artifacts. Use `buildChoroplethFillPaint` from `@geokit/core/ui/choropleth-fill-paint` for fill layers on admin boundaries and regions.
+Semi-transparent polygon fills can show triangulation artifacts. Use `buildChoroplethFillPaint` from `@geokit/ui/utils/paint/choropleth-fill-paint` for fill layers on admin boundaries and regions.
