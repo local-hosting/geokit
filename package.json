@@ -1,7 +1,7 @@
 {
   "name": "geokit-monorepo",
   "private": true,
-  "description": "Geokit monorepo — geospatial SDK and POI taxonomy",
+  "description": "Geokit monorepo — geospatial SDK",
   "workspaces": [
     "packages/*",
     "services/*"

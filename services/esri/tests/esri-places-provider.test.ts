@@ -8,7 +8,6 @@ import {
 describe('@geokit/esri', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
   });
 
 
