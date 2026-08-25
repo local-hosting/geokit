@@ -1,15 +1,17 @@
+import { pointInGeometry } from '@geokit/core/containment';
+import type { DMA } from '@geokit/core';
 import type { UsCrosswalkTables } from '../types';
 import { compactH3CellId } from '../h3/cell-id';
+import { asDmaSlugOrUndefined } from '@geokit/core';
+import { toDMA } from '../lookup/dma';
+import {
+  getCountyBoundaryFeatures,
+  isCountyBoundariesLoaded,
+} from './county-boundaries';
 import {
   GEOHASH_ZIP_INDEX_PRECISION,
   geohashCellIdForLookup,
 } from '../geohash/cell-id';
-
-function canonicalDmaSlug(raw: string | undefined): string | undefined {
-  if (!raw) return undefined;
-  const slug = raw.trim().toLowerCase().replace(/\s+/g, '-');
-  return slug || undefined;
-}
 
 function lookupGeohashZips(
   geohashToZips: Readonly<Record<string, readonly string[]>>,
@@ -29,18 +31,18 @@ function lookupGeohashZips(
   return [];
 }
 
-function lookupGeohashDma(
+function lookupGeohashDmaSlug(
   geohashToDma: Readonly<Record<string, string>>,
   geohashCell: string
 ): string | undefined {
   const key = geohashCellIdForLookup(geohashCell, GEOHASH_ZIP_INDEX_PRECISION);
-  const exact = canonicalDmaSlug(geohashToDma[key]);
+  const exact = asDmaSlugOrUndefined(geohashToDma[key]);
   if (exact) return exact;
   if (key.length < GEOHASH_ZIP_INDEX_PRECISION) {
     const dmaSlugs = new Set<string>();
     for (const [cell, dma] of Object.entries(geohashToDma)) {
       if (!cell.startsWith(key)) continue;
-      const slug = canonicalDmaSlug(dma);
+      const slug = asDmaSlugOrUndefined(dma);
       if (slug) dmaSlugs.add(slug);
     }
     if (dmaSlugs.size === 1) return [...dmaSlugs][0];
@@ -62,10 +64,23 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
   const zipToState = tables.zipToState;
   const placeToDma = tables.placeToDma;
 
-  return {
-    dmaForH3(h3Cell: string): string | undefined {
+  const lookups = {
+    dmaFromH3(h3Cell: string): DMA | undefined {
       const compact = compactH3CellId(h3Cell);
-      return canonicalDmaSlug(h3ToDma[compact]);
+      return toDMA(lookups, h3ToDma[compact]);
+    },
+
+    dmaFromPoint(lat: number, lon: number): DMA | undefined {
+      if (!isCountyBoundariesLoaded()) return undefined;
+      for (const feature of getCountyBoundaryFeatures()) {
+        if (!feature.geometry) continue;
+        if (!pointInGeometry([lat, lon], feature.geometry)) continue;
+        const fromProps = asDmaSlugOrUndefined(feature.properties?.dmaSlug);
+        if (fromProps) return toDMA(lookups, fromProps);
+        const fips = feature.properties?.fips?.trim();
+        if (fips) return toDMA(lookups, lookups.dmaSlugForCounty(fips));
+      }
+      return undefined;
     },
 
     zipsForH3(h3Cell: string): readonly string[] {
@@ -83,8 +98,8 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
       return zipToH3R5[key] ?? zipToH3R5[key.padStart(5, '0')];
     },
 
-    dmaForGeohash(geohashCell: string): string | undefined {
-      return lookupGeohashDma(geohashToDma, geohashCell);
+    dmaFromGeohash(geohashCell: string): DMA | undefined {
+      return toDMA(lookups, lookupGeohashDmaSlug(geohashToDma, geohashCell));
     },
 
     zipsForGeohash(geohashCell: string): readonly string[] {
@@ -101,14 +116,14 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
       return zipToGeohashP8[key] ?? zipToGeohashP8[key.padStart(5, '0')];
     },
 
-    dmaForZip(zip: string): string | undefined {
+    dmaFromZip(zip: string): DMA | undefined {
       const geohash = zipToGeohashP8[zip.trim()] ?? zipToGeohashP8[zip.trim().padStart(5, '0')];
       if (geohash) {
-        const dma = lookupGeohashDma(geohashToDma, geohash);
-        if (dma) return dma;
+        const dma = lookupGeohashDmaSlug(geohashToDma, geohash);
+        if (dma) return toDMA(lookups, dma);
       }
       const h3 = zipToH3R5[zip.trim()] ?? zipToH3R5[zip.trim().padStart(5, '0')];
-      return h3 ? canonicalDmaSlug(h3ToDma[compactH3CellId(h3)]) : undefined;
+      return h3 ? toDMA(lookups, h3ToDma[compactH3CellId(h3)]) : undefined;
     },
 
     stateForZip(zip: string): string | undefined {
@@ -118,42 +133,50 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
       return state?.trim().toLowerCase();
     },
 
-    zipsInDma(dmaSlug: string): readonly string[] {
-      const slug = canonicalDmaSlug(dmaSlug);
+    zipsInDMA(dmaSlug: string): readonly string[] {
+      const slug = asDmaSlugOrUndefined(dmaSlug);
       if (!slug) return [];
       return dmaToZips[slug] ?? [];
     },
 
-    countiesInDma(dmaSlug: string): readonly string[] {
+    countiesInDMA(dmaSlug: string): readonly string[] {
       if (!dmaToCounties) return [];
-      const slug = canonicalDmaSlug(dmaSlug);
+      const slug = asDmaSlugOrUndefined(dmaSlug);
       if (!slug) return [];
       return dmaToCounties[slug] ?? [];
     },
 
-    dmaRegionForDma(dmaSlug: string): string | undefined {
+    regionForDMA(dmaSlug: string): string | undefined {
       if (!dmaRegion) return undefined;
-      const slug = canonicalDmaSlug(dmaSlug);
+      const slug = asDmaSlugOrUndefined(dmaSlug);
       if (!slug) return undefined;
       return dmaRegion[slug];
     },
 
-    dmaForCountyFips(fips: string): string | undefined {
+    dmaSlugForCounty(fips: string): string | undefined {
       if (!countyToDma) return undefined;
       const key = fips.trim();
-      return canonicalDmaSlug(countyToDma[key]);
+      return asDmaSlugOrUndefined(countyToDma[key]);
     },
 
-    placeToDma(placeKey: string): { dmaSlug: string; region: string } | undefined {
+    dmaFromCounty(fips: string): DMA | undefined {
+      return toDMA(lookups, lookups.dmaSlugForCounty(fips));
+    },
+
+    dmaFromPlace(placeKey: string): DMA | undefined {
       if (!placeToDma) return undefined;
       const key = placeKey.trim().toLowerCase();
       const entry = placeToDma[key];
       if (!entry) return undefined;
-      const dmaSlug = canonicalDmaSlug(entry.dmaSlug);
-      if (!dmaSlug) return undefined;
-      return { dmaSlug, region: entry.region.trim().toLowerCase() };
+      return toDMA(lookups, entry.dmaSlug, entry.region);
+    },
+
+    dmaFromSlug(dmaSlug: string): DMA | undefined {
+      return toDMA(lookups, dmaSlug);
     },
   };
+
+  return lookups;
 }
 
 export type UsTableLookups = ReturnType<typeof createUsTableLookups>;

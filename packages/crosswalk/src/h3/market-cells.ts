@@ -1,6 +1,6 @@
 /**
  * Market cell catalog indexing — cell ↔ region slug from published `marketCells` payloads.
- * For static crosswalk table lookups use `dmaForH3` / `crosswalk()` instead.
+ * For static crosswalk table lookups use `convert` / `crosswalk()` instead.
  */
 
 import {

@@ -1,6 +1,7 @@
 import type { CrosswalkCountry, CrosswalkSpine, UsCrosswalkTables } from '../types';
 import type { UsTableLookups } from '../us/tables';
 import type { UsCrosswalkTableName } from '../us/table-names';
+import { clearCountyBoundaries } from '../us/county-boundaries';
 
 let usTables: UsCrosswalkTables | null = null;
 let usLookups: UsTableLookups | null = null;
@@ -12,6 +13,7 @@ export function clearUsCrosswalkRegistry(): void {
   usLookups = null;
   crosswalkSpine = 'h3';
   loadedTableNames.clear();
+  clearCountyBoundaries();
 }
 
 export function setUsCrosswalkRegistry(
