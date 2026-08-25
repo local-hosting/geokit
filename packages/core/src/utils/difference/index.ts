@@ -1,10 +1,11 @@
+import { turfDifference, turfMultiPolygon, turfPolygon } from '../turf/deps';
 /**
  * Polygon difference operations using Turf.js
  * Clips subsequent polygons from the first polygon
  */
 
-import turfDifference from '@turf/difference';
-import { polygon as turfPolygon, multiPolygon as turfMultiPolygon } from '@turf/helpers';
+
+
 import type { Polygon, MultiPolygon, Feature } from '../../types';
 import type {
   Feature as GeoJSONFeature,

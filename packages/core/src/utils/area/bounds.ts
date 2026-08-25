@@ -1,6 +1,7 @@
-import turfBboxPolygon from '@turf/bbox-polygon';
-import turfArea from '@turf/area';
+
+
 import type { Bounds } from '../../types';
+import { turfArea, turfBboxPolygon } from '../turf/deps';
 import {
   EARTH_RADIUS_METERS,
   SQUARE_METERS_TO_SQUARE_KILOMETERS,

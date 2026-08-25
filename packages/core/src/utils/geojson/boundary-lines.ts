@@ -1,11 +1,12 @@
+import { lineString, simplifyTurf } from '../turf/deps';
 /**
  * Convert polygon features into boundary LineStrings for MapLibre line layers.
  * Large rings are split into chunks — MapLibre line buckets cap at 65535 verts/segment
  * and round-join tessellation can expand ~10× the input coordinate count.
  */
 
-import simplifyTurf from '@turf/simplify';
-import { lineString } from '@turf/helpers';
+
+
 import type { FeatureCollection, LineString, Polygon, MultiPolygon, Position } from '../../types';
 
 /**

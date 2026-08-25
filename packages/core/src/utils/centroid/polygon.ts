@@ -1,10 +1,11 @@
+import { turfCentroid, turfPolygon } from '../turf/deps';
 /**
  * Calculate the centroid (geometric center) of a polygon
  * Uses Turf.js for robust centroid calculation
  */
 
-import turfCentroid from '@turf/centroid';
-import { polygon as turfPolygon } from '@turf/helpers';
+
+
 import type { Polygon, LatLon } from '../../types';
 import { validatePolygon, extractLatLon } from '../turf-utils';
 

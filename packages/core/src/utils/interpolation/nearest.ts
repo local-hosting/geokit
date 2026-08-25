@@ -1,9 +1,10 @@
-import nearestPointOnLineTurf from '@turf/nearest-point-on-line';
-import { lineString } from '@turf/helpers';
+
+
 import type { LatLon, Polyline } from '../../types';
 import { haversineMeters } from '../distance';
 import { createPointFeature, createLineString, extractLatLon } from '../turf-utils';
 import { toLonLatArray } from '../coordinates/conversion';
+import { lineString, nearestPointOnLineTurf } from '../turf/deps';
 
 /**
  * Find the nearest point on a line segment to a given point

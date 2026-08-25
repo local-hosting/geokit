@@ -1,9 +1,10 @@
+import { convexTurf, turfPoints } from '../turf/deps';
 /**
  * Calculate the convex hull of a set of points using Turf.js
  */
 
-import convexTurf from '@turf/convex';
-import { points as turfPoints } from '@turf/helpers';
+
+
 import type { LatLon, Polygon } from '../../types';
 import { toLonLatArray } from '../coordinates/conversion';
 

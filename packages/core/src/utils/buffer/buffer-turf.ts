@@ -1,13 +1,14 @@
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
-import { lineString as turfLineString, polygon as turfPolygon } from '@turf/helpers';
+
 import type { Feature, MultiPolygon, Polygon as GeoJsonPolygon } from 'geojson';
 import type { LatLon, Polygon } from '../../types';
 import { DEFAULT_BUFFER_STEPS, METERS_TO_KILOMETERS } from '../../constants';
 import { toLonLatArray } from '../coordinates/conversion';
 import { resolveTurfDefault } from '../turf-default-import';
 import { bufferPoint } from './buffer-point';
+import { turfLineString, turfPolygon } from '../turf/deps';
 
 type TurfBufferFn = (
   geojson: GeoJSON.GeoJSON,

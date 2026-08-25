@@ -1,9 +1,10 @@
+import { lineString, turfPoint } from './turf/deps';
 /**
  * Utility functions for working with Turf.js
  * Provides DRY helpers for common Turf.js operations
  */
 
-import { point as turfPoint, lineString } from '@turf/helpers';
+
 import type { Feature, Point, LatLon, Polygon } from '../types';
 
 /**

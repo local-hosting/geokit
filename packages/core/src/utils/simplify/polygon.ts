@@ -1,8 +1,9 @@
-import simplifyTurf from '@turf/simplify';
-import { polygon as turfPolygon } from '@turf/helpers';
+
+
 import type { LatLon } from '../../types';
 import { toLonLatArray, toLatLonArray } from '../coordinates/conversion';
 import { METERS_PER_DEGREE_EQUATOR, DEGREES_TO_RADIANS } from '../../constants';
+import { simplifyTurf, turfPolygon } from '../turf/deps';
 
 /**
  * Simplify a polygon ring using the Douglas-Peucker algorithm via Turf.js
