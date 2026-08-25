@@ -19,6 +19,8 @@ export type LayerDatasetOptions = {
   mode?: LayerDatasetMode;
   slugs?: string[];
   highlightSlug?: string | null;
+  /** When set, highlighted DMA uses this color (e.g. selected venue dot). */
+  highlightColor?: string | null;
   fillOpacity?: number;
   fillColor?: string;
   outlineColor?: string;

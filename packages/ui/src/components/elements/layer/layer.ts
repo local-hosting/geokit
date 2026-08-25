@@ -392,6 +392,7 @@ export class LayerElement extends MapChildElement {
       mode,
       slugs: parseLayerDatasetSlugs(this.safeGetAttribute('slugs')),
       highlightSlug: this.safeGetAttribute('highlight-slug') ?? undefined,
+      highlightColor: this.safeGetAttribute('highlight-color') ?? undefined,
       fillOpacity: Number.isFinite(fillOpacity) ? fillOpacity : undefined,
       fillColor: this.safeGetAttribute('fill-color') ?? undefined,
       outlineColor: this.safeGetAttribute('outline-color') ?? undefined,
@@ -469,6 +470,8 @@ export class LayerElement extends MapChildElement {
 
     if (name === 'highlight-slug') {
       patch.highlightSlug = this.safeGetAttribute('highlight-slug');
+    } else if (name === 'highlight-color') {
+      patch.highlightColor = this.safeGetAttribute('highlight-color');
     } else if (name === 'fill-opacity') {
       const raw = this.safeGetAttribute('fill-opacity');
       const parsed = raw ? parseFloat(raw) : undefined;
