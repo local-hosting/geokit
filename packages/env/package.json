@@ -1,0 +1,51 @@
+{
+  "name": "@geokit/env",
+  "version": "0.1.0",
+  "description": "Geokit environment key resolution and bootstrap (no geo dependencies)",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./service-keys": {
+      "types": "./src/service-keys.ts",
+      "import": "./src/service-keys.ts",
+      "default": "./src/service-keys.ts"
+    },
+    "./map-credentials": {
+      "types": "./src/map-credentials.ts",
+      "import": "./src/map-credentials.ts",
+      "default": "./src/map-credentials.ts"
+    },
+    "./primitives": {
+      "types": "./src/primitives.ts",
+      "import": "./src/primitives.ts",
+      "default": "./src/primitives.ts"
+    },
+    "./bootstrap": {
+      "types": "./src/bootstrap.ts",
+      "import": "./src/bootstrap.ts",
+      "default": "./src/bootstrap.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
+    "test": "yarn run -T vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.8"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  }
+}

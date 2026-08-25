@@ -22,5 +22,8 @@
     "@geokit/service": "workspace:*"
   },
   "name": "@geokit/google",
-  "description": "Google Places search plugin for geokit"
+  "description": "Google Places search plugin for geokit",
+  "dependencies": {
+    "@geokit/env": "workspace:*"
+  }
 }
