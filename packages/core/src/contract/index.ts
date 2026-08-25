@@ -39,6 +39,6 @@ export {
   resolveOfflineBoundsFromPins,
 } from './offline.js';
 
-export { MapLocalStore, type MapSnapshotRecord } from '../storage/map-local-store.js';
+export { MapLocalStore, type MapSnapshotRecord } from '@geokit/ui/storage/map-local-store';
 
-export { MapOfflineTileCache, TILE_CACHE_NAME } from '../storage/map-offline-tile-cache.js';
+export { MapOfflineTileCache, TILE_CACHE_NAME } from '@geokit/ui/storage/map-offline-tile-cache';
