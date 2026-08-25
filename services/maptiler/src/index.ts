@@ -1,6 +1,6 @@
 import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@geokit/service/plugin';
-import { resolveGeocodingApiKey } from '@geokit/core/config/env/service-keys';
-import { MapTilerService } from './maptiler-provider.js';
+import { resolveGeocodingApiKey } from '@geokit/env/service-keys';
+import { MapTilerService } from './maptiler-service.js';
 
 export const maptilerPlugin: GeokitServicePlugin = {
   name: 'maptiler',
@@ -17,4 +17,4 @@ export const registerMapTilerPlugin = createKeyedPluginRegistrar(
   }
 );
 
-export { MapTilerService } from './maptiler-provider.js';
+export { MapTilerService } from './maptiler-service.js';

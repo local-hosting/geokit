@@ -3,6 +3,8 @@ import path from 'node:path';
 export function pluginVitestAliases(repoRoot: string): Record<string, string> {
   const serviceRoot = path.join(repoRoot, 'packages/service');
   const coreRoot = path.join(repoRoot, 'packages/core');
+  const envRoot = path.join(repoRoot, 'packages/env');
+  const h3Root = path.join(repoRoot, 'packages/h3');
   return {
     '@geokit/service/types': path.join(serviceRoot, 'src/services/types.ts'),
     '@geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
@@ -14,7 +16,14 @@ export function pluginVitestAliases(repoRoot: string): Record<string, string> {
     ),
     '@geokit/service/builtins': path.join(serviceRoot, 'src/builtins.ts'),
     '@geokit/service': path.join(serviceRoot, 'src/index.ts'),
-    '@geokit/core/config/env/service-keys': path.join(coreRoot, 'src/config/env/service-keys.ts'),
+    '@geokit/env': path.join(envRoot, 'src/index.ts'),
+    '@geokit/env/service-keys': path.join(envRoot, 'src/service-keys.ts'),
+    '@geokit/env/map-credentials': path.join(envRoot, 'src/map-credentials.ts'),
+    '@geokit/env/primitives': path.join(envRoot, 'src/primitives.ts'),
+    '@geokit/core/config/env/service-keys': path.join(envRoot, 'src/service-keys.ts'),
+    '@geokit/h3': path.join(h3Root, 'src/index.ts'),
+    '@geokit/h3/lite': path.join(h3Root, 'src/lite.ts'),
+    '@geokit/core/h3': path.join(h3Root, 'src/index.ts'),
     '@geokit/core/utils/retry': path.join(coreRoot, 'src/utils/retry.ts'),
     '@geokit/core/utils/cache': path.join(coreRoot, 'src/utils/cache.ts'),
     '../../../core/tests/fixtures/geojson': path.join(coreRoot, 'tests/fixtures/geojson.ts'),
@@ -30,6 +39,8 @@ export function pluginVitestAliases(repoRoot: string): Record<string, string> {
 export function serviceVitestAliases(repoRoot: string): Record<string, string> {
   const serviceRoot = path.join(repoRoot, 'packages/service');
   const coreRoot = path.join(repoRoot, 'packages/core');
+  const envRoot = path.join(repoRoot, 'packages/env');
+  const h3Root = path.join(repoRoot, 'packages/h3');
 
   return {
     '@geokit/service': path.join(serviceRoot, 'src/index.ts'),
@@ -47,7 +58,10 @@ export function serviceVitestAliases(repoRoot: string): Record<string, string> {
     '@geokit/maptiler': path.join(repoRoot, 'services/maptiler/src/index.ts'),
     '@geokit/core/utils/retry': path.join(coreRoot, 'src/utils/retry.ts'),
     '@geokit/core/utils/cache': path.join(coreRoot, 'src/utils/cache.ts'),
-    '@geokit/core/config/env/service-keys': path.join(coreRoot, 'src/config/env/service-keys.ts'),
+    '@geokit/env': path.join(envRoot, 'src/index.ts'),
+    '@geokit/env/service-keys': path.join(envRoot, 'src/service-keys.ts'),
+    '@geokit/h3': path.join(h3Root, 'src/index.ts'),
+    '@geokit/core/h3': path.join(h3Root, 'src/index.ts'),
+    '@geokit/core/config/env/service-keys': path.join(envRoot, 'src/service-keys.ts'),
   };
 }
-

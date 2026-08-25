@@ -22,5 +22,8 @@
     "@geokit/service": "workspace:*"
   },
   "name": "@geokit/maptiler",
-  "description": "MapTiler geocoding plugin for geokit"
+  "description": "MapTiler geocoding plugin for geokit",
+  "dependencies": {
+    "@geokit/env": "workspace:*"
+  }
 }

@@ -22,5 +22,8 @@
     "@geokit/service": "workspace:*"
   },
   "name": "@geokit/mapbox",
-  "description": "Mapbox routing and geocoding plugin for geokit"
+  "description": "Mapbox routing and geocoding plugin for geokit",
+  "dependencies": {
+    "@geokit/env": "workspace:*"
+  }
 }

@@ -6,7 +6,7 @@ import {
   resolveGooglePlacesApiKey,
   resolveMapHostBaseUrlFromEnv,
   resolveRoutingAccessToken,
-} from '../../../../src/config/env/service-keys.js';
+} from '../../src/service-keys.js';
 
 describe('service-keys', () => {
   it('resolves geocoding and routing keys from env aliases', () => {
