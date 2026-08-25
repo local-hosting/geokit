@@ -4,6 +4,14 @@
 
 import type { Feature, FeatureCollection, Point } from 'geojson';
 
+import { convert, GKPoint, GeoKind, isUsCrosswalkLoaded } from '@geokit/crosswalk';
+
+import {
+  POINT_DMA_PROPERTY,
+  POINT_DMA_REGION_PROPERTY,
+  type EnrichPointWithDmaOptions,
+} from './point-dma';
+
 export interface PointGeometry {
   type: 'Point';
   coordinates: [number, number];
@@ -24,6 +32,14 @@ export interface BuildCachedPointFeaturesOptions<T> {
   ) => boolean;
   /** Called when reusing a cached feature (e.g. refresh a normalized property). */
   onCacheHit?: (cached: CachedPointFeature, item: T) => void;
+  /** Add Nielsen DMA + macro-region from coordinates when crosswalk is loaded. */
+  enrichWithDma?: boolean | EnrichPointWithDmaOptions;
+  /** Post-process properties after DMA enrichment (e.g. derive paint color). */
+  finalizeProperties?: (
+    item: T,
+    properties: Record<string, unknown>,
+    geometry: PointGeometry
+  ) => Record<string, unknown>;
 }
 
 export interface CachedPointFeatureBuilderOptions {
@@ -59,7 +75,16 @@ export class CachedPointFeatureBuilder {
   }
 
   build<T>(options: BuildCachedPointFeaturesOptions<T>): FeatureCollection<Point> {
-    const { items, getFeatureId, getGeometry, getProperties, isCacheValid, onCacheHit } = options;
+    const {
+      items,
+      getFeatureId,
+      getGeometry,
+      getProperties,
+      isCacheValid,
+      onCacheHit,
+      enrichWithDma,
+      finalizeProperties,
+    } = options;
     const features: CachedPointFeature[] = [];
     const seenIds = new Set<string>();
 
@@ -68,16 +93,37 @@ export class CachedPointFeatureBuilder {
       if (!id) continue;
       seenIds.add(id);
 
-      const properties = getProperties(item);
+      let properties = getProperties(item);
+      const geometry = getGeometry(item);
+      if (!geometry) continue;
+
+      if (enrichWithDma) {
+        const [lng, lat] = geometry.coordinates;
+        const dmaOpts = enrichWithDma === true ? undefined : enrichWithDma;
+        if (isUsCrosswalkLoaded()) {
+          const dma = convert(GKPoint(lat, lng), GeoKind.DMA);
+          if (dma) {
+            const dmaKey = dmaOpts?.dmaKey ?? POINT_DMA_PROPERTY;
+            const regionKey = dmaOpts?.regionKey ?? POINT_DMA_REGION_PROPERTY;
+            properties = {
+              ...properties,
+              [dmaKey]: dma.slug,
+              ...(dma.region ? { [regionKey]: dma.region } : {}),
+            };
+          }
+        }
+      }
+
+      if (finalizeProperties) {
+        properties = finalizeProperties(item, properties, geometry);
+      }
+
       const cached = this.cache.get(id);
       if (cached && isCacheValid?.(cached, item, properties)) {
         onCacheHit?.(cached, item);
         features.push(cached);
         continue;
       }
-
-      const geometry = getGeometry(item);
-      if (!geometry) continue;
 
       const feature: CachedPointFeature = {
         type: 'Feature',

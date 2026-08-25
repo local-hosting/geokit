@@ -14,6 +14,24 @@ export {
 } from './utils/geodesic-circle';
 
 export {
+  convert,
+  crosswalk,
+  ensureUsCrosswalkLoaded,
+  isUsCrosswalkLoaded,
+  GKPoint,
+  GKZip,
+  GKH3,
+  GKDMA,
+  GeoKind,
+} from '@geokit/crosswalk';
+
+export {
+  POINT_DMA_PROPERTY,
+  POINT_DMA_REGION_PROPERTY,
+  type EnrichPointWithDmaOptions,
+} from './utils/shared-points/point-dma';
+
+export {
   CachedPointFeatureBuilder,
   normalizePointCoordinates,
   type CachedPointFeature,

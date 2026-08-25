@@ -56,6 +56,18 @@ export interface PointOptions {
 }
 
 import { PointSelectRuntime } from './point-select-runtime';
+import {
+  convert,
+  ensureUsCrosswalkLoaded,
+  GKPoint,
+  GeoKind,
+  isUsCrosswalkLoaded,
+} from '@geokit/crosswalk';
+import type { DMA } from '@geokit/core';
+import {
+  POINT_DMA_PROPERTY,
+  POINT_DMA_REGION_PROPERTY,
+} from '../../../utils/shared-points/point-dma';
 
 export class PointAccessorsApi extends PointSelectRuntime {
   get color(): string {
@@ -196,17 +208,37 @@ export class PointAccessorsApi extends PointSelectRuntime {
     const pointId = pointEl(this)._propPointId ?? pointEl(this).safeGetAttribute('point-id');
     const pointName = pointEl(this)._propPointName ?? pointEl(this).safeGetAttribute('point-name');
     const featureId = pointId ?? `point-${pointEl(this).sourceId ?? crypto.randomUUID()}`;
+    let properties: Record<string, unknown> = {
+      color: pointEl(this).color,
+      size: pointEl(this).size,
+      'point-id': featureId,
+      ...(pointId && { id: pointId }),
+      ...(pointName && { 'point-name': pointName }),
+    };
+    if (isUsCrosswalkLoaded()) {
+      const dma = convert(GKPoint(normLat, normLng), GeoKind.DMA);
+      if (dma) {
+        properties = {
+          ...properties,
+          [POINT_DMA_PROPERTY]: dma.slug,
+          ...(dma.region ? { [POINT_DMA_REGION_PROPERTY]: dma.region } : {}),
+        };
+      }
+    }
     return {
       type: 'Feature',
       geometry: { type: 'Point', coordinates: [normLng, normLat] },
-      properties: {
-        color: pointEl(this).color,
-        size: pointEl(this).size,
-        'point-id': featureId,
-        ...(pointId && { id: pointId }),
-        ...(pointName && { 'point-name': pointName }),
-      },
+      properties,
     };
+  }
+
+  /** Nielsen DMA at this point (loads crosswalk when needed). */
+  async resolveDma(): Promise<DMA | null> {
+    const lat = pointEl(this)._propLat ?? parseFloat(pointEl(this).safeGetAttribute('lat') || '');
+    const lng = pointEl(this)._propLng ?? parseFloat(pointEl(this).safeGetAttribute('lng') || '');
+    if (isNaN(lat) || isNaN(lng)) return null;
+    await ensureUsCrosswalkLoaded();
+    return convert(GKPoint(lat, lng), GeoKind.DMA) ?? null;
   }
 
   updatePosition(lat: number, lng: number): void {

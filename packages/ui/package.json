@@ -367,6 +367,7 @@
   },
   "dependencies": {
     "@geokit/core": "workspace:*",
+    "@geokit/crosswalk": "workspace:*",
     "@geokit/env": "workspace:*",
     "@geokit/h3": "workspace:*",
     "@maptiler/sdk": "3.10.2",
