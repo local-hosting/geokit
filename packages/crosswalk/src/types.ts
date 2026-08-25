@@ -1,40 +1,37 @@
+import type {
+  CountryCode,
+  CountyFips,
+  DMA,
+  GeoKind,
+  GeoPoint,
+  GeoRef,
+  GeohashPoint,
+  H3Point,
+  MacroRegion,
+  StateCode,
+  ZipCode,
+} from '@geokit/core';
 import type { UsCrosswalkTableName } from './us/table-names';
 
-export type LatLon = readonly [number, number];
+export type { DMA, GeoRef } from '@geokit/core';
+export { GeoKind } from '@geokit/core';
+
+/** @deprecated Use {@link GeoRef}. */
+export type CrosswalkInput = GeoRef;
 
 export type CrosswalkCountry = 'us';
 
-export type GeoKind =
-  | 'country'
-  | 'h3'
-  | 'geohash'
-  | 'zip'
-  | 'dma'
-  | 'region'
-  | 'state'
-  | 'county';
-
 export type CrosswalkResult = {
-  readonly country: readonly string[];
-  readonly point?: LatLon;
-  readonly h3?: readonly string[];
-  readonly geohash?: readonly string[];
-  readonly zip?: readonly string[];
-  readonly dma?: readonly string[];
-  readonly region?: readonly string[];
-  readonly state?: readonly string[];
-  readonly county?: readonly string[];
+  readonly country: readonly CountryCode[];
+  readonly point?: GeoPoint;
+  readonly h3?: readonly H3Point[];
+  readonly geohash?: readonly GeohashPoint[];
+  readonly zip?: readonly ZipCode[];
+  readonly dma?: readonly DMA[];
+  readonly region?: readonly MacroRegion[];
+  readonly state?: readonly StateCode[];
+  readonly county?: readonly CountyFips[];
 };
-
-export type CrosswalkInput =
-  | { lat: number; lon: number }
-  | { h3Cell: string }
-  | { geohash: string }
-  | { zip: string }
-  | { dmaSlug: string }
-  | { countyFips: string }
-  | { placeKey: string }
-  | { state: string; placeSlug: string };
 
 export type CrosswalkSpine = 'h3' | 'geohash';
 

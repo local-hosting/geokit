@@ -150,12 +150,15 @@ fs.writeFileSync(path.join(OUT_DIR, 'geohash-to-dma.ts'), header + emitConst('GE
 const indexPath = path.join(OUT_DIR, 'index.ts');
 let indexBody = fs.readFileSync(indexPath, 'utf8');
 const extraExports = [
-  'export { GEOHASH_TO_DMA } from "./geohash-to-dma.js";',
-  'export { GEOHASH_P8_TO_ZIPS } from "./geohash-p8-to-zips.js";',
-  'export { ZIP_TO_GEOHASH_P8 } from "./zip-to-geohash-p8.js";',
+  'export { GEOHASH_TO_DMA } from "./geohash-to-dma";',
+  'export { GEOHASH_P8_TO_ZIPS } from "./geohash-p8-to-zips";',
+  'export { ZIP_TO_GEOHASH_P8 } from "./zip-to-geohash-p8";',
 ];
 for (const line of extraExports) {
-  if (!indexBody.includes(line)) indexBody += `\n${line}`;
+  if (indexBody.includes(line) || indexBody.includes(line.replace('.js', '.js'))) continue;
+  const bare = line.replace('.js', '');
+  if (indexBody.includes(bare)) continue;
+  indexBody += `\n${line}`;
 }
 fs.writeFileSync(indexPath, indexBody.endsWith('\n') ? indexBody : `${indexBody}\n`);
 
