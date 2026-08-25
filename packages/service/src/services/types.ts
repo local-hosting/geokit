@@ -62,7 +62,6 @@ export interface PlaceSearchOptions {
   ll?: Position;
   radius?: number;
   categories?: string[];
-  geotypes?: string[];
   limit?: number;
   sort?: 'RELEVANCE' | 'RATING' | 'DISTANCE';
   openNow?: boolean;
@@ -76,8 +75,6 @@ export interface PlaceSearchResult {
   address?: string;
   location: Position;
   categories?: string[];
-  geotype?: string;
-  geotypeAcronym?: string;
   distance?: number;
   rating?: number;
   priceLevel?: number;

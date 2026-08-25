@@ -9,8 +9,6 @@ import {
   getServiceForCapability,
   _resetRegistries,
 } from '@geokit/service/registry';
-import { setPlaceTaxonomyResolver } from '@geokit/service/place-taxonomy';
-import { createGeokitTaxonomyResolver } from '@geokit/geotypes/geokit';
 import { FoursquareService } from '../src/foursquare-provider.js';
 
 describe('FoursquareService', () => {
@@ -386,57 +384,6 @@ describe('FoursquareService', () => {
   });
 
 
-  describe('geotypes integration', () => {
-    const electronicsCategoryId = '4bf58dd8d48988d122951735';
-
-    beforeEach(() => {
-      setPlaceTaxonomyResolver(createGeokitTaxonomyResolver());
-    });
-
-    it('searches places with geotypes and enriches results', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            results: [
-              {
-                fsq_id: 'electronics-venue-1',
-                name: 'Electronics Hub',
-                geocodes: {
-                  main: {
-                    latitude: 36.16,
-                    longitude: -86.78,
-                  },
-                },
-                categories: [
-                  {
-                    name: 'Electronics Store',
-                    fsq_category_id: electronicsCategoryId,
-                  },
-                ],
-              },
-            ],
-          }),
-      } as Response);
-
-      await provider.initialize({ apiKey: 'test-api-key' });
-
-      const results = await provider.placeSearch({
-        ll: [-86.78, 36.16],
-        geotypes: ['RSE'],
-        radius: 800,
-      });
-
-      const fetchCall = (fetch as any).mock.calls[0];
-      const url = new URL(fetchCall[0]);
-      expect(url.searchParams.get('categories')).toBe(electronicsCategoryId);
-
-      expect(results).toHaveLength(1);
-      expect(results[0]?.categories).toContain(electronicsCategoryId);
-      expect(results[0]?.geotype).toBe('electronics_store');
-      expect(results[0]?.geotypeAcronym).toBe('RSE');
-    });
-  });
 
   describe('integration with registry', () => {
     it('should register and route placeSearch capability', async () => {

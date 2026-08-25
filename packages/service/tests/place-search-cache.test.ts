@@ -8,7 +8,6 @@ describe('buildPlaceSearchCacheKey', () => {
         query: 'coffee',
         ll: [-86.781, 36.162],
         radius: 800,
-        geotypes: ['RSE'],
         limit: 10,
       },
       'here'
@@ -16,12 +15,11 @@ describe('buildPlaceSearchCacheKey', () => {
 
     expect(key.startsWith('here:')).toBe(true);
     expect(key).toContain('q:coffee');
-    expect(key).toContain('gt:RSE');
     expect(key).toContain('r:800');
     expect(key).toContain('lim:10');
   });
 
-  it('uses categories when geotypes are absent', () => {
+  it('uses categories in cache key', () => {
     const key = buildPlaceSearchCacheKey(
       { categories: ['13065'], ll: [-86.78, 36.16] },
       'fsq'
