@@ -1,6 +1,6 @@
 /**
  * GeoKit core — geo math, types, and constants.
- * Parity Tier 1 with geokit-swift `GeoKitCore` (see docs/module-map.md).
+ * Parity Tier 1 with geokit-swift `GeoKitCore` (see docs/parity.md).
  */
 
 export type {

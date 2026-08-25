@@ -875,45 +875,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@geokit/api@workspace:*, @geokit/api@workspace:packages/api":
-  version: 0.0.0-use.local
-  resolution: "@geokit/api@workspace:packages/api"
-  dependencies:
-    "@geokit/core": "workspace:*"
-    "@geokit/plugin-foursquare": "workspace:*"
-    "@geokit/plugin-google": "workspace:*"
-    "@geokit/plugin-mapbox": "workspace:*"
-    "@geokit/plugin-maptiler": "workspace:*"
-    "@geokit/plugin-osm": "workspace:*"
-  peerDependencies:
-    "@geokit/core": ">=0.2.33"
-    "@geokit/plugin-foursquare": ">=0.1.0"
-    "@geokit/plugin-google": ">=0.1.0"
-    "@geokit/plugin-mapbox": ">=0.1.0"
-    "@geokit/plugin-maptiler": ">=0.1.0"
-    "@geokit/plugin-osm": ">=0.1.0"
-  peerDependenciesMeta:
-    "@geokit/core":
-      optional: false
-    "@geokit/plugin-foursquare":
-      optional: true
-    "@geokit/plugin-google":
-      optional: true
-    "@geokit/plugin-mapbox":
-      optional: true
-    "@geokit/plugin-maptiler":
-      optional: true
-    "@geokit/plugin-osm":
-      optional: true
-  languageName: unknown
-  linkType: soft
-
 "@geokit/core@workspace:*, @geokit/core@workspace:packages/core":
   version: 0.0.0-use.local
   resolution: "@geokit/core@workspace:packages/core"
   dependencies:
-    "@geokit/api": "workspace:*"
     "@geokit/geotypes": "workspace:*"
+    "@geokit/service": "workspace:*"
     "@maptiler/sdk": "npm:3.10.2"
     "@modelcontextprotocol/sdk": "npm:^1.29.0"
     "@turf/along": "npm:^7.3.0"
@@ -971,12 +938,12 @@ __metadata:
     vue: "npm:^3.5.13"
     zod: "npm:^3.25.0"
   peerDependencies:
-    "@geokit/api": ">=0.1.0"
+    "@geokit/service": ">=0.1.0"
     react: ">=18.0.0"
     svelte: ">=4.0.0"
     vue: ">=3.3.0"
   peerDependenciesMeta:
-    "@geokit/api":
+    "@geokit/service":
       optional: true
     react:
       optional: true
@@ -987,106 +954,155 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@geokit/crosswalk@workspace:packages/crosswalk":
+  version: 0.0.0-use.local
+  resolution: "@geokit/crosswalk@workspace:packages/crosswalk"
+  dependencies:
+    "@types/node": "npm:^24.10.1"
+    h3-js: "npm:^4.3.0"
+    typescript: "npm:^5.9.3"
+    vitest: "npm:^2.1.8"
+  peerDependencies:
+    h3-js: ^4.3.0
+  peerDependenciesMeta:
+    h3-js:
+      optional: true
+  languageName: unknown
+  linkType: soft
+
+"@geokit/esri@workspace:services/esri":
+  version: 0.0.0-use.local
+  resolution: "@geokit/esri@workspace:services/esri"
+  dependencies:
+    "@geokit/core": "workspace:*"
+    "@geokit/geotypes": "workspace:*"
+    "@geokit/service": "workspace:*"
+  peerDependencies:
+    "@geokit/core": ">=0.2.33"
+    "@geokit/service": ">=0.1.0"
+  languageName: unknown
+  linkType: soft
+
+"@geokit/foursquare@workspace:*, @geokit/foursquare@workspace:services/foursquare":
+  version: 0.0.0-use.local
+  resolution: "@geokit/foursquare@workspace:services/foursquare"
+  dependencies:
+    "@geokit/core": "workspace:*"
+    "@geokit/service": "workspace:*"
+  peerDependencies:
+    "@geokit/core": ">=0.2.33"
+    "@geokit/service": ">=0.1.0"
+  languageName: unknown
+  linkType: soft
+
 "@geokit/geotypes@workspace:*, @geokit/geotypes@workspace:packages/geotypes":
   version: 0.0.0-use.local
   resolution: "@geokit/geotypes@workspace:packages/geotypes"
   dependencies:
     "@bufbuild/protobuf": "npm:^2.6.0"
     "@bufbuild/protoc-gen-es": "npm:^2.6.0"
-    "@geokit/api": "workspace:*"
     "@geokit/core": "workspace:*"
+    "@geokit/service": "workspace:*"
     "@types/js-yaml": "npm:^4.0.9"
     commander: "npm:^14.0.0"
     js-yaml: "npm:^4.1.0"
   peerDependencies:
-    "@geokit/api": ">=0.1.0"
+    "@geokit/service": ">=0.1.0"
   languageName: unknown
   linkType: soft
 
-"@geokit/plugin-esri@workspace:packages/plugin-esri":
+"@geokit/google@workspace:*, @geokit/google@workspace:services/google":
   version: 0.0.0-use.local
-  resolution: "@geokit/plugin-esri@workspace:packages/plugin-esri"
+  resolution: "@geokit/google@workspace:services/google"
   dependencies:
-    "@geokit/api": "workspace:*"
+    "@geokit/core": "workspace:*"
+    "@geokit/service": "workspace:*"
+  peerDependencies:
+    "@geokit/core": ">=0.2.33"
+    "@geokit/service": ">=0.1.0"
+  languageName: unknown
+  linkType: soft
+
+"@geokit/here@workspace:services/here":
+  version: 0.0.0-use.local
+  resolution: "@geokit/here@workspace:services/here"
+  dependencies:
     "@geokit/core": "workspace:*"
     "@geokit/geotypes": "workspace:*"
+    "@geokit/service": "workspace:*"
   peerDependencies:
-    "@geokit/api": ">=0.1.0"
     "@geokit/core": ">=0.2.33"
+    "@geokit/service": ">=0.1.0"
   languageName: unknown
   linkType: soft
 
-"@geokit/plugin-foursquare@workspace:*, @geokit/plugin-foursquare@workspace:packages/plugin-foursquare":
+"@geokit/mapbox@workspace:*, @geokit/mapbox@workspace:services/mapbox":
   version: 0.0.0-use.local
-  resolution: "@geokit/plugin-foursquare@workspace:packages/plugin-foursquare"
+  resolution: "@geokit/mapbox@workspace:services/mapbox"
   dependencies:
-    "@geokit/api": "workspace:*"
     "@geokit/core": "workspace:*"
+    "@geokit/service": "workspace:*"
   peerDependencies:
-    "@geokit/api": ">=0.1.0"
     "@geokit/core": ">=0.2.33"
+    "@geokit/service": ">=0.1.0"
   languageName: unknown
   linkType: soft
 
-"@geokit/plugin-google@workspace:*, @geokit/plugin-google@workspace:packages/plugin-google":
+"@geokit/maptiler@workspace:*, @geokit/maptiler@workspace:services/maptiler":
   version: 0.0.0-use.local
-  resolution: "@geokit/plugin-google@workspace:packages/plugin-google"
+  resolution: "@geokit/maptiler@workspace:services/maptiler"
   dependencies:
-    "@geokit/api": "workspace:*"
     "@geokit/core": "workspace:*"
+    "@geokit/service": "workspace:*"
   peerDependencies:
-    "@geokit/api": ">=0.1.0"
     "@geokit/core": ">=0.2.33"
+    "@geokit/service": ">=0.1.0"
   languageName: unknown
   linkType: soft
 
-"@geokit/plugin-here@workspace:packages/plugin-here":
+"@geokit/osm@workspace:*, @geokit/osm@workspace:services/osm":
   version: 0.0.0-use.local
-  resolution: "@geokit/plugin-here@workspace:packages/plugin-here"
+  resolution: "@geokit/osm@workspace:services/osm"
   dependencies:
-    "@geokit/api": "workspace:*"
-    "@geokit/core": "workspace:*"
-    "@geokit/geotypes": "workspace:*"
-  peerDependencies:
-    "@geokit/api": ">=0.1.0"
-    "@geokit/core": ">=0.2.33"
-  languageName: unknown
-  linkType: soft
-
-"@geokit/plugin-mapbox@workspace:*, @geokit/plugin-mapbox@workspace:packages/plugin-mapbox":
-  version: 0.0.0-use.local
-  resolution: "@geokit/plugin-mapbox@workspace:packages/plugin-mapbox"
-  dependencies:
-    "@geokit/api": "workspace:*"
-    "@geokit/core": "workspace:*"
-  peerDependencies:
-    "@geokit/api": ">=0.1.0"
-    "@geokit/core": ">=0.2.33"
-  languageName: unknown
-  linkType: soft
-
-"@geokit/plugin-maptiler@workspace:*, @geokit/plugin-maptiler@workspace:packages/plugin-maptiler":
-  version: 0.0.0-use.local
-  resolution: "@geokit/plugin-maptiler@workspace:packages/plugin-maptiler"
-  dependencies:
-    "@geokit/api": "workspace:*"
-    "@geokit/core": "workspace:*"
-  peerDependencies:
-    "@geokit/api": ">=0.1.0"
-    "@geokit/core": ">=0.2.33"
-  languageName: unknown
-  linkType: soft
-
-"@geokit/plugin-osm@workspace:*, @geokit/plugin-osm@workspace:packages/plugin-osm":
-  version: 0.0.0-use.local
-  resolution: "@geokit/plugin-osm@workspace:packages/plugin-osm"
-  dependencies:
-    "@geokit/api": "workspace:*"
     "@geokit/core": "workspace:*"
     "@geokit/geotypes": "workspace:*"
+    "@geokit/service": "workspace:*"
   peerDependencies:
-    "@geokit/api": ">=0.1.0"
     "@geokit/core": ">=0.2.33"
+    "@geokit/service": ">=0.1.0"
+  languageName: unknown
+  linkType: soft
+
+"@geokit/service@workspace:*, @geokit/service@workspace:packages/service":
+  version: 0.0.0-use.local
+  resolution: "@geokit/service@workspace:packages/service"
+  dependencies:
+    "@geokit/core": "workspace:*"
+    "@geokit/foursquare": "workspace:*"
+    "@geokit/google": "workspace:*"
+    "@geokit/mapbox": "workspace:*"
+    "@geokit/maptiler": "workspace:*"
+    "@geokit/osm": "workspace:*"
+  peerDependencies:
+    "@geokit/core": ">=0.2.33"
+    "@geokit/foursquare": ">=0.1.0"
+    "@geokit/google": ">=0.1.0"
+    "@geokit/mapbox": ">=0.1.0"
+    "@geokit/maptiler": ">=0.1.0"
+    "@geokit/osm": ">=0.1.0"
+  peerDependenciesMeta:
+    "@geokit/core":
+      optional: false
+    "@geokit/foursquare":
+      optional: true
+    "@geokit/google":
+      optional: true
+    "@geokit/mapbox":
+      optional: true
+    "@geokit/maptiler":
+      optional: true
+    "@geokit/osm":
+      optional: true
   languageName: unknown
   linkType: soft
 

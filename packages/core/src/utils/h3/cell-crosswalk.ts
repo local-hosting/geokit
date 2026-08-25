@@ -1,35 +1,15 @@
 import { validateH3 } from './core';
 import { h3ToParent } from './hierarchy';
+import {
+  invertCellMap,
+  invertH3ToZips,
+  type H3CellMultiMap,
+  type H3ToZips,
+  type InvertCellMapOptions,
+} from './cell-crosswalk-invert.js';
 
-export type H3CellMultiMap<T extends string = string> = Readonly<
-  Record<string, readonly T[] | T[]>
->;
-
-export type InvertCellMapOptions = {
-  /** Keep the first or last native cell when a value appears in multiple cells. */
-  onDuplicate?: 'first' | 'last';
-};
-
-/**
- * Invert a native-cell → values[] map to value → native cell (first match wins by default).
- */
-export function invertCellMap<T extends string>(
-  cellToValues: H3CellMultiMap<T>,
-  options?: InvertCellMapOptions,
-): Record<T, string> {
-  const onDuplicate = options?.onDuplicate ?? 'first';
-  const out = {} as Record<T, string>;
-
-  for (const [cell, values] of Object.entries(cellToValues)) {
-    for (const value of values ?? []) {
-      const key = value as T;
-      if (onDuplicate === 'first' && out[key]) continue;
-      out[key] = cell;
-    }
-  }
-
-  return out;
-}
+export type { H3CellMultiMap, H3ToZips, InvertCellMapOptions };
+export { invertCellMap, invertH3ToZips };
 
 /**
  * Roll a native-cell map up to a parent H3 resolution, unioning values per parent cell.
@@ -78,12 +58,6 @@ export function keyToParentCell(
     return null;
   }
 }
-
-/** @deprecated Use `H3CellMultiMap` */
-export type H3ToZips = H3CellMultiMap<string>;
-
-/** @deprecated Use `invertCellMap` */
-export const invertH3ToZips = invertCellMap;
 
 /** @deprecated Use `rollupCellMap` */
 export const rollupH3ToZips = rollupCellMap;

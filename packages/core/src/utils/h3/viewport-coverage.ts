@@ -6,7 +6,7 @@ import { cellToBoundary } from 'h3-js';
 import type { Feature, FeatureCollection, Polygon } from 'geojson';
 import { expandH3CellId } from './cell-id.js';
 import { h3CellsForViewportBounds, type ViewportBounds } from './viewport.js';
-import { normalizeH3CellToResolution } from './cell-id.js';
+import { normalizeH3CellToResolution } from './cell-id-resolution.js';
 
 export type { ViewportBounds };
 

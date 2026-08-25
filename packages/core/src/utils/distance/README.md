@@ -4,4 +4,4 @@ Parity Tier 1 with geokit-swift `GeoKitCore/Utils/distance/`.
 
 Export: `geokit/distance` or `geokit/core`.
 
-See `docs/module-map.md`.
+See `docs/parity.md`.

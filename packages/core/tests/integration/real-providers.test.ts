@@ -20,8 +20,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MapTilerUIProvider } from '../../src/ui/providers/maptiler-provider';
 import { MapboxUIProvider } from '../../src/ui/providers/mapbox-provider';
-import { MapboxAPIProvider } from '@geokit/plugin-mapbox';
-import type { IsochroneOptions } from '@geokit/api/types';
+import { MapboxService } from '@geokit/mapbox';
+import type { IsochroneOptions } from '@geokit/service/types';
 
 // Load API keys from environment
 // In browser tests, use import.meta.env; in node/jsdom, use process.env
@@ -167,10 +167,10 @@ describe('Real Provider Integration Tests', () => {
   });
 
   describe('Mapbox API Provider', () => {
-    let provider: MapboxAPIProvider;
+    let provider: MapboxService;
 
     beforeEach(() => {
-      provider = new MapboxAPIProvider();
+      provider = new MapboxService();
     });
 
     it.skipIf(!MAPBOX_TOKEN)('should initialize with real access token', async () => {
@@ -385,7 +385,7 @@ describe('Real Provider Integration Tests', () => {
         });
 
         // Initialize API provider (Mapbox)
-        const apiProvider = new MapboxAPIProvider();
+        const apiProvider = new MapboxService();
         await apiProvider.initialize({ accessToken: MAPBOX_TOKEN! });
 
         // Fetch isochrone

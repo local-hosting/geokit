@@ -1,42 +1,36 @@
-# Node vs Swift GeoKit parity
+# TypeScript ↔ Swift parity
 
-This document mirrors [`geokit-swift/docs/parity.md`](../geokit-swift/docs/parity.md). **geokit-swift** is the canonical copy for Swift-specific notes; this file is the TypeScript entry point.
+Canonical Swift notes: [`geokit-swift/docs/parity.md`](../../geokit-swift/docs/parity.md).
+
+## Module map
+
+| Layer | TypeScript | Swift |
+|-------|------------|-------|
+| Core | `packages/core/src/core/`, `src/utils/*` | `GeoKitCore` |
+| Turf | `src/utils/turf/` | `GeoKitCore/Utils/*` |
+| Contract | `src/contract/` | `GeoKitContract` |
+| UI | `src/ui/` | `GeoKitUI`, `GeoKitUIMapbox` |
+| Services | `packages/service/`, `services/*/` | — |
 
 ## Fixture contract
 
 - **File:** `geokit-swift/Tests/GeoKitCoreTests/Fixtures/parity-fixtures.json`
-- **Version:** 4 (`turf.*` groups)
-- **Generate:** `yarn export:parity-fixtures` (requires `yarn build` first — script reads `dist/esm`)
-- **Verify:** `yarn check:parity-fixtures`
-- **Swift tests:** `swift test --filter GeoKitCoreTests` (from `geokit-swift`)
+- **Generate:** `yarn workspace @geokit/core run export:parity-fixtures` (after `yarn build`)
+- **Verify:** `yarn workspace @geokit/core run check:parity-fixtures`
 
-## Tier 1 — shared fixtures
+## Tiers
 
-Bounds, distance, bearing, coordinates, H3, geohash, GeoJSON. See `src/core/` and per-module `src/utils/*` READMEs.
+| Tier | Scope | Parity |
+|------|-------|--------|
+| 1 | Bounds, distance, bearing, coordinates, H3, geohash, GeoJSON | Shared fixtures |
+| 1.5 | `@geokit/core/turf` | Shared fixtures; Swift line/polygon buffers unsupported |
+| 2 | `@geokit/core/contract`, `ensureMapReady` | Partial |
+| 3 | Service registry, MCP tools, extended Turf | Node-only |
 
 **Epsilon:** lat/lon ±0.0001; H3 and geohash ids exact match.
 
-## Tier 1.5 — Turf-backed geometry
-
-Exported from `@geokit/turf` (`src/utils/turf/`). Fixtures under `turf.*`.
-
-**Swift gaps:** line/polygon buffers unsupported (`BufferError.unsupportedGeometry`).
-
-## Tier 2 — map UI lifecycle
-
-`@geokit/contract`, `ensureMapReady`, placeholder/snapshot/live phases. Partial API parity with `GeoKitContract` + `GeoKitUI`.
-
-## Tier 3 — Node-only (out of scope)
-
-MCP map tools, full provider registry surface, extended Turf suite (union/difference/simplify/clustering). Host apps own application-specific integrations.
-
 ## Known differences
 
-- `getCenter` on feature collections: Node uses Turf; Swift uses bbox center.
+- Feature-collection center: Node uses Turf; Swift uses bbox center.
 - `fitViewport(mapSize:)` is Swift-only.
 - Node helpers are curried; Swift uses named parameters.
-- Point buffer ring density differs (Turf.js vs turf-swift).
-
-See also [`providers.md`](providers.md).
-
-Offline maps contract: [`offline.md`](offline.md).

@@ -1,14 +1,14 @@
 import type {
-  APICapability,
-  BaseAPIProvider,
+  ServiceCapability,
+  Service,
   GeocodeOptions,
   IsochroneOptions,
-  MapProviderConfig,
+  ServiceConfig,
   PlaceSearchOptions,
   PlaceSearchResult,
   ReverseGeocodeOptions,
   ReverseGeocodeResult,
-} from '@geokit/api/types';
+} from '@geokit/service/types';
 import { polygonAroundPoint } from '../fixtures/geojson';
 
 export type MockIsochroneOptions = {
@@ -23,8 +23,8 @@ export type MockIsochroneOptions = {
  * Configurable API provider for registry and integration tests.
  * Tracks fetch count and supports in-memory caching like real providers.
  */
-export class MockAPIProvider implements BaseAPIProvider {
-  protected config: MapProviderConfig | null = null;
+export class MockAPIProvider implements Service {
+  protected config: ServiceConfig | null = null;
   private initialized = false;
   private readonly cache = new Map<string, GeoJSON.FeatureCollection>();
   private fetchCount = 0;
@@ -34,18 +34,18 @@ export class MockAPIProvider implements BaseAPIProvider {
   placeSearchImpl?: (options: PlaceSearchOptions) => Promise<PlaceSearchResult[]>;
   fetchIsochroneImpl?: (options: IsochroneOptions) => Promise<GeoJSON.FeatureCollection>;
 
-  constructor(private readonly capabilities: APICapability[] = ['isochrone']) {}
+  constructor(private readonly capabilities: ServiceCapability[] = ['isochrone']) {}
 
   getName(): string {
     return 'mock-api';
   }
 
-  async initialize(config: MapProviderConfig): Promise<void> {
+  async initialize(config: ServiceConfig): Promise<void> {
     this.config = config;
     this.initialized = true;
   }
 
-  getCapabilities(): APICapability[] {
+  getCapabilities(): ServiceCapability[] {
     return this.capabilities;
   }
 
@@ -101,7 +101,7 @@ export class MockAPIProvider implements BaseAPIProvider {
     this.cache.clear();
   }
 
-  getConfig(): MapProviderConfig | null {
+  getConfig(): ServiceConfig | null {
     return this.config;
   }
 

@@ -2,7 +2,7 @@ import type {
   LayerDatasetContext,
   LayerDatasetHandle,
   LayerDatasetId,
-} from '../../ui/components/elements/layer/layer-datasets.js';
+} from '../../types/layer-datasets.js';
 
 export type LayerDatasetMountFn = (
   ctx: LayerDatasetContext

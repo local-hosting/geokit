@@ -1,4 +1,4 @@
-import type { ViewportBounds } from '../utils/h3/viewport.js';
+import type { ViewportBounds } from '../utils/h3/viewport-bounds.js';
 
 export type ViewportContext = {
   bounds: ViewportBounds;

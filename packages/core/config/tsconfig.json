@@ -16,7 +16,34 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@geokit/ui": [
+        "../ui/src/index.ts"
+      ],
+      "@geokit/ui/*": [
+        "../ui/src/*"
+      ],
+      "@geokit/ui/bootstrap/*": [
+        "../ui/src/bootstrap/*"
+      ],
+      "@geokit/ui/adapters/*": [
+        "../ui/src/adapters/*"
+      ],
+      "@geokit/ui/components/*": [
+        "../ui/src/components/*"
+      ],
+      "@geokit/ui/utils/*": [
+        "../ui/src/utils/*"
+      ],
+      "@geokit/ui/bootstrap/ensure-map-ready": [
+        "../ui/src/bootstrap/ensure-map-ready.ts"
+      ],
+      "@geokit/ui/lifecycle": [
+        "../ui/src/lifecycle.ts"
+      ]
+    },
+    "baseUrl": "."
   },
   "include": [
     "../src/**/*"
