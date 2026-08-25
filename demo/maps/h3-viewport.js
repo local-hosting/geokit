@@ -4,10 +4,10 @@ import {
   h3CellsForViewportBounds,
   h3GridFeatureCollection,
   prioritizeH3CellsNearCenter,
-} from '../../packages/core/src/utils/h3/viewport.ts';
-import { compactH3CellId } from '../../packages/core/src/utils/h3/cell-id.ts';
-import { mapViewportBounds } from '../../packages/core/src/utils/h3/map-viewport.ts';
-import { buildOpacityWithHoverExpression } from '../../packages/core/src/ui/utils/feature-state-hover.ts';
+} from '../../packages/h3/src/viewport/viewport.ts';
+import { compactH3CellId } from '../../packages/h3/src/cell/cell-id.ts';
+import { mapViewportBounds } from '../../packages/h3/src/viewport/map-viewport.ts';
+import { buildOpacityWithHoverExpression } from '../../packages/ui/src/utils/feature-state-hover.ts';
 
 const mapElement = document.getElementById('h3-viewport-map');
 const resolutionInput = document.getElementById('resolution');

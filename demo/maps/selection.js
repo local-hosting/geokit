@@ -1,6 +1,6 @@
 // Shared-point selection demos: click ring, events, setSelectedPoint, gk-point focus.
 import { setupMapsDemo } from '../shared/bootstrap-maps.js';
-import { createSharedPointLayers } from '../../packages/core/src/ui/utils/layer-styles.ts';
+import { createSharedPointLayers } from '../../packages/ui/src/utils/layer-styles.ts';
 
 await setupMapsDemo({ elements: ['point'] });
 

@@ -1,7 +1,7 @@
 import { setupMapsDemo } from '../shared/bootstrap-maps.js';
 import { cellToBoundary, cellToLatLng, gridDisk, latLngToCell } from 'h3-js';
 import { registerMapTilerPlugin } from '../../services/maptiler/src/index.ts';
-import { getServiceForCapability } from '../../packages/service/src/providers/registry.ts';
+import { getServiceForCapability } from '../../packages/service/src/services/registry.ts';
 
 const H3_SOURCE_ID = 'protomap-h3-source';
 const H3_LAYER_ID = 'protomap-h3-fill';
