@@ -1,6 +1,5 @@
 /**
- * Buffer utilities
- * Create buffer zones around points, lines, and polygons
+ * Buffer utilities — turf-free point buffers (safe under Vite/Vitest).
  */
 
-export { bufferPoint, bufferLine, bufferPolygon, buffer } from './buffer';
+export { bufferPoint } from './buffer-point';

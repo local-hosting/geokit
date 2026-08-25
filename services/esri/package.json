@@ -1,0 +1,27 @@
+{
+  "name": "@geokit/esri",
+  "version": "0.1.0",
+  "description": "Esri ArcGIS Places near-point search plugin for geokit",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
+    "test": "yarn run -T vitest run --config ../../config/vitest.plugin.config.ts"
+  },
+  "peerDependencies": {
+    "@geokit/core": ">=0.2.33",
+    "@geokit/service": ">=0.1.0"
+  },
+  "devDependencies": {
+    "@geokit/core": "workspace:*",
+    "@twinfile/geotypes": "portal:../../geotypes",
+    "@geokit/service": "workspace:*"
+  }
+}

@@ -1,5 +1,5 @@
 import { beforeEach, vi } from 'vitest';
-import { _resetRegistries as resetAPIRegistries } from '@geokit/api/registry';
+import { _resetRegistries as resetAPIRegistries } from '@geokit/service/registry';
 import { _resetRegistries as resetUIRegistries } from '../../src/ui/providers/registry';
 
 /** Reset API and UI provider registries before each test. */

@@ -1,0 +1,54 @@
+{
+  "name": "@geokit/crosswalk",
+  "version": "0.2.0",
+  "description": "Geo identity crosswalk — many-to-many lookups between points, H3, ZIP, DMA, state, county",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./us": {
+      "types": "./src/us/index.ts",
+      "import": "./src/us/index.ts",
+      "default": "./src/us/index.ts"
+    },
+    "./geohash": {
+      "types": "./src/geohash.ts",
+      "import": "./src/geohash.ts",
+      "default": "./src/geohash.ts"
+    },
+    "./h3/project": {
+      "types": "./src/h3/project.ts",
+      "import": "./src/h3/project.ts",
+      "default": "./src/h3/project.ts"
+    },
+    "./generated/us": {
+      "types": "./generated/us/index.ts",
+      "import": "./generated/us/index.ts",
+      "default": "./generated/us/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
+    "test": "yarn run -T vitest run --config ../../config/vitest.crosswalk.config.ts",
+    "test:guard": "yarn run -T vitest run --config ../../config/vitest.crosswalk.config.ts tests/guard.test.ts"
+  },
+  "peerDependencies": {
+    "h3-js": "^4.3.0"
+  },
+  "peerDependenciesMeta": {
+    "h3-js": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "h3-js": "^4.3.0",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.8"
+  }
+}

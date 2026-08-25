@@ -1,7 +1,7 @@
 import { setupMapsDemo } from '../shared/bootstrap-maps.js';
 import { cellToBoundary, cellToLatLng, gridDisk, latLngToCell } from 'h3-js';
-import { registerMapTilerPlugin } from '../../packages/plugin-maptiler/src/index.ts';
-import { getProviderForCapability } from '../../packages/api/src/providers/registry.ts';
+import { registerMapTilerPlugin } from '../../services/maptiler/src/index.ts';
+import { getServiceForCapability } from '../../packages/service/src/providers/registry.ts';
 
 const H3_SOURCE_ID = 'protomap-h3-source';
 const H3_LAYER_ID = 'protomap-h3-fill';
@@ -365,7 +365,7 @@ async function runGeocode(query) {
     return;
   }
 
-  const provider = getProviderForCapability('geocoding');
+  const provider = getServiceForCapability('geocoding');
   if (!provider?.geocode) {
     setStatus('Geocoding unavailable — set MAPTILER_KEY');
     return;

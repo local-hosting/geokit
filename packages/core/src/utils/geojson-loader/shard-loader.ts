@@ -1,4 +1,4 @@
-import type { ViewportBounds } from '../h3/viewport.js';
+import type { ViewportBounds } from '../h3/viewport-bounds.js';
 import { gridDisk } from 'h3-js';
 import {
   compactH3CellId,

@@ -1,0 +1,274 @@
+{
+  "name": "@geokit/ui",
+  "version": "0.2.33",
+  "description": "Geokit map UI — Web Components, layer controllers, and framework adapters",
+  "type": "module",
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "browser": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.cjs",
+      "default": "./dist/esm/index.js"
+    },
+    "./core": {
+      "source": "./src/core.ts",
+      "types": "./dist/esm/core.d.ts",
+      "import": "./dist/esm/core.js",
+      "require": "./dist/cjs/core.cjs",
+      "default": "./dist/esm/core.js"
+    },
+    "./theme.css": {
+      "source": "./src/theme.css",
+      "default": "./dist/ui/theme.css"
+    },
+    "./bootstrap/ensure-map-ready": {
+      "source": "./src/bootstrap/ensure-map-ready.ts",
+      "types": "./dist/esm/bootstrap/ensure-map-ready.d.ts",
+      "import": "./dist/esm/bootstrap/ensure-map-ready.js",
+      "require": "./dist/cjs/bootstrap/ensure-map-ready.cjs",
+      "default": "./dist/esm/bootstrap/ensure-map-ready.js"
+    },
+    "./adapters/shared": {
+      "source": "./src/adapters/shared/index.ts",
+      "types": "./dist/esm/adapters/shared/index.d.ts",
+      "import": "./dist/esm/adapters/shared/index.js",
+      "require": "./dist/cjs/adapters/shared/index.cjs",
+      "default": "./dist/esm/adapters/shared/index.js"
+    },
+    "./vue": {
+      "source": "./src/adapters/vue/index.ts",
+      "types": "./dist/esm/adapters/vue/index.d.ts",
+      "import": "./dist/esm/adapters/vue/index.js",
+      "require": "./dist/cjs/adapters/vue/index.cjs",
+      "default": "./dist/esm/adapters/vue/index.js"
+    },
+    "./react": {
+      "source": "./src/adapters/react/index.ts",
+      "types": "./dist/esm/adapters/react/index.d.ts",
+      "import": "./dist/esm/adapters/react/index.js",
+      "require": "./dist/cjs/adapters/react/index.cjs",
+      "default": "./dist/esm/adapters/react/index.js"
+    },
+    "./svelte": {
+      "source": "./src/adapters/svelte/index.ts",
+      "types": "./dist/esm/adapters/svelte/index.d.ts",
+      "import": "./dist/esm/adapters/svelte/index.js",
+      "require": "./dist/cjs/adapters/svelte/index.cjs",
+      "default": "./dist/esm/adapters/svelte/index.js"
+    },
+    "./shared-points": {
+      "source": "./src/shared-points.ts",
+      "types": "./dist/esm/shared-points.d.ts",
+      "import": "./dist/esm/shared-points.js",
+      "default": "./dist/esm/shared-points.js"
+    },
+    "./lazy-popup": {
+      "source": "./src/lazy-popup.ts",
+      "types": "./dist/esm/lazy-popup.d.ts",
+      "import": "./dist/esm/lazy-popup.js",
+      "require": "./dist/cjs/lazy-popup.cjs",
+      "default": "./dist/esm/lazy-popup.js"
+    },
+    "./map-facet-filters": {
+      "source": "./src/map-facet-filters.ts",
+      "types": "./dist/esm/map-facet-filters.d.ts",
+      "import": "./dist/esm/map-facet-filters.js",
+      "require": "./dist/cjs/map-facet-filters.cjs",
+      "default": "./dist/esm/map-facet-filters.js"
+    },
+    "./layer-styles": {
+      "source": "./src/utils/layer-styles.ts",
+      "types": "./dist/esm/utils/layer-styles.d.ts",
+      "import": "./dist/esm/utils/layer-styles.js",
+      "default": "./dist/esm/utils/layer-styles.js"
+    },
+    "./layer-stack": {
+      "source": "./src/utils/layer-stack.ts",
+      "types": "./dist/esm/utils/layer-stack.d.ts",
+      "import": "./dist/esm/utils/layer-stack.js",
+      "require": "./dist/cjs/utils/layer-stack.cjs",
+      "default": "./dist/esm/utils/layer-stack.js"
+    },
+    "./layer-datasets": {
+      "source": "./src/components/elements/layer/layer-datasets.ts",
+      "types": "./dist/esm/components/elements/layer/layer-datasets.d.ts",
+      "import": "./dist/esm/components/elements/layer/layer-datasets.js",
+      "require": "./dist/cjs/components/elements/layer/layer-datasets.cjs",
+      "default": "./dist/esm/components/elements/layer/layer-datasets.js"
+    },
+    "./layer-dataset-shared": {
+      "source": "./src/components/elements/layer/layer-dataset-shared.ts",
+      "types": "./dist/esm/components/elements/layer/layer-dataset-shared.d.ts",
+      "import": "./dist/esm/components/elements/layer/layer-dataset-shared.js",
+      "require": "./dist/cjs/components/elements/layer/layer-dataset-shared.cjs",
+      "default": "./dist/esm/components/elements/layer/layer-dataset-shared.js"
+    },
+    "./boundary-outline-controller": {
+      "source": "./src/utils/boundary-outline-controller.ts",
+      "types": "./dist/esm/utils/boundary-outline-controller.d.ts",
+      "import": "./dist/esm/utils/boundary-outline-controller.js",
+      "require": "./dist/cjs/utils/boundary-outline-controller.cjs",
+      "default": "./dist/esm/utils/boundary-outline-controller.js"
+    },
+    "./boundary-map": {
+      "source": "./src/utils/boundary-map.ts",
+      "types": "./dist/esm/utils/boundary-map.d.ts",
+      "import": "./dist/esm/utils/boundary-map.js",
+      "require": "./dist/cjs/utils/boundary-map.cjs",
+      "default": "./dist/esm/utils/boundary-map.js"
+    },
+    "./choropleth-fill-layer": {
+      "source": "./src/utils/choropleth-fill-layer.ts",
+      "types": "./dist/esm/utils/choropleth-fill-layer.d.ts",
+      "import": "./dist/esm/utils/choropleth-fill-layer.js",
+      "require": "./dist/cjs/utils/choropleth-fill-layer.cjs",
+      "default": "./dist/esm/utils/choropleth-fill-layer.js"
+    },
+    "./choropleth-fill-paint": {
+      "source": "./src/utils/choropleth-fill-paint.ts",
+      "types": "./dist/esm/utils/choropleth-fill-paint.d.ts",
+      "import": "./dist/esm/utils/choropleth-fill-paint.js",
+      "require": "./dist/cjs/utils/choropleth-fill-paint.cjs",
+      "default": "./dist/esm/utils/choropleth-fill-paint.js"
+    },
+    "./geojson-source-options": {
+      "source": "./src/utils/geojson-source-options.ts",
+      "types": "./dist/esm/utils/geojson-source-options.d.ts",
+      "import": "./dist/esm/utils/geojson-source-options.js",
+      "require": "./dist/cjs/utils/geojson-source-options.cjs",
+      "default": "./dist/esm/utils/geojson-source-options.js"
+    },
+    "./outline-ops": {
+      "source": "./src/utils/outline-ops.ts",
+      "types": "./dist/esm/utils/outline-ops.d.ts",
+      "import": "./dist/esm/utils/outline-ops.js",
+      "require": "./dist/cjs/utils/outline-ops.cjs",
+      "default": "./dist/esm/utils/outline-ops.js"
+    },
+    "./boundary-outline-preset": {
+      "source": "./src/utils/boundary-outline-preset.ts",
+      "types": "./dist/esm/utils/boundary-outline-preset.d.ts",
+      "import": "./dist/esm/utils/boundary-outline-preset.js",
+      "require": "./dist/cjs/utils/boundary-outline-preset.cjs",
+      "default": "./dist/esm/utils/boundary-outline-preset.js"
+    },
+    "./elements/isochrone": {
+      "source": "./src/components/elements/isochrone/isochrone.ts",
+      "types": "./dist/esm/components/elements/isochrone/isochrone.d.ts",
+      "import": "./dist/esm/components/elements/isochrone/isochrone.js",
+      "default": "./dist/esm/components/elements/isochrone/isochrone.js"
+    },
+    "./elements/layer": {
+      "source": "./src/components/elements/layer/layer.ts",
+      "types": "./dist/esm/components/elements/layer/layer.d.ts",
+      "import": "./dist/esm/components/elements/layer/layer.js",
+      "default": "./dist/esm/components/elements/layer/layer.js"
+    },
+    "./elements/map-collection": {
+      "source": "./src/components/elements/map-collection/map-collection.ts",
+      "types": "./dist/esm/components/elements/map-collection/map-collection.d.ts",
+      "import": "./dist/esm/components/elements/map-collection/map-collection.js",
+      "default": "./dist/esm/components/elements/map-collection/map-collection.js"
+    },
+    "./elements/popup": {
+      "source": "./src/components/elements/popup/popup.ts",
+      "types": "./dist/esm/components/elements/popup/popup.d.ts",
+      "import": "./dist/esm/components/elements/popup/popup.js",
+      "default": "./dist/esm/components/elements/popup/popup.js"
+    },
+    "./lifecycle": {
+      "source": "./src/lifecycle.ts",
+      "types": "./dist/esm/lifecycle.d.ts",
+      "import": "./dist/esm/lifecycle.js",
+      "require": "./dist/cjs/lifecycle.cjs",
+      "default": "./dist/esm/lifecycle.js"
+    },
+    "./dev-proxy/maptiler": {
+      "source": "./src/dev-proxy/maptiler-dev-proxy.ts",
+      "types": "./dist/esm/dev-proxy/maptiler-dev-proxy.d.ts",
+      "import": "./dist/esm/dev-proxy/maptiler-dev-proxy.js",
+      "default": "./dist/esm/dev-proxy/maptiler-dev-proxy.js"
+    }
+  },
+  "sideEffects": [
+    "*.css",
+    "./dist/esm/core.js",
+    "./dist/esm/components/elements/*.js",
+    "./dist/esm/components/controls/*.js",
+    "./dist/cjs/core.cjs",
+    "./dist/cjs/components/elements/*.cjs",
+    "./dist/cjs/components/controls/*.cjs",
+    "./src/core.ts",
+    "./src/components/elements/*.ts",
+    "./src/components/controls/*.ts"
+  ],
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
+    "test": "vitest run --config config/vitest.config.ts",
+    "typecheck": "tsc -p config/tsconfig.json --noEmit",
+    "lint": "eslint --config config/eslint.config.mjs . --ext .ts"
+  },
+  "keywords": [
+    "geospatial",
+    "map",
+    "ui",
+    "web-components",
+    "maplibre",
+    "maptiler"
+  ],
+  "license": "MIT",
+  "packageManager": "yarn@4.18.0",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "dependencies": {
+    "@geokit/core": "workspace:*",
+    "@maptiler/sdk": "3.10.2",
+    "mapbox-gl": "^3.17.0"
+  },
+  "peerDependencies": {
+    "@geokit/service": ">=0.1.0",
+    "react": ">=18.0.0",
+    "svelte": ">=4.0.0",
+    "vue": ">=3.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@geokit/service": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@geokit/service": "workspace:*",
+    "@types/react": "^19.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "eslint": "^9.39.1",
+    "happy-dom": "^20.1.0",
+    "prettier": "^3.6.2",
+    "react": "^19.0.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.8",
+    "vue": "^3.5.13",
+    "@types/node": "^24.10.1"
+  }
+}

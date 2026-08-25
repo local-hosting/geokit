@@ -1,0 +1,31 @@
+{
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./foursquare-places": {
+      "types": "./src/foursquare-places.ts",
+      "import": "./src/foursquare-places.ts",
+      "default": "./src/foursquare-places.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
+    "test": "yarn run -T vitest run --config ../../config/vitest.plugin.config.ts"
+  },
+  "peerDependencies": {
+    "@geokit/core": ">=0.2.33",
+    "@geokit/service": ">=0.1.0"
+  },
+  "devDependencies": {
+    "@geokit/core": "workspace:*",
+    "@geokit/service": "workspace:*"
+  },
+  "name": "@geokit/foursquare",
+  "description": "Foursquare Places search plugin for geokit"
+}
