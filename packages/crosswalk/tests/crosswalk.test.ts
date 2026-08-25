@@ -3,11 +3,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadUsCrosswalkSync } from '../src/load/load';
-import { dmaForGeohash, dmaForZip, geohashForZip, h3ForZip, crosswalk, zipsInDma } from '../src/index.ts';
+import { convert, geohashForZip, h3ForZip, crosswalk, zipsInDma, GKPoint, GKZip, GKDMA, GKH3, GKGeohash, GKPlace } from '../src/index.ts';
+import { GeoKind, type DMA } from '@geokit/core';
 import { ensureH3Projection } from '../src/h3/project';
 import { loadUsCrosswalk, resetCrosswalkForTest } from '../src/load/load';
 import {
-  dmaForH3,
   getLoadedCrosswalkTableNames,
   isCrosswalkTableLoaded,
   US_CROSSWALK_PRESETS,
@@ -23,7 +23,7 @@ describe('@geokit/crosswalk', () => {
     const h3 = h3ForZip('46204');
     expect(h3).toBeTruthy();
 
-    const result = crosswalk({ lat: 39.7684, lon: -86.1581 });
+    const result = crosswalk(GKPoint(39.7684, -86.1581));
     expect(result.country[0]).toBe('us');
     expect(result.h3?.[0]).toBeTruthy();
     expect(result.geohash?.[0]).toBeTruthy();
@@ -31,12 +31,21 @@ describe('@geokit/crosswalk', () => {
     expect(result.state?.[0]).toBe('in');
   });
 
+
+  it('convert uses GeoKind for typed DMA output', () => {
+    loadUsCrosswalkSync();
+    const kind = GeoKind.DMA;
+    const dma = convert(GKZip('46204'), kind);
+    const _typed: DMA | undefined = dma;
+    expect(_typed?.slug).toBe('indianapolis');
+  });
+
   it('dma input returns many zips', () => {
     loadUsCrosswalkSync();
     const indyZips = zipsInDma('indianapolis');
     expect(indyZips.length).toBeGreaterThan(0);
-    const result = crosswalk({ dmaSlug: 'indianapolis' }, { to: ['zip', 'dma'] });
-    expect(result.dma).toEqual(['indianapolis']);
+    const result = crosswalk(GKDMA('indianapolis'), { to: [GeoKind.Zip, GeoKind.DMA] });
+    expect(result.dma).toEqual([{ slug: 'indianapolis', region: expect.any(String) }]);
     expect(result.zip?.length).toBeGreaterThan(0);
   });
 
@@ -48,7 +57,7 @@ describe('@geokit/crosswalk', () => {
     const geohash = geohashForZip('46204');
     expect(geohash).toBeTruthy();
 
-    const result = crosswalk({ geohash: geohash! }, { to: ['geohash', 'zip', 'dma', 'state'] });
+    const result = crosswalk(GKGeohash(geohash!), { to: [GeoKind.Geohash, GeoKind.Zip, GeoKind.DMA, GeoKind.State] });
     expect(result.geohash?.[0]).toBe(geohash);
     expect(result.zip?.length).toBeGreaterThan(0);
     expect(result.state?.[0]).toBe('in');
@@ -62,27 +71,27 @@ describe('@geokit/crosswalk', () => {
     expect(geohash).toBeTruthy();
 
     const result = crosswalk(
-      { zip: '46204' },
-      { spine: 'geohash', to: ['geohash', 'zip', 'dma', 'state'] }
+      GKZip('46204'),
+      { spine: 'geohash', to: [GeoKind.Geohash, GeoKind.Zip, GeoKind.DMA, GeoKind.State] }
     );
     expect(result.geohash?.[0]).toBe(geohash);
     expect(result.zip?.length).toBeGreaterThan(0);
-    expect(result.dma?.[0]).toBe('indianapolis');
+    expect(result.dma?.[0]?.slug).toBe('indianapolis');
     expect(result.state?.[0]).toBe('in');
   });
 
-  it('dmaForGeohash returns slug when geohash-to-dma has coverage', () => {
+  it('convert from geohash returns DMA when geohash-to-dma has coverage', () => {
     loadUsCrosswalkSync();
     const geohash = geohashForZip('46204');
     expect(geohash).toBeTruthy();
-    const dma = dmaForGeohash(geohash!);
-    expect(dma).toBe('indianapolis');
+    const dma = convert(GKGeohash(geohash!), GeoKind.DMA);
+    expect(dma?.slug).toBe('indianapolis');
   });
 
-  it('dmaForZip returns slug when h3-to-dma has coverage', () => {
+  it('convert from zip returns DMA when h3-to-dma has coverage', () => {
     loadUsCrosswalkSync();
-    const dma = dmaForZip('46204');
-    if (dma) expect(typeof dma).toBe('string');
+    const dma = convert(GKZip('46204'), GeoKind.DMA);
+    if (dma) expect(dma.slug).toBeTruthy();
   });
 
   it('selective load loads only requested tables', async () => {
@@ -93,8 +102,8 @@ describe('@geokit/crosswalk', () => {
     expect(isCrosswalkTableLoaded('h3R5ToZips')).toBe(false);
     expect(getLoadedCrosswalkTableNames()).toEqual(['h3ToDma']);
 
-    const dma = dmaForH3('81267fffffffff');
-    expect(dma).toBe('louisville');
+    const dma = convert(GKH3('81267fffffffff'), GeoKind.DMA);
+    expect(dma?.slug).toBe('louisville');
   });
 
   it('selective load merges additional tables on subsequent calls', async () => {
@@ -111,26 +120,35 @@ describe('@geokit/crosswalk', () => {
     resetCrosswalkForTest();
     await loadUsCrosswalk({ tables: US_CROSSWALK_PRESETS.place, projectH3: false });
 
-    const result = crosswalk({ placeKey: 'ak/dillingham' }, { to: ['dma', 'region'] });
-    expect(result.dma).toEqual(['anchorage']);
+    const result = crosswalk(GKPlace('ak/dillingham'), { to: [GeoKind.DMA, GeoKind.Region] });
+    expect(result.dma).toEqual([{ slug: 'anchorage', region: 'northwest' }]);
     expect(result.region).toEqual(['northwest']);
   });
 });
 
 describe('crosswalk guard', () => {
-  it('has no @geokit/core imports in src', () => {
+  it('only imports allowed @geokit/core subpaths in src', () => {
     const srcDir = join(ROOT, '../src');
     const files = walk(srcDir);
+    const allowedCoreImports = /^@geokit\/core(?:\/containment)?$/;
     for (const file of files) {
       if (!file.endsWith('.ts')) continue;
       const text = readFileSync(file, 'utf8');
-      expect(text).not.toMatch(/@geokit\/core/);
+      const imports = [...text.matchAll(/from ['"]@geokit\/core(?:\/[^'"]+)?['"]/g)].map((m) =>
+        m[0].slice(6, -1)
+      );
+      for (const specifier of imports) {
+        expect(specifier).toMatch(allowedCoreImports);
+      }
     }
   });
 
-  it('package.json has no runtime dependencies', () => {
+  it('package.json has only workspace geokit runtime dependencies', () => {
     const pkg = JSON.parse(readFileSync(join(ROOT, '../package.json'), 'utf8'));
-    expect(pkg.dependencies ?? {}).toEqual({ '@geokit/h3': 'workspace:*' });
+    expect(pkg.dependencies ?? {}).toEqual({
+      '@geokit/core': 'workspace:*',
+      '@geokit/h3': 'workspace:*',
+    });
   });
 });
 

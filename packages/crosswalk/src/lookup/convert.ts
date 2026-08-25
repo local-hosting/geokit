@@ -4,12 +4,27 @@ import {
   pointForGeohash,
 } from './geohash';
 import { requireUsCrosswalkLookups } from '../load/registry';
+import { crosswalk, type CrosswalkOptions } from './crosswalk';
+import type { CrosswalkResult, GeoRef } from '../types';
+import type { ConvertOutput, GeoKind } from '@geokit/core';
+import { pickConvertOutput } from './convert-output';
 
 const DEFAULT_H3_RESOLUTION = 5;
 
-export function dmaForH3(h3Cell: string): string | undefined {
-  return requireUsCrosswalkLookups().dmaForH3(h3Cell);
+export function convert<K extends GeoKind>(from: GeoRef, to: K): ConvertOutput<K>;
+export function convert(from: GeoRef, options: CrosswalkOptions): CrosswalkResult;
+export function convert<K extends GeoKind>(
+  from: GeoRef,
+  toOrOptions: K | CrosswalkOptions
+): ConvertOutput<K> | CrosswalkResult {
+  if (typeof toOrOptions === 'string') {
+    const result = crosswalk(from, { to: [toOrOptions] });
+    return pickConvertOutput(toOrOptions, result);
+  }
+  return crosswalk(from, toOrOptions);
 }
+
+export { crosswalk, type CrosswalkOptions } from './crosswalk';
 
 export function zipsForH3(h3Cell: string): readonly string[] {
   return requireUsCrosswalkLookups().zipsForH3(h3Cell);
@@ -17,10 +32,6 @@ export function zipsForH3(h3Cell: string): readonly string[] {
 
 export function h3ForZip(zip: string): string | undefined {
   return requireUsCrosswalkLookups().h3ForZip(zip);
-}
-
-export function dmaForGeohash(geohashCell: string): string | undefined {
-  return requireUsCrosswalkLookups().dmaForGeohash(geohashCell);
 }
 
 export function zipsForGeohash(geohashCell: string): readonly string[] {
@@ -31,25 +42,12 @@ export function geohashForZip(zip: string): string | undefined {
   return requireUsCrosswalkLookups().geohashForZip(zip);
 }
 
-export function dmaForZip(zip: string): string | undefined {
-  return requireUsCrosswalkLookups().dmaForZip(zip);
-}
-
 export function zipsInDma(dmaSlug: string): readonly string[] {
-  return requireUsCrosswalkLookups().zipsInDma(dmaSlug);
+  return requireUsCrosswalkLookups().zipsInDMA(dmaSlug);
 }
 
 export function countiesInDma(dmaSlug: string): readonly string[] {
-  return requireUsCrosswalkLookups().countiesInDma(dmaSlug);
-}
-
-export function dmaForPoint(lat: number, lon: number): string | undefined {
-  if (isH3ProjectionLoaded()) {
-    const h3 = latLngToH3Cell(lat, lon, DEFAULT_H3_RESOLUTION);
-    return dmaForH3(h3);
-  }
-  const geohash = geohashForPoint(lat, lon);
-  return dmaForGeohash(geohash);
+  return requireUsCrosswalkLookups().countiesInDMA(dmaSlug);
 }
 
 export function h3ForPoint(lat: number, lon: number, resolution = DEFAULT_H3_RESOLUTION): string {
@@ -73,4 +71,3 @@ export function pointForZip(zip: string): readonly [number, number] | undefined 
 
 export { geohashForPoint, geohashForLatLon, pointForGeohash, geohashCellToLatLon } from './geohash';
 export { decodeGeohash } from './geohash';
-export { crosswalk } from './crosswalk';

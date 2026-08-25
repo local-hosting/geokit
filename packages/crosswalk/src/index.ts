@@ -1,9 +1,43 @@
 export type {
+  CatalogIdentity,
+  CountyFips,
+  DmaSlug,
+  GeoIdentity,
+  GeoPoint,
+  ConvertOutput,
+  GeoRef,
+  GeoRefInput,
+  MacroRegion,
+  PlaceKey,
+  StateCode,
+  ZipCode,
+} from '@geokit/core';
+
+export {
+  GKCountry,
+  GKCounty,
+  GKDMA,
+  GKDMARecord,
+  GKGeohash,
+  GKH3,
+  GKPlace,
+  GKPlaceInState,
+  GKPoint,
+  GKZip,
+  asDMA,
+  asDmaSlug,
+  asDmaSlugOrUndefined,
+  asZipCode,
+  parseGeoRef,
+  GeoKind,
+} from '@geokit/core';
+
+export type {
   CrosswalkCountry,
   CrosswalkInput,
   CrosswalkResult,
   CrosswalkSpine,
-  GeoKind,
+  DMA,
   LatLon,
   LoadCrosswalkOptions,
   PlaceToDmaEntry,
@@ -15,14 +49,8 @@ export { US_CROSSWALK_TABLE_NAMES, US_CROSSWALK_PRESETS } from './us/table-names
 
 export { loadCrosswalk, loadUsCrosswalk, loadUsCrosswalkSync, resetCrosswalkForTest } from './load/load';
 export {
+  convert,
   crosswalk,
-  type CrosswalkOptions,
-} from './lookup/crosswalk';
-export {
-  dmaForH3,
-  dmaForGeohash,
-  dmaForPoint,
-  dmaForZip,
   decodeGeohash,
   geohashForLatLon,
   geohashForPoint,
@@ -37,6 +65,7 @@ export {
   zipsForH3,
   zipsInDma,
   countiesInDma,
+  type CrosswalkOptions,
 } from './lookup/convert';
 export {
   GEOHASH_ZIP_INDEX_PRECISION,
@@ -54,6 +83,18 @@ export {
   requireUsCrosswalkLookups,
   getUsCrosswalkTables,
 } from './load/registry';
+
+export {
+  canonicalDmaSlug,
+  ensureUsCrosswalkLoaded,
+  isUsCrosswalkLoaded,
+  setCountyBoundaryLoader,
+  registerCountyBoundaries,
+  isCountyBoundariesLoaded,
+  clearCountyBoundaries,
+  mergeDmaSlugList,
+  type CountyBoundaryLoader,
+} from './us/setup';
 
 export {
   buildCellToDmaMap,
@@ -75,4 +116,3 @@ export {
   type RegionMarketCellsIndex,
   type RegionCellFeatureOptions,
 } from './h3/market-cells';
-

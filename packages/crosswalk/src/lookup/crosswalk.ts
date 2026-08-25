@@ -1,16 +1,26 @@
-import type {
-  CrosswalkCountry,
-  CrosswalkInput,
-  CrosswalkResult,
-  CrosswalkSpine,
+import {
   GeoKind,
-  LatLon,
-} from '../types';
+  asCountryCode,
+  type CountryCode,
+  type DMA,
+  type GeoPoint,
+  type GeoRef,
+  type MacroRegion,
+} from '@geokit/core';
+import type { CrosswalkCountry, CrosswalkResult, CrosswalkSpine } from '../types';
 import { geohashCellIdForLookup } from '../geohash/cell-id';
 import { geohashCellToLatLon, geohashForLatLon, geohashForPoint } from './geohash';
 import { compactH3CellId } from '../h3/cell-id';
 import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from '../h3/project';
 import { requireUsCrosswalkLookups, getCrosswalkSpine } from '../load/registry';
+import {
+  brandCountyList,
+  brandGeohashList,
+  brandH3List,
+  brandStateList,
+  brandZipList,
+  optionalMacroRegion,
+} from './brand';
 
 const DEFAULT_H3_RESOLUTION = 5;
 
@@ -20,62 +30,23 @@ export type CrosswalkOptions = {
   spine?: CrosswalkSpine;
 };
 
-function isLatLonInput(input: CrosswalkInput): input is { lat: number; lon: number } {
-  return 'lat' in input && 'lon' in input;
-}
-
-function isH3Input(input: CrosswalkInput): input is { h3Cell: string } {
-  return 'h3Cell' in input;
-}
-
-function isGeohashInput(input: CrosswalkInput): input is { geohash: string } {
-  return 'geohash' in input;
-}
-
-function isZipInput(input: CrosswalkInput): input is { zip: string } {
-  return 'zip' in input;
-}
-
-function isDmaInput(input: CrosswalkInput): input is { dmaSlug: string } {
-  return 'dmaSlug' in input;
-}
-
-function isCountyInput(input: CrosswalkInput): input is { countyFips: string } {
-  return 'countyFips' in input;
-}
-
-function isPlaceKeyInput(input: CrosswalkInput): input is { placeKey: string } {
-  return 'placeKey' in input;
-}
-
-function isStatePlaceInput(input: CrosswalkInput): input is { state: string; placeSlug: string } {
-  return 'state' in input && 'placeSlug' in input;
-}
-
-function normalizePlaceKey(input: { placeKey: string } | { state: string; placeSlug: string }): string {
-  if (isPlaceKeyInput(input)) {
-    return input.placeKey.trim().toLowerCase();
-  }
-  return `${input.state.trim().toLowerCase()}/${input.placeSlug.trim().toLowerCase()}`;
-}
-
 function resolveSpine(options: CrosswalkOptions): CrosswalkSpine {
   return options.spine ?? getCrosswalkSpine();
 }
 
-function uniqSorted(values: readonly string[]): readonly string[] {
-  return [...new Set(values.filter((v) => v.length > 0))].sort();
+function optionalDMA(dma: DMA | undefined): readonly DMA[] {
+  return dma ? [dma] : [];
 }
 
-function optionalOne(value: string | undefined): readonly string[] {
-  return value ? [value] : [];
+function regionsFromDmas(dmas: readonly DMA[]): readonly MacroRegion[] {
+  return [...new Set(dmas.map((dma) => dma.region))].sort() as readonly MacroRegion[];
 }
 
 function statesForZips(
   lookups: ReturnType<typeof requireUsCrosswalkLookups>,
   zips: readonly string[]
-): readonly string[] {
-  return uniqSorted(
+) {
+  return brandStateList(
     zips.map((zip) => lookups.stateForZip(zip)).filter((s): s is string => Boolean(s))
   );
 }
@@ -84,43 +55,64 @@ function shouldInclude(kind: GeoKind, to: readonly GeoKind[] | undefined): boole
   return !to || to.includes(kind);
 }
 
-function pickFields(
-  result: CrosswalkResult,
-  to: readonly GeoKind[] | undefined
-): CrosswalkResult {
+function pickFields(result: CrosswalkResult, to: readonly GeoKind[] | undefined): CrosswalkResult {
   if (!to) return result;
   return {
     country: result.country,
-    ...(shouldInclude('h3', to) && result.h3 ? { h3: result.h3 } : {}),
-    ...(shouldInclude('geohash', to) && result.geohash ? { geohash: result.geohash } : {}),
-    ...(shouldInclude('zip', to) && result.zip ? { zip: result.zip } : {}),
-    ...(shouldInclude('dma', to) && result.dma ? { dma: result.dma } : {}),
-    ...(shouldInclude('region', to) && result.region ? { region: result.region } : {}),
-    ...(shouldInclude('state', to) && result.state ? { state: result.state } : {}),
-    ...(shouldInclude('county', to) && result.county ? { county: result.county } : {}),
+    ...(shouldInclude(GeoKind.H3, to) && result.h3 ? { h3: result.h3 } : {}),
+    ...(shouldInclude(GeoKind.Geohash, to) && result.geohash ? { geohash: result.geohash } : {}),
+    ...(shouldInclude(GeoKind.Zip, to) && result.zip ? { zip: result.zip } : {}),
+    ...(shouldInclude(GeoKind.DMA, to) && result.dma ? { dma: result.dma } : {}),
+    ...(shouldInclude(GeoKind.Region, to) && result.region ? { region: result.region } : {}),
+    ...(shouldInclude(GeoKind.State, to) && result.state ? { state: result.state } : {}),
+    ...(shouldInclude(GeoKind.County, to) && result.county ? { county: result.county } : {}),
     ...(result.point ? { point: result.point } : {}),
+  };
+}
+
+function expandFromPoint(
+  lookups: ReturnType<typeof requireUsCrosswalkLookups>,
+  lat: number,
+  lon: number
+): Omit<CrosswalkResult, 'country'> {
+  const point: GeoPoint = [lat, lon];
+  const dma = lookups.dmaFromPoint(lat, lon);
+  if (isH3ProjectionLoaded()) {
+    const h3Cell = latLngToH3Cell(lat, lon, DEFAULT_H3_RESOLUTION);
+    const fromH3 = expandFromH3Cell(lookups, h3Cell, point);
+    return {
+      ...fromH3,
+      dma: optionalDMA(dma),
+      region: dma ? optionalMacroRegion(dma.region) : regionsFromDmas(fromH3.dma ?? []),
+    };
+  }
+  const geohash = geohashForPoint(lat, lon);
+  const fromGeohash = expandFromGeohashCell(lookups, geohash, point);
+  return {
+    ...fromGeohash,
+    dma: optionalDMA(dma),
+    region: dma ? optionalMacroRegion(dma.region) : regionsFromDmas(fromGeohash.dma ?? []),
   };
 }
 
 function expandFromH3Cell(
   lookups: ReturnType<typeof requireUsCrosswalkLookups>,
   h3Cell: string,
-  point?: LatLon
+  point?: GeoPoint
 ): Omit<CrosswalkResult, 'country'> {
   const h3 = compactH3CellId(h3Cell);
   const zips = lookups.zipsForH3(h3);
-  const dma = lookups.dmaForH3(h3);
-  const resolvedPoint = point ?? h3CellToLatLng(h3);
+  const dma = lookups.dmaFromH3(h3);
+  const resolvedPoint = point ?? (h3CellToLatLng(h3) as GeoPoint);
   const geohash = geohashForLatLon(resolvedPoint);
-  const region = dma ? lookups.dmaRegionForDma(dma) : undefined;
 
   return {
     point: resolvedPoint,
-    h3: [h3],
-    geohash: [geohash],
-    zip: uniqSorted(zips),
-    dma: optionalOne(dma),
-    region: optionalOne(region),
+    h3: brandH3List([h3]),
+    geohash: brandGeohashList([geohash]),
+    zip: brandZipList(zips),
+    dma: optionalDMA(dma),
+    region: dma ? optionalMacroRegion(dma.region) : [],
     state: statesForZips(lookups, zips),
   };
 }
@@ -128,116 +120,126 @@ function expandFromH3Cell(
 function expandFromGeohashCell(
   lookups: ReturnType<typeof requireUsCrosswalkLookups>,
   geohashCell: string,
-  point?: LatLon
+  point?: GeoPoint
 ): Omit<CrosswalkResult, 'country'> {
   const geohash = geohashCellIdForLookup(geohashCell);
   const zips = lookups.zipsForGeohash(geohash);
-  const dma = lookups.dmaForGeohash(geohash);
-  const resolvedPoint = point ?? geohashCellToLatLon(geohash);
-  const region = dma ? lookups.dmaRegionForDma(dma) : undefined;
-  let h3: readonly string[] | undefined;
-  if (isH3ProjectionLoaded()) {
-    h3 = [latLngToH3Cell(resolvedPoint[0], resolvedPoint[1], DEFAULT_H3_RESOLUTION)];
-  }
+  const dma = lookups.dmaFromGeohash(geohash);
+  const resolvedPoint = point ?? (geohashCellToLatLon(geohash) as GeoPoint);
+  const h3 = isH3ProjectionLoaded()
+    ? brandH3List([latLngToH3Cell(resolvedPoint[0], resolvedPoint[1], DEFAULT_H3_RESOLUTION)])
+    : undefined;
 
   return {
     point: resolvedPoint,
     ...(h3 ? { h3 } : {}),
-    geohash: [geohash],
-    zip: uniqSorted(zips),
-    dma: optionalOne(dma),
-    region: optionalOne(region),
+    geohash: brandGeohashList([geohash]),
+    zip: brandZipList(zips),
+    dma: optionalDMA(dma),
+    region: dma ? optionalMacroRegion(dma.region) : [],
     state: statesForZips(lookups, zips),
   };
 }
 
-export function crosswalk(from: CrosswalkInput, options: CrosswalkOptions = {}): CrosswalkResult {
+function expandFromDmaSlug(
+  lookups: ReturnType<typeof requireUsCrosswalkLookups>,
+  dmaSlug: string
+): Omit<CrosswalkResult, 'country'> {
+  const dma = lookups.dmaFromSlug(dmaSlug);
+  const zips = lookups.zipsInDMA(dmaSlug);
+  const counties = lookups.countiesInDMA(dmaSlug);
+  return {
+    dma: optionalDMA(dma),
+    zip: brandZipList(zips),
+    county: brandCountyList(counties),
+    region: dma ? optionalMacroRegion(dma.region) : [],
+    state: statesForZips(lookups, zips),
+  };
+}
+
+export function crosswalk(from: GeoRef, options: CrosswalkOptions = {}): CrosswalkResult {
   const lookups = requireUsCrosswalkLookups();
-  const country = options.country ?? 'us';
+  const country: CountryCode = asCountryCode(options.country ?? 'us');
   const spine = resolveSpine(options);
   let partial: Omit<CrosswalkResult, 'country'>;
 
-  if (isLatLonInput(from)) {
-    if (spine === 'geohash') {
-      const geohash = geohashForPoint(from.lat, from.lon);
-      partial = expandFromGeohashCell(lookups, geohash, [from.lat, from.lon]);
-    } else {
-      if (!isH3ProjectionLoaded()) {
-        throw new Error(
-          'H3 projection required for lat/lon crosswalk. Call loadCrosswalk("us") first.'
-        );
+  switch (from.kind) {
+    case GeoKind.Point:
+      partial = expandFromPoint(lookups, from.value[0], from.value[1]);
+      break;
+    case GeoKind.H3:
+      partial = expandFromH3Cell(lookups, from.value);
+      break;
+    case GeoKind.Geohash:
+      partial = expandFromGeohashCell(lookups, from.value);
+      break;
+    case GeoKind.Zip: {
+      const zip = from.value;
+      if (spine === 'geohash') {
+        const geohash = lookups.geohashForZip(zip);
+        if (!geohash) throw new Error(`Unknown ZIP for crosswalk: ${zip}`);
+        partial = expandFromGeohashCell(lookups, geohash);
+      } else {
+        const h3 = lookups.h3ForZip(zip);
+        if (!h3) throw new Error(`Unknown ZIP for crosswalk: ${zip}`);
+        partial = expandFromH3Cell(lookups, h3);
       }
-      const h3 = latLngToH3Cell(from.lat, from.lon, DEFAULT_H3_RESOLUTION);
-      partial = expandFromH3Cell(lookups, h3, [from.lat, from.lon]);
-    }
-  } else if (isH3Input(from)) {
-    partial = expandFromH3Cell(lookups, from.h3Cell);
-  } else if (isGeohashInput(from)) {
-    partial = expandFromGeohashCell(lookups, from.geohash);
-  } else if (isZipInput(from)) {
-    if (spine === 'geohash') {
-      const geohash = lookups.geohashForZip(from.zip);
-      if (!geohash) {
-        throw new Error(`Unknown ZIP for crosswalk: ${from.zip}`);
+      if (!partial.zip?.includes(zip)) {
+        partial = { ...partial, zip: brandZipList([zip, ...(partial.zip ?? [])]) };
       }
-      partial = expandFromGeohashCell(lookups, geohash);
-    } else {
-      const h3 = lookups.h3ForZip(from.zip);
-      if (!h3) {
-        throw new Error(`Unknown ZIP for crosswalk: ${from.zip}`);
-      }
-      partial = expandFromH3Cell(lookups, h3);
+      break;
     }
-    const zip = from.zip.trim();
-    if (!partial.zip?.includes(zip)) {
-      partial = { ...partial, zip: uniqSorted([zip, ...(partial.zip ?? [])]) };
-    }
-  } else if (isDmaInput(from)) {
-    const dma = from.dmaSlug.trim().toLowerCase();
-    const zips = lookups.zipsInDma(dma);
-    const counties = lookups.countiesInDma(dma);
-    const region = lookups.dmaRegionForDma(dma);
-    partial = {
-      dma: dma ? [dma] : [],
-      zip: uniqSorted(zips),
-      county: uniqSorted(counties),
-      region: optionalOne(region),
-      state: statesForZips(lookups, zips),
-    };
-  } else if (isCountyInput(from)) {
-    const fips = from.countyFips.trim();
-    const dma = lookups.dmaForCountyFips(fips);
-    partial = {
-      county: fips ? [fips] : [],
-      dma: optionalOne(dma),
-      region: dma ? optionalOne(lookups.dmaRegionForDma(dma)) : [],
-    };
-    if (dma) {
-      const dmaZips = lookups.zipsInDma(dma);
-      const dmaCounties = lookups.countiesInDma(dma);
+    case 'dmaSlug':
+      partial = expandFromDmaSlug(lookups, from.value);
+      break;
+    case GeoKind.DMA:
+      partial = expandFromDmaSlug(lookups, from.value.slug);
+      break;
+    case GeoKind.County: {
+      const fips = from.value;
+      const dma = lookups.dmaFromCounty(fips);
       partial = {
-        ...partial,
-        zip: uniqSorted(dmaZips),
-        county: uniqSorted([...(partial.county ?? []), ...dmaCounties]),
-        state: statesForZips(lookups, dmaZips),
+        county: brandCountyList([fips]),
+        dma: optionalDMA(dma),
+        region: dma ? optionalMacroRegion(dma.region) : [],
       };
+      if (dma) {
+        const dmaZips = lookups.zipsInDMA(dma.slug);
+        const dmaCounties = lookups.countiesInDMA(dma.slug);
+        partial = {
+          ...partial,
+          zip: brandZipList(dmaZips),
+          county: brandCountyList([...(partial.county ?? []), ...dmaCounties]),
+          state: statesForZips(lookups, dmaZips),
+        };
+      }
+      break;
     }
-  } else if (isPlaceKeyInput(from) || isStatePlaceInput(from)) {
-    const placeKey = normalizePlaceKey(from);
-    const entry = lookups.placeToDma(placeKey);
-    if (!entry) {
-      throw new Error(`Unknown place for crosswalk: ${placeKey}`);
+    case GeoKind.Place: {
+      const dma = lookups.dmaFromPlace(from.value);
+      if (!dma) throw new Error(`Unknown place for crosswalk: ${from.value}`);
+      const zips = lookups.zipsInDMA(dma.slug);
+      partial = {
+        dma: [dma],
+        region: optionalMacroRegion(dma.region),
+        zip: brandZipList(zips),
+        state: statesForZips(lookups, zips),
+      };
+      break;
     }
-    const dma = entry.dmaSlug;
-    const zips = lookups.zipsInDma(dma);
-    partial = {
-      dma: [dma],
-      region: optionalOne(entry.region),
-      zip: uniqSorted(zips),
-      state: statesForZips(lookups, zips),
-    };
-  } else {
-    throw new Error('Unsupported CrosswalkInput');
+    case GeoKind.Country:
+      partial = {};
+      break;
+    case GeoKind.Region:
+      partial = {};
+      break;
+    case GeoKind.State:
+      partial = {};
+      break;
+    default: {
+      const _exhaustive: never = from;
+      throw new Error(`Unsupported GeoRef: ${(_exhaustive as GeoRef).kind}`);
+    }
   }
 
   return pickFields({ country: [country], ...partial }, options.to);
