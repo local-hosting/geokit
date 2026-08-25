@@ -27,5 +27,8 @@
     "@geokit/service": "workspace:*"
   },
   "name": "@geokit/foursquare",
-  "description": "Foursquare Places search plugin for geokit"
+  "description": "Foursquare Places search plugin for geokit",
+  "dependencies": {
+    "@geokit/env": "workspace:*"
+  }
 }

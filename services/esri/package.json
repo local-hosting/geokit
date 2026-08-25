@@ -22,5 +22,8 @@
   "devDependencies": {
     "@geokit/core": "workspace:*",
     "@geokit/service": "workspace:*"
+  },
+  "dependencies": {
+    "@geokit/env": "workspace:*"
   }
 }

@@ -1,7 +1,7 @@
 import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@geokit/service/plugin';
-import { resolveFoursquareApiKey } from '@geokit/core/config/env/service-keys';
+import { resolveFoursquareApiKey } from '@geokit/env/service-keys';
 import type { CapabilityRouterEnvOverrides } from '@geokit/service/types/api-composite';
-import { FoursquareService } from './foursquare-provider.js';
+import { FoursquareService } from './foursquare-service.js';
 
 export const foursquarePlugin: GeokitServicePlugin = {
   name: 'foursquare',
@@ -18,6 +18,6 @@ export const registerFoursquarePlugin = createKeyedPluginRegistrar(
   }
 );
 
-export { FoursquareService } from './foursquare-provider.js';
+export { FoursquareService } from './foursquare-service.js';
 export * from './foursquare-places.js';
 export type { FoursquarePlaceRaw } from './types/foursquare-places.js';

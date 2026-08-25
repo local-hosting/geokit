@@ -4,6 +4,8 @@
   "description": "Geokit monorepo — geospatial SDK",
   "workspaces": [
     "packages/*",
+    "packages/env",
+    "packages/h3",
     "services/*"
   ],
   "packageManager": "yarn@4.18.0",
