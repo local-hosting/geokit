@@ -3,7 +3,7 @@ import {
   EsriPlacesService,
   buildEsriNearPointUrl,
   normalizeEsriPlace,
-} from '../src/esri-places-provider.js';
+} from '../src/esri-places-service.js';
 
 describe('@geokit/esri', () => {
   beforeEach(() => {
