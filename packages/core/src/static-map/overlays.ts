@@ -1,8 +1,9 @@
-import turfBuffer from '@turf/buffer';
-import { point as turfPoint } from '@turf/helpers';
-import type { ResolvedMapStaticProvider } from '../types/static-map.js';
-import { DEFAULT_REGION_PATH_STYLE } from './region-path.js';
-import type { MapRegionPathStyle } from './region-path.js';
+
+
+import type { ResolvedMapStaticProvider } from '../types/static-map';
+import { DEFAULT_REGION_PATH_STYLE } from './region-path';
+import type { MapRegionPathStyle } from './region-path';
+import { turfBuffer, turfPoint } from '../utils/turf/deps';
 
 const MARKER_RADIUS_METERS = 80;
 const METERS_PER_KM = 1000;

@@ -1,5 +1,6 @@
-import simplifyTurf from '@turf/simplify';
+
 import type { Polygon, MultiPolygon } from '../../types';
+import { simplifyTurf } from '../turf/deps';
 
 /**
  * Simplify a Polygon or MultiPolygon geometry using Douglas-Peucker algorithm via Turf.js

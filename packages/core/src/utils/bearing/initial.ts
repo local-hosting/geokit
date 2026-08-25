@@ -1,7 +1,8 @@
-import turfBearing from '@turf/bearing';
-import { point as turfPoint } from '@turf/helpers';
+
+
 import type { LatLon } from '../../types';
 import { DEGREES_TO_RADIANS, RADIANS_TO_DEGREES, DEGREES_IN_CIRCLE } from '../../constants';
+import { turfBearing, turfPoint } from '../turf/deps';
 
 /**
  * Calculate initial bearing (forward azimuth) between two points

@@ -1,9 +1,10 @@
+import { turfMultiPolygon, turfPolygon, turfUnion } from '../turf/deps';
 /**
  * Polygon union operations using Turf.js
  */
 
-import turfUnion from '@turf/union';
-import { polygon as turfPolygon, multiPolygon as turfMultiPolygon } from '@turf/helpers';
+
+
 import type { Polygon, MultiPolygon, Feature } from '../../types';
 import type {
   Feature as GeoJSONFeature,

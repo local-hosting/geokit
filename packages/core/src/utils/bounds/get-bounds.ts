@@ -1,6 +1,5 @@
-import turfBbox from '@turf/bbox';
-import { points as turfPoints, featureCollection } from '@turf/helpers';
 import type { LatLon, LonLat, Bounds, Feature, FeatureCollection, Geometry } from '../../types';
+import { featureCollection, turfBbox, turfPoints } from '../turf/deps';
 
 /**
  * Normalize coordinate arrays to LonLat format (GeoJSON) for Turf

@@ -1,5 +1,5 @@
 import type { Bounds, LatLon, Polygon } from '../../types';
-import turfBboxPolygon from '@turf/bbox-polygon';
+import { turfBboxPolygon } from '../turf/deps';
 
 /**
  * Convert bounding box to polygon coordinates

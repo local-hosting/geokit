@@ -1,6 +1,7 @@
-import turfArea from '@turf/area';
-import { polygon as turfPolygon } from '@turf/helpers';
+
+
 import type { Polygon } from '../../types';
+import { turfArea, turfPolygon } from '../turf/deps';
 import {
   SQUARE_METERS_TO_SQUARE_KILOMETERS,
   SQUARE_METERS_TO_SQUARE_MILES,

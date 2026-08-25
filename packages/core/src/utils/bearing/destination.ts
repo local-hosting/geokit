@@ -1,5 +1,6 @@
-import turfDestination from '@turf/destination';
+
 import type { LatLon } from '../../types';
+import { turfDestination } from '../turf/deps';
 import {
   EARTH_RADIUS_METERS,
   EARTH_RADIUS_KM,

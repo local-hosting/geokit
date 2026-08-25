@@ -1,9 +1,10 @@
+import { lineString, turfLength } from '../turf/deps';
 /**
  * Calculate the total length of a line or polyline using Turf.js
  */
 
-import turfLength from '@turf/length';
-import { lineString } from '@turf/helpers';
+
+
 import type { LatLon, LonLat, LineString } from '../../types';
 import { haversine } from '../distance/haversine';
 import { EARTH_RADIUS_METERS, METERS_TO_KILOMETERS, METERS_TO_MILES } from '../../constants';

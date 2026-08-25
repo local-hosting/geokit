@@ -1,6 +1,7 @@
-import turfMidpoint from '@turf/midpoint';
+
 import type { LatLon } from '../../types';
 import { createPointFeature, extractLatLon } from '../turf-utils';
+import { turfMidpoint } from '../turf/deps';
 
 /**
  * Calculate the midpoint between two points

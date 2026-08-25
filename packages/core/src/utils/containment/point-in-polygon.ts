@@ -1,7 +1,8 @@
-import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
-import { polygon as turfPolygon } from '@turf/helpers';
+
+
 import type { LatLon, Polygon } from '../../types';
 import { createPointFeature, validatePolygon } from '../turf-utils';
+import { booleanPointInPolygon, turfPolygon } from '../turf/deps';
 
 /**
  * Check if a point is inside a polygon
