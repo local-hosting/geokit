@@ -291,47 +291,6 @@ export {
   geohashAreaNeighbors,
 } from './utils/geohash';
 
-// H3 utilities
-export {
-  // Legacy functions (backward compatible)
-  coordinatesToH3,
-  h3ToCoordinates,
-  h3ToBoundary,
-  h3ToPolygon,
-  h3Neighbors,
-  snapToH3Cell,
-  h3ToParent,
-  h3ToChildren,
-  h3GetResolution,
-  validateH3,
-  h3AreNeighbors,
-  h3SetToMultiPolygon,
-  polygonToH3,
-  polygonGeometryToH3Cells,
-  joinCellMapToPolygon,
-  lookupValuesForH3Cells,
-  invertCellMap,
-  rollupCellMap,
-  keyToParentCell,
-  invertH3ToZips,
-  rollupH3ToZips,
-  zipToH3ParentCell,
-  h3EdgeLength,
-  h3CellArea,
-  h3ResolutionFromZoom,
-  h3DiskToFeatureCollection,
-  // Type-safe functions
-  coordinatesToH3Point,
-  coordinatesToH3Area,
-  h3PointToCoordinates,
-  h3AreaToCoordinates,
-  h3PointToBoundary,
-  h3AreaToBoundary,
-  h3PointToPolygon,
-  h3AreaToPolygon,
-  h3PointNeighbors,
-  h3AreaNeighbors,
-} from './utils/h3';
 
 // Centroid utilities
 export { polygonCentroid, pointsCentroid } from './utils/centroid';
@@ -364,9 +323,8 @@ export { lineIntersection, linesIntersect } from './utils/intersection';
 // Buffer utilities
 export { bufferPoint } from './utils/buffer/buffer-point';
 
-// Spatial index interoperability utilities
+// Spatial index interoperability utilities (type guards + constructors only; see ./spatial/decode for H3 decode)
 export {
-  // Type guards
   isGeohash,
   isH3,
   isGeohashPoint,
@@ -374,21 +332,10 @@ export {
   isH3Point,
   isH3Area,
   getSpatialIndexType,
-  // Branded type constructors
   asGeohashPoint,
   asGeohashArea,
   asH3Point,
   asH3Area,
-  // Conversion functions
-  geohashPointToH3Point,
-  geohashAreaToH3Area,
-  h3PointToGeohashPoint,
-  h3AreaToGeohashArea,
-  // Universal functions
-  decodePointToCoordinates,
-  decodeAreaToCoordinates,
-  getBoundsFromPoint,
-  getBoundsFromArea,
 } from './utils/spatial';
 
 

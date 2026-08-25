@@ -1,4 +1,4 @@
-import type { ViewportBounds } from '../utils/h3/viewport-bounds.js';
+import type { ViewportBounds } from '@geokit/h3/lite';
 
 export type ViewportContext = {
   bounds: ViewportBounds;
