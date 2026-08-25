@@ -7,6 +7,10 @@ import type { SharedPointLayerIds } from '../paint/shared-point-paint';
 
 type MapWithStyle = Parameters<typeof stackLayersAboveAnchor>[0];
 
+function dmaLineLayerId(dataset: string): string {
+  return `gk-dataset-${dataset}-line`;
+}
+
 type GkMapLike = HTMLElement & { getMap?: () => MapWithStyle };
 
 export type BindGkVenueLayerStackingOptions = {
@@ -20,8 +24,12 @@ export function restackVenueLayersAboveDmaFill(
   dataset = 'dma'
 ): void {
   const fillLayerId = datasetFillLayerId(dataset);
+  const lineLayerId = dmaLineLayerId(dataset);
   stackGkOutlineLayersAboveDatasetFill(map, fillLayerId);
   stackLayersAboveAnchor(map, [ids.glowLayerId, ids.pointLayerId], fillLayerId);
+  if (map.getLayer?.(lineLayerId)) {
+    stackLayersAboveAnchor(map, [lineLayerId], ids.pointLayerId);
+  }
 }
 
 export function restackVenueLayersForMarket(
