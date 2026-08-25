@@ -71,3 +71,18 @@ Public entry points are unchanged: `@geokit/h3`, `@geokit/h3/lite`, `@geokit/h3/
 | Old | New |
 |-----|-----|
 | `ensureCapabilityRoutersReady` from `@geokit/service` root | `@geokit/service/builtins` |
+
+
+## Storage and offline
+
+| Old | New |
+|-----|-----|
+| `@geokit/core/storage` | `@geokit/ui/storage` |
+| `@geokit/core/contract/bootstrap` | `@geokit/ui/bootstrap/ensure-map-ready` |
+| `@geokit/core/contract/lifecycle` | `@geokit/ui/lifecycle` |
+
+## Vendor service files
+
+| Old | New |
+|-----|-----|
+| `services/*/src/*-provider.ts` | `services/*/src/*-service.ts` |

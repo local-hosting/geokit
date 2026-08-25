@@ -6,26 +6,26 @@ Swift mirror: [`geokit-swift/docs/providers.md`](../../geokit-swift/docs/provide
 
 ## Platform matrix
 
-| | TypeScript (`@geokit/core`) | Swift (`geokit-swift`) |
-|---|------------------------------|-------------------------|
+| | TypeScript (`@geokit/ui`) | Swift (`geokit-swift`) |
+|---|---------------------------|-------------------------|
 | Primary GL backend | MapTiler (`@maptiler/sdk`) | Mapbox (`MapboxMaps`) |
 | Alternate backend | Mapbox GL JS | Apple MapKit |
 | Static snapshot ids | `maptiler` \| `mapbox` | `mapbox` \| `apple` |
-| Registry | `configureUIProviders`, `src/ui/providers/registry.ts` | `GeoKitMapProviderRegistry` |
-| Env default | `GEOKIT_MAP_PROVIDER`, `MAP_PROVIDER` | same + `Info.plist` |
+| Registry | `configure()`, `packages/ui/src/providers/registry.ts` | `GeoKitMapProviderRegistry` |
+| Env default | `GEOKIT_MAP_PROVIDER`, `MAP_PROVIDER` (`@geokit/env`) | same + `Info.plist` |
 | Per-map override | `<gk-map provider="…">` | `MapContentRequest.mapProviderId` |
 
-Default on web: **maptiler** (`src/config/index.ts`). Default on Swift: **mapbox**.
+Default on web: **maptiler** (`packages/ui/src/config/tile-cdn.ts`). Default on Swift: **mapbox**.
 
 ## Runtime surfaces
 
 | Backend | TypeScript path | Swift |
 |---------|-----------------|-------|
-| MapTiler | `src/ui/providers/maptiler-provider.ts` | — |
-| Mapbox GL | `src/ui/providers/mapbox-provider.ts` | `GeoKitUIMapbox/` |
+| MapTiler | `packages/ui/src/providers/maptiler-provider.ts` | — |
+| Mapbox GL | `packages/ui/src/providers/mapbox-provider.ts` | `GeoKitUIMapbox/` |
 | Apple Maps | — | `GeoKitUI/Providers/Apple/` |
-| Bootstrap | `ensureMapReady` (`@geokit/core/contract`) | `GeoKitMapBootstrap.prepare()` |
+| Bootstrap | `ensureMapReady` (`@geokit/ui/bootstrap/ensure-map-ready`) | `GeoKitMapBootstrap.prepare()` |
 
 ## Choropleth fills
 
-Semi-transparent polygon fills can show triangulation artifacts. Use `buildChoroplethFillPaint` from `@geokit/ui/utils/paint/choropleth-fill-paint` for fill layers on admin boundaries and regions.
+Semi-transparent polygon fills can show triangulation artifacts. Use `buildChoroplethFillPaint` from `@geokit/ui/choropleth-fill-paint` for fill layers on admin boundaries and regions.

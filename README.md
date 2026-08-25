@@ -22,7 +22,9 @@ Yarn workspaces monorepo for the geospatial SDK.
 
 ## Docs
 
-See [docs/README.md](docs/README.md). Start with [docs/architecture.md](docs/architecture.md) for the three-layer model (services, plugins, UI providers).
+See [docs/README.md](docs/README.md). Start with [docs/architecture.md](docs/architecture.md) for the three-layer model.
+
+Breaking imports: [docs/import-migration.md](docs/import-migration.md). 
 
 ## Commands
 
