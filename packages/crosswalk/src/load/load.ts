@@ -1,9 +1,9 @@
-import type { LoadCrosswalkOptions } from './types.js';
-import { ensureH3Projection } from './h3/project.js';
+import type { LoadCrosswalkOptions } from '../types.js';
+import { ensureH3Projection } from '../h3/project.js';
 import { clearUsCrosswalkRegistry } from './registry.js';
-import { loadUsCrosswalkTableNames } from './us/load-tables.js';
-import { loadAllUsCrosswalkTablesSync } from './us/load-tables-sync.js';
-import { US_CROSSWALK_TABLE_NAMES } from './us/table-names.js';
+import { loadUsCrosswalkTableNames } from '../us/load-tables.js';
+import { loadAllUsCrosswalkTablesSync } from '../us/load-tables-sync.js';
+import { US_CROSSWALK_TABLE_NAMES } from '../us/table-names.js';
 
 export function resetCrosswalkForTest(): void {
   clearUsCrosswalkRegistry();

@@ -4,11 +4,11 @@ import type {
   CrosswalkResult,
   GeoKind,
   LatLon,
-} from './types.js';
+} from '../types.js';
 import { geohashForLatLon } from './geohash.js';
-import { compactH3CellId } from './h3/cell-id.js';
-import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from './h3/project.js';
-import { requireUsCrosswalkLookups } from './registry.js';
+import { compactH3CellId } from '../h3/cell-id.js';
+import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from '../h3/project.js';
+import { requireUsCrosswalkLookups } from '../load/registry.js';
 
 const DEFAULT_H3_RESOLUTION = 5;
 
@@ -78,16 +78,17 @@ function pickFields(
   to: readonly GeoKind[] | undefined
 ): CrosswalkResult {
   if (!to) return result;
-  const out: CrosswalkResult = { country: result.country };
-  if (shouldInclude('h3', to) && result.h3) out.h3 = result.h3;
-  if (shouldInclude('geohash', to) && result.geohash) out.geohash = result.geohash;
-  if (shouldInclude('zip', to) && result.zip) out.zip = result.zip;
-  if (shouldInclude('dma', to) && result.dma) out.dma = result.dma;
-  if (shouldInclude('region', to) && result.region) out.region = result.region;
-  if (shouldInclude('state', to) && result.state) out.state = result.state;
-  if (shouldInclude('county', to) && result.county) out.county = result.county;
-  if (result.point) out.point = result.point;
-  return out;
+  return {
+    country: result.country,
+    ...(shouldInclude('h3', to) && result.h3 ? { h3: result.h3 } : {}),
+    ...(shouldInclude('geohash', to) && result.geohash ? { geohash: result.geohash } : {}),
+    ...(shouldInclude('zip', to) && result.zip ? { zip: result.zip } : {}),
+    ...(shouldInclude('dma', to) && result.dma ? { dma: result.dma } : {}),
+    ...(shouldInclude('region', to) && result.region ? { region: result.region } : {}),
+    ...(shouldInclude('state', to) && result.state ? { state: result.state } : {}),
+    ...(shouldInclude('county', to) && result.county ? { county: result.county } : {}),
+    ...(result.point ? { point: result.point } : {}),
+  };
 }
 
 function expandFromH3Cell(

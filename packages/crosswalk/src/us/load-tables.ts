@@ -5,7 +5,7 @@ import {
   getUsCrosswalkTables,
   isCrosswalkTableLoaded,
   setUsCrosswalkRegistry,
-} from '../registry.js';
+} from '../load/registry.js';
 import type { UsCrosswalkTableName } from './table-names.js';
 
 type TableLoader = () => Promise<Partial<UsCrosswalkTables>>;
