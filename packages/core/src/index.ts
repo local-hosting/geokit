@@ -9,7 +9,6 @@ export type {
   Coordinate,
   LatLon,
   LonLat,
-  Point,
   Polygon,
   MultiPolygon,
   LineString,
@@ -30,7 +29,24 @@ export type {
   H3Point,
   H3Area,
   SpatialIndex,
+  CatalogIdentity,
+  CountryCode,
+  CountyFips,
+  DMA,
+  DmaSlug,
+  GeoIdentity,
+  GeoKind,
+  GeoPoint,
+  GeoRef,
+  GeoRefInput,
+  ConvertOutput,
+  MacroRegion,
+  PlaceKey,
+  StateCode,
+  ZipCode,
 } from './types';
+
+export { GeoKind } from './types';
 
 // Constants
 export {
@@ -337,6 +353,42 @@ export {
   asH3Point,
   asH3Area,
 } from './utils/spatial';
+
+export {
+  asCountryCode,
+  asCountyFips,
+  asCountyFipsOrUndefined,
+  asDMA,
+  asDMAOrUndefined,
+  asDmaSlug,
+  asDmaSlugOrUndefined,
+  asMacroRegion,
+  asMacroRegionOrUndefined,
+  asPlaceKey,
+  asPlaceKeyOrUndefined,
+  asStateCode,
+  asStateCodeOrUndefined,
+  asZipCode,
+  asZipCodeOrUndefined,
+  canonicalDmaSlug,
+  normalizeCountyFipsDigits,
+  normalizeKebabSlug,
+  normalizePlaceKey,
+  normalizeStateCode,
+  normalizeZipDigits,
+  parseGeoRef,
+  placeKeyFromStateAndSlug,
+  GKCountry,
+  GKCounty,
+  GKDMA,
+  GKDMARecord,
+  GKGeohash,
+  GKH3,
+  GKPlace,
+  GKPlaceInState,
+  GKPoint,
+  GKZip,
+} from './utils/geo-identity';
 
 
 // TopoJSON conversion utilities
