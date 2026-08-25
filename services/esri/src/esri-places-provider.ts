@@ -6,10 +6,6 @@ import { CachedService } from '@geokit/service';
 import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@geokit/service/types';
 import { fetchWithRetry } from '@geokit/service';
 import {
-  enrichPlaceSearchResult,
-  resolvePlaceSearchCategories,
-} from '@geokit/service/place-taxonomy';
-import {
   ESRI_PLACES_NEAR_POINT,
   type EsriPlaceRaw,
   type EsriPlacesNearPointResponse,
@@ -102,7 +98,7 @@ export class EsriPlacesService extends CachedService<PlaceSearchResult[]> {
   }
 
   private async placeSearchInternal(options: PlaceSearchOptions): Promise<PlaceSearchResult[]> {
-    const categories = resolvePlaceSearchCategories(options, 'esri-places') ?? options.categories;
+    const categories = options.categories;
     const url = buildEsriNearPointUrl(options, categories);
 
     const response = await fetchWithRetry(
@@ -114,7 +110,6 @@ export class EsriPlacesService extends CachedService<PlaceSearchResult[]> {
 
     return (payload.results ?? [])
       .map(normalizeEsriPlace)
-      .filter((result): result is PlaceSearchResult => result !== null)
-      .map((result) => enrichPlaceSearchResult(result, 'esri-places'));
+      .filter((result): result is PlaceSearchResult => result !== null);
   }
 }

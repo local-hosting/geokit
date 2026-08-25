@@ -10,11 +10,6 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./place-taxonomy": {
-      "types": "./src/place-taxonomy.ts",
-      "import": "./src/place-taxonomy.ts",
-      "default": "./src/place-taxonomy.ts"
-    },
     "./registry": {
       "types": "./src/services/registry.ts",
       "import": "./src/services/registry.ts",
@@ -29,11 +24,6 @@
       "types": "./src/types/api-composite.ts",
       "import": "./src/types/api-composite.ts",
       "default": "./src/types/api-composite.ts"
-    },
-    "./types/place-taxonomy": {
-      "types": "./src/types/place-taxonomy.ts",
-      "import": "./src/types/place-taxonomy.ts",
-      "default": "./src/types/place-taxonomy.ts"
     },
     "./plugin": {
       "types": "./src/plugin.ts",

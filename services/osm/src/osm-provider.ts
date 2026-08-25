@@ -6,10 +6,6 @@
 
 import { Service } from '@geokit/service';
 import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@geokit/service/types';
-import {
-  enrichPlaceSearchResult,
-  resolvePlaceSearchCategories,
-} from '@geokit/service/place-taxonomy';
 import { fetchWithRetry } from '@geokit/service';
 
 const DEFAULT_OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
@@ -64,7 +60,7 @@ export function buildOverpassPlaceSearchQuery(
     .filter((selector): selector is string => selector !== null);
 
   if (tagSelectors.length === 0) {
-    throw new Error('OSM place search requires categories or geotypes with OSM tag mappings');
+    throw new Error('OSM place search requires categories');
   }
 
   const union = tagSelectors
@@ -123,10 +119,10 @@ export class OsmService extends Service {
   }
 
   async placeSearch(options: PlaceSearchOptions): Promise<PlaceSearchResult[]> {
-    const categories = resolvePlaceSearchCategories(options, 'osm') ?? options.categories;
+    const categories = options.categories;
     if (!categories?.length) {
       throw new Error(
-        'OSM place search requires categories or geotypes with OSM mappings (setPlaceTaxonomyResolver)'
+        'OSM place search requires categories'
       );
     }
 
@@ -144,8 +140,7 @@ export class OsmService extends Service {
     const payload = (await response.json()) as OverpassResponse;
     const results = (payload.elements ?? [])
       .map(normalizeOverpassElement)
-      .filter((result): result is PlaceSearchResult => result !== null)
-      .map((result) => enrichPlaceSearchResult(result, 'osm'));
+      .filter((result): result is PlaceSearchResult => result !== null);
 
     return results.slice(0, options.limit ?? results.length);
   }

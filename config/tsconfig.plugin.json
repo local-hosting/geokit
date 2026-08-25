@@ -9,9 +9,6 @@
       "@geokit/service/*": [
         "../../packages/service/src/*"
       ],
-      "@geokit/geotypes/geokit": [
-        "../../packages/geotypes/src/geokit-adapter.ts"
-      ],
       "geokit/*": [
         "../../packages/core/src/*"
       ]

@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "@geokit/core": "workspace:*",
-    "@twinfile/geotypes": "portal:../../geotypes",
     "@geokit/service": "workspace:*"
   }
 }

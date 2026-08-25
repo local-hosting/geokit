@@ -6,9 +6,7 @@ export function pluginVitestAliases(repoRoot: string): Record<string, string> {
   const geotypesRoot = path.join(repoRoot, 'packages/geotypes');
 
   return {
-    '@geokit/service/place-taxonomy': path.join(serviceRoot, 'src/place-taxonomy.ts'),
     '@geokit/service/types': path.join(serviceRoot, 'src/services/types.ts'),
-    '@geokit/service/types/place-taxonomy': path.join(serviceRoot, 'src/types/place-taxonomy.ts'),
     '@geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
     '@geokit/service/plugin': path.join(serviceRoot, 'src/plugin.ts'),
     '@geokit/service/registry': path.join(serviceRoot, 'src/services/registry.ts'),
@@ -39,11 +37,9 @@ export function serviceVitestAliases(repoRoot: string): Record<string, string> {
   return {
     '@geokit/service': path.join(serviceRoot, 'src/index.ts'),
     '@geokit/service/builtins': path.join(serviceRoot, 'src/builtins.ts'),
-    '@geokit/service/place-taxonomy': path.join(serviceRoot, 'src/place-taxonomy.ts'),
     '@geokit/service/registry': path.join(serviceRoot, 'src/services/registry.ts'),
     '@geokit/service/types': path.join(serviceRoot, 'src/services/types.ts'),
     '@geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
-    '@geokit/service/types/place-taxonomy': path.join(serviceRoot, 'src/types/place-taxonomy.ts'),
     '@geokit/foursquare': path.join(repoRoot, 'services/foursquare/src/index.ts'),
     '@geokit/foursquare/foursquare-places': path.join(
       repoRoot,
@@ -62,7 +58,5 @@ export function geotypesVitestAliases(repoRoot: string): Record<string, string> 
   const serviceRoot = path.join(repoRoot, 'packages/service');
 
   return {
-    '@geokit/service/types/place-taxonomy': path.join(serviceRoot, 'src/types/place-taxonomy.ts'),
-    '@geokit/service/place-taxonomy': path.join(serviceRoot, 'src/place-taxonomy.ts'),
   };
 }
