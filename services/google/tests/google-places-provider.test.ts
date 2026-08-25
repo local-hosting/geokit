@@ -9,7 +9,7 @@ import {
   getServiceForCapability,
   _resetRegistries,
 } from '@geokit/service/registry';
-import { GooglePlacesService } from '../src/google-places-provider.js';
+import { GooglePlacesService } from '../src/google-places-service.js';
 
 describe('GooglePlacesService', () => {
   let provider: GooglePlacesService;
