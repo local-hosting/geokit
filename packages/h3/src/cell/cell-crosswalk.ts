@@ -1,12 +1,12 @@
-import { validateH3 } from './core';
-import { h3ToParent } from './hierarchy';
+import { validateH3 } from '../geometry/core';
+import { h3ToParent } from '../geometry/hierarchy';
 import {
   invertCellMap,
   invertH3ToZips,
   type H3CellMultiMap,
   type H3ToZips,
   type InvertCellMapOptions,
-} from './cell-crosswalk-invert.js';
+} from '../cell/cell-crosswalk-invert.js';
 
 export type { H3CellMultiMap, H3ToZips, InvertCellMapOptions };
 export { invertCellMap, invertH3ToZips };

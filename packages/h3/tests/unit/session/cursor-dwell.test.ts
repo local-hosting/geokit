@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createH3CursorDwell } from '../../../src/utils/h3/cursor-dwell';
+import { createH3CursorDwell } from '@geokit/h3';
 
 describe('h3 cursor dwell', () => {
   beforeEach(() => {

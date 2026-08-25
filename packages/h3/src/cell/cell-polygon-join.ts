@@ -1,9 +1,9 @@
 import type { MultiPolygon, Polygon, Position } from 'geojson';
-import type { LatLon } from '../../types';
-import { polygonCentroid } from '../centroid/polygon';
-import { coordinatesToH3 } from './core';
-import { compactH3CellId } from './cell-id';
-import { polygonToH3 } from './polygon';
+import type { LatLon } from '../types.js';
+import { polygonCentroid } from '../geometry/polygon-centroid.js';
+import { coordinatesToH3 } from '../geometry/core';
+import { compactH3CellId } from '../cell/cell-id';
+import { polygonToH3 } from '../geometry/polygon';
 
 export type H3CellValueMap<T extends string = string> = Readonly<
   Record<string, readonly T[] | T[]>

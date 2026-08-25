@@ -4,7 +4,7 @@ import {
   invertCellMap,
   keyToParentCell,
   rollupCellMap,
-} from '../../../../src/utils/h3/cell-crosswalk.js';
+} from '@geokit/h3';
 
 const RES = 5;
 

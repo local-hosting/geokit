@@ -4,14 +4,14 @@
 
 import { gridDisk, latLngToCell } from 'h3-js';
 import type { Feature, FeatureCollection, Polygon } from 'geojson';
-import { compactH3CellId, expandH3CellId } from './cell-id';
-import { h3ToCoordinates } from './core';
-import { h3ToPolygon } from './boundary';
-import { polygonToH3 } from './polygon';
-import { h3CellFadeProperties } from './cell-fade';
-import type { ViewportBounds } from './viewport-bounds.js';
+import { compactH3CellId, expandH3CellId } from '../cell/cell-id';
+import { h3ToCoordinates } from '../geometry/core';
+import { h3ToPolygon } from '../geometry/boundary';
+import { polygonToH3 } from '../geometry/polygon';
+import { h3CellFadeProperties } from '../cell/cell-fade';
+import type { ViewportBounds } from '../viewport/viewport-bounds.js';
 
-export type { ViewportBounds } from './viewport-bounds.js';
+export type { ViewportBounds } from '../viewport/viewport-bounds.js';
 
 export type CellLayerViewport = {
   bounds: ViewportBounds;

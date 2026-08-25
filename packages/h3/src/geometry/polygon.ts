@@ -1,5 +1,5 @@
 import { cellsToMultiPolygon, polygonToCells } from 'h3-js';
-import type { Polygon } from '../../types';
+import type { Polygon } from '../types.js';
 
 /**
  * Convert H3 cells to a GeoJSON MultiPolygon
