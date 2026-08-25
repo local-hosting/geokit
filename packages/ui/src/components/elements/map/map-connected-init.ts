@@ -569,17 +569,6 @@ export class MapConnectedInit extends MapBase {
             }
             if (fallbackCount >= fallbackMax) {
               window.clearInterval(fallbackId);
-              const mapContainer = (
-                this.map as { getContainer?: () => HTMLElement | null } | undefined
-              )?.getContainer?.();
-              const hasCanvas = Boolean(mapContainer?.querySelector?.('canvas'));
-              if (hasCanvas) {
-                debug.log('[gk-map] fallback: canvas painted, dispatching map-ready', {
-                  check: fallbackCount,
-                });
-                dispatchMapReady();
-                return;
-              }
               debug.log('[gk-map] fallback: style never loaded after 5s, will retry', {
                 _isFrozen: this._isFrozen,
               });

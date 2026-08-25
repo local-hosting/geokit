@@ -197,6 +197,23 @@ export function onMapUnfreezeInContainer(
  * @returns Promise that resolves when style is loaded
  * @throws Error if timeout is reached or map is invalid
  */
+function isMapStyleLoadedNow(map: MapInstance): boolean {
+  const isStyleLoaded = (map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
+  if (typeof isStyleLoaded === 'function') {
+    return isStyleLoaded.call(map);
+  }
+  const getStyle = (map as { getStyle?: () => unknown }).getStyle;
+  return typeof getStyle === 'function' && getStyle.call(map) != null;
+}
+
+/** Map removed or container detached — inflight style waits should abort. */
+function isMapSurfaceAlive(map: MapInstance): boolean {
+  const getContainer = (map as { getContainer?: () => HTMLElement | null }).getContainer;
+  if (typeof getContainer !== 'function') return true;
+  const container = getContainer.call(map);
+  return container != null && container.isConnected;
+}
+
 export function waitForMapStyleLoaded(
   map: MapInstance | null,
   timeoutMs: number = 10000
@@ -207,30 +224,35 @@ export function waitForMapStyleLoaded(
       return;
     }
 
-    // Check if style is already loaded (getStyle() alone is not sufficient — style may still be loading)
-    if (typeof map.isStyleLoaded === 'function') {
-      if (map.isStyleLoaded()) {
-        resolve();
-        return;
-      }
-    } else if (typeof map.getStyle === 'function' && map.getStyle() != null) {
+    if (isMapStyleLoadedNow(map)) {
       resolve();
       return;
     }
 
-    // Style not loaded yet - wait for it
     let resolved = false;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let rafId: number | null = null;
 
     const cleanup = () => {
       if (timeoutId) {
         clearTimeout(timeoutId);
         timeoutId = null;
       }
+      if (rafId != null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       if (map.off) {
         map.off('load', loadHandler);
         map.off('style.load', styleLoadHandler);
       }
+    };
+
+    const handleAbort = () => {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      reject(new Error('[gk-map-utils] Map removed before style loaded'));
     };
 
     const handleResolve = () => {
@@ -241,16 +263,26 @@ export function waitForMapStyleLoaded(
     };
 
     const loadHandler = () => {
-      const loaded = typeof map.isStyleLoaded === 'function' ? map.isStyleLoaded() : true;
-      if (loaded) handleResolve();
+      if (isMapStyleLoadedNow(map)) handleResolve();
     };
 
     const styleLoadHandler = () => {
-      const loaded = typeof map.isStyleLoaded === 'function' ? map.isStyleLoaded() : true;
-      if (loaded) handleResolve();
+      if (isMapStyleLoadedNow(map)) handleResolve();
     };
 
-    // Set up timeout
+    const pollStyleLoaded = () => {
+      if (resolved) return;
+      if (!isMapSurfaceAlive(map)) {
+        handleAbort();
+        return;
+      }
+      if (isMapStyleLoadedNow(map)) {
+        handleResolve();
+        return;
+      }
+      rafId = requestAnimationFrame(pollStyleLoaded);
+    };
+
     timeoutId = setTimeout(() => {
       if (!resolved) {
         resolved = true;
@@ -259,10 +291,10 @@ export function waitForMapStyleLoaded(
       }
     }, timeoutMs);
 
-    // Register event listeners
     if (map.on) {
       map.on('load', loadHandler);
       map.on('style.load', styleLoadHandler);
+      rafId = requestAnimationFrame(pollStyleLoaded);
     } else {
       handleResolve();
     }

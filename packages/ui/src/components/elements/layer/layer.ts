@@ -219,6 +219,12 @@ export class LayerElement extends MapChildElement {
     }
   }
 
+  protected override onMapUnload(): void {
+    this._datasetMountGeneration++;
+    this.removeDatasetLayer();
+    super.onMapUnload();
+  }
+
   /** Re-add layer after map style change (e.g. theme toggle). */
   protected override onStyleLoad(): void {
     if (!this.map) return;
