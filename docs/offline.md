@@ -22,10 +22,21 @@ import { MapLocalStore, MapOfflineTileCache, MapOfflineContextLoader } from '@ge
 
 `@geokit/core/storage` re-exports `@geokit/ui/storage` for one release cycle — prefer the UI path in new code.
 
-## Defaults
+## Defaults (`MapOfflineDefaults`)
 
-- Web storage budget: 200 MB, max prefetch zoom z15
-- Native Mapbox budget: 500 MB, max prefetch zoom z17
+| Setting | Web | Native Mapbox |
+|---------|-----|---------------|
+| Storage budget | 200 MB | 500 MB |
+| Max prefetch zoom | z15 | z17 |
+| Max tile count | 8,000 | — |
+
+Coverage policy:
+
+- `liveMapCoverageThreshold`: 0.8 — recommend live map when cache coverage ≥ 80%
+- `snapshotFallbackCoverageThreshold`: 0.5 — recommend snapshot fallback when coverage < 50%
+- Snapshot limits: 2 MB per map, 20 MB total
+
+Use `validateOfflinePrefetchRequest()` before prefetching; it enforces zoom range and tile-count budgets.
 
 ## Not stored by geokit
 

@@ -3,7 +3,6 @@
 | Doc | Contents |
 |-----|----------|
 | [architecture.md](architecture.md) | Three-layer model, package graph, import tiers |
-| [import-migration.md](import-migration.md) | Breaking import paths after the monorepo refactor |
 | [providers.md](providers.md) | Map UI backends (MapTiler / Mapbox) |
 | [events.md](events.md) | `gk-*` custom events |
 | [parity.md](parity.md) | TypeScript ↔ Swift layout and fixture parity |
@@ -18,6 +17,6 @@
 | `@geokit/env` | `packages/env/` — service keys and map credentials |
 | `@geokit/h3` | `packages/h3/` — H3 geometry (`h3-js` peer) |
 | `@geokit/service` | `packages/service/` — registry and routing |
-| `@geokit/crosswalk` | `packages/crosswalk/` — ZIP / DMA / H3 identity |
+| `@geokit/crosswalk` | `packages/crosswalk/` — ZIP / DMA / H3 identity (`@geokit/crosswalk/us`, etc.) |
 
 Start with [architecture.md](architecture.md) for the three-layer model (services, plugins, UI providers).

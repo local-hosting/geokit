@@ -10,3 +10,7 @@ export { COUNTY_TO_DMA } from "./county-to-dma.js";
 export { DMA_REGION } from "./dma-region.js";
 export { PLACE_TO_DMA } from "./place-to-dma.js";
 export { ZIP_TO_STATE } from "./zip-to-state.js";
+
+export { GEOHASH_TO_DMA } from "./geohash-to-dma.js";
+export { GEOHASH_P8_TO_ZIPS } from "./geohash-p8-to-zips.js";
+export { ZIP_TO_GEOHASH_P8 } from "./zip-to-geohash-p8.js";

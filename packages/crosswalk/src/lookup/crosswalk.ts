@@ -2,19 +2,22 @@ import type {
   CrosswalkCountry,
   CrosswalkInput,
   CrosswalkResult,
+  CrosswalkSpine,
   GeoKind,
   LatLon,
 } from '../types.js';
-import { geohashForLatLon } from './geohash.js';
+import { geohashCellIdForLookup } from '../geohash/cell-id.js';
+import { geohashCellToLatLon, geohashForLatLon, geohashForPoint } from './geohash.js';
 import { compactH3CellId } from '../h3/cell-id.js';
 import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from '../h3/project.js';
-import { requireUsCrosswalkLookups } from '../load/registry.js';
+import { requireUsCrosswalkLookups, getCrosswalkSpine } from '../load/registry.js';
 
 const DEFAULT_H3_RESOLUTION = 5;
 
 export type CrosswalkOptions = {
   country?: CrosswalkCountry;
   to?: readonly GeoKind[];
+  spine?: CrosswalkSpine;
 };
 
 function isLatLonInput(input: CrosswalkInput): input is { lat: number; lon: number } {
@@ -23,6 +26,10 @@ function isLatLonInput(input: CrosswalkInput): input is { lat: number; lon: numb
 
 function isH3Input(input: CrosswalkInput): input is { h3Cell: string } {
   return 'h3Cell' in input;
+}
+
+function isGeohashInput(input: CrosswalkInput): input is { geohash: string } {
+  return 'geohash' in input;
 }
 
 function isZipInput(input: CrosswalkInput): input is { zip: string } {
@@ -50,6 +57,10 @@ function normalizePlaceKey(input: { placeKey: string } | { state: string; placeS
     return input.placeKey.trim().toLowerCase();
   }
   return `${input.state.trim().toLowerCase()}/${input.placeSlug.trim().toLowerCase()}`;
+}
+
+function resolveSpine(options: CrosswalkOptions): CrosswalkSpine {
+  return options.spine ?? getCrosswalkSpine();
 }
 
 function uniqSorted(values: readonly string[]): readonly string[] {
@@ -100,7 +111,7 @@ function expandFromH3Cell(
   const zips = lookups.zipsForH3(h3);
   const dma = lookups.dmaForH3(h3);
   const resolvedPoint = point ?? h3CellToLatLng(h3);
-  const geohash = geohashForLatLon(resolvedPoint, 10);
+  const geohash = geohashForLatLon(resolvedPoint);
   const region = dma ? lookups.dmaRegionForDma(dma) : undefined;
 
   return {
@@ -114,27 +125,69 @@ function expandFromH3Cell(
   };
 }
 
+function expandFromGeohashCell(
+  lookups: ReturnType<typeof requireUsCrosswalkLookups>,
+  geohashCell: string,
+  point?: LatLon
+): Omit<CrosswalkResult, 'country'> {
+  const geohash = geohashCellIdForLookup(geohashCell);
+  const zips = lookups.zipsForGeohash(geohash);
+  const dma = lookups.dmaForGeohash(geohash);
+  const resolvedPoint = point ?? geohashCellToLatLon(geohash);
+  const region = dma ? lookups.dmaRegionForDma(dma) : undefined;
+  let h3: readonly string[] | undefined;
+  if (isH3ProjectionLoaded()) {
+    h3 = [latLngToH3Cell(resolvedPoint[0], resolvedPoint[1], DEFAULT_H3_RESOLUTION)];
+  }
+
+  return {
+    point: resolvedPoint,
+    ...(h3 ? { h3 } : {}),
+    geohash: [geohash],
+    zip: uniqSorted(zips),
+    dma: optionalOne(dma),
+    region: optionalOne(region),
+    state: statesForZips(lookups, zips),
+  };
+}
+
 export function crosswalk(from: CrosswalkInput, options: CrosswalkOptions = {}): CrosswalkResult {
   const lookups = requireUsCrosswalkLookups();
   const country = options.country ?? 'us';
+  const spine = resolveSpine(options);
   let partial: Omit<CrosswalkResult, 'country'>;
 
   if (isLatLonInput(from)) {
-    if (!isH3ProjectionLoaded()) {
-      throw new Error(
-        'H3 projection required for lat/lon crosswalk. Call loadCrosswalk("us") first.'
-      );
+    if (spine === 'geohash') {
+      const geohash = geohashForPoint(from.lat, from.lon);
+      partial = expandFromGeohashCell(lookups, geohash, [from.lat, from.lon]);
+    } else {
+      if (!isH3ProjectionLoaded()) {
+        throw new Error(
+          'H3 projection required for lat/lon crosswalk. Call loadCrosswalk("us") first.'
+        );
+      }
+      const h3 = latLngToH3Cell(from.lat, from.lon, DEFAULT_H3_RESOLUTION);
+      partial = expandFromH3Cell(lookups, h3, [from.lat, from.lon]);
     }
-    const h3 = latLngToH3Cell(from.lat, from.lon, DEFAULT_H3_RESOLUTION);
-    partial = expandFromH3Cell(lookups, h3, [from.lat, from.lon]);
   } else if (isH3Input(from)) {
     partial = expandFromH3Cell(lookups, from.h3Cell);
+  } else if (isGeohashInput(from)) {
+    partial = expandFromGeohashCell(lookups, from.geohash);
   } else if (isZipInput(from)) {
-    const h3 = lookups.h3ForZip(from.zip);
-    if (!h3) {
-      throw new Error(`Unknown ZIP for crosswalk: ${from.zip}`);
+    if (spine === 'geohash') {
+      const geohash = lookups.geohashForZip(from.zip);
+      if (!geohash) {
+        throw new Error(`Unknown ZIP for crosswalk: ${from.zip}`);
+      }
+      partial = expandFromGeohashCell(lookups, geohash);
+    } else {
+      const h3 = lookups.h3ForZip(from.zip);
+      if (!h3) {
+        throw new Error(`Unknown ZIP for crosswalk: ${from.zip}`);
+      }
+      partial = expandFromH3Cell(lookups, h3);
     }
-    partial = expandFromH3Cell(lookups, h3);
     const zip = from.zip.trim();
     if (!partial.zip?.includes(zip)) {
       partial = { ...partial, zip: uniqSorted([zip, ...(partial.zip ?? [])]) };

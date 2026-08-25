@@ -1,27 +1,35 @@
-import type { CrosswalkCountry, UsCrosswalkTables } from '../types.js';
+import type { CrosswalkCountry, CrosswalkSpine, UsCrosswalkTables } from '../types.js';
 import type { UsTableLookups } from '../us/tables.js';
 import type { UsCrosswalkTableName } from '../us/table-names.js';
 
 let usTables: UsCrosswalkTables | null = null;
 let usLookups: UsTableLookups | null = null;
+let crosswalkSpine: CrosswalkSpine = 'h3';
 const loadedTableNames = new Set<UsCrosswalkTableName>();
 
 export function clearUsCrosswalkRegistry(): void {
   usTables = null;
   usLookups = null;
+  crosswalkSpine = 'h3';
   loadedTableNames.clear();
 }
 
 export function setUsCrosswalkRegistry(
   tables: UsCrosswalkTables,
   lookups: UsTableLookups,
-  newlyLoaded: readonly UsCrosswalkTableName[]
+  newlyLoaded: readonly UsCrosswalkTableName[],
+  spine?: CrosswalkSpine
 ): void {
   usTables = tables;
   usLookups = lookups;
+  if (spine) crosswalkSpine = spine;
   for (const name of newlyLoaded) {
     loadedTableNames.add(name);
   }
+}
+
+export function getCrosswalkSpine(): CrosswalkSpine {
+  return crosswalkSpine;
 }
 
 export function isCrosswalkTableLoaded(name: UsCrosswalkTableName): boolean {

@@ -1,4 +1,4 @@
-import type { UsCrosswalkTables } from '../types.js';
+import type { UsCrosswalkTables, CrosswalkSpine } from '../types.js';
 import { createUsTableLookups } from './tables.js';
 import { createEmptyUsCrosswalkTables, mergeUsCrosswalkTablePatch } from './empty-tables.js';
 import {
@@ -22,6 +22,18 @@ const TABLE_LOADERS: Record<UsCrosswalkTableName, TableLoader> = {
   zipToH3R5: async () => {
     const { ZIP_TO_H3_R5 } = await import('../../generated/us/zip-to-h3-r5.js');
     return { zipToH3R5: ZIP_TO_H3_R5 };
+  },
+  geohashToDma: async () => {
+    const { GEOHASH_TO_DMA } = await import('../../generated/us/geohash-to-dma.js');
+    return { geohashToDma: GEOHASH_TO_DMA };
+  },
+  geohashP8ToZips: async () => {
+    const { GEOHASH_P8_TO_ZIPS } = await import('../../generated/us/geohash-p8-to-zips.js');
+    return { geohashP8ToZips: GEOHASH_P8_TO_ZIPS };
+  },
+  zipToGeohashP8: async () => {
+    const { ZIP_TO_GEOHASH_P8 } = await import('../../generated/us/zip-to-geohash-p8.js');
+    return { zipToGeohashP8: ZIP_TO_GEOHASH_P8 };
   },
   dmaToZips: async () => {
     const { DMA_TO_ZIPS } = await import('../../generated/us/dma-to-zips.js');
@@ -50,7 +62,8 @@ const TABLE_LOADERS: Record<UsCrosswalkTableName, TableLoader> = {
 };
 
 export async function loadUsCrosswalkTableNames(
-  names: readonly UsCrosswalkTableName[]
+  names: readonly UsCrosswalkTableName[],
+  spine?: CrosswalkSpine
 ): Promise<void> {
   const pending = names.filter((name) => !isCrosswalkTableLoaded(name));
   if (pending.length === 0) return;
@@ -62,5 +75,5 @@ export async function loadUsCrosswalkTableNames(
   }
 
   const lookups = createUsTableLookups(tables);
-  setUsCrosswalkRegistry(tables, lookups, pending);
+  setUsCrosswalkRegistry(tables, lookups, pending, spine);
 }

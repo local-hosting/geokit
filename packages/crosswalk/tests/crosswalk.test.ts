@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadUsCrosswalkSync } from '../src/load/load.js';
-import { dmaForZip, h3ForZip, crosswalk, zipsInDma } from '../src/index.ts';
+import { dmaForGeohash, dmaForZip, geohashForZip, h3ForZip, crosswalk, zipsInDma } from '../src/index.ts';
 import { ensureH3Projection } from '../src/h3/project.js';
 import { loadUsCrosswalk, resetCrosswalkForTest } from '../src/load/load.js';
 import {
@@ -38,6 +38,45 @@ describe('@geokit/crosswalk', () => {
     const result = crosswalk({ dmaSlug: 'indianapolis' }, { to: ['zip', 'dma'] });
     expect(result.dma).toEqual(['indianapolis']);
     expect(result.zip?.length).toBeGreaterThan(0);
+  });
+
+
+  it('crosswalks from geohash input', async () => {
+    loadUsCrosswalkSync();
+    await ensureH3Projection();
+
+    const geohash = geohashForZip('46204');
+    expect(geohash).toBeTruthy();
+
+    const result = crosswalk({ geohash: geohash! }, { to: ['geohash', 'zip', 'dma', 'state'] });
+    expect(result.geohash?.[0]).toBe(geohash);
+    expect(result.zip?.length).toBeGreaterThan(0);
+    expect(result.state?.[0]).toBe('in');
+  });
+
+  it('geohash spine resolves ZIP via geohash tables without H3 projection', async () => {
+    resetCrosswalkForTest();
+    await loadUsCrosswalk({ tables: US_CROSSWALK_PRESETS.geohashZipResolve, spine: 'geohash', projectH3: false });
+
+    const geohash = geohashForZip('46204');
+    expect(geohash).toBeTruthy();
+
+    const result = crosswalk(
+      { zip: '46204' },
+      { spine: 'geohash', to: ['geohash', 'zip', 'dma', 'state'] }
+    );
+    expect(result.geohash?.[0]).toBe(geohash);
+    expect(result.zip?.length).toBeGreaterThan(0);
+    expect(result.dma?.[0]).toBe('indianapolis');
+    expect(result.state?.[0]).toBe('in');
+  });
+
+  it('dmaForGeohash returns slug when geohash-to-dma has coverage', () => {
+    loadUsCrosswalkSync();
+    const geohash = geohashForZip('46204');
+    expect(geohash).toBeTruthy();
+    const dma = dmaForGeohash(geohash!);
+    expect(dma).toBe('indianapolis');
   });
 
   it('dmaForZip returns slug when h3-to-dma has coverage', () => {

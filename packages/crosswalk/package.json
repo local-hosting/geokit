@@ -1,7 +1,7 @@
 {
   "name": "@geokit/crosswalk",
   "version": "0.2.0",
-  "description": "Geo identity crosswalk — many-to-many lookups between points, H3, ZIP, DMA, state, county",
+  "description": "Geo identity crosswalk \u2014 many-to-many lookups between points, H3, ZIP, DMA, state, county",
   "license": "MPL-2.0",
   "type": "module",
   "sideEffects": false,
@@ -40,7 +40,8 @@
   "scripts": {
     "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
     "test": "yarn run -T vitest run --config ../../config/vitest.crosswalk.config.ts",
-    "test:guard": "yarn run -T vitest run --config ../../config/vitest.crosswalk.config.ts tests/guard.test.ts"
+    "test:guard": "yarn run -T vitest run --config ../../config/vitest.crosswalk.config.ts tests/guard.test.ts",
+    "codegen:geohash": "node --experimental-strip-types scripts/codegen-geohash-from-h3.mts"
   },
   "peerDependencies": {
     "h3-js": "^4.3.0"
