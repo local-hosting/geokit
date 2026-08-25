@@ -82,30 +82,13 @@ export interface LatitudeLongitudeObject {
  */
 export type CoordinateInput = LatLon | LonLat | CoordinateObject | LatitudeLongitudeObject | Point;
 
-/**
- * Branded type for Geohash representing a point location
- */
-export type GeohashPoint = string & { __brand: 'GeohashPoint' };
-
-/**
- * Branded type for Geohash representing an area/region
- */
-export type GeohashArea = string & { __brand: 'GeohashArea' };
-
-/**
- * Branded type for H3 index representing a point location
- */
-export type H3Point = string & { __brand: 'H3Point' };
-
-/**
- * Branded type for H3 index representing an area/region
- */
-export type H3Area = string & { __brand: 'H3Area' };
-
-/**
- * Union type for all spatial index types
- */
-export type SpatialIndex = GeohashPoint | GeohashArea | H3Point | H3Area;
+export type {
+  GeohashArea,
+  GeohashPoint,
+  H3Area,
+  H3Point,
+  SpatialIndex,
+} from './spatial-index';
 
 // UI popup types (gk-popup element)
 export type {
@@ -121,3 +104,6 @@ export * from '@geokit/service/types/api-composite';
 
 export type * from './static-map';
 export * from './map-display';
+
+export type * from './geo-identity';
+export { GeoKind } from './geo-identity';
