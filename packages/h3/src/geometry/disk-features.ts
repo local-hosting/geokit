@@ -1,6 +1,6 @@
 import type { Feature, FeatureCollection, Polygon } from 'geojson';
-import { h3ToPolygon } from './boundary';
-import { h3Neighbors } from './neighbors';
+import { h3ToPolygon } from '../geometry/boundary';
+import { h3Neighbors } from '../adjacency/neighbors';
 
 export type H3DiskToFeatureCollectionOptions = {
   /** Merged into every feature's properties. */

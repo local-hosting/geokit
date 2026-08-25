@@ -17,9 +17,9 @@
       "default": "./src/us/index.ts"
     },
     "./geohash": {
-      "types": "./src/geohash.ts",
-      "import": "./src/geohash.ts",
-      "default": "./src/geohash.ts"
+      "types": "./src/lookup/geohash.ts",
+      "import": "./src/lookup/geohash.ts",
+      "default": "./src/lookup/geohash.ts"
     },
     "./h3/project": {
       "types": "./src/h3/project.ts",
@@ -30,6 +30,11 @@
       "types": "./generated/us/index.ts",
       "import": "./generated/us/index.ts",
       "default": "./generated/us/index.ts"
+    },
+    "./market-cells": {
+      "types": "./src/h3/market-cells.ts",
+      "import": "./src/h3/market-cells.ts",
+      "default": "./src/h3/market-cells.ts"
     }
   },
   "scripts": {
@@ -50,5 +55,8 @@
     "h3-js": "^4.3.0",
     "typescript": "^5.9.3",
     "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "@geokit/h3": "workspace:*"
   }
 }

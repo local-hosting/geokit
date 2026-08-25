@@ -2,7 +2,7 @@
  * Session-scoped H3 cell loaded-at tracking for viewport highlight fade.
  */
 
-import { compactH3CellId } from './cell-id';
+import { compactH3CellId } from '../cell/cell-id';
 
 export type H3SessionLoadedTrackerOptions = {
   onCellLoaded?: (id: string, detail?: Record<string, unknown>) => void;
