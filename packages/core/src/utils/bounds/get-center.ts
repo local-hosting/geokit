@@ -1,8 +1,6 @@
-import turfBboxPolygon from '@turf/bbox-polygon';
-import turfCenter from '@turf/center';
-import { points as turfPoints, featureCollection } from '@turf/helpers';
 import type { LatLon, Bounds, Feature, FeatureCollection } from '../../types';
 import { extractLatLon } from '../turf-utils';
+import { featureCollection, turfBboxPolygon, turfCenter, turfPoints } from '../turf/deps';
 
 /**
  * Calculate center point from bounds or features

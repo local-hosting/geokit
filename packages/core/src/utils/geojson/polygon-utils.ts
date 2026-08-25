@@ -1,6 +1,7 @@
-import turfArea from '@turf/area';
-import { polygon as turfPolygon } from '@turf/helpers';
+
+
 import type { Polygon, MultiPolygon, Position } from '../../types';
+import { turfArea, turfPolygon } from '../turf/deps';
 
 /** ~0.01 km² — spurious simplify slivers are orders of magnitude smaller. */
 const DEFAULT_MIN_HOLE_AREA_M2 = 10_000;

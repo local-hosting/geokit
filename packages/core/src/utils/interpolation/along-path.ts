@@ -1,11 +1,12 @@
-import turfAlong from '@turf/along';
-import { lineString } from '@turf/helpers';
+
+
 import type { LatLon, LineString, LonLat, Polyline } from '../../types';
 import { METERS_TO_KILOMETERS } from '../../constants';
 import { detectAndConvertCoordinateFormat } from '../coordinates/extraction';
 import { toLonLatArray } from '../coordinates/conversion';
 import { lineLengthMeters } from '../length';
 import { extractLatLon } from '../turf-utils';
+import { lineString, turfAlong } from '../turf/deps';
 
 function normalizePolyline(polyline: Polyline | LonLat[]): LatLon[] | null {
   if (!polyline || polyline.length === 0) {

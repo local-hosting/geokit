@@ -1,9 +1,10 @@
+import { lineIntersectTurf, lineString } from '../turf/deps';
 /**
  * Calculate intersection between line segments using Turf.js
  */
 
-import lineIntersectTurf from '@turf/line-intersect';
-import { lineString } from '@turf/helpers';
+
+
 import type { LatLon } from '../../types';
 
 export type LineSegment = [LatLon, LatLon];

@@ -1,8 +1,9 @@
-import pointToLineDistanceTurf from '@turf/point-to-line-distance';
-import { lineString } from '@turf/helpers';
+
+
 import type { LatLon, Polyline } from '../../types';
 import { createLineString, createPointFeature } from '../turf-utils';
 import { toLonLatArray } from '../coordinates/conversion';
+import { lineString, pointToLineDistanceTurf } from '../turf/deps';
 
 export type PointToLineDistanceUnits = 'meters' | 'kilometers' | 'miles' | 'degrees';
 
