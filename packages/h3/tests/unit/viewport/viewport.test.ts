@@ -6,7 +6,7 @@ import {
   h3GridFeatureCollection,
   prioritizeH3CellsForViewport,
   prioritizeH3CellsNearCenter,
-} from '../../../../src/utils/h3/viewport.js';
+} from '@geokit/h3';
 
 const bounds = {
   west: -74.1,

@@ -9,7 +9,7 @@ import {
   mergeRegionCellFeatures,
   normalizeRegionSlug,
   resolveRegionSlugsForViewportCells,
-} from '../../../../src/utils/h3/cell-to-region-index.js';
+} from '@geokit/h3/cell-to-region-index';
 
 const RES = 5;
 const cellA = latLngToCell(38.24, -85.76, RES);

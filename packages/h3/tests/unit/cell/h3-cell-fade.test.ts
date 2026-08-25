@@ -7,7 +7,7 @@ import {
   h3CellFadeOpacity,
   h3CellFadeProgress,
   h3CellFadeProperties,
-} from '../../../src/utils/h3/cell-fade';
+} from '@geokit/h3';
 
 describe('h3 cell fade', () => {
   it('starts at new opacity and eases toward base', () => {

@@ -4,7 +4,7 @@ import {
   joinCellMapToPolygon,
   lookupValuesForH3Cells,
   polygonGeometryToH3Cells,
-} from '../../../../src/utils/h3/cell-polygon-join.js';
+} from '@geokit/h3';
 import type { Polygon } from 'geojson';
 
 const RES = 5;
