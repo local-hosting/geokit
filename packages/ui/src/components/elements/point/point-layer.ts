@@ -12,6 +12,8 @@
 
 import { MapChildElement } from '../../map-child-element';
 import { debug } from '../../../utils/logger';
+import { convert, GKPoint, GeoKind, isUsCrosswalkLoaded } from '@geokit/crosswalk';
+import { POINT_DMA_PROPERTY, POINT_DMA_REGION_PROPERTY } from '../../../utils/shared-points/point-dma';
 import type { MapEvent } from '../../../providers/types';
 import {
   createSharedPointLayersFromPaint,
@@ -505,10 +507,33 @@ export class PointLayerElement extends MapChildElement {
   syncFromChildren(): void {
     const points = Array.from(this.querySelectorAll?.('gk-point') ?? []) as any[];
     const features: GeoJSON.Feature[] = [];
+    const enrichDma = this.hasAttribute('enrich-dma');
     for (const el of points) {
       if (typeof el.getFeatureData === 'function') {
         const f = el.getFeatureData();
-        if (f) features.push(f);
+        if (!f) continue;
+        if (enrichDma && f.geometry?.type === 'Point') {
+          const coords = f.geometry.coordinates;
+          if (Array.isArray(coords) && coords.length >= 2) {
+            const lng = Number(coords[0]);
+            const lat = Number(coords[1]);
+            if (!Number.isNaN(lng) && !Number.isNaN(lat)) {
+              let properties = f.properties ?? {};
+              if (isUsCrosswalkLoaded()) {
+                const dma = convert(GKPoint(lat, lng), GeoKind.DMA);
+                if (dma) {
+                  properties = {
+                    ...properties,
+                    [POINT_DMA_PROPERTY]: dma.slug,
+                    ...(dma.region ? { [POINT_DMA_REGION_PROPERTY]: dma.region } : {}),
+                  };
+                }
+              }
+              f.properties = properties;
+            }
+          }
+        }
+        features.push(f);
       }
     }
     debug.log('[PointLayer] syncFromChildren', {

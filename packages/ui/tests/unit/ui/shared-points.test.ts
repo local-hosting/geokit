@@ -78,3 +78,32 @@ describe('CachedPointFeatureBuilder', () => {
     expect(first.features[0]).toBe(second.features[0]);
   });
 });
+
+describe('point DMA enrichment', () => {
+  it('enrichWithDma adds dma when crosswalk loaded', async () => {
+    const { resetCrosswalkForTest } = await import('@geokit/crosswalk');
+    const { ensureUsCrosswalkLoaded } = await import('@geokit/crosswalk');
+    resetCrosswalkForTest();
+    await ensureUsCrosswalkLoaded();
+
+    const builder = new CachedPointFeatureBuilder({ maxCacheSize: 10 });
+    const collection = builder.build({
+      items: [{ id: 'indy', lng: -86.1581, lat: 39.7684 }],
+      getFeatureId: (item) => item.id,
+      getGeometry: (item) => ({
+        type: 'Point',
+        coordinates: [item.lng, item.lat],
+      }),
+      getProperties: () => ({ _color: '#fff' }),
+      enrichWithDma: true,
+      finalizeProperties: (_item, props) => ({
+        ...props,
+        _color: String(props.dma ?? ''),
+      }),
+    });
+
+    expect(collection.features[0]?.properties.dma).toBe('indianapolis');
+    expect(collection.features[0]?.properties.region).toBeTruthy();
+    expect(collection.features[0]?.properties._color).toBe('indianapolis');
+  });
+});
