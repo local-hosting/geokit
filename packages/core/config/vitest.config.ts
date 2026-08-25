@@ -13,11 +13,26 @@ const geokitRoot = path.resolve(__dirname, '..');
 
 export default defineConfig({
   resolve: {
-    alias: {
-      '@geokit/core/bounds': path.join(geokitRoot, 'src/utils/bounds/index.ts'),
-      '@geokit/core/types': path.join(geokitRoot, 'src/types/index.ts'),
-      '@geokit/core/distance': path.join(geokitRoot, 'src/utils/distance/index.ts'),
-    },
+    alias: [
+      { find: '@geokit/core/bounds', replacement: path.join(geokitRoot, 'src/utils/bounds/index.ts') },
+      { find: '@geokit/core/types', replacement: path.join(geokitRoot, 'src/types/index.ts') },
+      { find: '@geokit/core/distance', replacement: path.join(geokitRoot, 'src/utils/distance/index.ts') },
+      { find: '@geokit/h3/cell-to-region-index', replacement: path.join(geokitRoot, '..', 'h3', 'src', 'cell/cell-to-region-index.ts') },
+      { find: '@geokit/h3/lite', replacement: path.join(geokitRoot, '..', 'h3', 'src', 'lite.ts') },
+      { find: '@geokit/h3', replacement: path.join(geokitRoot, '..', 'h3', 'src', 'index.ts') },
+      { find: '@geokit/env/service-keys', replacement: path.join(geokitRoot, '..', 'env', 'src', 'service-keys.ts') },
+      { find: '@geokit/env/map-credentials', replacement: path.join(geokitRoot, '..', 'env', 'src', 'map-credentials.ts') },
+      { find: '@geokit/env/primitives', replacement: path.join(geokitRoot, '..', 'env', 'src', 'primitives.ts') },
+      { find: '@geokit/env', replacement: path.join(geokitRoot, '..', 'env', 'src', 'index.ts') },
+      { find: '@geokit/ui/storage/indexed-db', replacement: path.join(geokitRoot, '..', 'ui', 'src', 'storage', 'indexed-db.ts') },
+      { find: '@geokit/ui/storage/map-local-store', replacement: path.join(geokitRoot, '..', 'ui', 'src', 'storage', 'map-local-store.ts') },
+      { find: '@geokit/ui/storage/map-offline-context-loader', replacement: path.join(geokitRoot, '..', 'ui', 'src', 'storage', 'map-offline-context-loader.ts') },
+      { find: '@geokit/ui/storage/map-offline-tile-cache', replacement: path.join(geokitRoot, '..', 'ui', 'src', 'storage', 'map-offline-tile-cache.ts') },
+      { find: '@geokit/ui/storage', replacement: path.join(geokitRoot, '..', 'ui', 'src', 'storage', 'index.ts') },
+      { find: '@geokit/ui/geojson-loader/shard-loader', replacement: path.join(geokitRoot, '..', 'ui', 'src', 'geojson-loader', 'shard-loader.ts') },
+      { find: '@geokit/ui/geojson-loader', replacement: path.join(geokitRoot, '..', 'ui', 'src', 'geojson-loader', 'index.ts') },
+      { find: '@geokit/ui/config/tile-cdn', replacement: path.join(geokitRoot, '..', 'ui', 'src', 'config', 'tile-cdn.ts') },
+    ],
   },
   test: {
     globals: true,

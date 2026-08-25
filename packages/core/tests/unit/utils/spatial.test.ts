@@ -11,6 +11,8 @@ import {
   asGeohashArea,
   asH3Point,
   asH3Area,
+} from '../../../src/utils/spatial';
+import {
   geohashPointToH3Point,
   geohashAreaToH3Area,
   h3PointToGeohashPoint,
@@ -19,9 +21,9 @@ import {
   decodeAreaToCoordinates,
   getBoundsFromPoint,
   getBoundsFromArea,
-} from '../../../src/utils/spatial';
+} from '../../../src/utils/spatial/decode';
 import { encodeGeohashPoint, encodeGeohashArea } from '../../../src/utils/geohash';
-import { coordinatesToH3Point, coordinatesToH3Area } from '../../../src/utils/h3';
+import { coordinatesToH3Point, coordinatesToH3Area } from '@geokit/h3';
 import {
   serializeCoordinates,
   deserializeCoordinates,

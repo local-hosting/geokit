@@ -48,20 +48,8 @@
       "import": "./dist/esm/config/env/service-keys.js",
       "default": "./dist/esm/config/env/service-keys.js"
     },
-    "./config/map-style": {
-      "source": "./src/config/map-style.ts",
-      "types": "./dist/esm/config/map-style.d.ts",
-      "import": "./dist/esm/config/map-style.js",
-      "require": "./dist/esm/config/map-style.cjs",
-      "default": "./dist/esm/config/map-style.js"
-    },
-    "./config/tile-cdn": {
-      "source": "./src/config/tile-cdn.ts",
-      "types": "./dist/esm/config/tile-cdn.d.ts",
-      "import": "./dist/esm/config/tile-cdn.js",
-      "require": "./dist/cjs/config/tile-cdn.cjs",
-      "default": "./dist/esm/config/tile-cdn.js"
-    },
+    "./config/map-style": "@geokit/ui/config/map-style",
+    "./config/tile-cdn": "@geokit/ui/config/tile-cdn",
     "./contract": {
       "source": "./src/contract/index.ts",
       "types": "./dist/esm/contract/index.d.ts",
@@ -101,13 +89,7 @@
       "import": "./dist/esm/utils/geojson/index.js",
       "require": "./dist/cjs/utils/geojson/index.cjs"
     },
-    "./geojson-loader": {
-      "source": "./src/utils/geojson-loader/index.ts",
-      "types": "./dist/esm/utils/geojson-loader/index.d.ts",
-      "import": "./dist/esm/utils/geojson-loader/index.js",
-      "require": "./dist/cjs/utils/geojson-loader/index.cjs",
-      "default": "./dist/esm/utils/geojson-loader/index.js"
-    },
+    "./geojson-loader": "@geokit/ui/geojson-loader",
     "./h3": {
       "source": "./src/utils/h3/index.ts",
       "types": "./dist/esm/utils/h3/index.d.ts",
@@ -141,6 +123,13 @@
       "require": "./dist/cjs/utils/spatial/index.cjs",
       "default": "./dist/esm/utils/spatial/index.js"
     },
+    "./spatial/decode": {
+      "source": "./src/utils/spatial/decode/index.ts",
+      "types": "./dist/esm/utils/spatial/decode/index.d.ts",
+      "import": "./dist/esm/utils/spatial/decode/index.js",
+      "require": "./dist/cjs/utils/spatial/decode/index.cjs",
+      "default": "./dist/esm/utils/spatial/decode/index.js"
+    },
     "./static-map": {
       "source": "./src/static-map/index.ts",
       "types": "./dist/esm/static-map/index.d.ts",
@@ -148,13 +137,7 @@
       "require": "./dist/cjs/static-map/index.cjs",
       "default": "./dist/esm/static-map/index.js"
     },
-    "./storage": {
-      "source": "./src/storage/index.ts",
-      "types": "./dist/esm/storage/index.d.ts",
-      "import": "./dist/esm/storage/index.js",
-      "require": "./dist/cjs/storage/index.cjs",
-      "default": "./dist/esm/storage/index.js"
-    },
+    "./storage": "@geokit/ui/storage",
     "./turf": {
       "source": "./src/utils/turf/index.ts",
       "types": "./dist/esm/utils/turf/index.d.ts",
@@ -202,40 +185,6 @@
     "./vue": "@geokit/ui/vue",
     "./react": "@geokit/ui/react",
     "./svelte": "@geokit/ui/svelte",
-    "./ui.theme.css": "@geokit/ui/theme.css",
-    "./ui/admin-boundary-outlines": "@geokit/ui/admin-boundary-outlines",
-    "./ui/bootstrap/ensure-map-ready": "@geokit/ui/bootstrap/ensure-map-ready",
-    "./ui/boundary-map": "@geokit/ui/boundary-map",
-    "./ui/boundary-outline-controller": "@geokit/ui/boundary-outline-controller",
-    "./ui/choropleth-fill-layer": "@geokit/ui/choropleth-fill-layer",
-    "./ui/choropleth-fill-paint": "@geokit/ui/choropleth-fill-paint",
-    "./ui/core": "@geokit/ui/core",
-    "./ui/debug/layer-draw-profiler": "@geokit/ui/debug/layer-draw-profiler",
-    "./ui/dev-proxy/maptiler": "@geokit/ui/dev-proxy/maptiler",
-    "./ui/elements/isochrone": "@geokit/ui/elements/isochrone",
-    "./ui/elements/layer": "@geokit/ui/elements/layer",
-    "./ui/elements/map-collection": "@geokit/ui/elements/map-collection",
-    "./ui/elements/popup": "@geokit/ui/elements/popup",
-    "./ui/fill-antialias": "@geokit/ui/fill-antialias",
-    "./ui/geojson-source-options": "@geokit/ui/geojson-source-options",
-    "./ui/layer-dataset-shared": "@geokit/ui/layer-dataset-shared",
-    "./ui/layer-datasets": "@geokit/ui/layer-datasets",
-    "./ui/layer-stack": "@geokit/ui/layer-stack",
-    "./ui/layer-styles": "@geokit/ui/layer-styles",
-    "./ui/lazy-popup": "@geokit/ui/lazy-popup",
-    "./ui/map-events": "@geokit/ui/map-events",
-    "./ui/map-facet-filters": "@geokit/ui/map-facet-filters",
-    "./ui/map-terrain-disable": "@geokit/ui/map-terrain-disable",
-    "./ui/map-viewport": "@geokit/ui/map-viewport",
-    "./ui/route-progress-gradient": "@geokit/ui/route-progress-gradient",
-    "./ui/shared-point-layer-controller": "@geokit/ui/shared-point-layer-controller",
-    "./ui/shared-points": "@geokit/ui/shared-points",
-    "./ui/theme.css": "@geokit/ui/theme.css",
-    "./ui/boundary-outline-layer": "@geokit/ui/boundary-outline-layer",
-    "./ui/boundary-outline-preset": "@geokit/ui/boundary-outline-preset",
-    "./ui/outline-ops": "@geokit/ui/outline-ops",
-    "./ui/h3-grid-layer-controller": "@geokit/ui/h3-grid-layer-controller",
-    "./ui/choropleth-feature-state-controller": "@geokit/ui/choropleth-feature-state-controller",
     "./h3/cell-to-region-index": {
       "source": "./src/utils/h3/cell-to-region-index.ts",
       "types": "./dist/esm/utils/h3/cell-to-region-index.d.ts",
@@ -243,9 +192,6 @@
       "require": "./dist/cjs/utils/h3/cell-to-region-index.cjs",
       "default": "./dist/esm/utils/h3/cell-to-region-index.js"
     },
-    "./ui/lazy-choropleth-controller": "@geokit/ui/lazy-choropleth-controller",
-    "./ui/shared-point-map-orchestrator": "@geokit/ui/shared-point-map-orchestrator",
-    "./ui/gk-dma-layer-bind": "@geokit/ui/gk-dma-layer-bind",
     "./utils/cache": {
       "source": "./src/utils/cache.ts",
       "types": "./dist/esm/utils/cache.d.ts",
@@ -309,18 +255,23 @@
     },
     "./contract/bootstrap": "@geokit/ui/bootstrap/ensure-map-ready",
     "./contract/lifecycle": "@geokit/ui/lifecycle",
-    "./storage/map-offline-context-loader": {
-      "source": "./src/storage/map-offline-context-loader.ts",
-      "types": "./dist/esm/storage/map-offline-context-loader.d.ts",
-      "import": "./dist/esm/storage/map-offline-context-loader.js",
-      "default": "./dist/esm/storage/map-offline-context-loader.js"
-    },
+    "./storage/map-offline-context-loader": "@geokit/ui/storage/map-offline-context-loader",
     "./types/cell-layers.types": {
       "source": "./src/types/cell-layers.types.ts",
       "types": "./dist/esm/types/cell-layers.types.d.ts",
       "import": "./dist/esm/types/cell-layers.types.js",
       "default": "./dist/esm/types/cell-layers.types.js"
-    }
+    },
+    "./contract/offline": {
+      "source": "./src/contract/offline.ts",
+      "types": "./dist/esm/contract/offline.d.ts",
+      "import": "./dist/esm/contract/offline.js",
+      "require": "./dist/cjs/contract/offline.cjs",
+      "default": "./dist/esm/contract/offline.js"
+    },
+    "./storage/map-local-store": "@geokit/ui/storage/map-local-store",
+    "./storage/map-offline-tile-cache": "@geokit/ui/storage/map-offline-tile-cache",
+    "./storage/indexed-db": "@geokit/ui/storage/indexed-db"
   },
   "sideEffects": [
     "*.css"
@@ -335,7 +286,7 @@
     "test": "vitest run --config config/vitest.config.ts",
     "test:watch": "vitest --config config/vitest.config.ts",
     "test:integration": "vitest run --config config/vitest.integration.config.ts",
-    "test:all": "vitest run --config config/vitest.config.ts && vitest run --config config/vitest.integration.config.ts",
+    "test:all": "vitest run --config config/vitest.config.ts && vitest run --config config/vitest.integration.config.ts && node scripts/bundle-smoke.mjs",
     "test:browser": "vitest run --config config/vitest.browser.config.ts",
     "test:demo": "tsx tests/integration/demo-smoke.ts",
     "typecheck": "tsc -p config/tsconfig.json --noEmit",
@@ -348,7 +299,8 @@
     "postinstall": "patch-package || true",
     "export:parity-fixtures": "node scripts/export-parity-fixtures.mjs > ../../../geokit-swift/Tests/GeoKitCoreTests/Fixtures/parity-fixtures.json",
     "check:parity-fixtures": "node scripts/check-parity-fixtures.mjs",
-    "verify:parity": "bash scripts/verify-parity.sh"
+    "verify:parity": "bash scripts/verify-parity.sh",
+    "bundle-smoke": "node scripts/bundle-smoke.mjs"
   },
   "keywords": [
     "geospatial",
@@ -412,6 +364,8 @@
     ]
   },
   "dependencies": {
+    "@geokit/env": "workspace:*",
+    "@geokit/h3": "workspace:*",
     "@turf/along": "^7.3.0",
     "@turf/area": "^7.3.0",
     "@turf/bbox": "^7.3.0",
@@ -434,7 +388,6 @@
     "@turf/simplify": "^7.3.0",
     "@turf/union": "^7.3.1",
     "@types/geojson": "^7946.0.16",
-    "h3-js": "^4.3.0",
     "latlon-geohash": "^2.0.0",
     "lru-cache": "^11.2.4",
     "topojson-client": "^3.1.0",
@@ -442,22 +395,10 @@
     "topojson-simplify": "^3.0.3"
   },
   "peerDependencies": {
-    "@geokit/service": ">=0.1.0",
-    "react": ">=18.0.0",
-    "svelte": ">=4.0.0",
-    "vue": ">=3.3.0"
+    "@geokit/service": ">=0.1.0"
   },
   "peerDependenciesMeta": {
     "@geokit/service": {
-      "optional": true
-    },
-    "react": {
-      "optional": true
-    },
-    "svelte": {
-      "optional": true
-    },
-    "vue": {
       "optional": true
     }
   }
