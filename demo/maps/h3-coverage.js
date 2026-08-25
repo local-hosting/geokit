@@ -3,10 +3,11 @@ import { cellToLatLng, latLngToCell } from 'h3-js';
 import {
   filterCellsInCoverage,
   viewportCoverageCells,
-} from '../../packages/core/src/utils/h3/viewport-coverage.ts';
-import { h3CellsForViewportBounds, h3GridFeatureCollection } from '../../packages/core/src/utils/h3/viewport.ts';
-import { compactH3CellId, expandH3CellId, normalizeH3CellToResolution } from '../../packages/core/src/utils/h3/cell-id.ts';
-import { mapViewportBounds } from '../../packages/core/src/utils/h3/map-viewport.ts';
+} from '../../packages/h3/src/viewport/viewport-coverage.ts';
+import { h3CellsForViewportBounds, h3GridFeatureCollection } from '../../packages/h3/src/viewport/viewport.ts';
+import { compactH3CellId, expandH3CellId } from '../../packages/h3/src/cell/cell-id.ts';
+import { normalizeH3CellToResolution } from '../../packages/h3/src/cell/cell-id-resolution.ts';
+import { mapViewportBounds } from '../../packages/h3/src/viewport/map-viewport.ts';
 
 const mapElement = document.getElementById('h3-coverage-map');
 const resolutionInput = document.getElementById('resolution');
@@ -46,7 +47,7 @@ function log(message, detail) {
   console.log('[gk-h3]', message, detail ?? '');
 }
 
-/** @param {import('../../packages/core/src/utils/h3/viewport.ts').ViewportBounds} bounds */
+/** @param {import('../../packages/h3/src/viewport/viewport.ts').ViewportBounds} bounds */
 function coverageIndexCellsInBounds(bounds) {
   const visible = [];
   for (const cell of coverageIndex) {
