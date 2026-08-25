@@ -6,8 +6,8 @@ import {
   asZipCode,
   asMacroRegion,
   parseGeoRef,
-  Point,
-  Zip,
+  GKPoint,
+  GKZip,
 } from '../../../src/utils/geo-identity';
 
 describe('geo-identity', () => {
