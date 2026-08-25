@@ -905,19 +905,14 @@ __metadata:
   peerDependenciesMeta:
     "@geokit/service":
       optional: true
-    react:
-      optional: true
-    svelte:
-      optional: true
-    vue:
-      optional: true
   languageName: unknown
   linkType: soft
 
-"@geokit/crosswalk@workspace:packages/crosswalk":
+"@geokit/crosswalk@workspace:*, @geokit/crosswalk@workspace:packages/crosswalk":
   version: 0.0.0-use.local
   resolution: "@geokit/crosswalk@workspace:packages/crosswalk"
   dependencies:
+    "@geokit/core": "workspace:*"
     "@geokit/h3": "workspace:*"
     "@types/node": "npm:^24.10.1"
     h3-js: "npm:^4.3.0"
@@ -1084,6 +1079,7 @@ __metadata:
   resolution: "@geokit/ui@workspace:packages/ui"
   dependencies:
     "@geokit/core": "workspace:*"
+    "@geokit/crosswalk": "workspace:*"
     "@geokit/env": "workspace:*"
     "@geokit/h3": "workspace:*"
     "@geokit/service": "workspace:*"
