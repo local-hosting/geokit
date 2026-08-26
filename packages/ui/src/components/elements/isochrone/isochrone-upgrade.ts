@@ -14,7 +14,7 @@ import { getServiceForCapability } from '@geokit/service/registry';
 import { smoothFeatureCollection } from '@geokit/core';
 import { debug } from '../../../utils/logger';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
-import { convertToH3 } from './isochrone-h3';
+import { convertIsochroneToH3 } from './isochrone-h3-load';
 import { getIsochroneCacheKey } from './isochrone-fetch';
 import {
   buildChoroplethFillPaint,
@@ -149,7 +149,7 @@ export class IsochroneUpgrade extends IsochroneFetchRender {
         }
 
         // Try to convert from current source data (guard: source may have been removed by setStyle)
-        const upgradedData = convertToH3(source._data, isochroneEl(this).h3Resolution, {
+        const upgradedData = await convertIsochroneToH3(source._data, isochroneEl(this).h3Resolution, {
           color: isochroneEl(this).color,
           opacity: isochroneEl(this).opacity,
         });
@@ -159,7 +159,7 @@ export class IsochroneUpgrade extends IsochroneFetchRender {
 
       // Convert original raw polygon to H3 hexagons at target resolution
       // This is the expensive operation, but we're doing it during idle time
-      const upgradedData = convertToH3(originalData, isochroneEl(this).h3Resolution, {
+      const upgradedData = await convertIsochroneToH3(originalData, isochroneEl(this).h3Resolution, {
         color: isochroneEl(this).color,
         opacity: isochroneEl(this).opacity,
       });
@@ -195,6 +195,9 @@ export class IsochroneUpgrade extends IsochroneFetchRender {
         // This ensures the isochrone updates even if there's a timing issue
         if (name === 'time' || name === 'mode') {
           isochroneEl(this).currentCacheKey = null;
+        }
+        if (name === 'render' && newValue === 'h3') {
+          isochroneEl(this).setupMapInteractionListeners();
         }
         isochroneEl(this).waitForStyleLoaded(() => isochroneEl(this).fetchAndRenderIsochrone());
       }

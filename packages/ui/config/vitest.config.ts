@@ -9,6 +9,7 @@ const coreAliases: Record<string, string> = {
   '@geokit/core/coordinates': path.join(coreDist, 'utils/coordinates/index.js'),
   '@geokit/core/geojson': path.join(coreDist, 'utils/geojson/index.js'),
   '@geokit/core/geojson-loader': path.join(coreDist, 'utils/geojson-loader/index.js'),
+  '@geokit/h3/cell-to-region-index': path.join(uiRoot, '../h3/src/cell/cell-to-region-index.ts'),
   '@geokit/h3/lite': path.join(uiRoot, '../h3/src/lite.ts'),
   '@geokit/h3': path.join(uiRoot, '../h3/src/index.ts'),
   '@geokit/core/simplify': path.join(coreDist, 'utils/simplify/index.js'),
