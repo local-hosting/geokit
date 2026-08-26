@@ -105,5 +105,20 @@ export * from '@geokit/service/types/api-composite';
 export type * from './static-map';
 export * from './map-display';
 
-export type * from './geo-identity';
+export type {
+  CatalogIdentity,
+  ConvertOutput,
+  CountyFips,
+  CountryCode,
+  DMA,
+  DmaSlug,
+  GeoIdentity,
+  GeoPoint,
+  GeoRef,
+  GeoRefInput,
+  MacroRegion,
+  PlaceKey,
+  StateCode,
+  ZipCode,
+} from './geo-identity';
 export { GeoKind } from './geo-identity';

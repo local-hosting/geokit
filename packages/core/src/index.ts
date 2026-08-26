@@ -35,7 +35,6 @@ export type {
   DMA,
   DmaSlug,
   GeoIdentity,
-  GeoKind,
   GeoPoint,
   GeoRef,
   GeoRefInput,

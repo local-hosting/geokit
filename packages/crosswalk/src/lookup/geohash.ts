@@ -63,7 +63,7 @@ export function geohashForPoint(
 }
 
 export function geohashForLatLon(
-  point: LatLon,
+  point: readonly [number, number],
   precision = GEOHASH_ZIP_INDEX_PRECISION
 ): string {
   return encodeGeohash(point[0], point[1], precision);

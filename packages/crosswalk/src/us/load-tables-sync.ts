@@ -11,7 +11,7 @@ import {
   ZIP_TO_GEOHASH_P8,
   ZIP_TO_H3_R5,
   ZIP_TO_STATE,
-} from '../../generated/us/index.ts';
+} from '../../generated/us/index.js';
 import { US_CROSSWALK_TABLE_NAMES } from './table-names';
 import { createUsTableLookups } from './tables';
 import { setUsCrosswalkRegistry } from '../load/registry';

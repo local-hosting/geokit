@@ -8,7 +8,7 @@ import {
   registerCountyBoundaries,
   setCountyBoundaryLoader,
 } from '../src/index.ts';
-import { GeoKind } from '@geokit/core';
+import { GeoKind } from '../src/geo-kind.js';
 
 function countyAround(
   lat: number,
