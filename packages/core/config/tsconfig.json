@@ -18,6 +18,9 @@
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
+    "customConditions": [
+      "source"
+    ],
     "paths": {
       "@geokit/ui": [
         "../ui/src/index.ts"
