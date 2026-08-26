@@ -29,7 +29,6 @@ export {
   asDmaSlugOrUndefined,
   asZipCode,
   parseGeoRef,
-  GeoKind,
 } from '@geokit/core';
 
 export type {
