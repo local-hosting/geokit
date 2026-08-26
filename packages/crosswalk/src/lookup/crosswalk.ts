@@ -1,5 +1,4 @@
 import {
-  GeoKind,
   asCountryCode,
   type CountryCode,
   type DMA,
@@ -7,6 +6,7 @@ import {
   type GeoRef,
   type MacroRegion,
 } from '@geokit/core';
+import { GeoKind } from '../geo-kind.js';
 import type { CrosswalkCountry, CrosswalkResult, CrosswalkSpine } from '../types';
 import { geohashCellIdForLookup } from '../geohash/cell-id';
 import { geohashCellToLatLon, geohashForLatLon, geohashForPoint } from './geohash';

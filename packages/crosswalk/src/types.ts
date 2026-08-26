@@ -2,19 +2,18 @@ import type {
   CountryCode,
   CountyFips,
   DMA,
-  GeoKind,
   GeoPoint,
   GeoRef,
   GeohashPoint,
   H3Point,
+  LatLon,
   MacroRegion,
   StateCode,
   ZipCode,
 } from '@geokit/core';
 import type { UsCrosswalkTableName } from './us/table-names';
 
-export type { DMA, GeoRef } from '@geokit/core';
-export { GeoKind } from '@geokit/core';
+export type { DMA, GeoRef, LatLon } from '@geokit/core';
 
 /** @deprecated Use {@link GeoRef}. */
 export type CrosswalkInput = GeoRef;
