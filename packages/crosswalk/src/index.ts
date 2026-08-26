@@ -31,6 +31,8 @@ export {
   parseGeoRef,
 } from '@geokit/core';
 
+export { GeoKind } from './geo-kind.js';
+
 export type {
   CrosswalkCountry,
   CrosswalkInput,
