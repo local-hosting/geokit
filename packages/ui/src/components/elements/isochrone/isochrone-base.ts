@@ -14,8 +14,6 @@ import { getServiceForCapability } from '@geokit/service/registry';
 import { smoothFeatureCollection } from '@geokit/core';
 import { debug } from '../../../utils/logger';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
-import { convertToH3 } from './isochrone-h3';
-import { getIsochroneCacheKey } from './isochrone-fetch';
 import {
   buildChoroplethFillPaint,
   type FillAntialiasMap,
@@ -84,8 +82,10 @@ export class IsochroneBase extends MapChildElement {
     // Fetch immediately - map is ready, no need to wait
     isochroneEl(this).fetchAndRenderIsochrone();
 
-    // Setup map interaction listeners to upgrade resolution on zoom/interaction
-    isochroneEl(this).setupMapInteractionListeners();
+    // H3 render mode only: upgrade raw polygon to hex cells on zoom/interaction
+    if (isochroneEl(this).render === 'h3') {
+      isochroneEl(this).setupMapInteractionListeners();
+    }
   }
 
   /** Re-add isochrone layers after map style change (e.g. theme toggle). */

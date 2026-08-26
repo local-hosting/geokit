@@ -9,17 +9,8 @@
  * <gk-isochrone lat="40.7128" lng="-74.0060" time="15" mode="driving" render="h3" h3-resolution="7"></gk-isochrone>
  */
 
-import { MapChildElement } from '../../map-child-element';
-import { getServiceForCapability } from '@geokit/service/registry';
-import { smoothFeatureCollection } from '@geokit/core';
 import { debug } from '../../../utils/logger';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
-import { convertToH3 } from './isochrone-h3';
-import { getIsochroneCacheKey } from './isochrone-fetch';
-import {
-  buildChoroplethFillPaint,
-  type FillAntialiasMap,
-} from '../../../utils/choropleth-fill-paint';
 
 export interface IsochroneOptions {
   lat: number;

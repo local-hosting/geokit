@@ -250,7 +250,7 @@ export async function updateSharedPointSourceData(
 
 function buildFeatureStateHoverOptions(
   glowRadius: unknown[] | number,
-  glowOpacity: number,
+  glowOpacity: number | unknown[],
   pointOpacity: number | unknown[],
   glowHoverOpacity: number
 ): SharedPointFeatureStateHoverOptions {
