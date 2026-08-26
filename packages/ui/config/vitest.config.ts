@@ -2,29 +2,32 @@ import { defineConfig } from 'vitest/config';
 import path from 'path';
 
 const uiRoot = path.resolve(__dirname, '..');
-const coreDist = path.join(uiRoot, '../core/dist/esm');
-
-const coreAliases: Record<string, string> = {
-  '@geokit/core/bounds': path.join(coreDist, 'utils/bounds/index.js'),
-  '@geokit/core/coordinates': path.join(coreDist, 'utils/coordinates/index.js'),
-  '@geokit/core/geojson': path.join(coreDist, 'utils/geojson/index.js'),
-  '@geokit/core/geojson-loader': path.join(coreDist, 'utils/geojson-loader/index.js'),
-  '@geokit/h3/cell-to-region-index': path.join(uiRoot, '../h3/src/cell/cell-to-region-index.ts'),
-  '@geokit/h3/lite': path.join(uiRoot, '../h3/src/lite.ts'),
-  '@geokit/h3': path.join(uiRoot, '../h3/src/index.ts'),
-  '@geokit/core/simplify': path.join(coreDist, 'utils/simplify/index.js'),
-  '@geokit/ui/config/tile-cdn': path.join(uiRoot, 'src/config/tile-cdn.ts'),
-  '@geokit/core/config/maptiler-dev-proxy': path.join(coreDist, 'config/maptiler-dev-proxy.js'),
-  '@geokit/core/types/layer-datasets': path.join(coreDist, 'types/layer-datasets.js'),
-  '@geokit/core/types/cell-layers.types': path.join(coreDist, 'types/cell-layers.types.js'),
-  '@geokit/core/storage/map-offline-context-loader': path.join(coreDist, 'storage/map-offline-context-loader.js'),
-  '@geokit/core/types': path.join(coreDist, 'types/index.js'),
-  './elements-lite.js': path.join(coreDist, 'index.js'),
-};
+const coreRoot = path.join(uiRoot, '../core');
+const coreDist = path.join(coreRoot, 'dist/esm');
+const coreSrc = path.join(coreRoot, 'src');
+const h3Root = path.join(uiRoot, '../h3/src');
 
 export default defineConfig({
   resolve: {
-    alias: coreAliases,
+    alias: [
+      { find: '@geokit/core/bounds', replacement: path.join(coreDist, 'utils/bounds/index.js') },
+      { find: '@geokit/core/coordinates', replacement: path.join(coreDist, 'utils/coordinates/index.js') },
+      { find: '@geokit/core/geojson-loader', replacement: path.join(coreDist, 'utils/geojson-loader/index.js') },
+      { find: '@geokit/core/geojson', replacement: path.join(coreDist, 'utils/geojson/index.js') },
+      { find: '@geokit/core/simplify', replacement: path.join(coreDist, 'utils/simplify/index.js') },
+      { find: '@geokit/core/config/maptiler-dev-proxy', replacement: path.join(coreDist, 'config/maptiler-dev-proxy.js') },
+      { find: '@geokit/core/types/layer-datasets', replacement: path.join(coreDist, 'types/layer-datasets.js') },
+      { find: '@geokit/core/types/cell-layers.types', replacement: path.join(coreDist, 'types/cell-layers.types.js') },
+      { find: '@geokit/core/storage/map-offline-context-loader', replacement: path.join(coreDist, 'storage/map-offline-context-loader.js') },
+      { find: '@geokit/core/types', replacement: path.join(coreDist, 'types/index.js') },
+      { find: '@geokit/core/containment', replacement: path.join(coreSrc, 'utils/containment/index.ts') },
+      { find: '@geokit/h3/cell-to-region-index', replacement: path.join(h3Root, 'cell/cell-to-region-index.ts') },
+      { find: '@geokit/h3/lite', replacement: path.join(h3Root, 'lite.ts') },
+      { find: '@geokit/h3', replacement: path.join(h3Root, 'index.ts') },
+      { find: '@geokit/ui/config/tile-cdn', replacement: path.join(uiRoot, 'src/config/tile-cdn.ts') },
+      { find: /^@geokit\/core$/, replacement: path.join(coreSrc, 'index.ts') },
+      { find: './elements-lite.js', replacement: path.join(coreDist, 'index.js') },
+    ],
   },
   test: {
     name: '@geokit/ui',
