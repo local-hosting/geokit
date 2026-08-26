@@ -103,7 +103,7 @@ describe('@geokit/crosswalk', () => {
     expect(getLoadedCrosswalkTableNames()).toEqual(['h3ToDma']);
 
     const dma = convert(GKH3('81267fffffffff'), GeoKind.DMA);
-    expect(dma?.slug).toBe('louisville');
+    expect(dma?.slug).toBe('bowling-green');
   });
 
   it('selective load merges additional tables on subsequent calls', async () => {
