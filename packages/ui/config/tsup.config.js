@@ -41,6 +41,7 @@ async function copyThemeCss() {
   for (const dest of [
     join(geokitRoot, 'dist/ui/theme.css'),
     join(geokitRoot, 'dist/esm/ui/theme.css'),
+    join(geokitRoot, 'dist/esm/theme.css'),
   ]) {
     await mkdir(dirname(dest), { recursive: true });
     await copyFile(src, dest);

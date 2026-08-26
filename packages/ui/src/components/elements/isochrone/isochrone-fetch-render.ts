@@ -14,7 +14,6 @@ import { getServiceForCapability } from '@geokit/service/registry';
 import { smoothFeatureCollection } from '@geokit/core';
 import { debug } from '../../../utils/logger';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
-import { convertToH3 } from './isochrone-h3';
 import { getIsochroneCacheKey } from './isochrone-fetch';
 import {
   buildChoroplethFillPaint,

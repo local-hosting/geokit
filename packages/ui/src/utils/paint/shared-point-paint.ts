@@ -239,7 +239,7 @@ export interface SharedPointLayerIds {
 
 export interface SharedPointFeatureStateHoverOptions {
   glowRadius: unknown[] | number;
-  glowOpacity: number;
+  glowOpacity: number | unknown[];
   pointOpacity: number | unknown[];
   glowHoverOpacity: number;
 }
@@ -259,10 +259,14 @@ export function buildSharedPointFeatureStateHoverPaint(
     typeof pointOpacity === 'number'
       ? buildOpacityWithHoverExpression(pointOpacity, HOVER_CONFIG.pointOpacity)
       : pointOpacity;
+  const glowOpacityPaint =
+    typeof glowOpacity === 'number'
+      ? buildOpacityWithHoverExpression(glowOpacity, glowHoverOpacity)
+      : glowOpacity;
 
   return {
     glowRadius: scaleRadiusForHover(glowRadius),
-    glowOpacity: buildOpacityWithHoverExpression(glowOpacity, glowHoverOpacity),
+    glowOpacity: glowOpacityPaint,
     pointOpacity: pointOpacityPaint,
   };
 }
@@ -272,7 +276,7 @@ export interface ApplySharedPointPaintOptions {
   pointColorExpression: unknown[];
   pointRadiusExpression: unknown[];
   glowColorExpression?: unknown[];
-  glowOpacity?: number;
+  glowOpacity?: number | unknown[];
   primarySortProperty?: string;
   primarySortValue?: string;
   strokeWidthExpression?: unknown[];

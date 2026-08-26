@@ -81,14 +81,45 @@ describe('CachedPointFeatureBuilder', () => {
 
 describe('point DMA enrichment', () => {
   it('enrichWithDma adds dma when crosswalk loaded', async () => {
-    const { resetCrosswalkForTest } = await import('@geokit/crosswalk');
-    const { ensureUsCrosswalkLoaded } = await import('@geokit/crosswalk');
+    const {
+      clearCountyBoundaries,
+      ensureUsCrosswalkLoaded,
+      resetCrosswalkForTest,
+      setCountyBoundaryLoader,
+    } = await import('@geokit/crosswalk');
+
+    const lat = 39.7684;
+    const lon = -86.1581;
+    const delta = 0.25;
+
     resetCrosswalkForTest();
+    clearCountyBoundaries();
+    setCountyBoundaryLoader(async () => ({
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: { fips: '18097', dmaSlug: 'indianapolis' },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [lon - delta, lat - delta],
+                [lon + delta, lat - delta],
+                [lon + delta, lat + delta],
+                [lon - delta, lat + delta],
+                [lon - delta, lat - delta],
+              ],
+            ],
+          },
+        },
+      ],
+    }));
     await ensureUsCrosswalkLoaded();
 
     const builder = new CachedPointFeatureBuilder({ maxCacheSize: 10 });
     const collection = builder.build({
-      items: [{ id: 'indy', lng: -86.1581, lat: 39.7684 }],
+      items: [{ id: 'indy', lng: lon, lat }],
       getFeatureId: (item) => item.id,
       getGeometry: (item) => ({
         type: 'Point',
