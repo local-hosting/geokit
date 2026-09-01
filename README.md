@@ -47,3 +47,22 @@ Package API reference: [packages/core/README.md](packages/core/README.md).
 | Map UI | `@geokit/ui` |
 | Place search / geocoding / isochrones | + `@geokit/service` |
 | Vendor APIs | + `services/*` packages as needed |
+
+## Publishing (@geokit/*)
+
+Packages publish to GitHub Packages on tag push:
+
+```bash
+git tag v0.2.33
+git push origin v0.2.33
+```
+
+Or run **Actions → Publish GitHub Packages → Run workflow**.
+
+Consumers need `.npmrc`:
+
+```ini
+@geokit:registry=https://npm.pkg.github.com
+```
+
+CI/Vercel: `NODE_AUTH_TOKEN` with `read:packages` (or `GITHUB_TOKEN` in Actions).
