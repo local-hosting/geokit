@@ -7,17 +7,8 @@ import {
   asPlaceKey,
   asZipCode,
 } from './constructors';
+import { expandH3CellId } from '../h3/cell-id';
 import { placeKeyFromStateAndSlug } from './normalize';
-
-const H3_INDEX_HEX_LEN = 15;
-
-function expandH3CellId(cellId: string): string {
-  const normalized = cellId.trim().toLowerCase();
-  if (normalized.length >= H3_INDEX_HEX_LEN) {
-    return normalized.slice(0, H3_INDEX_HEX_LEN);
-  }
-  return normalized.padEnd(H3_INDEX_HEX_LEN, 'f');
-}
 
 /** WGS84 coordinate → {@link GeoRef} point. */
 export function GKPoint(lat: number, lon: number): Extract<GeoRef, { kind: 'point' }> {
