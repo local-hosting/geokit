@@ -3,13 +3,13 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const coreRoot = path.join(repoRoot, 'packages/core');
-const h3Root = path.join(repoRoot, 'packages/h3');
+const coreRoot = path.join(repoRoot, 'src/core');
+const h3Root = path.join(repoRoot, 'src/h3');
 
 export default defineConfig({
   test: {
     root: process.cwd(),
-    include: ['tests/**/*.test.ts'],
+    include: ['src/crosswalk/tests/**/*.test.ts'],
     environment: 'node',
   },
   resolve: {

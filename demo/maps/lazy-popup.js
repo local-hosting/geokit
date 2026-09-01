@@ -4,7 +4,7 @@ import {
   getPopupModule,
   getPopupModuleSync,
   preloadPopupModule,
-} from '../../packages/ui/src/lazy-popup.ts';
+} from '../../src/ui/src/lazy-popup.ts';
 
 const mapElement = document.getElementById('lazy-popup-map');
 const statusEl = document.getElementById('module-status');

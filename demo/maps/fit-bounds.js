@@ -1,5 +1,5 @@
 import { setupMapsDemo } from '../shared/bootstrap-maps.js';
-import { calculateFitBoundsViewport } from '../../packages/core/src/utils/bounds/fit-viewport.ts';
+import { calculateFitBoundsViewport } from '../../src/core/src/utils/bounds/fit-viewport.ts';
 
 const mapElement = document.getElementById('fit-bounds-map');
 const logEl = document.getElementById('log');

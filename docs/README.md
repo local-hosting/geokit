@@ -12,11 +12,11 @@
 
 | Package | README |
 |---------|--------|
-| `@geokit/core` | [packages/core/README.md](../packages/core/README.md) — geo utilities |
+| `@geokit/core` | [src/core/README.md](../src/core/README.md) — geo utilities |
 | `@geokit/ui` | Map Web Components (see architecture + events) |
-| `@geokit/env` | `packages/env/` — service keys and map credentials |
-| `@geokit/h3` | `packages/h3/` — H3 geometry (`h3-js` peer) |
-| `@geokit/service` | `packages/service/` — registry and routing |
-| `@geokit/crosswalk` | `packages/crosswalk/` — ZIP / DMA / H3 identity (`@geokit/crosswalk/us`, etc.) |
+| `@geokit/env` | `src/env/` — service keys and map credentials |
+| `@geokit/h3` | `src/h3/` — H3 geometry (`h3-js` peer) |
+| `@geokit/service` | `src/service/` — registry and routing |
+| `@geokit/crosswalk` | `src/crosswalk/` — ZIP / DMA / H3 identity (`@geokit/crosswalk/us`, etc.) |
 
 Start with [architecture.md](architecture.md) for the three-layer model (services, plugins, UI providers).

@@ -1,16 +1,16 @@
-import '../../packages/ui/src/theme.css';
+import '../../src/ui/src/theme.css';
 import { mountDemoNavFromDocument } from './nav.js';
-import { configure } from '../../packages/ui/src/providers/registry.ts';
+import { configure } from '../../src/ui/src/providers/registry.ts';
 
 const ELEMENT_LOADERS = {
-  point: () => import('../../packages/ui/src/components/elements/point/point'),
-  popup: () => import('../../packages/ui/src/components/elements/popup/popup'),
-  isochrone: () => import('../../packages/ui/src/components/elements/isochrone/isochrone'),
-  polygon: () => import('../../packages/ui/src/components/elements/polygon.ts'),
-  layer: () => import('../../packages/ui/src/components/elements/layer/layer.ts'),
-  h3: () => import('../../packages/ui/src/components/elements/h3.ts'),
-  'navigation-control': () => import('../../packages/ui/src/components/controls/navigation-control.ts'),
-  marker: () => import('../../packages/ui/src/components/elements/marker.ts'),
+  point: () => import('../../src/ui/src/components/elements/point/point'),
+  popup: () => import('../../src/ui/src/components/elements/popup/popup'),
+  isochrone: () => import('../../src/ui/src/components/elements/isochrone/isochrone'),
+  polygon: () => import('../../src/ui/src/components/elements/polygon.ts'),
+  layer: () => import('../../src/ui/src/components/elements/layer/layer.ts'),
+  h3: () => import('../../src/ui/src/components/elements/h3.ts'),
+  'navigation-control': () => import('../../src/ui/src/components/controls/navigation-control.ts'),
+  marker: () => import('../../src/ui/src/components/elements/marker.ts'),
 };
 
 /** @param {{ mountNav?: boolean, elements?: string[], useFullUi?: boolean }} [options] */
@@ -28,9 +28,9 @@ export async function setupMapsDemo(options = {}) {
   });
 
   if (useFullUi) {
-    await import('../../packages/ui/src/index.ts');
+    await import('../../src/ui/src/index.ts');
   } else {
-    await import('../../packages/ui/src/elements-lite.ts');
+    await import('../../src/ui/src/elements-lite.ts');
     if (elements.length > 0) {
       await Promise.all(
         elements.map((key) => {

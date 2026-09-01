@@ -1,32 +1,790 @@
 {
-  "name": "geokit-monorepo",
-  "private": true,
-  "description": "Geokit monorepo — geospatial SDK",
-  "workspaces": [
-    "packages/*",
-    "packages/env",
-    "packages/h3",
-    "services/*"
-  ],
-  "packageManager": "yarn@4.18.0",
+  "name": "@twinfile/geokit",
+  "version": "0.3.0",
+  "description": "Geospatial SDK for Twinfile map stack",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/twinfile/geokit.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
   "scripts": {
-    "build": "yarn workspace @geokit/core run build && yarn workspace @geokit/ui run build",
-    "build:all": "yarn workspaces foreach -Apt run build",
-    "dev": "yarn demo",
-    "test": "yarn workspaces foreach -Apt run test",
-    "test:core": "yarn workspace @geokit/core run test",
-    "test:ui": "yarn workspace @geokit/ui run test",
-    "typecheck": "yarn workspaces foreach -Apt run typecheck",
-    "lint": "yarn workspace @geokit/core run lint",
-    "prepare": "husky",
-    "demo": "yarn workspace @geokit/core run dev",
-    "publish:packages": "bash scripts/publish-packages.sh"
+    "build": "yarn build:core && yarn build:ui",
+    "build:core": "node src/core/scripts/check-build-tsconfig.mjs && cd src/core && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json && node ../h3/scripts/check-no-src-declarations.mjs",
+    "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
+    "test": "yarn test:core && yarn test:crosswalk",
+    "test:core": "vitest run --config src/core/config/vitest.config.ts",
+    "test:crosswalk": "vitest run --config config/vitest.crosswalk.config.ts",
+    "typecheck": "tsc -p src/core/config/tsconfig.json --noEmit",
+    "demo": "vite --config vite.demo.config.js",
+    "publish:package": "npm publish --registry=https://npm.pkg.github.com --ignore-scripts"
+  },
+  "exports": {
+    "./core": {
+      "source": "./src/core/src/index.ts",
+      "types": "./src/core/dist/esm/index.d.ts",
+      "import": "./src/core/dist/esm/index.js",
+      "require": "./src/core/dist/cjs/index.cjs",
+      "default": "./src/core/dist/esm/index.js"
+    },
+    "./core/bounds": {
+      "source": "./src/core/src/utils/bounds/index.ts",
+      "types": "./src/core/dist/esm/utils/bounds/index.d.ts",
+      "import": "./src/core/dist/esm/utils/bounds/index.js",
+      "require": "./src/core/dist/cjs/utils/bounds/index.cjs",
+      "default": "./src/core/dist/esm/utils/bounds/index.js"
+    },
+    "./core/config/env": {
+      "source": "./src/core/src/config/env/index.ts",
+      "types": "./src/core/dist/esm/config/env/index.d.ts",
+      "import": "./src/core/dist/esm/config/env/index.js",
+      "require": "./src/core/dist/cjs/config/env/index.cjs",
+      "default": "./src/core/dist/esm/config/env/index.js"
+    },
+    "./core/config/env/map-credentials": {
+      "source": "./src/core/src/config/env/map-credentials.ts",
+      "types": "./src/core/dist/esm/config/env/map-credentials.d.ts",
+      "import": "./src/core/dist/esm/config/env/map-credentials.js",
+      "default": "./src/core/dist/esm/config/env/map-credentials.js"
+    },
+    "./core/config/env/primitives": {
+      "source": "./src/core/src/config/env/primitives.ts",
+      "types": "./src/core/dist/esm/config/env/primitives.d.ts",
+      "import": "./src/core/dist/esm/config/env/primitives.js",
+      "require": "./src/core/dist/cjs/config/env/primitives.cjs",
+      "default": "./src/core/dist/esm/config/env/primitives.js"
+    },
+    "./core/config/env/service-keys": {
+      "source": "./src/core/src/config/env/service-keys.ts",
+      "types": "./src/core/dist/esm/config/env/service-keys.d.ts",
+      "import": "./src/core/dist/esm/config/env/service-keys.js",
+      "default": "./src/core/dist/esm/config/env/service-keys.js"
+    },
+    "./core/config/map-style": "./ui/config/map-style",
+    "./core/config/tile-cdn": "./ui/config/tile-cdn",
+    "./core/contract": {
+      "source": "./src/core/src/contract/index.ts",
+      "types": "./src/core/dist/esm/contract/index.d.ts",
+      "import": "./src/core/dist/esm/contract/index.js",
+      "require": "./src/core/dist/cjs/contract/index.cjs",
+      "default": "./src/core/dist/esm/contract/index.js"
+    },
+    "./core/coordinates": {
+      "source": "./src/core/src/utils/coordinates/index.ts",
+      "types": "./src/core/dist/esm/utils/coordinates/index.d.ts",
+      "import": "./src/core/dist/esm/utils/coordinates/index.js",
+      "require": "./src/core/dist/cjs/utils/coordinates/index.cjs"
+    },
+    "./core/core": {
+      "source": "./src/core/src/core/index.ts",
+      "types": "./src/core/dist/esm/core/index.d.ts",
+      "import": "./src/core/dist/esm/core/index.js",
+      "require": "./src/core/dist/cjs/core/index.cjs",
+      "default": "./src/core/dist/esm/core/index.js"
+    },
+    "./core/distance": {
+      "source": "./src/core/src/utils/distance/index.ts",
+      "types": "./src/core/dist/esm/utils/distance/index.d.ts",
+      "import": "./src/core/dist/esm/utils/distance/index.js",
+      "require": "./src/core/dist/cjs/utils/distance/index.cjs"
+    },
+    "./core/geohash": {
+      "source": "./src/core/src/utils/geohash/index.ts",
+      "types": "./src/core/dist/esm/utils/geohash/index.d.ts",
+      "import": "./src/core/dist/esm/utils/geohash/index.js",
+      "require": "./src/core/dist/cjs/utils/geohash/index.cjs",
+      "default": "./src/core/dist/esm/utils/geohash/index.js"
+    },
+    "./core/geojson": {
+      "source": "./src/core/src/utils/geojson/index.ts",
+      "types": "./src/core/dist/esm/utils/geojson/index.d.ts",
+      "import": "./src/core/dist/esm/utils/geojson/index.js",
+      "require": "./src/core/dist/cjs/utils/geojson/index.cjs"
+    },
+    "./core/geojson-loader": "./ui/geojson-loader",
+    "./core/h3": {
+      "source": "./src/core/src/utils/h3/index.ts",
+      "types": "./src/core/dist/esm/utils/h3/index.d.ts",
+      "import": "./src/core/dist/esm/utils/h3/index.js",
+      "require": "./src/core/dist/cjs/utils/h3/index.cjs",
+      "default": "./src/core/dist/esm/utils/h3/index.js"
+    },
+    "./core/h3/lite": {
+      "source": "./src/core/src/utils/h3/lite.ts",
+      "types": "./src/core/dist/esm/utils/h3/lite.d.ts",
+      "import": "./src/core/dist/esm/utils/h3/lite.js",
+      "require": "./src/core/dist/cjs/utils/h3/lite.cjs",
+      "default": "./src/core/dist/esm/utils/h3/lite.js"
+    },
+    "./core/normalize": {
+      "source": "./src/core/src/utils/normalize/index.ts",
+      "types": "./src/core/dist/esm/utils/normalize/index.d.ts",
+      "import": "./src/core/dist/esm/utils/normalize/index.js",
+      "require": "./src/core/dist/cjs/utils/normalize/index.cjs"
+    },
+    "./core/simplify": {
+      "source": "./src/core/src/utils/simplify/index.ts",
+      "types": "./src/core/dist/esm/utils/simplify/index.d.ts",
+      "import": "./src/core/dist/esm/utils/simplify/index.js",
+      "require": "./src/core/dist/cjs/utils/simplify/index.cjs"
+    },
+    "./core/spatial": {
+      "source": "./src/core/src/utils/spatial/index.ts",
+      "types": "./src/core/dist/esm/utils/spatial/index.d.ts",
+      "import": "./src/core/dist/esm/utils/spatial/index.js",
+      "require": "./src/core/dist/cjs/utils/spatial/index.cjs",
+      "default": "./src/core/dist/esm/utils/spatial/index.js"
+    },
+    "./core/spatial/decode": {
+      "source": "./src/core/src/utils/spatial/decode/index.ts",
+      "types": "./src/core/dist/esm/utils/spatial/decode/index.d.ts",
+      "import": "./src/core/dist/esm/utils/spatial/decode/index.js",
+      "require": "./src/core/dist/cjs/utils/spatial/decode/index.cjs",
+      "default": "./src/core/dist/esm/utils/spatial/decode/index.js"
+    },
+    "./core/static-map": {
+      "source": "./src/core/src/static-map/index.ts",
+      "types": "./src/core/dist/esm/static-map/index.d.ts",
+      "import": "./src/core/dist/esm/static-map/index.js",
+      "require": "./src/core/dist/cjs/static-map/index.cjs",
+      "default": "./src/core/dist/esm/static-map/index.js"
+    },
+    "./core/storage": "./ui/storage",
+    "./core/turf": {
+      "source": "./src/core/src/utils/turf/index.ts",
+      "types": "./src/core/dist/esm/utils/turf/index.d.ts",
+      "import": "./src/core/dist/esm/utils/turf/index.js",
+      "require": "./src/core/dist/cjs/utils/turf/index.cjs",
+      "default": "./src/core/dist/esm/utils/turf/index.js"
+    },
+    "./core/types": {
+      "source": "./src/core/src/types/index.ts",
+      "types": "./src/core/dist/esm/types/index.d.ts",
+      "import": "./src/core/dist/esm/types/index.js",
+      "require": "./src/core/dist/cjs/types/index.cjs",
+      "default": "./src/core/dist/esm/types/index.js"
+    },
+    "./core/types/env": {
+      "source": "./src/core/src/types/env.ts",
+      "types": "./src/core/dist/esm/types/env.d.ts",
+      "import": "./src/core/dist/esm/types/env.js",
+      "require": "./src/core/dist/cjs/types/env.cjs",
+      "default": "./src/core/dist/esm/types/env.js"
+    },
+    "./core/types/geojson-loader": {
+      "source": "./src/core/src/types/geojson-loader.ts",
+      "types": "./src/core/dist/esm/types/geojson-loader.d.ts",
+      "import": "./src/core/dist/esm/types/geojson-loader.js",
+      "require": "./src/core/dist/cjs/types/geojson-loader.cjs",
+      "default": "./src/core/dist/esm/types/geojson-loader.js"
+    },
+    "./core/types/map-display": {
+      "source": "./src/core/src/types/map-display.ts",
+      "types": "./src/core/dist/esm/types/map-display.d.ts",
+      "import": "./src/core/dist/esm/types/map-display.js",
+      "require": "./src/core/dist/cjs/types/map-display.cjs",
+      "default": "./src/core/dist/esm/types/map-display.js"
+    },
+    "./core/types/map-provider": {
+      "source": "./src/core/src/types/map-provider.ts",
+      "types": "./src/core/dist/esm/types/map-provider.d.ts",
+      "import": "./src/core/dist/esm/types/map-provider.js",
+      "require": "./src/core/dist/cjs/types/map-provider.cjs",
+      "default": "./src/core/dist/esm/types/map-provider.js"
+    },
+    "./core/ui": "./ui",
+    "./core/adapters/shared": "./ui/adapters/shared",
+    "./core/vue": "./ui/vue",
+    "./core/react": "./ui/react",
+    "./core/svelte": "./ui/svelte",
+    "./core/h3/cell-to-region-index": {
+      "source": "./src/core/src/utils/h3/cell-to-region-index.ts",
+      "types": "./src/core/dist/esm/utils/h3/cell-to-region-index.d.ts",
+      "import": "./src/core/dist/esm/utils/h3/cell-to-region-index.js",
+      "require": "./src/core/dist/cjs/utils/h3/cell-to-region-index.cjs",
+      "default": "./src/core/dist/esm/utils/h3/cell-to-region-index.js"
+    },
+    "./core/utils/cache": {
+      "source": "./src/core/src/utils/cache.ts",
+      "types": "./src/core/dist/esm/utils/cache.d.ts",
+      "import": "./src/core/dist/esm/utils/cache.js",
+      "require": "./src/core/dist/cjs/utils/cache.cjs",
+      "default": "./src/core/dist/esm/utils/cache.js"
+    },
+    "./core/utils/retry": {
+      "source": "./src/core/src/utils/retry.ts",
+      "types": "./src/core/dist/esm/utils/retry.d.ts",
+      "import": "./src/core/dist/esm/utils/retry.js",
+      "require": "./src/core/dist/cjs/utils/retry.cjs",
+      "default": "./src/core/dist/esm/utils/retry.js"
+    },
+    "./core/src/providers/registry": {
+      "source": "./src/core/src/integrations/src/providers/registry.ts",
+      "types": "./src/core/dist/esm/integrations/src/providers/registry.d.ts",
+      "import": "./src/core/dist/esm/integrations/src/providers/registry.js",
+      "require": "./src/core/dist/esm/integrations/src/providers/registry.js",
+      "default": "./src/core/dist/esm/integrations/src/providers/registry.js"
+    },
+    "./core/src/providers/setup-capability-routers": {
+      "source": "./src/core/src/integrations/src/providers/setup-capability-routers.ts",
+      "types": "./src/core/dist/esm/integrations/src/providers/setup-capability-routers.d.ts",
+      "import": "./src/core/dist/esm/integrations/src/providers/setup-capability-routers.js",
+      "require": "./src/core/dist/esm/integrations/src/providers/setup-capability-routers.js",
+      "default": "./src/core/dist/esm/integrations/src/providers/setup-capability-routers.js"
+    },
+    "./core/buffer-point": {
+      "source": "./src/core/src/utils/buffer/buffer-point.ts",
+      "types": "./src/core/dist/esm/utils/buffer/buffer-point.d.ts",
+      "import": "./src/core/dist/esm/utils/buffer/buffer-point.js",
+      "require": "./src/core/dist/esm/utils/buffer/buffer-point.cjs",
+      "default": "./src/core/dist/esm/utils/buffer/buffer-point.js"
+    },
+    "./core/containment": {
+      "source": "./src/core/src/utils/containment/index.ts",
+      "types": "./src/core/dist/esm/utils/containment/index.d.ts",
+      "import": "./src/core/dist/esm/utils/containment/index.js",
+      "require": "./src/core/dist/cjs/utils/containment/index.cjs",
+      "default": "./src/core/dist/esm/utils/containment/index.js"
+    },
+    "./core/buffer": {
+      "source": "./src/core/src/utils/buffer/buffer-turf.ts",
+      "types": "./src/core/dist/esm/utils/buffer/buffer-turf.d.ts",
+      "import": "./src/core/dist/esm/utils/buffer/buffer-turf.js",
+      "require": "./src/core/dist/cjs/utils/buffer/buffer-turf.cjs",
+      "default": "./src/core/dist/esm/utils/buffer/buffer-turf.js"
+    },
+    "./core/config/maptiler-dev-proxy": {
+      "source": "./src/core/src/config/maptiler-dev-proxy.ts",
+      "types": "./src/core/dist/esm/config/maptiler-dev-proxy.d.ts",
+      "import": "./src/core/dist/esm/config/maptiler-dev-proxy.js",
+      "default": "./src/core/dist/esm/config/maptiler-dev-proxy.js"
+    },
+    "./core/types/layer-datasets": {
+      "source": "./src/core/src/types/layer-datasets.ts",
+      "types": "./src/core/dist/esm/types/layer-datasets.d.ts",
+      "import": "./src/core/dist/esm/types/layer-datasets.js",
+      "default": "./src/core/dist/esm/types/layer-datasets.js"
+    },
+    "./core/contract/bootstrap": "./ui/bootstrap/ensure-map-ready",
+    "./core/contract/lifecycle": "./ui/lifecycle",
+    "./core/storage/map-offline-context-loader": "./ui/storage/map-offline-context-loader",
+    "./core/types/cell-layers.types": {
+      "source": "./src/core/src/types/cell-layers.types.ts",
+      "types": "./src/core/dist/esm/types/cell-layers.types.d.ts",
+      "import": "./src/core/dist/esm/types/cell-layers.types.js",
+      "default": "./src/core/dist/esm/types/cell-layers.types.js"
+    },
+    "./core/contract/offline": {
+      "source": "./src/core/src/contract/offline.ts",
+      "types": "./src/core/dist/esm/contract/offline.d.ts",
+      "import": "./src/core/dist/esm/contract/offline.js",
+      "require": "./src/core/dist/cjs/contract/offline.cjs",
+      "default": "./src/core/dist/esm/contract/offline.js"
+    },
+    "./core/storage/map-local-store": "./ui/storage/map-local-store",
+    "./core/storage/map-offline-tile-cache": "./ui/storage/map-offline-tile-cache",
+    "./core/storage/indexed-db": "./ui/storage/indexed-db",
+    "./crosswalk": {
+      "types": "./src/crosswalk/src/index.ts",
+      "import": "./src/crosswalk/src/index.ts",
+      "default": "./src/crosswalk/src/index.ts"
+    },
+    "./crosswalk/us": {
+      "types": "./src/crosswalk/src/us/index.ts",
+      "import": "./src/crosswalk/src/us/index.ts",
+      "default": "./src/crosswalk/src/us/index.ts"
+    },
+    "./crosswalk/geohash": {
+      "types": "./src/crosswalk/src/lookup/geohash.ts",
+      "import": "./src/crosswalk/src/lookup/geohash.ts",
+      "default": "./src/crosswalk/src/lookup/geohash.ts"
+    },
+    "./crosswalk/h3/project": {
+      "types": "./src/crosswalk/src/h3/project.ts",
+      "import": "./src/crosswalk/src/h3/project.ts",
+      "default": "./src/crosswalk/src/h3/project.ts"
+    },
+    "./crosswalk/generated/us": {
+      "types": "./src/crosswalk/generated/us/index.ts",
+      "import": "./src/crosswalk/generated/us/index.ts",
+      "default": "./src/crosswalk/generated/us/index.ts"
+    },
+    "./crosswalk/market-cells": {
+      "types": "./src/crosswalk/src/h3/market-cells.ts",
+      "import": "./src/crosswalk/src/h3/market-cells.ts",
+      "default": "./src/crosswalk/src/h3/market-cells.ts"
+    },
+    "./env": {
+      "types": "./src/env/src/index.ts",
+      "import": "./src/env/src/index.ts",
+      "default": "./src/env/src/index.ts"
+    },
+    "./env/service-keys": {
+      "types": "./src/env/src/service-keys.ts",
+      "import": "./src/env/src/service-keys.ts",
+      "default": "./src/env/src/service-keys.ts"
+    },
+    "./env/map-credentials": {
+      "types": "./src/env/src/map-credentials.ts",
+      "import": "./src/env/src/map-credentials.ts",
+      "default": "./src/env/src/map-credentials.ts"
+    },
+    "./env/primitives": {
+      "types": "./src/env/src/primitives.ts",
+      "import": "./src/env/src/primitives.ts",
+      "default": "./src/env/src/primitives.ts"
+    },
+    "./env/bootstrap": {
+      "types": "./src/env/src/bootstrap.ts",
+      "import": "./src/env/src/bootstrap.ts",
+      "default": "./src/env/src/bootstrap.ts"
+    },
+    "./h3": {
+      "types": "./src/h3/src/index.ts",
+      "import": "./src/h3/src/index.ts",
+      "default": "./src/h3/src/index.ts"
+    },
+    "./h3/lite": {
+      "types": "./src/h3/src/lite.ts",
+      "import": "./src/h3/src/lite.ts",
+      "default": "./src/h3/src/lite.ts"
+    },
+    "./h3/cell-to-region-index": {
+      "types": "./src/h3/src/cell/cell-to-region-index.ts",
+      "import": "./src/h3/src/cell/cell-to-region-index.ts",
+      "default": "./src/h3/src/cell/cell-to-region-index.ts"
+    },
+    "./service": {
+      "types": "./src/service/src/index.ts",
+      "import": "./src/service/src/index.ts",
+      "default": "./src/service/src/index.ts"
+    },
+    "./service/registry": {
+      "types": "./src/service/src/src/providers/registry.ts",
+      "import": "./src/service/src/src/providers/registry.ts",
+      "default": "./src/service/src/src/providers/registry.ts"
+    },
+    "./service/types": {
+      "types": "./src/service/src/src/providers/types.ts",
+      "import": "./src/service/src/src/providers/types.ts",
+      "default": "./src/service/src/src/providers/types.ts"
+    },
+    "./service/types/api-composite": {
+      "types": "./src/service/src/types/api-composite.ts",
+      "import": "./src/service/src/types/api-composite.ts",
+      "default": "./src/service/src/types/api-composite.ts"
+    },
+    "./service/plugin": {
+      "types": "./src/service/src/plugin.ts",
+      "import": "./src/service/src/plugin.ts",
+      "default": "./src/service/src/plugin.ts"
+    },
+    "./service/builtins": {
+      "types": "./src/service/src/builtins.ts",
+      "import": "./src/service/src/builtins.ts",
+      "default": "./src/service/src/builtins.ts"
+    },
+    "./service/setup-capability-routers": {
+      "types": "./src/service/src/setup-capability-routers.ts",
+      "import": "./src/service/src/setup-capability-routers.ts",
+      "default": "./src/service/src/setup-capability-routers.ts"
+    },
+    "./ui": {
+      "source": "./src/ui/src/index.ts",
+      "types": "./src/ui/dist/esm/index.d.ts",
+      "import": "./src/ui/dist/esm/index.js",
+      "require": "./src/ui/dist/cjs/index.cjs",
+      "default": "./src/ui/dist/esm/index.js"
+    },
+    "./ui/theme.css": {
+      "source": "./src/ui/src/theme.css",
+      "default": "./src/ui/dist/ui/theme.css"
+    },
+    "./ui/bootstrap/ensure-map-ready": {
+      "source": "./src/ui/src/bootstrap/ensure-map-ready.ts",
+      "types": "./src/ui/dist/esm/bootstrap/ensure-map-ready.d.ts",
+      "import": "./src/ui/dist/esm/bootstrap/ensure-map-ready.js",
+      "require": "./src/ui/dist/cjs/bootstrap/ensure-map-ready.cjs",
+      "default": "./src/ui/dist/esm/bootstrap/ensure-map-ready.js"
+    },
+    "./ui/adapters/shared": {
+      "source": "./src/ui/src/adapters/shared/index.ts",
+      "types": "./src/ui/dist/esm/adapters/shared/index.d.ts",
+      "import": "./src/ui/dist/esm/adapters/shared/index.js",
+      "require": "./src/ui/dist/cjs/adapters/shared/index.cjs",
+      "default": "./src/ui/dist/esm/adapters/shared/index.js"
+    },
+    "./ui/vue": {
+      "source": "./src/ui/src/adapters/vue/index.ts",
+      "types": "./src/ui/dist/esm/adapters/vue/index.d.ts",
+      "import": "./src/ui/dist/esm/adapters/vue/index.js",
+      "require": "./src/ui/dist/cjs/adapters/vue/index.cjs",
+      "default": "./src/ui/dist/esm/adapters/vue/index.js"
+    },
+    "./ui/react": {
+      "source": "./src/ui/src/adapters/react/index.ts",
+      "types": "./src/ui/dist/esm/adapters/react/index.d.ts",
+      "import": "./src/ui/dist/esm/adapters/react/index.js",
+      "require": "./src/ui/dist/cjs/adapters/react/index.cjs",
+      "default": "./src/ui/dist/esm/adapters/react/index.js"
+    },
+    "./ui/svelte": {
+      "source": "./src/ui/src/adapters/svelte/index.ts",
+      "types": "./src/ui/dist/esm/adapters/svelte/index.d.ts",
+      "import": "./src/ui/dist/esm/adapters/svelte/index.js",
+      "require": "./src/ui/dist/cjs/adapters/svelte/index.cjs",
+      "default": "./src/ui/dist/esm/adapters/svelte/index.js"
+    },
+    "./ui/shared-points": {
+      "source": "./src/ui/src/shared-points.ts",
+      "types": "./src/ui/dist/esm/shared-points.d.ts",
+      "import": "./src/ui/dist/esm/shared-points.js",
+      "default": "./src/ui/dist/esm/shared-points.js"
+    },
+    "./ui/lazy-popup": {
+      "source": "./src/ui/src/lazy-popup.ts",
+      "types": "./src/ui/dist/esm/lazy-popup.d.ts",
+      "import": "./src/ui/dist/esm/lazy-popup.js",
+      "require": "./src/ui/dist/cjs/lazy-popup.cjs",
+      "default": "./src/ui/dist/esm/lazy-popup.js"
+    },
+    "./ui/map-facet-filters": {
+      "source": "./src/ui/src/map-facet-filters.ts",
+      "types": "./src/ui/dist/esm/map-facet-filters.d.ts",
+      "import": "./src/ui/dist/esm/map-facet-filters.js",
+      "require": "./src/ui/dist/cjs/map-facet-filters.cjs",
+      "default": "./src/ui/dist/esm/map-facet-filters.js"
+    },
+    "./ui/layer-styles": {
+      "source": "./src/ui/src/utils/layer-styles.ts",
+      "types": "./src/ui/dist/esm/utils/layer-styles.d.ts",
+      "import": "./src/ui/dist/esm/utils/layer-styles.js",
+      "default": "./src/ui/dist/esm/utils/layer-styles.js"
+    },
+    "./ui/layer-stack": {
+      "source": "./src/ui/src/utils/layer-stack.ts",
+      "types": "./src/ui/dist/esm/utils/layer-stack.d.ts",
+      "import": "./src/ui/dist/esm/utils/layer-stack.js",
+      "require": "./src/ui/dist/cjs/utils/layer-stack.cjs",
+      "default": "./src/ui/dist/esm/utils/layer-stack.js"
+    },
+    "./ui/layer-datasets": {
+      "source": "./src/ui/src/components/elements/layer/layer-datasets.ts",
+      "types": "./src/ui/dist/esm/components/elements/layer/layer-datasets.d.ts",
+      "import": "./src/ui/dist/esm/components/elements/layer/layer-datasets.js",
+      "require": "./src/ui/dist/cjs/components/elements/layer/layer-datasets.cjs",
+      "default": "./src/ui/dist/esm/components/elements/layer/layer-datasets.js"
+    },
+    "./ui/layer-dataset-shared": {
+      "source": "./src/ui/src/components/elements/layer/layer-dataset-shared.ts",
+      "types": "./src/ui/dist/esm/components/elements/layer/layer-dataset-shared.d.ts",
+      "import": "./src/ui/dist/esm/components/elements/layer/layer-dataset-shared.js",
+      "require": "./src/ui/dist/cjs/components/elements/layer/layer-dataset-shared.cjs",
+      "default": "./src/ui/dist/esm/components/elements/layer/layer-dataset-shared.js"
+    },
+    "./ui/boundary-outline-controller": {
+      "source": "./src/ui/src/utils/boundary-outline-controller.ts",
+      "types": "./src/ui/dist/esm/utils/boundary-outline-controller.d.ts",
+      "import": "./src/ui/dist/esm/utils/boundary-outline-controller.js",
+      "require": "./src/ui/dist/cjs/utils/boundary-outline-controller.cjs",
+      "default": "./src/ui/dist/esm/utils/boundary-outline-controller.js"
+    },
+    "./ui/boundary-map": {
+      "source": "./src/ui/src/utils/boundary-map.ts",
+      "types": "./src/ui/dist/esm/utils/boundary-map.d.ts",
+      "import": "./src/ui/dist/esm/utils/boundary-map.js",
+      "require": "./src/ui/dist/cjs/utils/boundary-map.cjs",
+      "default": "./src/ui/dist/esm/utils/boundary-map.js"
+    },
+    "./ui/choropleth-fill-layer": {
+      "source": "./src/ui/src/utils/choropleth-fill-layer.ts",
+      "types": "./src/ui/dist/esm/utils/choropleth-fill-layer.d.ts",
+      "import": "./src/ui/dist/esm/utils/choropleth-fill-layer.js",
+      "require": "./src/ui/dist/cjs/utils/choropleth-fill-layer.cjs",
+      "default": "./src/ui/dist/esm/utils/choropleth-fill-layer.js"
+    },
+    "./ui/choropleth-fill-paint": {
+      "source": "./src/ui/src/utils/choropleth-fill-paint.ts",
+      "types": "./src/ui/dist/esm/utils/choropleth-fill-paint.d.ts",
+      "import": "./src/ui/dist/esm/utils/choropleth-fill-paint.js",
+      "require": "./src/ui/dist/cjs/utils/choropleth-fill-paint.cjs",
+      "default": "./src/ui/dist/esm/utils/choropleth-fill-paint.js"
+    },
+    "./ui/geojson-source-options": {
+      "source": "./src/ui/src/utils/geojson-source-options.ts",
+      "types": "./src/ui/dist/esm/utils/geojson-source-options.d.ts",
+      "import": "./src/ui/dist/esm/utils/geojson-source-options.js",
+      "require": "./src/ui/dist/cjs/utils/geojson-source-options.cjs",
+      "default": "./src/ui/dist/esm/utils/geojson-source-options.js"
+    },
+    "./ui/fill-antialias": {
+      "source": "./src/ui/src/utils/fill-antialias.ts",
+      "types": "./src/ui/dist/esm/utils/fill-antialias.d.ts",
+      "import": "./src/ui/dist/esm/utils/fill-antialias.js",
+      "require": "./src/ui/dist/cjs/utils/fill-antialias.cjs",
+      "default": "./src/ui/dist/esm/utils/fill-antialias.js"
+    },
+    "./ui/map-terrain-disable": {
+      "source": "./src/ui/src/utils/map-terrain-disable.ts",
+      "types": "./src/ui/dist/esm/utils/map-terrain-disable.d.ts",
+      "import": "./src/ui/dist/esm/utils/map-terrain-disable.js",
+      "require": "./src/ui/dist/cjs/utils/map-terrain-disable.cjs",
+      "default": "./src/ui/dist/esm/utils/map-terrain-disable.js"
+    },
+    "./ui/map-events": {
+      "source": "./src/ui/src/utils/map-events.ts",
+      "types": "./src/ui/dist/esm/utils/map-events.d.ts",
+      "import": "./src/ui/dist/esm/utils/map-events.js",
+      "require": "./src/ui/dist/cjs/utils/map-events.cjs",
+      "default": "./src/ui/dist/esm/utils/map-events.js"
+    },
+    "./ui/map-utils": {
+      "source": "./src/ui/src/utils/map-utils.ts",
+      "types": "./src/ui/dist/esm/utils/map-utils.d.ts",
+      "import": "./src/ui/dist/esm/utils/map-utils.js",
+      "require": "./src/ui/dist/cjs/utils/map-utils.cjs",
+      "default": "./src/ui/dist/esm/utils/map-utils.js"
+    },
+    "./ui/h3-grid-layer-controller": {
+      "source": "./src/ui/src/utils/h3-grid-layer-controller.ts",
+      "types": "./src/ui/dist/esm/utils/h3-grid-layer-controller.d.ts",
+      "import": "./src/ui/dist/esm/utils/h3-grid-layer-controller.js",
+      "require": "./src/ui/dist/cjs/utils/h3-grid-layer-controller.cjs",
+      "default": "./src/ui/dist/esm/utils/h3-grid-layer-controller.js"
+    },
+    "./ui/lazy-choropleth-controller": {
+      "source": "./src/ui/src/utils/lazy-choropleth-controller.ts",
+      "types": "./src/ui/dist/esm/utils/lazy-choropleth-controller.d.ts",
+      "import": "./src/ui/dist/esm/utils/lazy-choropleth-controller.js",
+      "require": "./src/ui/dist/cjs/utils/lazy-choropleth-controller.cjs",
+      "default": "./src/ui/dist/esm/utils/lazy-choropleth-controller.js"
+    },
+    "./ui/shared-point-map-orchestrator": {
+      "source": "./src/ui/src/utils/shared-point-map-orchestrator.ts",
+      "types": "./src/ui/dist/esm/utils/shared-point-map-orchestrator.d.ts",
+      "import": "./src/ui/dist/esm/utils/shared-point-map-orchestrator.js",
+      "require": "./src/ui/dist/cjs/utils/shared-point-map-orchestrator.cjs",
+      "default": "./src/ui/dist/esm/utils/shared-point-map-orchestrator.js"
+    },
+    "./ui/shared-point-layer-controller": {
+      "source": "./src/ui/src/utils/shared-point-layer-controller.ts",
+      "types": "./src/ui/dist/esm/utils/shared-point-layer-controller.d.ts",
+      "import": "./src/ui/dist/esm/utils/shared-point-layer-controller.js",
+      "require": "./src/ui/dist/cjs/utils/shared-point-layer-controller.cjs",
+      "default": "./src/ui/dist/esm/utils/shared-point-layer-controller.js"
+    },
+    "./ui/shared-point-controller": {
+      "source": "./src/ui/src/utils/shared-point-layer-controller.ts",
+      "types": "./src/ui/dist/esm/utils/shared-point-layer-controller.d.ts",
+      "import": "./src/ui/dist/esm/utils/shared-point-layer-controller.js",
+      "require": "./src/ui/dist/cjs/utils/shared-point-layer-controller.cjs",
+      "default": "./src/ui/dist/esm/utils/shared-point-layer-controller.js"
+    },
+    "./ui/gk-dma-layer-bind": {
+      "source": "./src/ui/src/utils/gk-dma-layer-bind.ts",
+      "types": "./src/ui/dist/esm/utils/gk-dma-layer-bind.d.ts",
+      "import": "./src/ui/dist/esm/utils/gk-dma-layer-bind.js",
+      "require": "./src/ui/dist/cjs/utils/gk-dma-layer-bind.cjs",
+      "default": "./src/ui/dist/esm/utils/gk-dma-layer-bind.js"
+    },
+    "./ui/feature-state-hover": {
+      "source": "./src/ui/src/utils/feature-state-hover.ts",
+      "types": "./src/ui/dist/esm/utils/feature-state-hover.d.ts",
+      "import": "./src/ui/dist/esm/utils/feature-state-hover.js",
+      "require": "./src/ui/dist/cjs/utils/feature-state-hover.cjs",
+      "default": "./src/ui/dist/esm/utils/feature-state-hover.js"
+    },
+    "./ui/debug/layer-draw-profiler": {
+      "source": "./src/ui/src/debug/layer-draw-profiler.ts",
+      "types": "./src/ui/dist/esm/debug/layer-draw-profiler.d.ts",
+      "import": "./src/ui/dist/esm/debug/layer-draw-profiler.js",
+      "require": "./src/ui/dist/cjs/debug/layer-draw-profiler.cjs",
+      "default": "./src/ui/dist/esm/debug/layer-draw-profiler.js"
+    },
+    "./ui/outline-ops": {
+      "source": "./src/ui/src/utils/outline-ops.ts",
+      "types": "./src/ui/dist/esm/utils/outline-ops.d.ts",
+      "import": "./src/ui/dist/esm/utils/outline-ops.js",
+      "require": "./src/ui/dist/cjs/utils/outline-ops.cjs",
+      "default": "./src/ui/dist/esm/utils/outline-ops.js"
+    },
+    "./ui/boundary-outline-preset": {
+      "source": "./src/ui/src/utils/boundary-outline-preset.ts",
+      "types": "./src/ui/dist/esm/utils/boundary-outline-preset.d.ts",
+      "import": "./src/ui/dist/esm/utils/boundary-outline-preset.js",
+      "require": "./src/ui/dist/cjs/utils/boundary-outline-preset.cjs",
+      "default": "./src/ui/dist/esm/utils/boundary-outline-preset.js"
+    },
+    "./ui/elements/isochrone": {
+      "source": "./src/ui/src/components/elements/isochrone/isochrone.ts",
+      "types": "./src/ui/dist/esm/components/elements/isochrone/isochrone.d.ts",
+      "import": "./src/ui/dist/esm/components/elements/isochrone/isochrone.js",
+      "default": "./src/ui/dist/esm/components/elements/isochrone/isochrone.js"
+    },
+    "./ui/elements/layer": {
+      "source": "./src/ui/src/components/elements/layer/layer.ts",
+      "types": "./src/ui/dist/esm/components/elements/layer/layer.d.ts",
+      "import": "./src/ui/dist/esm/components/elements/layer/layer.js",
+      "default": "./src/ui/dist/esm/components/elements/layer/layer.js"
+    },
+    "./ui/elements/map-collection": {
+      "source": "./src/ui/src/components/elements/map-collection/map-collection.ts",
+      "types": "./src/ui/dist/esm/components/elements/map-collection/map-collection.d.ts",
+      "import": "./src/ui/dist/esm/components/elements/map-collection/map-collection.js",
+      "default": "./src/ui/dist/esm/components/elements/map-collection/map-collection.js"
+    },
+    "./ui/elements/popup": {
+      "source": "./src/ui/src/components/elements/popup/popup.ts",
+      "types": "./src/ui/dist/esm/components/elements/popup/popup.d.ts",
+      "import": "./src/ui/dist/esm/components/elements/popup/popup.js",
+      "default": "./src/ui/dist/esm/components/elements/popup/popup.js"
+    },
+    "./ui/lifecycle": {
+      "source": "./src/ui/src/lifecycle.ts",
+      "types": "./src/ui/dist/esm/lifecycle.d.ts",
+      "import": "./src/ui/dist/esm/lifecycle.js",
+      "require": "./src/ui/dist/cjs/lifecycle.cjs",
+      "default": "./src/ui/dist/esm/lifecycle.js"
+    },
+    "./ui/dev-proxy/maptiler": {
+      "source": "./src/ui/src/dev-proxy/maptiler-dev-proxy.ts",
+      "types": "./src/ui/dist/esm/dev-proxy/maptiler-dev-proxy.d.ts",
+      "import": "./src/ui/dist/esm/dev-proxy/maptiler-dev-proxy.js",
+      "default": "./src/ui/dist/esm/dev-proxy/maptiler-dev-proxy.js"
+    },
+    "./ui/elements-lite": {
+      "source": "./src/ui/src/elements-lite.ts",
+      "types": "./src/ui/dist/esm/elements-lite.d.ts",
+      "import": "./src/ui/dist/esm/elements-lite.js",
+      "require": "./src/ui/dist/cjs/elements-lite.cjs",
+      "default": "./src/ui/dist/esm/elements-lite.js"
+    },
+    "./ui/storage": {
+      "types": "./src/ui/src/storage/index.ts",
+      "import": "./src/ui/src/storage/index.ts",
+      "default": "./src/ui/src/storage/index.ts"
+    },
+    "./ui/geojson-loader": {
+      "types": "./src/ui/src/geojson-loader/index.ts",
+      "import": "./src/ui/src/geojson-loader/index.ts",
+      "default": "./src/ui/src/geojson-loader/index.ts"
+    },
+    "./ui/config/map-style": {
+      "types": "./src/ui/src/config/map-style.ts",
+      "import": "./src/ui/src/config/map-style.ts",
+      "default": "./src/ui/src/config/map-style.ts"
+    },
+    "./ui/config/tile-cdn": {
+      "types": "./src/ui/src/config/tile-cdn.ts",
+      "import": "./src/ui/src/config/tile-cdn.ts",
+      "default": "./src/ui/src/config/tile-cdn.ts"
+    },
+    "./ui/config/maptiler-dev-proxy": {
+      "types": "./src/ui/src/config/maptiler-dev-proxy.ts",
+      "import": "./src/ui/src/config/maptiler-dev-proxy.ts",
+      "default": "./src/ui/src/config/maptiler-dev-proxy.ts"
+    },
+    "./ui/storage/map-local-store": {
+      "types": "./src/ui/src/storage/map-local-store.ts",
+      "import": "./src/ui/src/storage/map-local-store.ts",
+      "default": "./src/ui/src/storage/map-local-store.ts"
+    },
+    "./ui/storage/map-offline-tile-cache": {
+      "types": "./src/ui/src/storage/map-offline-tile-cache.ts",
+      "import": "./src/ui/src/storage/map-offline-tile-cache.ts",
+      "default": "./src/ui/src/storage/map-offline-tile-cache.ts"
+    },
+    "./ui/storage/indexed-db": {
+      "types": "./src/ui/src/storage/indexed-db.ts",
+      "import": "./src/ui/src/storage/indexed-db.ts",
+      "default": "./src/ui/src/storage/indexed-db.ts"
+    },
+    "./ui/storage/map-offline-context-loader": {
+      "types": "./src/ui/src/storage/map-offline-context-loader.ts",
+      "import": "./src/ui/src/storage/map-offline-context-loader.ts",
+      "default": "./src/ui/src/storage/map-offline-context-loader.ts"
+    },
+    "./ui/geojson-loader/shard-loader": {
+      "types": "./src/ui/src/geojson-loader/shard-loader.ts",
+      "import": "./src/ui/src/geojson-loader/shard-loader.ts",
+      "default": "./src/ui/src/geojson-loader/shard-loader.ts"
+    }
+  },
+  "dependencies": {
+    "@geokit/core": "link:./src/core",
+    "@geokit/crosswalk": "link:./src/crosswalk",
+    "@geokit/env": "link:./src/env",
+    "@geokit/esri": "link:./src/providers/esri",
+    "@geokit/foursquare": "link:./src/providers/foursquare",
+    "@geokit/google": "link:./src/providers/google",
+    "@geokit/h3": "link:./src/h3",
+    "@geokit/here": "link:./src/providers/here",
+    "@geokit/mapbox": "link:./src/providers/mapbox",
+    "@geokit/maptiler": "link:./src/providers/maptiler",
+    "@geokit/osm": "link:./src/providers/osm",
+    "@geokit/service": "link:./src/service",
+    "@geokit/ui": "link:./src/ui",
+    "@maptiler/sdk": "3.10.2",
+    "@turf/along": "^7.3.0",
+    "@turf/area": "^7.3.0",
+    "@turf/bbox": "^7.3.0",
+    "@turf/bbox-polygon": "^7.3.0",
+    "@turf/bearing": "^7.3.0",
+    "@turf/boolean-contains": "^7.3.0",
+    "@turf/boolean-point-in-polygon": "^7.3.0",
+    "@turf/buffer": "^7.3.0",
+    "@turf/center": "^7.3.0",
+    "@turf/centroid": "^7.3.0",
+    "@turf/convex": "^7.3.0",
+    "@turf/destination": "^7.3.0",
+    "@turf/difference": "^7.3.1",
+    "@turf/helpers": "^7.3.0",
+    "@turf/length": "^7.3.0",
+    "@turf/line-intersect": "^7.3.0",
+    "@turf/midpoint": "^7.3.0",
+    "@turf/nearest-point-on-line": "^7.3.0",
+    "@turf/point-to-line-distance": "^7.3.0",
+    "@turf/simplify": "^7.3.0",
+    "@turf/union": "^7.3.1",
+    "@types/geojson": "^7946.0.16",
+    "latlon-geohash": "^2.0.0",
+    "lru-cache": "^11.2.4",
+    "mapbox-gl": "^3.17.0",
+    "topojson-client": "^3.1.0",
+    "topojson-server": "^3.0.1",
+    "topojson-simplify": "^3.0.3"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
+    "@types/react": "^19.0.0",
+    "@types/topojson-client": "^3.1.5",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "@vitest/browser": "^2.1.8",
+    "@vitest/coverage-v8": "^2.1.8",
+    "dotenv": "^17.2.3",
+    "eslint": "^9.39.1",
+    "h3-js": "^4.3.0",
+    "happy-dom": "^20.1.0",
     "husky": "^9.1.7",
+    "jsdom": "^27.2.0",
+    "lint-staged": "^16.2.6",
+    "patch-package": "^8.0.1",
+    "playwright": "^1.56.1",
+    "prettier": "^3.6.2",
+    "react": "^19.0.0",
+    "tsup": "^8.5.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3",
-    "vitest": "^2.1.8"
+    "vite": "^6.1.0",
+    "vitest": "^2.1.8",
+    "vue": "^3.5.13",
+    "zod": "^3.25.0"
   }
 }

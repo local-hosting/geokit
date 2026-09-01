@@ -1,5 +1,5 @@
 import { mountDemoNavFromDocument } from '../shared/nav.js';
-import { maptilerStaticAdapter } from '../../packages/core/src/static-map/providers/maptiler.ts';
+import { maptilerStaticAdapter } from '../../src/core/src/static-map/providers/maptiler.ts';
 
 mountDemoNavFromDocument();
 document.body.classList.add('demo-has-nav');
