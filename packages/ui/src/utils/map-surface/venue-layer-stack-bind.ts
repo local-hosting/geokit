@@ -2,10 +2,9 @@ import {
   datasetFillLayerId,
   stackGkOutlineLayersAboveDatasetFill,
   stackLayersAboveAnchor,
+  type MapWithStyle,
 } from './layer-stack';
 import type { SharedPointLayerIds } from '../paint/shared-point-paint';
-
-type MapWithStyle = Parameters<typeof stackLayersAboveAnchor>[0];
 
 function dmaLineLayerId(dataset: string): string {
   return `gk-dataset-${dataset}-line`;

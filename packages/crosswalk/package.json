@@ -1,7 +1,7 @@
 {
   "name": "@geokit/crosswalk",
   "version": "0.2.0",
-  "description": "Geo identity crosswalk \u2014 many-to-many lookups between points, H3, ZIP, DMA, state, county",
+  "description": "Geo identity crosswalk — many-to-many lookups between points, H3, ZIP, DMA, state, county",
   "license": "MPL-2.0",
   "type": "module",
   "sideEffects": false,
