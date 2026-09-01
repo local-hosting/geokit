@@ -17,13 +17,6 @@
     "@geokit/core": ">=0.2.33",
     "@geokit/service": ">=0.1.0"
   },
-  "devDependencies": {
-    "@geokit/core": "workspace:*",
-    "@geokit/service": "workspace:*"
-  },
   "name": "@geokit/maptiler",
-  "description": "MapTiler geocoding plugin for geokit",
-  "dependencies": {
-    "@geokit/env": "workspace:*"
-  }
+  "description": "MapTiler geocoding plugin for geokit"
 }
