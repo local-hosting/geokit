@@ -57,10 +57,6 @@
     "typescript": "^5.9.3",
     "vitest": "^2.1.8"
   },
-  "dependencies": {
-    "@geokit/core": "workspace:*",
-    "@geokit/h3": "workspace:*"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/twinfile/geokit.git"

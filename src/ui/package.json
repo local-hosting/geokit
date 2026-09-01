@@ -366,10 +366,6 @@
     "access": "restricted"
   },
   "dependencies": {
-    "@geokit/core": "workspace:*",
-    "@geokit/crosswalk": "workspace:*",
-    "@geokit/env": "workspace:*",
-    "@geokit/h3": "workspace:*",
     "@maptiler/sdk": "3.10.2",
     "mapbox-gl": "^3.17.0"
   },
@@ -395,7 +391,6 @@
     }
   },
   "devDependencies": {
-    "@geokit/service": "workspace:*",
     "@types/node": "^24.10.1",
     "@types/react": "^19.0.0",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
