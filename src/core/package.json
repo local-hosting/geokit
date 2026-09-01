@@ -326,7 +326,6 @@
     "access": "restricted"
   },
   "devDependencies": {
-    "@geokit/service": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.1",
@@ -364,8 +363,6 @@
     ]
   },
   "dependencies": {
-    "@geokit/env": "workspace:*",
-    "@geokit/h3": "workspace:*",
     "@turf/along": "^7.3.0",
     "@turf/area": "^7.3.0",
     "@turf/bbox": "^7.3.0",

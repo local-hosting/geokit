@@ -18,12 +18,5 @@
   "peerDependencies": {
     "@geokit/core": ">=0.2.33",
     "@geokit/service": ">=0.1.0"
-  },
-  "devDependencies": {
-    "@geokit/core": "workspace:*",
-    "@geokit/service": "workspace:*"
-  },
-  "dependencies": {
-    "@geokit/env": "workspace:*"
   }
 }
