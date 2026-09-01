@@ -21,7 +21,9 @@ export async function ensureH3Projection(): Promise<void> {
     cellToLatLngFn = h3.cellToLatLng;
   } catch (err) {
     loadError = 'h3-js is required for lat/lon → H3 projection. Install: yarn add h3-js';
-    throw new Error(loadError, { cause: err });
+    const error = new Error(loadError);
+    Object.assign(error, { cause: err });
+    throw error;
   }
 }
 

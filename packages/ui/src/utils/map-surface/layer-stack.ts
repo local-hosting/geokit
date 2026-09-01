@@ -4,7 +4,7 @@
 
 export type StyleLayerLike = { id?: string; type?: string };
 
-type MapWithStyle = {
+export type MapWithStyle = {
   getStyle?: () => { layers?: StyleLayerLike[] };
   getLayer?: (id: string) => unknown;
   moveLayer?: (layerId: string, beforeId?: string) => void;

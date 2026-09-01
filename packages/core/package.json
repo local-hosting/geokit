@@ -281,7 +281,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
+    "build": "node scripts/check-build-tsconfig.mjs && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json && node ../h3/scripts/check-no-src-declarations.mjs",
     "dev": "vite --config ../../vite.demo.config.js",
     "test": "vitest run --config config/vitest.config.ts",
     "test:watch": "vitest --config config/vitest.config.ts",
