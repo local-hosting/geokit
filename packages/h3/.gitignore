@@ -1,0 +1,3 @@
+# tsc must never emit into src/ — this package exports TypeScript source directly.
+src/**/*.d.ts
+src/**/*.d.ts.map

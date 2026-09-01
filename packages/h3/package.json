@@ -23,8 +23,9 @@
     }
   },
   "scripts": {
-    "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
-    "test": "yarn run -T vitest run --config vitest.config.ts"
+    "check:src": "node scripts/check-no-src-declarations.mjs",
+    "typecheck": "yarn check:src && yarn run -T tsc -p tsconfig.json --noEmit",
+    "test": "yarn check:src && yarn run -T vitest run --config vitest.config.ts"
   },
   "peerDependencies": {
     "h3-js": "^4.3.0"
