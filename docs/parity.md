@@ -6,13 +6,13 @@ Canonical Swift notes: [`geokit-swift/docs/parity.md`](../../geokit-swift/docs/p
 
 | Layer | TypeScript | Swift |
 |-------|------------|-------|
-| Core utils | `packages/core/src/utils/*` | `GeoKitCore` |
-| H3 | `packages/h3/src/` | `GeoKitCore` H3 subset |
-| Turf | `packages/core/src/utils/turf/` | `GeoKitCore/Utils/*` |
-| Contract | `packages/core/src/contract/` | `GeoKitContract` |
-| UI | `packages/ui/src/` | `GeoKitUI`, `GeoKitUIMapbox` |
-| Env | `packages/env/src/` | — |
-| Services | `packages/service/`, `services/*/` | — |
+| Core utils | `src/core/src/utils/*` | `GeoKitCore` |
+| H3 | `src/h3/src/` | `GeoKitCore` H3 subset |
+| Turf | `src/core/src/utils/turf/` | `GeoKitCore/Utils/*` |
+| Contract | `src/core/src/contract/` | `GeoKitContract` |
+| UI | `src/ui/src/` | `GeoKitUI`, `GeoKitUIMapbox` |
+| Env | `src/env/src/` | — |
+| Services | `src/service/`, `src/providers/*/` | — |
 
 ## Fixture contract
 

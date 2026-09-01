@@ -1,6 +1,6 @@
 # UI providers (map backends)
 
-Map rendering only. HTTP geocoding, isochrones, and place search use `@geokit/service` and `services/*` — see [architecture.md](architecture.md).
+Map rendering only. HTTP geocoding, isochrones, and place search use `@geokit/service` and `src/providers/*` — see [architecture.md](architecture.md).
 
 Swift mirror: [`geokit-swift/docs/providers.md`](../../geokit-swift/docs/providers.md).
 
@@ -11,7 +11,7 @@ Swift mirror: [`geokit-swift/docs/providers.md`](../../geokit-swift/docs/provide
 | Primary GL backend | MapTiler (`@maptiler/sdk`) | Mapbox (`MapboxMaps`) |
 | Alternate backend | Mapbox GL JS | Apple MapKit |
 | Static snapshot ids | `maptiler` \| `mapbox` | `mapbox` \| `apple` |
-| Registry | `configure()`, `packages/ui/src/providers/registry.ts` | `GeoKitMapProviderRegistry` |
+| Registry | `configure()`, `src/ui/src/providers/registry.ts` | `GeoKitMapProviderRegistry` |
 | Env default | `GEOKIT_MAP_PROVIDER`, `MAP_PROVIDER` (`@geokit/env`) | same + `Info.plist` |
 | Per-map override | `<gk-map provider="…">` | `MapContentRequest.mapProviderId` |
 
@@ -21,8 +21,8 @@ Default on web: **maptiler** (`resolveMapProviderIdFromEnv` in `@geokit/env`). D
 
 | Backend | TypeScript path | Swift |
 |---------|-----------------|-------|
-| MapTiler | `packages/ui/src/providers/maptiler-provider.ts` | — |
-| Mapbox GL | `packages/ui/src/providers/mapbox-provider.ts` | `GeoKitUIMapbox/` |
+| MapTiler | `src/ui/src/providers/maptiler-provider.ts` | — |
+| Mapbox GL | `src/ui/src/providers/mapbox-provider.ts` | `GeoKitUIMapbox/` |
 | Apple Maps | — | `GeoKitUI/Providers/Apple/` |
 | Bootstrap | `ensureMapReady` (`@geokit/ui/bootstrap/ensure-map-ready`) | `GeoKitMapBootstrap.prepare()` |
 

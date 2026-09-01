@@ -1,15 +1,15 @@
 import path from 'node:path';
 
 export function pluginVitestAliases(repoRoot: string): Record<string, string> {
-  const serviceRoot = path.join(repoRoot, 'packages/service');
-  const coreRoot = path.join(repoRoot, 'packages/core');
-  const envRoot = path.join(repoRoot, 'packages/env');
-  const h3Root = path.join(repoRoot, 'packages/h3');
+  const serviceRoot = path.join(repoRoot, 'src/service');
+  const coreRoot = path.join(repoRoot, 'src/core');
+  const envRoot = path.join(repoRoot, 'src/env');
+  const h3Root = path.join(repoRoot, 'src/h3');
   return {
-    '@geokit/service/types': path.join(serviceRoot, 'src/services/types.ts'),
+    '@geokit/service/types': path.join(serviceRoot, 'src/src/providers/types.ts'),
     '@geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
     '@geokit/service/plugin': path.join(serviceRoot, 'src/plugin.ts'),
-    '@geokit/service/registry': path.join(serviceRoot, 'src/services/registry.ts'),
+    '@geokit/service/registry': path.join(serviceRoot, 'src/src/providers/registry.ts'),
     '@geokit/service/setup-capability-routers': path.join(
       serviceRoot,
       'src/setup-capability-routers.ts'
@@ -37,25 +37,25 @@ export function pluginVitestAliases(repoRoot: string): Record<string, string> {
 }
 
 export function serviceVitestAliases(repoRoot: string): Record<string, string> {
-  const serviceRoot = path.join(repoRoot, 'packages/service');
-  const coreRoot = path.join(repoRoot, 'packages/core');
-  const envRoot = path.join(repoRoot, 'packages/env');
-  const h3Root = path.join(repoRoot, 'packages/h3');
+  const serviceRoot = path.join(repoRoot, 'src/service');
+  const coreRoot = path.join(repoRoot, 'src/core');
+  const envRoot = path.join(repoRoot, 'src/env');
+  const h3Root = path.join(repoRoot, 'src/h3');
 
   return {
     '@geokit/service': path.join(serviceRoot, 'src/index.ts'),
     '@geokit/service/builtins': path.join(serviceRoot, 'src/builtins.ts'),
-    '@geokit/service/registry': path.join(serviceRoot, 'src/services/registry.ts'),
-    '@geokit/service/types': path.join(serviceRoot, 'src/services/types.ts'),
+    '@geokit/service/registry': path.join(serviceRoot, 'src/src/providers/registry.ts'),
+    '@geokit/service/types': path.join(serviceRoot, 'src/src/providers/types.ts'),
     '@geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
-    '@geokit/foursquare': path.join(repoRoot, 'services/foursquare/src/index.ts'),
+    '@geokit/foursquare': path.join(repoRoot, 'src/providers/foursquare/src/index.ts'),
     '@geokit/foursquare/foursquare-places': path.join(
       repoRoot,
-      'services/foursquare/src/foursquare-places.ts'
+      'src/providers/foursquare/src/foursquare-places.ts'
     ),
-    '@geokit/google': path.join(repoRoot, 'services/google/src/index.ts'),
-    '@geokit/mapbox': path.join(repoRoot, 'services/mapbox/src/index.ts'),
-    '@geokit/maptiler': path.join(repoRoot, 'services/maptiler/src/index.ts'),
+    '@geokit/google': path.join(repoRoot, 'src/providers/google/src/index.ts'),
+    '@geokit/mapbox': path.join(repoRoot, 'src/providers/mapbox/src/index.ts'),
+    '@geokit/maptiler': path.join(repoRoot, 'src/providers/maptiler/src/index.ts'),
     '@geokit/core/utils/retry': path.join(coreRoot, 'src/utils/retry.ts'),
     '@geokit/core/utils/cache': path.join(coreRoot, 'src/utils/cache.ts'),
     '@geokit/env': path.join(envRoot, 'src/index.ts'),

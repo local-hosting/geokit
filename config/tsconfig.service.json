@@ -4,13 +4,13 @@
     "baseUrl": ".",
     "paths": {
       "@geokit/service": [
-        "../../packages/service/src/index.ts"
+        "../../src/service/src/index.ts"
       ],
       "@geokit/service/*": [
-        "../../packages/service/src/*"
+        "../../src/service/src/*"
       ],
       "geokit/*": [
-        "../../packages/core/src/*"
+        "../../src/core/src/*"
       ]
     }
   }
