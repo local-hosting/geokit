@@ -4,8 +4,8 @@ Geokit uses **provider** in three layers. Each has its own registry — they are
 
 | Layer | Location | Role |
 |-------|----------|------|
-| **Service** | `@geokit/service` + `services/*` | HTTP: place search, geocoding, isochrones, directions |
-| **Plugin** | `GeokitServicePlugin` in each `services/*` package | npm install boundary + `registerGeokitPlugin()` |
+| **Service** | `@geokit/service` + `src/providers/*` | HTTP: place search, geocoding, isochrones, directions |
+| **Plugin** | `GeokitServicePlugin` in each `src/providers/*` package | npm install boundary + `registerGeokitPlugin()` |
 | **UI provider** | `@geokit/ui` (`src/providers/`) | Map rendering (MapTiler SDK, Mapbox GL JS) |
 
 ```text
@@ -23,13 +23,13 @@ Say **service**, **plugin**, or **UI provider** — not bare "provider".
 
 | Package | Path |
 |---------|------|
-| `@geokit/env` | `packages/env/` |
-| `@geokit/h3` | `packages/h3/` |
-| `@geokit/core` | `packages/core/` |
-| `@geokit/ui` | `packages/ui/` |
-| `@geokit/service` | `packages/service/` |
-| `@geokit/crosswalk` | `packages/crosswalk/` |
-| `@geokit/foursquare`, `@geokit/google`, `@geokit/mapbox`, `@geokit/maptiler`, `@geokit/here`, `@geokit/osm`, `@geokit/esri` | `services/*/` |
+| `@geokit/env` | `src/env/` |
+| `@geokit/h3` | `src/h3/` |
+| `@geokit/core` | `src/core/` |
+| `@geokit/ui` | `src/ui/` |
+| `@geokit/service` | `src/service/` |
+| `@geokit/crosswalk` | `src/crosswalk/` |
+| `@geokit/foursquare`, `@geokit/google`, `@geokit/mapbox`, `@geokit/maptiler`, `@geokit/here`, `@geokit/osm`, `@geokit/esri` | `src/providers/*/` |
 
 ## Install
 
@@ -38,7 +38,7 @@ Say **service**, **plugin**, or **UI provider** — not bare "provider".
 | Geo utils only | `@geokit/core` |
 | Map UI | `@geokit/ui` |
 | Place search / geocoding / isochrones | + `@geokit/service` |
-| Vendor APIs | + one or more `services/*` packages |
+| Vendor APIs | + one or more `src/providers/*` packages |
 
 ## Bootstrap
 
@@ -105,7 +105,7 @@ Thin lifecycle glue over Web Components — optional peer deps per framework:
 - `@geokit/ui/svelte`
 - `@geokit/ui/adapters/shared`
 
-Import vendor service classes from `services/*` packages, not from `@geokit/service`.
+Import vendor service classes from `src/providers/*` packages, not from `@geokit/service`.
 
 ## Import tiers (tree-shaking)
 

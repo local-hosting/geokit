@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 import { serviceVitestAliases } from './vitest.aliases';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const coreRoot = path.join(repoRoot, 'packages/core');
+const coreRoot = path.join(repoRoot, 'src/core');
 
 export default defineConfig({
   resolve: {
