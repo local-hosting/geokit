@@ -19,7 +19,8 @@
     "typecheck": "yarn workspaces foreach -Apt run typecheck",
     "lint": "yarn workspace @geokit/core run lint",
     "prepare": "husky",
-    "demo": "yarn workspace @geokit/core run dev"
+    "demo": "yarn workspace @geokit/core run dev",
+    "publish:packages": "bash scripts/publish-packages.sh"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
