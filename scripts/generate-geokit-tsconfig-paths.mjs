@@ -60,7 +60,9 @@ function isCrossPackageDistOnly(exportKey) {
   return (
     exportKey.startsWith('./ui/') ||
     exportKey.startsWith('./service/') ||
-    exportKey === './ui'
+    exportKey === './ui' ||
+    exportKey.startsWith('./core/') ||
+    exportKey === './core'
   );
 }
 

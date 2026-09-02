@@ -2,62 +2,8 @@
   "compilerOptions": {
     "baseUrl": "..",
     "paths": {
-      "@twinfile/geokit/core/src/providers/setup-capability-routers": [
-        "src/service/src/setup-capability-routers.ts"
-      ],
-      "@twinfile/geokit/core/storage/map-offline-context-loader": [
-        "src/ui/src/storage/map-offline-context-loader.ts"
-      ],
-      "@twinfile/geokit/core/storage/map-offline-tile-cache": [
-        "src/ui/src/storage/map-offline-tile-cache.ts"
-      ],
-      "@twinfile/geokit/core/config/env/map-credentials": [
-        "src/core/src/config/env/map-credentials.ts"
-      ],
-      "@twinfile/geokit/core/config/maptiler-dev-proxy": [
-        "src/core/src/config/maptiler-dev-proxy.ts"
-      ],
-      "@twinfile/geokit/core/config/env/service-keys": [
-        "src/core/src/config/env/service-keys.ts"
-      ],
-      "@twinfile/geokit/core/h3/cell-to-region-index": [
-        "src/core/src/utils/h3/cell-to-region-index.ts"
-      ],
-      "@twinfile/geokit/core/types/cell-layers.types": [
-        "src/core/src/types/cell-layers.types.ts"
-      ],
-      "@twinfile/geokit/core/storage/map-local-store": [
-        "src/ui/src/storage/map-local-store.ts"
-      ],
-      "@twinfile/geokit/core/src/providers/registry": [
-        "src/service/src/services/registry.ts"
-      ],
-      "@twinfile/geokit/core/config/env/primitives": [
-        "src/core/src/config/env/primitives.ts"
-      ],
-      "@twinfile/geokit/core/types/geojson-loader": [
-        "src/core/src/types/geojson-loader.ts"
-      ],
-      "@twinfile/geokit/core/types/layer-datasets": [
-        "src/core/src/types/layer-datasets.ts"
-      ],
-      "@twinfile/geokit/core/types/map-provider": [
-        "src/core/src/types/map-provider.ts"
-      ],
-      "@twinfile/geokit/core/contract/bootstrap": [
-        "src/ui/src/bootstrap/ensure-map-ready.ts"
-      ],
-      "@twinfile/geokit/core/contract/lifecycle": [
-        "src/ui/src/lifecycle.ts"
-      ],
-      "@twinfile/geokit/core/storage/indexed-db": [
-        "src/ui/src/storage/indexed-db.ts"
-      ],
       "@twinfile/geokit/h3/cell-to-region-index": [
         "src/h3/dist/esm/cell/cell-to-region-index.d.ts"
-      ],
-      "@twinfile/geokit/core/types/map-display": [
-        "src/core/src/types/map-display.ts"
       ],
       "@twinfile/geokit/crosswalk/generated/us": [
         "src/crosswalk/generated/us/index.ts"
@@ -65,137 +11,35 @@
       "@twinfile/geokit/crosswalk/market-cells": [
         "src/crosswalk/src/h3/market-cells.ts"
       ],
-      "@twinfile/geokit/core/config/map-style": [
-        "src/ui/src/config/map-style.ts"
-      ],
-      "@twinfile/geokit/core/contract/offline": [
-        "src/core/src/contract/offline.ts"
-      ],
-      "@twinfile/geokit/core/config/tile-cdn": [
-        "src/ui/src/config/tile-cdn.ts"
-      ],
-      "@twinfile/geokit/core/adapters/shared": [
-        "src/ui/src/adapters/shared/index.ts"
-      ],
       "@twinfile/geokit/crosswalk/h3/project": [
         "src/crosswalk/src/h3/project.ts"
-      ],
-      "@twinfile/geokit/core/geojson-loader": [
-        "src/ui/src/geojson-loader/index.ts"
-      ],
-      "@twinfile/geokit/core/spatial/decode": [
-        "src/core/src/utils/spatial/decode/index.ts"
       ],
       "@twinfile/geokit/env/map-credentials": [
         "src/env/dist/esm/map-credentials.d.ts"
       ],
-      "@twinfile/geokit/core/buffer-point": [
-        "src/core/src/utils/buffer/buffer-point.ts"
-      ],
       "@twinfile/geokit/crosswalk/geohash": [
         "src/crosswalk/src/lookup/geohash.ts"
-      ],
-      "@twinfile/geokit/core/coordinates": [
-        "src/core/src/utils/coordinates/index.ts"
-      ],
-      "@twinfile/geokit/core/utils/cache": [
-        "src/core/src/utils/cache.ts"
-      ],
-      "@twinfile/geokit/core/utils/retry": [
-        "src/core/src/utils/retry.ts"
-      ],
-      "@twinfile/geokit/core/containment": [
-        "src/core/src/utils/containment/index.ts"
       ],
       "@twinfile/geokit/env/service-keys": [
         "src/env/dist/esm/service-keys.d.ts"
       ],
-      "@twinfile/geokit/core/config/env": [
-        "src/core/src/config/env/index.ts"
-      ],
-      "@twinfile/geokit/core/static-map": [
-        "src/core/src/static-map/index.ts"
-      ],
-      "@twinfile/geokit/core/normalize": [
-        "src/core/src/utils/normalize/index.ts"
-      ],
-      "@twinfile/geokit/core/types/env": [
-        "src/core/src/types/env.ts"
-      ],
       "@twinfile/geokit/env/primitives": [
         "src/env/dist/esm/primitives.d.ts"
-      ],
-      "@twinfile/geokit/core/contract": [
-        "src/core/src/contract/index.ts"
-      ],
-      "@twinfile/geokit/core/distance": [
-        "src/core/src/utils/distance/index.ts"
-      ],
-      "@twinfile/geokit/core/simplify": [
-        "src/core/src/utils/simplify/index.ts"
       ],
       "@twinfile/geokit/env/bootstrap": [
         "src/env/dist/esm/bootstrap.d.ts"
       ],
-      "@twinfile/geokit/core/geohash": [
-        "src/core/src/utils/geohash/index.ts"
-      ],
-      "@twinfile/geokit/core/geojson": [
-        "src/core/src/utils/geojson/index.ts"
-      ],
-      "@twinfile/geokit/core/h3/lite": [
-        "src/core/src/utils/h3/lite.ts"
-      ],
-      "@twinfile/geokit/core/spatial": [
-        "src/core/src/utils/spatial/index.ts"
-      ],
-      "@twinfile/geokit/core/storage": [
-        "src/ui/src/storage/index.ts"
-      ],
       "@twinfile/geokit/crosswalk/us": [
         "src/crosswalk/src/us/index.ts"
       ],
-      "@twinfile/geokit/core/bounds": [
-        "src/core/src/utils/bounds/index.ts"
-      ],
-      "@twinfile/geokit/core/svelte": [
-        "src/ui/src/adapters/svelte/index.ts"
-      ],
-      "@twinfile/geokit/core/buffer": [
-        "src/core/src/utils/buffer/buffer-turf.ts"
-      ],
-      "@twinfile/geokit/core/types": [
-        "src/core/src/types/index.ts"
-      ],
-      "@twinfile/geokit/core/react": [
-        "src/ui/src/adapters/react/index.ts"
-      ],
-      "@twinfile/geokit/core/core": [
-        "src/core/src/core/index.ts"
-      ],
-      "@twinfile/geokit/core/turf": [
-        "src/core/src/utils/turf/index.ts"
-      ],
       "@twinfile/geokit/crosswalk": [
         "src/crosswalk/src/index.ts"
-      ],
-      "@twinfile/geokit/core/vue": [
-        "src/ui/src/adapters/vue/index.ts"
-      ],
-      "@twinfile/geokit/core/h3": [
-        "src/core/src/utils/h3/index.ts"
-      ],
-      "@twinfile/geokit/core/ui": [
-        "src/ui/src/index.ts"
       ],
       "@twinfile/geokit/h3/lite": [
         "src/h3/dist/esm/lite.d.ts"
       ],
       "@twinfile/geokit/service": [
         "src/service/src/index.ts"
-      ],
-      "@twinfile/geokit/core": [
-        "src/core/src/index.ts"
       ],
       "@twinfile/geokit/env": [
         "src/env/dist/esm/index.d.ts"
