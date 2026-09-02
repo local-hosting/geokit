@@ -13,7 +13,7 @@
     "access": "restricted"
   },
   "scripts": {
-    "build": "yarn build:env && yarn build:h3 && yarn generate:tsconfig-paths && yarn build:core:bundle && yarn build:core:types:pre-ui && yarn generate:tsconfig-paths && yarn build:ui && yarn generate:tsconfig-paths && yarn build:core:types && yarn build:service && yarn build:foursquare && yarn generate:tsconfig-paths && yarn generate:vitest-aliases",
+    "build": "yarn build:env && yarn build:h3 && yarn generate:tsconfig-paths && yarn build:core:bundle && yarn generate:pre-ui-tsconfig-paths && yarn build:core:types:pre-ui && yarn generate:tsconfig-paths && yarn build:service && yarn build:crosswalk && yarn generate:tsconfig-paths && yarn generate:ui-tsconfig-paths && yarn build:ui && yarn generate:tsconfig-paths && yarn build:core:types:shims && yarn build:foursquare && yarn generate:tsconfig-paths && yarn generate:vitest-aliases && node scripts/check-no-src-declarations.mjs",
     "build:core": "yarn build:core:bundle && yarn build:core:types",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "test": "yarn test:core && yarn test:crosswalk && yarn validate:exports",
@@ -32,9 +32,13 @@
     "prepublishOnly": "yarn build && yarn normalize:exports && yarn validate:exports",
     "generate:tsconfig-paths": "node scripts/generate-geokit-tsconfig-paths.mjs",
     "generate:vitest-aliases": "node scripts/generate-vitest-aliases.mjs",
-    "build:core:bundle": "node src/core/scripts/check-build-tsconfig.mjs && cd src/core && tsup --config config/tsup.config.js && node ../h3/scripts/check-no-src-declarations.mjs",
-    "build:core:types": "NODE_OPTIONS='--max-old-space-size=4096' cd src/core && tsc -p config/tsconfig.build.json",
-    "build:core:types:pre-ui": "NODE_OPTIONS='--max-old-space-size=4096' cd src/core && tsc -p config/tsconfig.build.pre-ui.json"
+    "build:core:bundle": "node src/core/scripts/check-build-tsconfig.mjs && cd src/core && tsup --config config/tsup.config.js && node ../../scripts/check-no-src-declarations.mjs",
+    "build:core:types": "cd src/core && NODE_OPTIONS='--max-old-space-size=4096' tsc -p config/tsconfig.build.json",
+    "build:core:types:pre-ui": "cd src/core && NODE_OPTIONS='--max-old-space-size=4096' tsc -p config/tsconfig.build.pre-ui.json",
+    "generate:pre-ui-tsconfig-paths": "node scripts/generate-pre-ui-tsconfig-paths.mjs",
+    "build:crosswalk": "cd src/crosswalk && tsup --config config/tsup.config.js && NODE_OPTIONS='--max-old-space-size=4096' tsc -p config/tsconfig.build.json && node ../../scripts/copy-crosswalk-generated-declarations.mjs",
+    "generate:ui-tsconfig-paths": "node scripts/generate-ui-tsconfig-paths.mjs",
+    "build:core:types:shims": "cd src/core && NODE_OPTIONS='--max-old-space-size=4096' tsc -p config/tsconfig.build.shims.json && node ../../scripts/copy-core-shim-declarations.mjs"
   },
   "exports": {
     "./core": {
@@ -372,34 +376,34 @@
       "default": "./src/ui/dist/esm/storage/indexed-db.js"
     },
     "./crosswalk": {
-      "types": "./src/crosswalk/src/index.ts",
-      "import": "./src/crosswalk/src/index.ts",
-      "default": "./src/crosswalk/src/index.ts"
+      "types": "./src/crosswalk/dist/esm/src/index.d.ts",
+      "import": "./src/crosswalk/dist/esm/src/index.js",
+      "default": "./src/crosswalk/dist/esm/src/index.js"
     },
     "./crosswalk/us": {
-      "types": "./src/crosswalk/src/us/index.ts",
-      "import": "./src/crosswalk/src/us/index.ts",
-      "default": "./src/crosswalk/src/us/index.ts"
+      "types": "./src/crosswalk/dist/esm/src/us/index.d.ts",
+      "import": "./src/crosswalk/dist/esm/src/us/index.js",
+      "default": "./src/crosswalk/dist/esm/src/us/index.js"
     },
     "./crosswalk/geohash": {
-      "types": "./src/crosswalk/src/lookup/geohash.ts",
-      "import": "./src/crosswalk/src/lookup/geohash.ts",
-      "default": "./src/crosswalk/src/lookup/geohash.ts"
+      "types": "./src/crosswalk/dist/esm/src/lookup/geohash.d.ts",
+      "import": "./src/crosswalk/dist/esm/src/lookup/geohash.js",
+      "default": "./src/crosswalk/dist/esm/src/lookup/geohash.js"
     },
     "./crosswalk/h3/project": {
-      "types": "./src/crosswalk/src/h3/project.ts",
-      "import": "./src/crosswalk/src/h3/project.ts",
-      "default": "./src/crosswalk/src/h3/project.ts"
+      "types": "./src/crosswalk/dist/esm/src/h3/project.d.ts",
+      "import": "./src/crosswalk/dist/esm/src/h3/project.js",
+      "default": "./src/crosswalk/dist/esm/src/h3/project.js"
     },
     "./crosswalk/generated/us": {
-      "types": "./src/crosswalk/generated/us/index.ts",
-      "import": "./src/crosswalk/generated/us/index.ts",
-      "default": "./src/crosswalk/generated/us/index.ts"
+      "types": "./src/crosswalk/dist/esm/generated/us/index.d.ts",
+      "import": "./src/crosswalk/dist/esm/generated/us/index.js",
+      "default": "./src/crosswalk/dist/esm/generated/us/index.js"
     },
     "./crosswalk/market-cells": {
-      "types": "./src/crosswalk/src/h3/market-cells.ts",
-      "import": "./src/crosswalk/src/h3/market-cells.ts",
-      "default": "./src/crosswalk/src/h3/market-cells.ts"
+      "types": "./src/crosswalk/dist/esm/src/h3/market-cells.d.ts",
+      "import": "./src/crosswalk/dist/esm/src/h3/market-cells.js",
+      "default": "./src/crosswalk/dist/esm/src/h3/market-cells.js"
     },
     "./env": {
       "types": "./src/env/dist/esm/index.d.ts",

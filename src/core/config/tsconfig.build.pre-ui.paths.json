@@ -1,0 +1,54 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@twinfile/geokit/h3/cell-to-region-index": [
+        "src/h3/dist/esm/cell/cell-to-region-index.d.ts"
+      ],
+      "@twinfile/geokit/env/map-credentials": [
+        "src/env/dist/esm/map-credentials.d.ts"
+      ],
+      "@twinfile/geokit/env/service-keys": [
+        "src/env/dist/esm/service-keys.d.ts"
+      ],
+      "@twinfile/geokit/env/primitives": [
+        "src/env/dist/esm/primitives.d.ts"
+      ],
+      "@twinfile/geokit/env/bootstrap": [
+        "src/env/dist/esm/bootstrap.d.ts"
+      ],
+      "@twinfile/geokit/h3/lite": [
+        "src/h3/dist/esm/lite.d.ts"
+      ],
+      "@twinfile/geokit/service": [
+        "src/service/src/index.ts"
+      ],
+      "@twinfile/geokit/env": [
+        "src/env/dist/esm/index.d.ts"
+      ],
+      "@twinfile/geokit/h3": [
+        "src/h3/dist/esm/index.d.ts"
+      ],
+      "@twinfile/geokit/ui/config/map-style": [
+        "src/core/config/build-stubs/ui/config/map-style.d.ts"
+      ],
+      "@twinfile/geokit/ui/config/tile-cdn": [
+        "src/core/config/build-stubs/ui/config/tile-cdn.d.ts"
+      ],
+      "@twinfile/geokit/ui/storage": [
+        "src/core/config/build-stubs/ui/storage/index.d.ts"
+      ],
+      "@twinfile/geokit/ui/storage/map-local-store": [
+        "src/core/config/build-stubs/ui/storage/map-local-store.d.ts"
+      ],
+      "@twinfile/geokit/ui/storage/map-offline-tile-cache": [
+        "src/core/config/build-stubs/ui/storage/map-offline-tile-cache.d.ts"
+      ],
+      "@twinfile/geokit/ui/geojson-loader": [
+        "src/core/config/build-stubs/ui/geojson-loader/index.d.ts"
+      ],
+      "@twinfile/geokit/service/types/api-composite": [
+        "src/core/config/build-stubs/service/types/api-composite.d.ts"
+      ]
+    }
+  }
+}
