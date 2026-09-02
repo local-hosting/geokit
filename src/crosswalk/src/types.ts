@@ -10,10 +10,10 @@ import type {
   MacroRegion,
   StateCode,
   ZipCode,
-} from '@geokit/core';
+} from '@twinfile/geokit/core';
 import type { UsCrosswalkTableName } from './us/table-names';
 
-export type { DMA, GeoRef, LatLon } from '@geokit/core';
+export type { DMA, GeoRef, LatLon } from '@twinfile/geokit/core';
 
 /** @deprecated Use {@link GeoRef}. */
 export type CrosswalkInput = GeoRef;

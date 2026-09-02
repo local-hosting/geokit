@@ -1,5 +1,5 @@
-import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@geokit/service/plugin';
-import { resolveRoutingAccessToken } from '@geokit/env/service-keys';
+import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@twinfile/geokit/service/plugin';
+import { resolveRoutingAccessToken } from '@twinfile/geokit/env/service-keys';
 import { MapboxService } from './mapbox-service';
 
 export const mapboxPlugin: GeokitServicePlugin = {

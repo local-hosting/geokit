@@ -8,7 +8,7 @@ import {
   initService,
   getServiceForCapability,
   _resetRegistries,
-} from '@geokit/service/registry';
+} from '@twinfile/geokit/service/registry';
 import { FoursquareService } from '../src/foursquare-service';
 
 describe('FoursquareService', () => {

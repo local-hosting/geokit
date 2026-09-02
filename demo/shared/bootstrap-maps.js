@@ -53,8 +53,8 @@ export function scheduleMapboxApiInit(mapboxToken) {
   }
   const initMapbox = async () => {
     try {
-      const { registerService, initService } = await import('@geokit/service/registry');
-      const { MapboxService } = await import('@geokit/mapbox');
+      const { registerService, initService } = await import('@twinfile/geokit/service/registry');
+      const { MapboxService } = await import('@twinfile/geokit/mapbox');
       registerService('mapbox', new MapboxService());
       await initService('mapbox', { accessToken: mapboxToken });
     } catch (error) {

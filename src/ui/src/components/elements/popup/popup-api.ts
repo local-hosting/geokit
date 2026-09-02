@@ -9,7 +9,7 @@ import type {
   StyledPopupOptions,
   PointPopupProperties,
   PopupContentOptions,
-} from '@geokit/core/types';
+} from '@twinfile/geokit/core/types';
 import { injectPopupStyles } from './popup-styles';
 import {
   takePopupCloseReason,

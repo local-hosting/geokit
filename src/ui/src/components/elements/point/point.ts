@@ -15,7 +15,7 @@ import {
   extractPointLngLat,
   normalizeCoordinatesArray,
   isValidCoordinate,
-} from '@geokit/core/coordinates';
+} from '@twinfile/geokit/core/coordinates';
 import type { MapEvent, MapRenderedFeature } from '../../../providers/types';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
 import { createGeokitLogger } from '../../../utils/logger';

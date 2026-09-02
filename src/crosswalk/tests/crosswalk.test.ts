@@ -4,7 +4,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadUsCrosswalkSync } from '../src/load/load';
 import { convert, geohashForZip, h3ForZip, crosswalk, zipsInDma, GKPoint, GKZip, GKDMA, GKH3, GKGeohash, GKPlace } from '../src/index.ts';
-import { GeoKind, type DMA } from '@geokit/core';
+import { GeoKind, type DMA } from '@twinfile/geokit/core';
 import { ensureH3Projection } from '../src/h3/project';
 import { loadUsCrosswalk, resetCrosswalkForTest } from '../src/load/load';
 import {
@@ -15,7 +15,7 @@ import {
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 
-describe('@geokit/crosswalk', () => {
+describe('@twinfile/geokit/crosswalk', () => {
   it('loads US tables and crosswalks Indianapolis', async () => {
     loadUsCrosswalkSync();
     await ensureH3Projection();
@@ -127,16 +127,14 @@ describe('@geokit/crosswalk', () => {
 });
 
 describe('crosswalk guard', () => {
-  it('only imports allowed @geokit/core subpaths in src', () => {
+  it('only imports allowed @twinfile/geokit/core subpaths in src', () => {
     const srcDir = join(ROOT, '../src');
     const files = walk(srcDir);
-    const allowedCoreImports = /^@geokit\/core(?:\/containment)?$/;
+    const allowedCoreImports = /^@twinfile\/geokit\/core(?:\/containment)?$/;
     for (const file of files) {
       if (!file.endsWith('.ts')) continue;
       const text = readFileSync(file, 'utf8');
-      const imports = [...text.matchAll(/from ['"]@geokit\/core(?:\/[^'"]+)?['"]/g)].map((m) =>
-        m[0].slice(6, -1)
-      );
+      const imports = [...text.matchAll(/from ['"](@twinfile\/geokit\/core(?:\/[^'"]+)?)['"]/g)].map((m) => m[1]);
       for (const specifier of imports) {
         expect(specifier).toMatch(allowedCoreImports);
       }

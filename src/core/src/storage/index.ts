@@ -1,2 +1,2 @@
-/** @deprecated Import from `@geokit/ui/storage` instead. */
-export * from '@geokit/ui/storage';
+/** @deprecated Import from `@twinfile/geokit/ui/storage` instead. */
+export * from '@twinfile/geokit/ui/storage';
