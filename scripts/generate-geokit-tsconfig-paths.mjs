@@ -55,6 +55,15 @@ function resolveExportTarget(entry) {
   return null;
 }
 
+
+function isCrossPackageDistOnly(exportKey) {
+  return (
+    exportKey.startsWith('./ui/') ||
+    exportKey.startsWith('./service/') ||
+    exportKey === './ui'
+  );
+}
+
 const paths = {};
 for (const [exportKey, entry] of Object.entries(packageJson.exports ?? {})) {
   if (!exportKey.startsWith('./')) continue;
@@ -62,6 +71,7 @@ for (const [exportKey, entry] of Object.entries(packageJson.exports ?? {})) {
   if (!target) continue;
   const rel = target.replace(/^\.\//, '');
   if (rel.includes('src/providers/') && !rel.includes('/dist/')) continue;
+  if (isCrossPackageDistOnly(exportKey) && !rel.includes('/dist/')) continue;
   paths[`@twinfile/geokit${exportKey.slice(1)}`] = [rel];
 }
 
