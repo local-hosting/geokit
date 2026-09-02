@@ -177,19 +177,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@twinfile/geokit@workspace:."
   dependencies:
-    "@geokit/core": "link:./src/core"
-    "@geokit/crosswalk": "link:./src/crosswalk"
-    "@geokit/env": "link:./src/env"
-    "@geokit/esri": "link:./src/providers/esri"
-    "@geokit/foursquare": "link:./src/providers/foursquare"
-    "@geokit/google": "link:./src/providers/google"
-    "@geokit/h3": "link:./src/h3"
-    "@geokit/here": "link:./src/providers/here"
-    "@geokit/mapbox": "link:./src/providers/mapbox"
-    "@geokit/maptiler": "link:./src/providers/maptiler"
-    "@geokit/osm": "link:./src/providers/osm"
-    "@geokit/service": "link:./src/service"
-    "@geokit/ui": "link:./src/ui"
     "@maptiler/sdk": "npm:3.10.2"
     "@modelcontextprotocol/sdk": "npm:^1.29.0"
     "@turf/along": "npm:^7.3.0"
@@ -894,84 +881,6 @@ __metadata:
   checksum: 10c0/333056a6953bbf875d9f3b86c32314de29458d842e5f56f6ef8034b18c2d9660184550093d1bae5de0064043d5e23f54cc03148798d9d29cf5167ac03f2e9f8c
   languageName: node
   linkType: hard
-
-"@geokit/core@link:./src/core::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/core@link:./src/core::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
-
-"@geokit/crosswalk@link:./src/crosswalk::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/crosswalk@link:./src/crosswalk::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
-
-"@geokit/env@link:./src/env::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/env@link:./src/env::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
-
-"@geokit/esri@link:./src/providers/esri::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/esri@link:./src/providers/esri::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
-
-"@geokit/foursquare@link:./src/providers/foursquare::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/foursquare@link:./src/providers/foursquare::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
-
-"@geokit/google@link:./src/providers/google::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/google@link:./src/providers/google::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
-
-"@geokit/h3@link:./src/h3::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/h3@link:./src/h3::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
-
-"@geokit/here@link:./src/providers/here::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/here@link:./src/providers/here::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
-
-"@geokit/mapbox@link:./src/providers/mapbox::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/mapbox@link:./src/providers/mapbox::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
-
-"@geokit/maptiler@link:./src/providers/maptiler::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/maptiler@link:./src/providers/maptiler::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
-
-"@geokit/osm@link:./src/providers/osm::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/osm@link:./src/providers/osm::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
-
-"@geokit/service@link:./src/service::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/service@link:./src/service::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
-
-"@geokit/ui@link:./src/ui::locator=%40twinfile%2Fgeokit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@geokit/ui@link:./src/ui::locator=%40twinfile%2Fgeokit%40workspace%3A."
-  languageName: node
-  linkType: soft
 
 "@hono/node-server@npm:^1.19.9 || ^2.0.5":
   version: 2.1.1
