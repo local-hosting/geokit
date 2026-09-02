@@ -18,6 +18,8 @@ jobs:
   publish:
     name: publish @twinfile/geokit
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,9 +38,6 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --immutable
-
-      - name: Build publishable artifacts
-        run: yarn build
 
       - name: Publish packages
         run: bash scripts/publish-packages.sh
