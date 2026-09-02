@@ -7,25 +7,26 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
     },
     "./lite": {
-      "types": "./src/lite.ts",
-      "import": "./src/lite.ts",
-      "default": "./src/lite.ts"
+      "types": "./dist/esm/lite.d.ts",
+      "import": "./dist/esm/lite.js",
+      "default": "./dist/esm/lite.js"
     },
     "./cell-to-region-index": {
-      "types": "./src/cell/cell-to-region-index.ts",
-      "import": "./src/cell/cell-to-region-index.ts",
-      "default": "./src/cell/cell-to-region-index.ts"
+      "types": "./dist/esm/cell/cell-to-region-index.d.ts",
+      "import": "./dist/esm/cell/cell-to-region-index.js",
+      "default": "./dist/esm/cell/cell-to-region-index.js"
     }
   },
   "scripts": {
     "check:src": "node scripts/check-no-src-declarations.mjs",
     "typecheck": "yarn check:src && yarn run -T tsc -p tsconfig.json --noEmit",
-    "test": "yarn check:src && yarn run -T vitest run --config vitest.config.ts"
+    "test": "yarn check:src && yarn run -T vitest run --config vitest.config.ts",
+    "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json"
   },
   "peerDependencies": {
     "h3-js": "^4.3.0"

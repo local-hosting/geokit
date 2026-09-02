@@ -1,6 +1,6 @@
 {
   "name": "@twinfile/geokit",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Geospatial SDK for Twinfile map stack",
   "license": "MIT",
   "type": "module",
@@ -13,15 +13,23 @@
     "access": "restricted"
   },
   "scripts": {
-    "build": "yarn build:core && yarn build:ui",
+    "build": "yarn build:core && yarn build:ui && yarn build:packages",
     "build:core": "node src/core/scripts/check-build-tsconfig.mjs && cd src/core && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json && node ../h3/scripts/check-no-src-declarations.mjs",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
-    "test": "yarn test:core && yarn test:crosswalk",
+    "test": "yarn test:core && yarn test:crosswalk && yarn validate:exports",
     "test:core": "vitest run --config src/core/config/vitest.config.ts",
     "test:crosswalk": "vitest run --config config/vitest.crosswalk.config.ts",
     "typecheck": "tsc -p src/core/config/tsconfig.json --noEmit",
     "demo": "vite --config vite.demo.config.js",
-    "publish:package": "npm publish --registry=https://npm.pkg.github.com --ignore-scripts"
+    "publish:package": "npm publish --registry=https://npm.pkg.github.com --ignore-scripts",
+    "build:packages": "yarn build:env && yarn build:service && yarn build:h3 && yarn build:foursquare",
+    "build:env": "cd src/env && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
+    "build:service": "cd src/service && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
+    "build:h3": "cd src/h3 && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
+    "build:foursquare": "cd src/providers/foursquare && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
+    "normalize:exports": "node scripts/normalize-package-exports.mjs",
+    "validate:exports": "node scripts/validate-package-exports.mjs",
+    "prepublishOnly": "yarn build && yarn normalize:exports && yarn validate:exports"
   },
   "exports": {
     "./core": {
@@ -64,8 +72,16 @@
       "import": "./src/core/dist/esm/config/env/service-keys.js",
       "default": "./src/core/dist/esm/config/env/service-keys.js"
     },
-    "./core/config/map-style": "./ui/config/map-style",
-    "./core/config/tile-cdn": "./ui/config/tile-cdn",
+    "./core/config/map-style": {
+      "types": "./src/ui/dist/esm/config/map-style.d.ts",
+      "import": "./src/ui/dist/esm/config/map-style.js",
+      "default": "./src/ui/dist/esm/config/map-style.js"
+    },
+    "./core/config/tile-cdn": {
+      "types": "./src/ui/dist/esm/config/tile-cdn.d.ts",
+      "import": "./src/ui/dist/esm/config/tile-cdn.js",
+      "default": "./src/ui/dist/esm/config/tile-cdn.js"
+    },
     "./core/contract": {
       "source": "./src/core/src/contract/index.ts",
       "types": "./src/core/dist/esm/contract/index.d.ts",
@@ -105,7 +121,11 @@
       "import": "./src/core/dist/esm/utils/geojson/index.js",
       "require": "./src/core/dist/cjs/utils/geojson/index.cjs"
     },
-    "./core/geojson-loader": "./ui/geojson-loader",
+    "./core/geojson-loader": {
+      "types": "./src/ui/dist/esm/geojson-loader/index.d.ts",
+      "import": "./src/ui/dist/esm/geojson-loader/index.js",
+      "default": "./src/ui/dist/esm/geojson-loader/index.js"
+    },
     "./core/h3": {
       "source": "./src/core/src/utils/h3/index.ts",
       "types": "./src/core/dist/esm/utils/h3/index.d.ts",
@@ -153,7 +173,11 @@
       "require": "./src/core/dist/cjs/static-map/index.cjs",
       "default": "./src/core/dist/esm/static-map/index.js"
     },
-    "./core/storage": "./ui/storage",
+    "./core/storage": {
+      "types": "./src/ui/dist/esm/storage/index.d.ts",
+      "import": "./src/ui/dist/esm/storage/index.js",
+      "default": "./src/ui/dist/esm/storage/index.js"
+    },
     "./core/turf": {
       "source": "./src/core/src/utils/turf/index.ts",
       "types": "./src/core/dist/esm/utils/turf/index.d.ts",
@@ -196,11 +220,41 @@
       "require": "./src/core/dist/cjs/types/map-provider.cjs",
       "default": "./src/core/dist/esm/types/map-provider.js"
     },
-    "./core/ui": "./ui",
-    "./core/adapters/shared": "./ui/adapters/shared",
-    "./core/vue": "./ui/vue",
-    "./core/react": "./ui/react",
-    "./core/svelte": "./ui/svelte",
+    "./core/ui": {
+      "source": "./src/ui/src/index.ts",
+      "types": "./src/ui/dist/esm/index.d.ts",
+      "import": "./src/ui/dist/esm/index.js",
+      "require": "./src/ui/dist/cjs/index.cjs",
+      "default": "./src/ui/dist/esm/index.js"
+    },
+    "./core/adapters/shared": {
+      "source": "./src/ui/src/adapters/shared/index.ts",
+      "types": "./src/ui/dist/esm/adapters/shared/index.d.ts",
+      "import": "./src/ui/dist/esm/adapters/shared/index.js",
+      "require": "./src/ui/dist/cjs/adapters/shared/index.cjs",
+      "default": "./src/ui/dist/esm/adapters/shared/index.js"
+    },
+    "./core/vue": {
+      "source": "./src/ui/src/adapters/vue/index.ts",
+      "types": "./src/ui/dist/esm/adapters/vue/index.d.ts",
+      "import": "./src/ui/dist/esm/adapters/vue/index.js",
+      "require": "./src/ui/dist/cjs/adapters/vue/index.cjs",
+      "default": "./src/ui/dist/esm/adapters/vue/index.js"
+    },
+    "./core/react": {
+      "source": "./src/ui/src/adapters/react/index.ts",
+      "types": "./src/ui/dist/esm/adapters/react/index.d.ts",
+      "import": "./src/ui/dist/esm/adapters/react/index.js",
+      "require": "./src/ui/dist/cjs/adapters/react/index.cjs",
+      "default": "./src/ui/dist/esm/adapters/react/index.js"
+    },
+    "./core/svelte": {
+      "source": "./src/ui/src/adapters/svelte/index.ts",
+      "types": "./src/ui/dist/esm/adapters/svelte/index.d.ts",
+      "import": "./src/ui/dist/esm/adapters/svelte/index.js",
+      "require": "./src/ui/dist/cjs/adapters/svelte/index.cjs",
+      "default": "./src/ui/dist/esm/adapters/svelte/index.js"
+    },
     "./core/h3/cell-to-region-index": {
       "source": "./src/core/src/utils/h3/cell-to-region-index.ts",
       "types": "./src/core/dist/esm/utils/h3/cell-to-region-index.d.ts",
@@ -223,18 +277,14 @@
       "default": "./src/core/dist/esm/utils/retry.js"
     },
     "./core/src/providers/registry": {
-      "source": "./src/core/src/integrations/src/providers/registry.ts",
-      "types": "./src/core/dist/esm/integrations/src/providers/registry.d.ts",
-      "import": "./src/core/dist/esm/integrations/src/providers/registry.js",
-      "require": "./src/core/dist/esm/integrations/src/providers/registry.js",
-      "default": "./src/core/dist/esm/integrations/src/providers/registry.js"
+      "types": "./src/service/dist/esm/services/registry.d.ts",
+      "import": "./src/service/dist/esm/services/registry.js",
+      "default": "./src/service/dist/esm/services/registry.js"
     },
     "./core/src/providers/setup-capability-routers": {
-      "source": "./src/core/src/integrations/src/providers/setup-capability-routers.ts",
-      "types": "./src/core/dist/esm/integrations/src/providers/setup-capability-routers.d.ts",
-      "import": "./src/core/dist/esm/integrations/src/providers/setup-capability-routers.js",
-      "require": "./src/core/dist/esm/integrations/src/providers/setup-capability-routers.js",
-      "default": "./src/core/dist/esm/integrations/src/providers/setup-capability-routers.js"
+      "types": "./src/service/dist/esm/setup-capability-routers.d.ts",
+      "import": "./src/service/dist/esm/setup-capability-routers.js",
+      "default": "./src/service/dist/esm/setup-capability-routers.js"
     },
     "./core/buffer-point": {
       "source": "./src/core/src/utils/buffer/buffer-point.ts",
@@ -269,9 +319,25 @@
       "import": "./src/core/dist/esm/types/layer-datasets.js",
       "default": "./src/core/dist/esm/types/layer-datasets.js"
     },
-    "./core/contract/bootstrap": "./ui/bootstrap/ensure-map-ready",
-    "./core/contract/lifecycle": "./ui/lifecycle",
-    "./core/storage/map-offline-context-loader": "./ui/storage/map-offline-context-loader",
+    "./core/contract/bootstrap": {
+      "source": "./src/ui/src/bootstrap/ensure-map-ready.ts",
+      "types": "./src/ui/dist/esm/bootstrap/ensure-map-ready.d.ts",
+      "import": "./src/ui/dist/esm/bootstrap/ensure-map-ready.js",
+      "require": "./src/ui/dist/cjs/bootstrap/ensure-map-ready.cjs",
+      "default": "./src/ui/dist/esm/bootstrap/ensure-map-ready.js"
+    },
+    "./core/contract/lifecycle": {
+      "source": "./src/ui/src/lifecycle.ts",
+      "types": "./src/ui/dist/esm/lifecycle.d.ts",
+      "import": "./src/ui/dist/esm/lifecycle.js",
+      "require": "./src/ui/dist/cjs/lifecycle.cjs",
+      "default": "./src/ui/dist/esm/lifecycle.js"
+    },
+    "./core/storage/map-offline-context-loader": {
+      "types": "./src/ui/dist/esm/storage/map-offline-context-loader.d.ts",
+      "import": "./src/ui/dist/esm/storage/map-offline-context-loader.js",
+      "default": "./src/ui/dist/esm/storage/map-offline-context-loader.js"
+    },
     "./core/types/cell-layers.types": {
       "source": "./src/core/src/types/cell-layers.types.ts",
       "types": "./src/core/dist/esm/types/cell-layers.types.d.ts",
@@ -285,9 +351,21 @@
       "require": "./src/core/dist/cjs/contract/offline.cjs",
       "default": "./src/core/dist/esm/contract/offline.js"
     },
-    "./core/storage/map-local-store": "./ui/storage/map-local-store",
-    "./core/storage/map-offline-tile-cache": "./ui/storage/map-offline-tile-cache",
-    "./core/storage/indexed-db": "./ui/storage/indexed-db",
+    "./core/storage/map-local-store": {
+      "types": "./src/ui/dist/esm/storage/map-local-store.d.ts",
+      "import": "./src/ui/dist/esm/storage/map-local-store.js",
+      "default": "./src/ui/dist/esm/storage/map-local-store.js"
+    },
+    "./core/storage/map-offline-tile-cache": {
+      "types": "./src/ui/dist/esm/storage/map-offline-tile-cache.d.ts",
+      "import": "./src/ui/dist/esm/storage/map-offline-tile-cache.js",
+      "default": "./src/ui/dist/esm/storage/map-offline-tile-cache.js"
+    },
+    "./core/storage/indexed-db": {
+      "types": "./src/ui/dist/esm/storage/indexed-db.d.ts",
+      "import": "./src/ui/dist/esm/storage/indexed-db.js",
+      "default": "./src/ui/dist/esm/storage/indexed-db.js"
+    },
     "./crosswalk": {
       "types": "./src/crosswalk/src/index.ts",
       "import": "./src/crosswalk/src/index.ts",
@@ -319,79 +397,79 @@
       "default": "./src/crosswalk/src/h3/market-cells.ts"
     },
     "./env": {
-      "types": "./src/env/src/index.ts",
-      "import": "./src/env/src/index.ts",
-      "default": "./src/env/src/index.ts"
+      "types": "./src/env/dist/esm/index.d.ts",
+      "import": "./src/env/dist/esm/index.js",
+      "default": "./src/env/dist/esm/index.js"
     },
     "./env/service-keys": {
-      "types": "./src/env/src/service-keys.ts",
-      "import": "./src/env/src/service-keys.ts",
-      "default": "./src/env/src/service-keys.ts"
+      "types": "./src/env/dist/esm/service-keys.d.ts",
+      "import": "./src/env/dist/esm/service-keys.js",
+      "default": "./src/env/dist/esm/service-keys.js"
     },
     "./env/map-credentials": {
-      "types": "./src/env/src/map-credentials.ts",
-      "import": "./src/env/src/map-credentials.ts",
-      "default": "./src/env/src/map-credentials.ts"
+      "types": "./src/env/dist/esm/map-credentials.d.ts",
+      "import": "./src/env/dist/esm/map-credentials.js",
+      "default": "./src/env/dist/esm/map-credentials.js"
     },
     "./env/primitives": {
-      "types": "./src/env/src/primitives.ts",
-      "import": "./src/env/src/primitives.ts",
-      "default": "./src/env/src/primitives.ts"
+      "types": "./src/env/dist/esm/primitives.d.ts",
+      "import": "./src/env/dist/esm/primitives.js",
+      "default": "./src/env/dist/esm/primitives.js"
     },
     "./env/bootstrap": {
-      "types": "./src/env/src/bootstrap.ts",
-      "import": "./src/env/src/bootstrap.ts",
-      "default": "./src/env/src/bootstrap.ts"
+      "types": "./src/env/dist/esm/bootstrap.d.ts",
+      "import": "./src/env/dist/esm/bootstrap.js",
+      "default": "./src/env/dist/esm/bootstrap.js"
     },
     "./h3": {
-      "types": "./src/h3/src/index.ts",
-      "import": "./src/h3/src/index.ts",
-      "default": "./src/h3/src/index.ts"
+      "types": "./src/h3/dist/esm/index.d.ts",
+      "import": "./src/h3/dist/esm/index.js",
+      "default": "./src/h3/dist/esm/index.js"
     },
     "./h3/lite": {
-      "types": "./src/h3/src/lite.ts",
-      "import": "./src/h3/src/lite.ts",
-      "default": "./src/h3/src/lite.ts"
+      "types": "./src/h3/dist/esm/lite.d.ts",
+      "import": "./src/h3/dist/esm/lite.js",
+      "default": "./src/h3/dist/esm/lite.js"
     },
     "./h3/cell-to-region-index": {
-      "types": "./src/h3/src/cell/cell-to-region-index.ts",
-      "import": "./src/h3/src/cell/cell-to-region-index.ts",
-      "default": "./src/h3/src/cell/cell-to-region-index.ts"
+      "types": "./src/h3/dist/esm/cell/cell-to-region-index.d.ts",
+      "import": "./src/h3/dist/esm/cell/cell-to-region-index.js",
+      "default": "./src/h3/dist/esm/cell/cell-to-region-index.js"
     },
     "./service": {
-      "types": "./src/service/src/index.ts",
-      "import": "./src/service/src/index.ts",
-      "default": "./src/service/src/index.ts"
+      "types": "./src/service/dist/esm/index.d.ts",
+      "import": "./src/service/dist/esm/index.js",
+      "default": "./src/service/dist/esm/index.js"
     },
     "./service/registry": {
-      "types": "./src/service/src/src/providers/registry.ts",
-      "import": "./src/service/src/src/providers/registry.ts",
-      "default": "./src/service/src/src/providers/registry.ts"
+      "types": "./src/service/dist/esm/services/registry.d.ts",
+      "import": "./src/service/dist/esm/services/registry.js",
+      "default": "./src/service/dist/esm/services/registry.js"
     },
     "./service/types": {
-      "types": "./src/service/src/src/providers/types.ts",
-      "import": "./src/service/src/src/providers/types.ts",
-      "default": "./src/service/src/src/providers/types.ts"
+      "types": "./src/service/dist/esm/services/types.d.ts",
+      "import": "./src/service/dist/esm/services/types.js",
+      "default": "./src/service/dist/esm/services/types.js"
     },
     "./service/types/api-composite": {
-      "types": "./src/service/src/types/api-composite.ts",
-      "import": "./src/service/src/types/api-composite.ts",
-      "default": "./src/service/src/types/api-composite.ts"
+      "types": "./src/service/dist/esm/types/api-composite.d.ts",
+      "import": "./src/service/dist/esm/types/api-composite.js",
+      "default": "./src/service/dist/esm/types/api-composite.js"
     },
     "./service/plugin": {
-      "types": "./src/service/src/plugin.ts",
-      "import": "./src/service/src/plugin.ts",
-      "default": "./src/service/src/plugin.ts"
+      "types": "./src/service/dist/esm/plugin.d.ts",
+      "import": "./src/service/dist/esm/plugin.js",
+      "default": "./src/service/dist/esm/plugin.js"
     },
     "./service/builtins": {
-      "types": "./src/service/src/builtins.ts",
-      "import": "./src/service/src/builtins.ts",
-      "default": "./src/service/src/builtins.ts"
+      "types": "./src/service/dist/esm/builtins.d.ts",
+      "import": "./src/service/dist/esm/builtins.js",
+      "default": "./src/service/dist/esm/builtins.js"
     },
     "./service/setup-capability-routers": {
-      "types": "./src/service/src/setup-capability-routers.ts",
-      "import": "./src/service/src/setup-capability-routers.ts",
-      "default": "./src/service/src/setup-capability-routers.ts"
+      "types": "./src/service/dist/esm/setup-capability-routers.d.ts",
+      "import": "./src/service/dist/esm/setup-capability-routers.js",
+      "default": "./src/service/dist/esm/setup-capability-routers.js"
     },
     "./ui": {
       "source": "./src/ui/src/index.ts",
@@ -664,54 +742,54 @@
       "default": "./src/ui/dist/esm/elements-lite.js"
     },
     "./ui/storage": {
-      "types": "./src/ui/src/storage/index.ts",
-      "import": "./src/ui/src/storage/index.ts",
-      "default": "./src/ui/src/storage/index.ts"
+      "types": "./src/ui/dist/esm/storage/index.d.ts",
+      "import": "./src/ui/dist/esm/storage/index.js",
+      "default": "./src/ui/dist/esm/storage/index.js"
     },
     "./ui/geojson-loader": {
-      "types": "./src/ui/src/geojson-loader/index.ts",
-      "import": "./src/ui/src/geojson-loader/index.ts",
-      "default": "./src/ui/src/geojson-loader/index.ts"
+      "types": "./src/ui/dist/esm/geojson-loader/index.d.ts",
+      "import": "./src/ui/dist/esm/geojson-loader/index.js",
+      "default": "./src/ui/dist/esm/geojson-loader/index.js"
     },
     "./ui/config/map-style": {
-      "types": "./src/ui/src/config/map-style.ts",
-      "import": "./src/ui/src/config/map-style.ts",
-      "default": "./src/ui/src/config/map-style.ts"
+      "types": "./src/ui/dist/esm/config/map-style.d.ts",
+      "import": "./src/ui/dist/esm/config/map-style.js",
+      "default": "./src/ui/dist/esm/config/map-style.js"
     },
     "./ui/config/tile-cdn": {
-      "types": "./src/ui/src/config/tile-cdn.ts",
-      "import": "./src/ui/src/config/tile-cdn.ts",
-      "default": "./src/ui/src/config/tile-cdn.ts"
+      "types": "./src/ui/dist/esm/config/tile-cdn.d.ts",
+      "import": "./src/ui/dist/esm/config/tile-cdn.js",
+      "default": "./src/ui/dist/esm/config/tile-cdn.js"
     },
     "./ui/config/maptiler-dev-proxy": {
-      "types": "./src/ui/src/config/maptiler-dev-proxy.ts",
-      "import": "./src/ui/src/config/maptiler-dev-proxy.ts",
-      "default": "./src/ui/src/config/maptiler-dev-proxy.ts"
+      "types": "./src/ui/dist/esm/config/maptiler-dev-proxy.d.ts",
+      "import": "./src/ui/dist/esm/config/maptiler-dev-proxy.js",
+      "default": "./src/ui/dist/esm/config/maptiler-dev-proxy.js"
     },
     "./ui/storage/map-local-store": {
-      "types": "./src/ui/src/storage/map-local-store.ts",
-      "import": "./src/ui/src/storage/map-local-store.ts",
-      "default": "./src/ui/src/storage/map-local-store.ts"
+      "types": "./src/ui/dist/esm/storage/map-local-store.d.ts",
+      "import": "./src/ui/dist/esm/storage/map-local-store.js",
+      "default": "./src/ui/dist/esm/storage/map-local-store.js"
     },
     "./ui/storage/map-offline-tile-cache": {
-      "types": "./src/ui/src/storage/map-offline-tile-cache.ts",
-      "import": "./src/ui/src/storage/map-offline-tile-cache.ts",
-      "default": "./src/ui/src/storage/map-offline-tile-cache.ts"
+      "types": "./src/ui/dist/esm/storage/map-offline-tile-cache.d.ts",
+      "import": "./src/ui/dist/esm/storage/map-offline-tile-cache.js",
+      "default": "./src/ui/dist/esm/storage/map-offline-tile-cache.js"
     },
     "./ui/storage/indexed-db": {
-      "types": "./src/ui/src/storage/indexed-db.ts",
-      "import": "./src/ui/src/storage/indexed-db.ts",
-      "default": "./src/ui/src/storage/indexed-db.ts"
+      "types": "./src/ui/dist/esm/storage/indexed-db.d.ts",
+      "import": "./src/ui/dist/esm/storage/indexed-db.js",
+      "default": "./src/ui/dist/esm/storage/indexed-db.js"
     },
     "./ui/storage/map-offline-context-loader": {
-      "types": "./src/ui/src/storage/map-offline-context-loader.ts",
-      "import": "./src/ui/src/storage/map-offline-context-loader.ts",
-      "default": "./src/ui/src/storage/map-offline-context-loader.ts"
+      "types": "./src/ui/dist/esm/storage/map-offline-context-loader.d.ts",
+      "import": "./src/ui/dist/esm/storage/map-offline-context-loader.js",
+      "default": "./src/ui/dist/esm/storage/map-offline-context-loader.js"
     },
     "./ui/geojson-loader/shard-loader": {
-      "types": "./src/ui/src/geojson-loader/shard-loader.ts",
-      "import": "./src/ui/src/geojson-loader/shard-loader.ts",
-      "default": "./src/ui/src/geojson-loader/shard-loader.ts"
+      "types": "./src/ui/dist/esm/geojson-loader/shard-loader.d.ts",
+      "import": "./src/ui/dist/esm/geojson-loader/shard-loader.js",
+      "default": "./src/ui/dist/esm/geojson-loader/shard-loader.js"
     }
   },
   "dependencies": {

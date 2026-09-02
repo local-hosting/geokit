@@ -6,44 +6,45 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
     },
     "./registry": {
-      "types": "./src/services/registry.ts",
-      "import": "./src/services/registry.ts",
-      "default": "./src/services/registry.ts"
+      "types": "./dist/esm/services/registry.d.ts",
+      "import": "./dist/esm/services/registry.js",
+      "default": "./dist/esm/services/registry.js"
     },
     "./types": {
-      "types": "./src/services/types.ts",
-      "import": "./src/services/types.ts",
-      "default": "./src/services/types.ts"
+      "types": "./dist/esm/services/types.d.ts",
+      "import": "./dist/esm/services/types.js",
+      "default": "./dist/esm/services/types.js"
     },
     "./types/api-composite": {
-      "types": "./src/types/api-composite.ts",
-      "import": "./src/types/api-composite.ts",
-      "default": "./src/types/api-composite.ts"
+      "types": "./dist/esm/types/api-composite.d.ts",
+      "import": "./dist/esm/types/api-composite.js",
+      "default": "./dist/esm/types/api-composite.js"
     },
     "./plugin": {
-      "types": "./src/plugin.ts",
-      "import": "./src/plugin.ts",
-      "default": "./src/plugin.ts"
+      "types": "./dist/esm/plugin.d.ts",
+      "import": "./dist/esm/plugin.js",
+      "default": "./dist/esm/plugin.js"
     },
     "./builtins": {
-      "types": "./src/builtins.ts",
-      "import": "./src/builtins.ts",
-      "default": "./src/builtins.ts"
+      "types": "./dist/esm/builtins.d.ts",
+      "import": "./dist/esm/builtins.js",
+      "default": "./dist/esm/builtins.js"
     },
     "./setup-capability-routers": {
-      "types": "./src/setup-capability-routers.ts",
-      "import": "./src/setup-capability-routers.ts",
-      "default": "./src/setup-capability-routers.ts"
+      "types": "./dist/esm/setup-capability-routers.d.ts",
+      "import": "./dist/esm/setup-capability-routers.js",
+      "default": "./dist/esm/setup-capability-routers.js"
     }
   },
   "scripts": {
     "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
-    "test": "yarn run -T vitest run --config ../../config/vitest.service.config.ts"
+    "test": "yarn run -T vitest run --config ../../config/vitest.service.config.ts",
+    "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json"
   },
   "peerDependencies": {
     "@geokit/core": ">=0.2.33",
