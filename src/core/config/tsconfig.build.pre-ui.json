@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.build.json",
+  "exclude": [
+    "../src/config/map-style.ts",
+    "../src/config/tile-cdn.ts",
+    "../src/contract/index.ts",
+    "../src/storage/index.ts",
+    "../src/types/layer-datasets.ts",
+    "../src/types/layer-datasets.d.ts",
+    "../src/utils/geojson-loader/index.ts"
+  ]
+}
