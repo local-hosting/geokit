@@ -1,6 +1,6 @@
-import { _resetRegistries as resetAPIRegistries } from '../src/providers/registry';
+import { _resetRegistries as resetAPIRegistries } from '../services/registry';
 import { _resetGeokitPlugins } from '../plugin';
-import { resetCapabilityRouterReady } from '../src/providers/capability-router-rebuild';
+import { resetCapabilityRouterReady } from '../services/routing/capability-router-rebuild';
 
 /** Reset service registry, plugin registrar, and capability router (tests). */
 export function resetGeokitServiceRegistries(): void {

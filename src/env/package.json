@@ -7,34 +7,35 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
     },
     "./service-keys": {
-      "types": "./src/service-keys.ts",
-      "import": "./src/service-keys.ts",
-      "default": "./src/service-keys.ts"
+      "types": "./dist/esm/service-keys.d.ts",
+      "import": "./dist/esm/service-keys.js",
+      "default": "./dist/esm/service-keys.js"
     },
     "./map-credentials": {
-      "types": "./src/map-credentials.ts",
-      "import": "./src/map-credentials.ts",
-      "default": "./src/map-credentials.ts"
+      "types": "./dist/esm/map-credentials.d.ts",
+      "import": "./dist/esm/map-credentials.js",
+      "default": "./dist/esm/map-credentials.js"
     },
     "./primitives": {
-      "types": "./src/primitives.ts",
-      "import": "./src/primitives.ts",
-      "default": "./src/primitives.ts"
+      "types": "./dist/esm/primitives.d.ts",
+      "import": "./dist/esm/primitives.js",
+      "default": "./dist/esm/primitives.js"
     },
     "./bootstrap": {
-      "types": "./src/bootstrap.ts",
-      "import": "./src/bootstrap.ts",
-      "default": "./src/bootstrap.ts"
+      "types": "./dist/esm/bootstrap.d.ts",
+      "import": "./dist/esm/bootstrap.js",
+      "default": "./dist/esm/bootstrap.js"
     }
   },
   "scripts": {
     "typecheck": "yarn run -T tsc -p tsconfig.json --noEmit",
-    "test": "yarn run -T vitest run --config vitest.config.ts"
+    "test": "yarn run -T vitest run --config vitest.config.ts",
+    "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json"
   },
   "dependencies": {
     "dotenv": "^17.2.3"

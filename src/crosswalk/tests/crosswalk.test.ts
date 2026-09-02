@@ -145,10 +145,7 @@ describe('crosswalk guard', () => {
 
   it('package.json has only workspace geokit runtime dependencies', () => {
     const pkg = JSON.parse(readFileSync(join(ROOT, '../package.json'), 'utf8'));
-    expect(pkg.dependencies ?? {}).toEqual({
-      '@geokit/core': 'workspace:*',
-      '@geokit/h3': 'workspace:*',
-    });
+    expect(pkg.dependencies ?? {}).toEqual({});
   });
 });
 
