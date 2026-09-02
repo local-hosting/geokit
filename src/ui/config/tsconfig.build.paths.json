@@ -23,6 +23,9 @@
       "@twinfile/geokit/core/types/cell-layers.types": [
         "src/core/dist/esm/types/cell-layers.types.d.ts"
       ],
+      "@twinfile/geokit/foursquare/foursquare-places": [
+        "src/providers/foursquare/dist/esm/foursquare-places.d.ts"
+      ],
       "@twinfile/geokit/core/src/providers/registry": [
         "src/service/dist/esm/services/registry.d.ts"
       ],
@@ -148,6 +151,9 @@
       ],
       "@twinfile/geokit/core/types": [
         "src/core/dist/esm/types/index.d.ts"
+      ],
+      "@twinfile/geokit/foursquare": [
+        "src/providers/foursquare/dist/esm/index.d.ts"
       ],
       "@twinfile/geokit/core/core": [
         "src/core/dist/esm/core/index.d.ts"
