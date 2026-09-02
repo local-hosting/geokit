@@ -33,7 +33,7 @@
     "generate:tsconfig-paths": "node scripts/generate-geokit-tsconfig-paths.mjs",
     "generate:vitest-aliases": "node scripts/generate-vitest-aliases.mjs",
     "build:core:bundle": "node src/core/scripts/check-build-tsconfig.mjs && cd src/core && tsup --config config/tsup.config.js && node ../h3/scripts/check-no-src-declarations.mjs",
-    "build:core:types": "cd src/core && tsc -p config/tsconfig.build.json"
+    "build:core:types": "NODE_OPTIONS='--max-old-space-size=4096' cd src/core && tsc -p config/tsconfig.build.json"
   },
   "exports": {
     "./core": {
