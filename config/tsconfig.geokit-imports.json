@@ -2,50 +2,377 @@
   "compilerOptions": {
     "baseUrl": "..",
     "paths": {
+      "@twinfile/geokit/core/src/providers/setup-capability-routers": [
+        "src/service/dist/esm/setup-capability-routers.d.ts"
+      ],
+      "@twinfile/geokit/core/storage/map-offline-context-loader": [
+        "src/ui/dist/esm/storage/map-offline-context-loader.d.ts"
+      ],
+      "@twinfile/geokit/ui/storage/map-offline-context-loader": [
+        "src/ui/dist/esm/storage/map-offline-context-loader.d.ts"
+      ],
+      "@twinfile/geokit/core/storage/map-offline-tile-cache": [
+        "src/ui/dist/esm/storage/map-offline-tile-cache.d.ts"
+      ],
+      "@twinfile/geokit/ui/storage/map-offline-tile-cache": [
+        "src/ui/dist/esm/storage/map-offline-tile-cache.d.ts"
+      ],
+      "@twinfile/geokit/service/setup-capability-routers": [
+        "src/service/dist/esm/setup-capability-routers.d.ts"
+      ],
+      "@twinfile/geokit/ui/shared-point-map-orchestrator": [
+        "src/ui/dist/esm/utils/shared-point-map-orchestrator.d.ts"
+      ],
+      "@twinfile/geokit/ui/shared-point-layer-controller": [
+        "src/ui/dist/esm/utils/shared-point-layer-controller.d.ts"
+      ],
+      "@twinfile/geokit/core/config/env/map-credentials": [
+        "src/core/dist/esm/config/env/map-credentials.d.ts"
+      ],
+      "@twinfile/geokit/core/config/maptiler-dev-proxy": [
+        "src/core/dist/esm/config/maptiler-dev-proxy.d.ts"
+      ],
+      "@twinfile/geokit/ui/boundary-outline-controller": [
+        "src/ui/dist/esm/utils/boundary-outline-controller.d.ts"
+      ],
+      "@twinfile/geokit/ui/geojson-loader/shard-loader": [
+        "src/ui/dist/esm/geojson-loader/shard-loader.d.ts"
+      ],
+      "@twinfile/geokit/ui/bootstrap/ensure-map-ready": [
+        "src/ui/dist/esm/bootstrap/ensure-map-ready.d.ts"
+      ],
+      "@twinfile/geokit/ui/lazy-choropleth-controller": [
+        "src/ui/dist/esm/utils/lazy-choropleth-controller.d.ts"
+      ],
+      "@twinfile/geokit/core/config/env/service-keys": [
+        "src/core/dist/esm/config/env/service-keys.d.ts"
+      ],
+      "@twinfile/geokit/core/h3/cell-to-region-index": [
+        "src/core/dist/esm/utils/h3/cell-to-region-index.d.ts"
+      ],
+      "@twinfile/geokit/core/types/cell-layers.types": [
+        "src/core/dist/esm/types/cell-layers.types.d.ts"
+      ],
+      "@twinfile/geokit/core/storage/map-local-store": [
+        "src/ui/dist/esm/storage/map-local-store.d.ts"
+      ],
+      "@twinfile/geokit/foursquare/foursquare-places": [
+        "src/providers/foursquare/dist/esm/foursquare-places.d.ts"
+      ],
+      "@twinfile/geokit/ui/debug/layer-draw-profiler": [
+        "src/ui/dist/esm/debug/layer-draw-profiler.d.ts"
+      ],
+      "@twinfile/geokit/ui/config/maptiler-dev-proxy": [
+        "src/ui/dist/esm/config/maptiler-dev-proxy.d.ts"
+      ],
+      "@twinfile/geokit/core/src/providers/registry": [
+        "src/service/dist/esm/services/registry.d.ts"
+      ],
+      "@twinfile/geokit/service/types/api-composite": [
+        "src/service/dist/esm/types/api-composite.d.ts"
+      ],
+      "@twinfile/geokit/ui/h3-grid-layer-controller": [
+        "src/ui/dist/esm/utils/h3-grid-layer-controller.d.ts"
+      ],
+      "@twinfile/geokit/core/config/env/primitives": [
+        "src/core/dist/esm/config/env/primitives.d.ts"
+      ],
+      "@twinfile/geokit/ui/shared-point-controller": [
+        "src/ui/dist/esm/utils/shared-point-layer-controller.d.ts"
+      ],
+      "@twinfile/geokit/ui/boundary-outline-preset": [
+        "src/ui/dist/esm/utils/boundary-outline-preset.d.ts"
+      ],
+      "@twinfile/geokit/ui/elements/map-collection": [
+        "src/ui/dist/esm/components/elements/map-collection/map-collection.d.ts"
+      ],
+      "@twinfile/geokit/ui/storage/map-local-store": [
+        "src/ui/dist/esm/storage/map-local-store.d.ts"
+      ],
+      "@twinfile/geokit/core/types/geojson-loader": [
+        "src/core/dist/esm/types/geojson-loader.d.ts"
+      ],
+      "@twinfile/geokit/core/types/layer-datasets": [
+        "src/core/dist/esm/types/layer-datasets.d.ts"
+      ],
+      "@twinfile/geokit/ui/geojson-source-options": [
+        "src/ui/dist/esm/utils/geojson-source-options.d.ts"
+      ],
+      "@twinfile/geokit/ui/choropleth-fill-layer": [
+        "src/ui/dist/esm/utils/choropleth-fill-layer.d.ts"
+      ],
+      "@twinfile/geokit/ui/choropleth-fill-paint": [
+        "src/ui/dist/esm/utils/choropleth-fill-paint.d.ts"
+      ],
+      "@twinfile/geokit/core/types/map-provider": [
+        "src/core/dist/esm/types/map-provider.d.ts"
+      ],
+      "@twinfile/geokit/core/contract/bootstrap": [
+        "src/ui/dist/esm/bootstrap/ensure-map-ready.d.ts"
+      ],
+      "@twinfile/geokit/core/contract/lifecycle": [
+        "src/ui/dist/esm/lifecycle.d.ts"
+      ],
+      "@twinfile/geokit/core/storage/indexed-db": [
+        "src/ui/dist/esm/storage/indexed-db.d.ts"
+      ],
       "@twinfile/geokit/h3/cell-to-region-index": [
         "src/h3/dist/esm/cell/cell-to-region-index.d.ts"
       ],
+      "@twinfile/geokit/ui/layer-dataset-shared": [
+        "src/ui/dist/esm/components/elements/layer/layer-dataset-shared.d.ts"
+      ],
+      "@twinfile/geokit/core/types/map-display": [
+        "src/core/dist/esm/types/map-display.d.ts"
+      ],
       "@twinfile/geokit/crosswalk/generated/us": [
-        "src/crosswalk/generated/us/index.ts"
+        "src/crosswalk/dist/esm/generated/us/index.d.ts"
       ],
       "@twinfile/geokit/crosswalk/market-cells": [
-        "src/crosswalk/src/h3/market-cells.ts"
+        "src/crosswalk/dist/esm/src/h3/market-cells.d.ts"
+      ],
+      "@twinfile/geokit/ui/map-terrain-disable": [
+        "src/ui/dist/esm/utils/map-terrain-disable.d.ts"
+      ],
+      "@twinfile/geokit/ui/feature-state-hover": [
+        "src/ui/dist/esm/utils/feature-state-hover.d.ts"
+      ],
+      "@twinfile/geokit/core/config/map-style": [
+        "src/ui/dist/esm/config/map-style.d.ts"
+      ],
+      "@twinfile/geokit/core/contract/offline": [
+        "src/core/dist/esm/contract/offline.d.ts"
+      ],
+      "@twinfile/geokit/ui/elements/isochrone": [
+        "src/ui/dist/esm/components/elements/isochrone/isochrone.d.ts"
+      ],
+      "@twinfile/geokit/ui/dev-proxy/maptiler": [
+        "src/ui/dist/esm/dev-proxy/maptiler-dev-proxy.d.ts"
+      ],
+      "@twinfile/geokit/ui/storage/indexed-db": [
+        "src/ui/dist/esm/storage/indexed-db.d.ts"
+      ],
+      "@twinfile/geokit/core/config/tile-cdn": [
+        "src/ui/dist/esm/config/tile-cdn.d.ts"
+      ],
+      "@twinfile/geokit/core/adapters/shared": [
+        "src/ui/dist/esm/adapters/shared/index.d.ts"
       ],
       "@twinfile/geokit/crosswalk/h3/project": [
-        "src/crosswalk/src/h3/project.ts"
+        "src/crosswalk/dist/esm/src/h3/project.d.ts"
+      ],
+      "@twinfile/geokit/ui/map-facet-filters": [
+        "src/ui/dist/esm/map-facet-filters.d.ts"
+      ],
+      "@twinfile/geokit/ui/gk-dma-layer-bind": [
+        "src/ui/dist/esm/utils/gk-dma-layer-bind.d.ts"
+      ],
+      "@twinfile/geokit/core/geojson-loader": [
+        "src/ui/dist/esm/geojson-loader/index.d.ts"
+      ],
+      "@twinfile/geokit/core/spatial/decode": [
+        "src/core/dist/esm/utils/spatial/decode/index.d.ts"
       ],
       "@twinfile/geokit/env/map-credentials": [
         "src/env/dist/esm/map-credentials.d.ts"
       ],
+      "@twinfile/geokit/ui/config/map-style": [
+        "src/ui/dist/esm/config/map-style.d.ts"
+      ],
+      "@twinfile/geokit/ui/adapters/shared": [
+        "src/ui/dist/esm/adapters/shared/index.d.ts"
+      ],
+      "@twinfile/geokit/ui/config/tile-cdn": [
+        "src/ui/dist/esm/config/tile-cdn.d.ts"
+      ],
+      "@twinfile/geokit/core/buffer-point": [
+        "src/core/dist/esm/utils/buffer/buffer-point.d.ts"
+      ],
       "@twinfile/geokit/crosswalk/geohash": [
-        "src/crosswalk/src/lookup/geohash.ts"
+        "src/crosswalk/dist/esm/src/lookup/geohash.d.ts"
+      ],
+      "@twinfile/geokit/ui/layer-datasets": [
+        "src/ui/dist/esm/components/elements/layer/layer-datasets.d.ts"
+      ],
+      "@twinfile/geokit/ui/fill-antialias": [
+        "src/ui/dist/esm/utils/fill-antialias.d.ts"
+      ],
+      "@twinfile/geokit/ui/elements/layer": [
+        "src/ui/dist/esm/components/elements/layer/layer.d.ts"
+      ],
+      "@twinfile/geokit/ui/elements/popup": [
+        "src/ui/dist/esm/components/elements/popup/popup.d.ts"
+      ],
+      "@twinfile/geokit/ui/geojson-loader": [
+        "src/ui/dist/esm/geojson-loader/index.d.ts"
+      ],
+      "@twinfile/geokit/core/coordinates": [
+        "src/core/dist/esm/utils/coordinates/index.d.ts"
+      ],
+      "@twinfile/geokit/core/utils/cache": [
+        "src/core/dist/esm/utils/cache.d.ts"
+      ],
+      "@twinfile/geokit/core/utils/retry": [
+        "src/core/dist/esm/utils/retry.d.ts"
+      ],
+      "@twinfile/geokit/core/containment": [
+        "src/core/dist/esm/utils/containment/index.d.ts"
       ],
       "@twinfile/geokit/env/service-keys": [
         "src/env/dist/esm/service-keys.d.ts"
       ],
+      "@twinfile/geokit/service/registry": [
+        "src/service/dist/esm/services/registry.d.ts"
+      ],
+      "@twinfile/geokit/service/builtins": [
+        "src/service/dist/esm/builtins.d.ts"
+      ],
+      "@twinfile/geokit/ui/shared-points": [
+        "src/ui/dist/esm/shared-points.d.ts"
+      ],
+      "@twinfile/geokit/ui/elements-lite": [
+        "src/ui/dist/esm/elements-lite.d.ts"
+      ],
+      "@twinfile/geokit/core/config/env": [
+        "src/core/dist/esm/config/env/index.d.ts"
+      ],
+      "@twinfile/geokit/core/static-map": [
+        "src/core/dist/esm/static-map/index.d.ts"
+      ],
+      "@twinfile/geokit/ui/layer-styles": [
+        "src/ui/dist/esm/utils/layer-styles.d.ts"
+      ],
+      "@twinfile/geokit/ui/boundary-map": [
+        "src/ui/dist/esm/utils/boundary-map.d.ts"
+      ],
+      "@twinfile/geokit/core/normalize": [
+        "src/core/dist/esm/utils/normalize/index.d.ts"
+      ],
+      "@twinfile/geokit/core/types/env": [
+        "src/core/dist/esm/types/env.d.ts"
+      ],
       "@twinfile/geokit/env/primitives": [
         "src/env/dist/esm/primitives.d.ts"
+      ],
+      "@twinfile/geokit/service/plugin": [
+        "src/service/dist/esm/plugin.d.ts"
+      ],
+      "@twinfile/geokit/ui/layer-stack": [
+        "src/ui/dist/esm/utils/layer-stack.d.ts"
+      ],
+      "@twinfile/geokit/ui/outline-ops": [
+        "src/ui/dist/esm/utils/outline-ops.d.ts"
+      ],
+      "@twinfile/geokit/core/contract": [
+        "src/core/dist/esm/contract/index.d.ts"
+      ],
+      "@twinfile/geokit/core/distance": [
+        "src/core/dist/esm/utils/distance/index.d.ts"
+      ],
+      "@twinfile/geokit/core/simplify": [
+        "src/core/dist/esm/utils/simplify/index.d.ts"
       ],
       "@twinfile/geokit/env/bootstrap": [
         "src/env/dist/esm/bootstrap.d.ts"
       ],
+      "@twinfile/geokit/service/types": [
+        "src/service/dist/esm/services/types.d.ts"
+      ],
+      "@twinfile/geokit/ui/lazy-popup": [
+        "src/ui/dist/esm/lazy-popup.d.ts"
+      ],
+      "@twinfile/geokit/ui/map-events": [
+        "src/ui/dist/esm/utils/map-events.d.ts"
+      ],
+      "@twinfile/geokit/core/geohash": [
+        "src/core/dist/esm/utils/geohash/index.d.ts"
+      ],
+      "@twinfile/geokit/core/geojson": [
+        "src/core/dist/esm/utils/geojson/index.d.ts"
+      ],
+      "@twinfile/geokit/core/h3/lite": [
+        "src/core/dist/esm/utils/h3/lite.d.ts"
+      ],
+      "@twinfile/geokit/core/spatial": [
+        "src/core/dist/esm/utils/spatial/index.d.ts"
+      ],
+      "@twinfile/geokit/core/storage": [
+        "src/ui/dist/esm/storage/index.d.ts"
+      ],
       "@twinfile/geokit/crosswalk/us": [
-        "src/crosswalk/src/us/index.ts"
+        "src/crosswalk/dist/esm/src/us/index.d.ts"
+      ],
+      "@twinfile/geokit/ui/map-utils": [
+        "src/ui/dist/esm/utils/map-utils.d.ts"
+      ],
+      "@twinfile/geokit/ui/lifecycle": [
+        "src/ui/dist/esm/lifecycle.d.ts"
+      ],
+      "@twinfile/geokit/core/bounds": [
+        "src/core/dist/esm/utils/bounds/index.d.ts"
+      ],
+      "@twinfile/geokit/core/svelte": [
+        "src/ui/dist/esm/adapters/svelte/index.d.ts"
+      ],
+      "@twinfile/geokit/core/buffer": [
+        "src/core/dist/esm/utils/buffer/buffer-turf.d.ts"
+      ],
+      "@twinfile/geokit/core/types": [
+        "src/core/dist/esm/types/index.d.ts"
+      ],
+      "@twinfile/geokit/core/react": [
+        "src/ui/dist/esm/adapters/react/index.d.ts"
+      ],
+      "@twinfile/geokit/foursquare": [
+        "src/providers/foursquare/dist/esm/index.d.ts"
+      ],
+      "@twinfile/geokit/ui/storage": [
+        "src/ui/dist/esm/storage/index.d.ts"
+      ],
+      "@twinfile/geokit/core/core": [
+        "src/core/dist/esm/core/index.d.ts"
+      ],
+      "@twinfile/geokit/core/turf": [
+        "src/core/dist/esm/utils/turf/index.d.ts"
       ],
       "@twinfile/geokit/crosswalk": [
-        "src/crosswalk/src/index.ts"
+        "src/crosswalk/dist/esm/src/index.d.ts"
+      ],
+      "@twinfile/geokit/ui/svelte": [
+        "src/ui/dist/esm/adapters/svelte/index.d.ts"
+      ],
+      "@twinfile/geokit/core/vue": [
+        "src/ui/dist/esm/adapters/vue/index.d.ts"
+      ],
+      "@twinfile/geokit/ui/react": [
+        "src/ui/dist/esm/adapters/react/index.d.ts"
+      ],
+      "@twinfile/geokit/core/h3": [
+        "src/core/dist/esm/utils/h3/index.d.ts"
+      ],
+      "@twinfile/geokit/core/ui": [
+        "src/ui/dist/esm/index.d.ts"
       ],
       "@twinfile/geokit/h3/lite": [
         "src/h3/dist/esm/lite.d.ts"
       ],
       "@twinfile/geokit/service": [
-        "src/service/src/index.ts"
+        "src/service/dist/esm/index.d.ts"
+      ],
+      "@twinfile/geokit/ui/vue": [
+        "src/ui/dist/esm/adapters/vue/index.d.ts"
+      ],
+      "@twinfile/geokit/core": [
+        "src/core/dist/esm/index.d.ts"
       ],
       "@twinfile/geokit/env": [
         "src/env/dist/esm/index.d.ts"
       ],
       "@twinfile/geokit/h3": [
         "src/h3/dist/esm/index.d.ts"
+      ],
+      "@twinfile/geokit/ui": [
+        "src/ui/dist/esm/index.d.ts"
       ]
     }
   }

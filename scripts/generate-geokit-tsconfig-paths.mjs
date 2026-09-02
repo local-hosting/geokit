@@ -13,6 +13,7 @@ const DIST_TO_SRC = [
   { dist: 'src/service/dist/esm/', src: 'src/service/src/' },
   { dist: 'src/h3/dist/esm/', src: 'src/h3/src/' },
   { dist: 'src/providers/foursquare/dist/esm/', src: 'src/providers/foursquare/src/' },
+  { dist: 'src/crosswalk/dist/esm/', src: 'src/crosswalk/src/' },
 ];
 
 function distImportToSource(importPath) {
@@ -62,7 +63,9 @@ function isCrossPackageDistOnly(exportKey) {
     exportKey.startsWith('./service/') ||
     exportKey === './ui' ||
     exportKey.startsWith('./core/') ||
-    exportKey === './core'
+    exportKey === './core' ||
+    exportKey.startsWith('./crosswalk') ||
+    exportKey === './crosswalk'
   );
 }
 
