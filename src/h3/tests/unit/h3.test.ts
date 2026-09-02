@@ -28,7 +28,7 @@ import {
   h3AreaNeighbors,
   h3ResolutionFromZoom,
   h3DiskToFeatureCollection,
-} from '@geokit/h3';
+} from '@twinfile/geokit/h3';
 
 describe('h3', () => {
   const nyc: [number, number] = [40.7128, -74.006];

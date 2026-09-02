@@ -8,7 +8,7 @@
 import {
   capPolygonCollectionForMapLibre,
   polygonsToBoundaryLines,
-} from '@geokit/core/geojson';
+} from '@twinfile/geokit/core/geojson';
 import {
   COUNTY_BOUNDARY_GEOJSON_SOURCE_OPTIONS,
   STATE_BOUNDARY_GEOJSON_SOURCE_OPTIONS,

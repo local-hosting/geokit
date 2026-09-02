@@ -11,7 +11,7 @@ export type {
   PlaceKey,
   StateCode,
   ZipCode,
-} from '@geokit/core';
+} from '@twinfile/geokit/core';
 
 export {
   GKCountry,
@@ -29,7 +29,7 @@ export {
   asDmaSlugOrUndefined,
   asZipCode,
   parseGeoRef,
-} from '@geokit/core';
+} from '@twinfile/geokit/core';
 
 export { GeoKind } from './geo-kind.js';
 

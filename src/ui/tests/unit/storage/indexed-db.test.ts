@@ -8,7 +8,7 @@ import {
   idbGetAll,
   idbPut,
   resetGeoKitOfflineDBForTesting,
-} from '@geokit/ui/storage/indexed-db';
+} from '@twinfile/geokit/ui/storage/indexed-db';
 
 type StoreData = Map<IDBValidKey, unknown>;
 

@@ -6,7 +6,7 @@ import {
 import { requireUsCrosswalkLookups } from '../load/registry';
 import { crosswalk, type CrosswalkOptions } from './crosswalk';
 import type { CrosswalkResult, GeoRef } from '../types';
-import type { ConvertOutput, GeoKind } from '@geokit/core';
+import type { ConvertOutput, GeoKind } from '@twinfile/geokit/core';
 import { pickConvertOutput } from './convert-output';
 
 const DEFAULT_H3_RESOLUTION = 5;

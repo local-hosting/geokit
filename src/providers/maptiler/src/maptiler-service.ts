@@ -9,11 +9,11 @@
  * - Rate limiting support
  */
 
-import { Service } from '@geokit/service';
-import { type ServiceConfig, type ServiceCapability, type IsochroneOptions, type GeocodeOptions, type ReverseGeocodeOptions, type ReverseGeocodeResult } from '@geokit/service/types';
-import { ProviderCache, coordinateCacheKey } from '@geokit/service';
-import { RequestQueue } from '@geokit/service';
-import { requireAPIKey, fetchWithRetry } from '@geokit/service';
+import { Service } from '@twinfile/geokit/service';
+import { type ServiceConfig, type ServiceCapability, type IsochroneOptions, type GeocodeOptions, type ReverseGeocodeOptions, type ReverseGeocodeResult } from '@twinfile/geokit/service/types';
+import { ProviderCache, coordinateCacheKey } from '@twinfile/geokit/service';
+import { RequestQueue } from '@twinfile/geokit/service';
+import { requireAPIKey, fetchWithRetry } from '@twinfile/geokit/service';
 import type { FeatureCollection } from 'geojson';
 
 const PROVIDER_NAME = 'MapTiler';

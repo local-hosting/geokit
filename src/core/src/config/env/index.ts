@@ -1,2 +1,2 @@
-/** @deprecated Import from `@geokit/env` instead. */
-export * from '@geokit/env';
+/** @deprecated Import from `@twinfile/geokit/env` instead. */
+export * from '@twinfile/geokit/env';

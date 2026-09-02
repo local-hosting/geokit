@@ -2,7 +2,7 @@ import type {
   LayerDatasetContext,
   LayerDatasetHandle,
   LayerDatasetId,
-} from '@geokit/core/types/layer-datasets';
+} from '@twinfile/geokit/core/types/layer-datasets';
 
 export type LayerDatasetMountFn = (
   ctx: LayerDatasetContext

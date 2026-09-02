@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   approximateViewportBoundsFromCenterZoom,
   mapViewportBounds,
-} from '@geokit/h3';
+} from '@twinfile/geokit/h3';
 
 describe('h3 map-viewport', () => {
   describe('approximateViewportBoundsFromCenterZoom', () => {

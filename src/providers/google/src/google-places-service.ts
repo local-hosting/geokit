@@ -2,9 +2,9 @@
  * Google Places service — place search via Google Places API.
  */
 
-import { CachedService } from '@geokit/service';
-import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@geokit/service/types';
-import { fetchWithRetry } from '@geokit/service';
+import { CachedService } from '@twinfile/geokit/service';
+import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@twinfile/geokit/service/types';
+import { fetchWithRetry } from '@twinfile/geokit/service';
 const SERVICE_LABEL = 'Google Places';
 
 export class GooglePlacesService extends CachedService<PlaceSearchResult[]> {

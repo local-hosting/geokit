@@ -4,10 +4,10 @@ import {
   asMacroRegion,
   asMacroRegionOrUndefined,
   type DMA,
-} from '@geokit/core';
+} from '@twinfile/geokit/core';
 import type { UsTableLookups } from '../us/tables';
 
-export { asDmaSlugOrUndefined as canonicalDmaSlug } from '@geokit/core';
+export { asDmaSlugOrUndefined as canonicalDmaSlug } from '@twinfile/geokit/core';
 
 export function toDMA(
   lookups: UsTableLookups,

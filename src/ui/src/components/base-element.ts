@@ -5,12 +5,12 @@
  * Handles provider integration, lifecycle management, and common utilities
  */
 
-import { getBounds, boundsToObject } from '@geokit/core/bounds';
+import { getBounds, boundsToObject } from '@twinfile/geokit/core/bounds';
 import { getUIProvider, getUIProviderByName } from '../providers/registry';
-import { getServiceForCapability } from '@geokit/service/registry';
+import { getServiceForCapability } from '@twinfile/geokit/service/registry';
 import { debug } from '../utils/logger';
 import type { BaseUIProvider, MapInstance, MapEvent } from '../providers/types';
-import type { ServiceCapability } from '@geokit/service/types';
+import type { ServiceCapability } from '@twinfile/geokit/service/types';
 
 /**
  * Base class for all map UI components

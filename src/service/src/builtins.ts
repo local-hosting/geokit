@@ -8,13 +8,13 @@ let lastOverrides: CapabilityRouterEnvOverrides | undefined;
 type PluginRegistrar = (overrides?: CapabilityRouterEnvOverrides) => Promise<void> | void;
 
 async function tryRegisterPlugin(
-  load: () => Promise<Record<string, unknown>>,
+  moduleId: string,
   exportName: string,
   overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
   try {
-    const mod = await load();
-    const register = mod[exportName as keyof typeof mod];
+    const mod = (await import(moduleId)) as Record<string, unknown>;
+    const register = mod[exportName];
     if (typeof register === 'function') {
       await (register as PluginRegistrar)(overrides);
     }
@@ -27,32 +27,16 @@ async function tryRegisterPlugin(
 export async function registerDefaultPlugins(
   overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
-  await tryRegisterPlugin(
-    () => import('@geokit/maptiler'),
-    'registerMapTilerPlugin',
-    overrides,
-  );
-  await tryRegisterPlugin(
-    () => import('@geokit/mapbox'),
-    'registerMapboxPlugin',
-    overrides,
-  );
+  await tryRegisterPlugin('@twinfile/geokit/maptiler', 'registerMapTilerPlugin', overrides);
+  await tryRegisterPlugin('@twinfile/geokit/mapbox', 'registerMapboxPlugin', overrides);
 }
 
 /** Register place-search plugins (Foursquare, Google). Loaded on demand. */
 export async function registerPlaceSearchPlugins(
   overrides?: CapabilityRouterEnvOverrides,
 ): Promise<void> {
-  await tryRegisterPlugin(
-    () => import('@geokit/foursquare'),
-    'registerFoursquarePlugin',
-    overrides,
-  );
-  await tryRegisterPlugin(
-    () => import('@geokit/google'),
-    'registerGooglePlacesPlugin',
-    overrides,
-  );
+  await tryRegisterPlugin('@twinfile/geokit/foursquare', 'registerFoursquarePlugin', overrides);
+  await tryRegisterPlugin('@twinfile/geokit/google', 'registerGooglePlacesPlugin', overrides);
 }
 
 async function bootstrapCapabilityRouters(

@@ -15,17 +15,17 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: '@geokit/core/containment',
+        find: '@twinfile/geokit/core/containment',
         replacement: path.join(coreRoot, 'src/utils/containment/index.ts'),
       },
-      { find: '@geokit/core/h3', replacement: path.join(h3Root, 'src/index.ts') },
-      { find: /^@geokit\/core$/, replacement: path.join(coreRoot, 'src/index.ts') },
+      { find: '@twinfile/geokit/core/h3', replacement: path.join(h3Root, 'src/index.ts') },
+      { find: /^@twinfile\/geokit\/core$/, replacement: path.join(coreRoot, 'src/index.ts') },
       {
-        find: '@geokit/h3/cell-to-region-index',
+        find: '@twinfile/geokit/h3/cell-to-region-index',
         replacement: path.join(h3Root, 'src/cell/cell-to-region-index.ts'),
       },
-      { find: '@geokit/h3/lite', replacement: path.join(h3Root, 'src/lite.ts') },
-      { find: '@geokit/h3', replacement: path.join(h3Root, 'src/index.ts') },
+      { find: '@twinfile/geokit/h3/lite', replacement: path.join(h3Root, 'src/lite.ts') },
+      { find: '@twinfile/geokit/h3', replacement: path.join(h3Root, 'src/index.ts') },
     ],
   },
 });

@@ -119,7 +119,7 @@ export class MapStyleSetup extends MapConnectedInit {
     const mapId = this.getAttribute('map-id')?.trim();
     if (!mapId) return;
     try {
-      const { MapOfflineContextLoader } = await import('@geokit/ui/storage/map-offline-context-loader');
+      const { MapOfflineContextLoader } = await import('@twinfile/geokit/ui/storage/map-offline-context-loader');
       const zoom = parseFloat(this.getAttribute('zoom') || '12');
       await MapOfflineContextLoader.onMapContextLoad(mapId, { zoom });
     } catch (error) {

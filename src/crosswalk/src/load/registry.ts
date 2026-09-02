@@ -54,7 +54,7 @@ export function isCrosswalkCountryLoaded(country: CrosswalkCountry): boolean {
 export function requireUsCrosswalkLookups(): UsTableLookups {
   if (!usLookups) {
     throw new Error(
-      'US crosswalk tables not loaded. Import @geokit/crosswalk/us or call loadCrosswalk("us").'
+      'US crosswalk tables not loaded. Import @twinfile/geokit/crosswalk/us or call loadCrosswalk("us").'
     );
   }
   return usLookups;

@@ -86,7 +86,7 @@ describe('point DMA enrichment', () => {
       ensureUsCrosswalkLoaded,
       resetCrosswalkForTest,
       setCountyBoundaryLoader,
-    } = await import('@geokit/crosswalk');
+    } = await import('@twinfile/geokit/crosswalk');
 
     const lat = 39.7684;
     const lon = -86.1581;

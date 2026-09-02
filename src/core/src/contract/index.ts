@@ -1,6 +1,6 @@
 /**
  * GeoKit contract — offline policy, provider ids, local storage.
- * Map bootstrap and surface lifecycle: @geokit/ui or @geokit/core/ui (re-export).
+ * Map bootstrap and surface lifecycle: @twinfile/geokit/ui or @twinfile/geokit/ui (re-export).
  */
 
 export type { MapStaticProviderId } from '../types/map-provider';
@@ -39,6 +39,6 @@ export {
   resolveOfflineBoundsFromPins,
 } from './offline';
 
-export { MapLocalStore, type MapSnapshotRecord } from '@geokit/ui/storage/map-local-store';
+export { MapLocalStore, type MapSnapshotRecord } from '@twinfile/geokit/ui/storage/map-local-store';
 
-export { MapOfflineTileCache, TILE_CACHE_NAME } from '@geokit/ui/storage/map-offline-tile-cache';
+export { MapOfflineTileCache, TILE_CACHE_NAME } from '@twinfile/geokit/ui/storage/map-offline-tile-cache';
