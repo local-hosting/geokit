@@ -1,0 +1,187 @@
+{
+  "compilerOptions": {
+    "baseUrl": "../../..",
+    "paths": {
+      "@twinfile/geokit/core/src/providers/setup-capability-routers": [
+        "src/service/dist/esm/setup-capability-routers.d.ts"
+      ],
+      "@twinfile/geokit/service/setup-capability-routers": [
+        "src/service/dist/esm/setup-capability-routers.d.ts"
+      ],
+      "@twinfile/geokit/core/config/env/map-credentials": [
+        "src/core/dist/esm/config/env/map-credentials.d.ts"
+      ],
+      "@twinfile/geokit/core/config/maptiler-dev-proxy": [
+        "src/core/dist/esm/config/maptiler-dev-proxy.d.ts"
+      ],
+      "@twinfile/geokit/core/config/env/service-keys": [
+        "src/core/dist/esm/config/env/service-keys.d.ts"
+      ],
+      "@twinfile/geokit/core/h3/cell-to-region-index": [
+        "src/core/dist/esm/utils/h3/cell-to-region-index.d.ts"
+      ],
+      "@twinfile/geokit/core/types/cell-layers.types": [
+        "src/core/dist/esm/types/cell-layers.types.d.ts"
+      ],
+      "@twinfile/geokit/core/src/providers/registry": [
+        "src/service/dist/esm/services/registry.d.ts"
+      ],
+      "@twinfile/geokit/service/types/api-composite": [
+        "src/service/dist/esm/types/api-composite.d.ts"
+      ],
+      "@twinfile/geokit/core/config/env/primitives": [
+        "src/core/dist/esm/config/env/primitives.d.ts"
+      ],
+      "@twinfile/geokit/core/types/geojson-loader": [
+        "src/core/dist/esm/types/geojson-loader.d.ts"
+      ],
+      "@twinfile/geokit/core/types/layer-datasets": [
+        "src/core/dist/esm/types/layer-datasets.d.ts"
+      ],
+      "@twinfile/geokit/core/types/map-provider": [
+        "src/core/dist/esm/types/map-provider.d.ts"
+      ],
+      "@twinfile/geokit/h3/cell-to-region-index": [
+        "src/h3/dist/esm/cell/cell-to-region-index.d.ts"
+      ],
+      "@twinfile/geokit/core/types/map-display": [
+        "src/core/dist/esm/types/map-display.d.ts"
+      ],
+      "@twinfile/geokit/crosswalk/generated/us": [
+        "src/crosswalk/dist/esm/generated/us/index.d.ts"
+      ],
+      "@twinfile/geokit/crosswalk/market-cells": [
+        "src/crosswalk/dist/esm/src/h3/market-cells.d.ts"
+      ],
+      "@twinfile/geokit/core/contract/offline": [
+        "src/core/dist/esm/contract/offline.d.ts"
+      ],
+      "@twinfile/geokit/crosswalk/h3/project": [
+        "src/crosswalk/dist/esm/src/h3/project.d.ts"
+      ],
+      "@twinfile/geokit/core/spatial/decode": [
+        "src/core/dist/esm/utils/spatial/decode/index.d.ts"
+      ],
+      "@twinfile/geokit/env/map-credentials": [
+        "src/env/dist/esm/map-credentials.d.ts"
+      ],
+      "@twinfile/geokit/core/buffer-point": [
+        "src/core/dist/esm/utils/buffer/buffer-point.d.ts"
+      ],
+      "@twinfile/geokit/crosswalk/geohash": [
+        "src/crosswalk/dist/esm/src/lookup/geohash.d.ts"
+      ],
+      "@twinfile/geokit/core/coordinates": [
+        "src/core/dist/esm/utils/coordinates/index.d.ts"
+      ],
+      "@twinfile/geokit/core/utils/cache": [
+        "src/core/dist/esm/utils/cache.d.ts"
+      ],
+      "@twinfile/geokit/core/utils/retry": [
+        "src/core/dist/esm/utils/retry.d.ts"
+      ],
+      "@twinfile/geokit/core/containment": [
+        "src/core/dist/esm/utils/containment/index.d.ts"
+      ],
+      "@twinfile/geokit/env/service-keys": [
+        "src/env/dist/esm/service-keys.d.ts"
+      ],
+      "@twinfile/geokit/service/registry": [
+        "src/service/dist/esm/services/registry.d.ts"
+      ],
+      "@twinfile/geokit/service/builtins": [
+        "src/service/dist/esm/builtins.d.ts"
+      ],
+      "@twinfile/geokit/core/config/env": [
+        "src/core/dist/esm/config/env/index.d.ts"
+      ],
+      "@twinfile/geokit/core/static-map": [
+        "src/core/dist/esm/static-map/index.d.ts"
+      ],
+      "@twinfile/geokit/core/normalize": [
+        "src/core/dist/esm/utils/normalize/index.d.ts"
+      ],
+      "@twinfile/geokit/core/types/env": [
+        "src/core/dist/esm/types/env.d.ts"
+      ],
+      "@twinfile/geokit/env/primitives": [
+        "src/env/dist/esm/primitives.d.ts"
+      ],
+      "@twinfile/geokit/service/plugin": [
+        "src/service/dist/esm/plugin.d.ts"
+      ],
+      "@twinfile/geokit/core/contract": [
+        "src/core/dist/esm/contract/index.d.ts"
+      ],
+      "@twinfile/geokit/core/distance": [
+        "src/core/dist/esm/utils/distance/index.d.ts"
+      ],
+      "@twinfile/geokit/core/simplify": [
+        "src/core/dist/esm/utils/simplify/index.d.ts"
+      ],
+      "@twinfile/geokit/env/bootstrap": [
+        "src/env/dist/esm/bootstrap.d.ts"
+      ],
+      "@twinfile/geokit/service/types": [
+        "src/service/dist/esm/services/types.d.ts"
+      ],
+      "@twinfile/geokit/core/geohash": [
+        "src/core/dist/esm/utils/geohash/index.d.ts"
+      ],
+      "@twinfile/geokit/core/geojson": [
+        "src/core/dist/esm/utils/geojson/index.d.ts"
+      ],
+      "@twinfile/geokit/core/h3/lite": [
+        "src/core/dist/esm/utils/h3/lite.d.ts"
+      ],
+      "@twinfile/geokit/core/spatial": [
+        "src/core/dist/esm/utils/spatial/index.d.ts"
+      ],
+      "@twinfile/geokit/crosswalk/us": [
+        "src/crosswalk/dist/esm/src/us/index.d.ts"
+      ],
+      "@twinfile/geokit/core/bounds": [
+        "src/core/dist/esm/utils/bounds/index.d.ts"
+      ],
+      "@twinfile/geokit/core/buffer": [
+        "src/core/dist/esm/utils/buffer/buffer-turf.d.ts"
+      ],
+      "@twinfile/geokit/core/types": [
+        "src/core/dist/esm/types/index.d.ts"
+      ],
+      "@twinfile/geokit/core/core": [
+        "src/core/dist/esm/core/index.d.ts"
+      ],
+      "@twinfile/geokit/core/turf": [
+        "src/core/dist/esm/utils/turf/index.d.ts"
+      ],
+      "@twinfile/geokit/crosswalk": [
+        "src/crosswalk/dist/esm/src/index.d.ts"
+      ],
+      "@twinfile/geokit/core/h3": [
+        "src/core/dist/esm/utils/h3/index.d.ts"
+      ],
+      "@twinfile/geokit/h3/lite": [
+        "src/h3/dist/esm/lite.d.ts"
+      ],
+      "@twinfile/geokit/service": [
+        "src/service/dist/esm/index.d.ts"
+      ],
+      "@twinfile/geokit/core": [
+        "src/core/dist/esm/index.d.ts"
+      ],
+      "@twinfile/geokit/env": [
+        "src/env/dist/esm/index.d.ts"
+      ],
+      "@twinfile/geokit/h3": [
+        "src/h3/dist/esm/index.d.ts"
+      ],
+      "@twinfile/geokit/ui": [
+        "src/ui/src/index.ts"
+      ],
+      "@twinfile/geokit/ui/*": [
+        "src/ui/src/*"
+      ]
+    }
+  }
+}

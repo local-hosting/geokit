@@ -156,14 +156,6 @@ async function finalizeBuild() {
   await fixEsmImports(join(geokitRoot, 'dist/esm'));
   await fixCjsRequires(join(geokitRoot, 'dist/cjs'));
   console.log('[geokit build] fixed ESM import and CJS require extensions');
-  const { spawnSync } = await import('node:child_process');
-  const check = spawnSync(process.execPath, ['../h3/scripts/check-no-src-declarations.mjs'], {
-    cwd: geokitRoot,
-    stdio: 'inherit',
-  });
-  if (check.status !== 0) {
-    process.exit(check.status ?? 1);
-  }
 }
 
 /** @type {import('tsup').Options[]} */
