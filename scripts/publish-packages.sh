@@ -7,6 +7,7 @@ if [[ -z "${NODE_AUTH_TOKEN:-}" ]]; then
 fi
 cd "${root}"
 yarn build
+node scripts/prepare-publish-package-json.mjs
 echo "publish-packages: @twinfile/geokit@$(node -p "require('./package.json').version")"
 npm publish --registry=https://npm.pkg.github.com --ignore-scripts
 echo "publish-packages OK"
