@@ -13,8 +13,8 @@
     "access": "restricted"
   },
   "scripts": {
-    "build": "yarn build:env && yarn build:h3 && yarn generate:tsconfig-paths && yarn build:core && yarn build:ui && yarn generate:tsconfig-paths && yarn build:service && yarn build:foursquare && yarn generate:tsconfig-paths && yarn generate:vitest-aliases",
-    "build:core": "node src/core/scripts/check-build-tsconfig.mjs && cd src/core && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json && node ../h3/scripts/check-no-src-declarations.mjs",
+    "build": "yarn build:env && yarn build:h3 && yarn generate:tsconfig-paths && yarn build:core:bundle && yarn build:ui && yarn generate:tsconfig-paths && yarn build:core:types && yarn build:service && yarn build:foursquare && yarn generate:tsconfig-paths && yarn generate:vitest-aliases",
+    "build:core": "yarn build:core:bundle && yarn build:core:types",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "test": "yarn test:core && yarn test:crosswalk && yarn validate:exports",
     "test:core": "vitest run --config src/core/config/vitest.config.ts",
@@ -31,7 +31,9 @@
     "validate:exports": "node scripts/validate-package-exports.mjs",
     "prepublishOnly": "yarn build && yarn normalize:exports && yarn validate:exports",
     "generate:tsconfig-paths": "node scripts/generate-geokit-tsconfig-paths.mjs",
-    "generate:vitest-aliases": "node scripts/generate-vitest-aliases.mjs"
+    "generate:vitest-aliases": "node scripts/generate-vitest-aliases.mjs",
+    "build:core:bundle": "node src/core/scripts/check-build-tsconfig.mjs && cd src/core && tsup --config config/tsup.config.js && node ../h3/scripts/check-no-src-declarations.mjs",
+    "build:core:types": "cd src/core && tsc -p config/tsconfig.build.json"
   },
   "exports": {
     "./core": {
