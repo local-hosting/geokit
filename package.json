@@ -13,7 +13,7 @@
     "access": "restricted"
   },
   "scripts": {
-    "build": "yarn build:env && yarn build:h3 && yarn build:core && yarn build:service && yarn build:ui && yarn build:foursquare && yarn generate:tsconfig-paths && yarn generate:vitest-aliases",
+    "build": "yarn build:env && yarn build:h3 && yarn generate:tsconfig-paths && yarn build:core && yarn build:ui && yarn generate:tsconfig-paths && yarn build:service && yarn build:foursquare && yarn generate:tsconfig-paths && yarn generate:vitest-aliases",
     "build:core": "node src/core/scripts/check-build-tsconfig.mjs && cd src/core && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json && node ../h3/scripts/check-no-src-declarations.mjs",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "test": "yarn test:core && yarn test:crosswalk && yarn validate:exports",
