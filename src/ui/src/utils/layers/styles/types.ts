@@ -6,8 +6,8 @@
  */
 
 import type { MapInstance } from '../../../providers/types';
-import type { Feature } from '@geokit/core/types';
-import { getFeatureId } from '@geokit/core/geojson';
+import type { Feature } from '@twinfile/geokit/core/types';
+import { getFeatureId } from '@twinfile/geokit/core/geojson';
 import { getCSSVariable, getCSSVariableNumber } from '../../map-surface/theme';
 import { debug } from '../../map-surface/logger';
 import { HOVER_CONFIG, type HoverStateHandlers } from '../../map-surface/feature-state-hover';

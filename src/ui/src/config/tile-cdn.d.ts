@@ -2,7 +2,7 @@
  * Basemap tile/style CDN — point MapLibre style and tile URLs at your own host.
  */
 import { type MapTilerTransformRequest } from './maptiler-dev-proxy';
-import type { GeokitEnv } from '@geokit/env';
+import type { GeokitEnv } from '@twinfile/geokit/env';
 export type TileCdnEnv = GeokitEnv;
 /** Full MapLibre style.json URL (overrides built-in MapTiler style names). */
 export declare function resolveMapStyleUrlFromEnv(env?: TileCdnEnv): string | undefined;

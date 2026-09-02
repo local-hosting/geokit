@@ -4,8 +4,8 @@ import {
   registerService,
   initService,
   getServiceForCapability,
-} from '@geokit/service/registry';
-import type { Service, ServiceCapability } from '@geokit/service/types';
+} from '@twinfile/geokit/service/registry';
+import type { Service, ServiceCapability } from '@twinfile/geokit/service/types';
 import type { BaseUIProvider } from '../../../src/providers/types';
 import { MockAPIProvider } from '../../mocks/mock-api-provider';
 import { MockUIProvider } from '../../mocks/mock-ui-provider';

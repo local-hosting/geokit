@@ -3,14 +3,14 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@geokit/service": [
-        "../../src/service/src/index.ts"
-      ],
-      "@geokit/service/*": [
-        "../../src/service/src/*"
-      ],
       "geokit/*": [
         "../../src/core/src/*"
+      ],
+      "@twinfile/geokit/service": [
+        "../../src/service/src/index.ts"
+      ],
+      "@twinfile/geokit/service/*": [
+        "../../src/service/src/*"
       ]
     }
   }

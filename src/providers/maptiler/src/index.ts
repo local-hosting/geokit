@@ -1,5 +1,5 @@
-import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@geokit/service/plugin';
-import { resolveGeocodingApiKey } from '@geokit/env/service-keys';
+import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@twinfile/geokit/service/plugin';
+import { resolveGeocodingApiKey } from '@twinfile/geokit/env/service-keys';
 import { MapTilerService } from './maptiler-service';
 
 export const maptilerPlugin: GeokitServicePlugin = {

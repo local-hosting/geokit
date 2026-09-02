@@ -7,8 +7,8 @@ import type {
   MapCameraFrame,
   MapLocalPersistScope,
   MapLocalState,
-} from '@geokit/core/contract/offline';
-import { MapOfflineDefaults } from '@geokit/core/contract/offline';
+} from '@twinfile/geokit/core/contract/offline';
+import { MapOfflineDefaults } from '@twinfile/geokit/core/contract/offline';
 import {
   SNAPSHOT_STORE,
   STATE_STORE,

@@ -5,7 +5,7 @@ import type {
   MacroRegion,
   StateCode,
   ZipCode,
-} from '@geokit/core';
+} from '@twinfile/geokit/core';
 import {
   asCountyFipsOrUndefined,
   asGeohashPoint,
@@ -13,7 +13,7 @@ import {
   asMacroRegionOrUndefined,
   asStateCodeOrUndefined,
   asZipCodeOrUndefined,
-} from '@geokit/core';
+} from '@twinfile/geokit/core';
 import { compactH3CellId, expandH3CellId } from '../h3/cell-id';
 import { geohashCellIdForLookup } from '../geohash/cell-id';
 

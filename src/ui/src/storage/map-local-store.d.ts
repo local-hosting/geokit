@@ -2,7 +2,7 @@
  * Per-map local persistence — camera, selected pin, and snapshot blobs.
  * Domain records (markers, domain records) stay in the host app.
  */
-import type { MapCameraFrame, MapLocalPersistScope, MapLocalState } from '@geokit/core/contract/offline';
+import type { MapCameraFrame, MapLocalPersistScope, MapLocalState } from '@twinfile/geokit/core/contract/offline';
 export interface MapSnapshotRecord {
     mapId: string;
     providerHint: string;

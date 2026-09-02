@@ -2,9 +2,9 @@
  * HERE Places API provider — Discover search.
  */
 
-import { Service } from '@geokit/service';
-import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@geokit/service/types';
-import { ProviderCache, buildPlaceSearchCacheKey, RequestQueue, requireAPIKey, fetchWithRetry } from '@geokit/service';
+import { Service } from '@twinfile/geokit/service';
+import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@twinfile/geokit/service/types';
+import { ProviderCache, buildPlaceSearchCacheKey, RequestQueue, requireAPIKey, fetchWithRetry } from '@twinfile/geokit/service';
 const PROVIDER_NAME = 'HERE Places';
 const DISCOVER_BASE = 'https://discover.search.hereapi.com/v1/discover';
 

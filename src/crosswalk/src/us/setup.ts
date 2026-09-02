@@ -12,7 +12,7 @@ import {
   isCountyBoundariesLoaded,
   registerCountyBoundaries,
 } from './county-boundaries';
-import { asDmaSlugOrUndefined } from '@geokit/core';
+import { asDmaSlugOrUndefined } from '@twinfile/geokit/core';
 
 export type CountyBoundaryLoader = () => Promise<GeoJSON.FeatureCollection | null>;
 
@@ -82,4 +82,4 @@ export {
   registerCountyBoundaries,
 } from './county-boundaries';
 
-export { asDmaSlugOrUndefined as canonicalDmaSlug } from '@geokit/core';
+export { asDmaSlugOrUndefined as canonicalDmaSlug } from '@twinfile/geokit/core';

@@ -4,7 +4,7 @@
  * Prefer {@link createGeokitLogger} with a scope so messages use `[gk-<scope>]`.
  */
 
-import { createGeokitLogger, createLogger, geokitTag } from '@geokit/core';
+import { createGeokitLogger, createLogger, geokitTag } from '@twinfile/geokit/core';
 
 const logger = createLogger({ windowFlag: '__GEOKIT_DEBUG__' });
 

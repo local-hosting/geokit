@@ -1,7 +1,7 @@
 /**
  * Web tile prefetch via Cache API + coverage reporting (Tier C).
  */
-import type { MapOfflineCoverage, MapOfflinePolicy, MapOfflinePrefetchRequest } from '@geokit/core/contract/offline';
+import type { MapOfflineCoverage, MapOfflinePolicy, MapOfflinePrefetchRequest } from '@twinfile/geokit/core/contract/offline';
 export declare const TILE_CACHE_NAME = "geokit-tiles-v1";
 export interface OfflineRegionRecord {
     mapId: string;

@@ -1,4 +1,4 @@
-export type { GeoJsonLoadRequest, GeoJsonLoader, GeoJsonLoaderContext, GeoJsonLoaderResult, ViewportContext, } from '@geokit/core/types/geojson-loader';
+export type { GeoJsonLoadRequest, GeoJsonLoader, GeoJsonLoaderContext, GeoJsonLoaderResult, ViewportContext, } from '@twinfile/geokit/core/types/geojson-loader';
 export { bindDebouncedMapMoveend, bindIncrementalViewportSync } from './viewport-sync';
 export { featuresMapToCollection, mergeFeaturesById } from './merge';
 export { clearLayerDatasetMounts, registerLayerDatasetMount, resolveLayerDatasetMount, unregisterLayerDatasetMount, type LayerDatasetMountFn, } from './registry';

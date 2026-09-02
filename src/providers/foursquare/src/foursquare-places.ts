@@ -8,7 +8,7 @@ import {
   type NormalizedFoursquarePlace,
 } from './types/foursquare-places';
 
-import { resolveFoursquareApiKey } from '@geokit/env';
+import { resolveFoursquareApiKey } from '@twinfile/geokit/env';
 
 export function foursquarePlacesApiKey(): string | undefined {
   return resolveFoursquareApiKey();

@@ -23,7 +23,7 @@ import {
   getBoundsFromArea,
 } from '../../../src/utils/spatial/decode';
 import { encodeGeohashPoint, encodeGeohashArea } from '../../../src/utils/geohash';
-import { coordinatesToH3Point, coordinatesToH3Area } from '@geokit/h3';
+import { coordinatesToH3Point, coordinatesToH3Area } from '@twinfile/geokit/h3';
 import {
   serializeCoordinates,
   deserializeCoordinates,

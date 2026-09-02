@@ -1,4 +1,4 @@
-import type { LayerDatasetContext, LayerDatasetHandle, LayerDatasetId } from '@geokit/core/types/layer-datasets';
+import type { LayerDatasetContext, LayerDatasetHandle, LayerDatasetId } from '@twinfile/geokit/core/types/layer-datasets';
 export type LayerDatasetMountFn = (ctx: LayerDatasetContext) => Promise<LayerDatasetHandle | null>;
 export declare function registerLayerDatasetMount(id: LayerDatasetId, mount: LayerDatasetMountFn): void;
 export declare function unregisterLayerDatasetMount(id: LayerDatasetId): void;

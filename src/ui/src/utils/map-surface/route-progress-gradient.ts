@@ -1,4 +1,4 @@
-import { hexToRgb } from '@geokit/core';
+import { hexToRgb } from '@twinfile/geokit/core';
 
 export interface RouteProgressGradientOptions {
   /** CSS hex color for the route */

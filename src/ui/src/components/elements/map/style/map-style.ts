@@ -15,7 +15,7 @@ type MapStyleLike = {
   hasImage?: (id: string) => boolean;
 };
 
-import { buildMaptilerStyleUrl } from '@geokit/ui/config/tile-cdn';
+import { buildMaptilerStyleUrl } from '@twinfile/geokit/ui/config/tile-cdn';
 
 const defaultStyleUrl = (apiKey: string) => buildMaptilerStyleUrl('dataviz-dark', apiKey);
 

@@ -1,5 +1,5 @@
-import type { ServiceCapability } from '../src/providers/types';
-import type { Service } from '../src/providers/service';
+import type { ServiceCapability } from '../services/types';
+import type { Service } from '../services/service';
 /** Ordered provider list per capability for fallback routing. */
 export type CapabilityServiceChain = Partial<Record<ServiceCapability, Service[]>>;
 export interface CompositeServiceOptions {

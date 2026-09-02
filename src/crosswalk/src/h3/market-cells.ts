@@ -14,12 +14,12 @@ import {
   normalizeRegionSlug,
   type RegionMarketCellsIndex,
   type RegionCellFeatureOptions,
-} from '@geokit/h3/cell-to-region-index';
+} from '@twinfile/geokit/h3/cell-to-region-index';
 
 export type {
   RegionMarketCellsIndex,
   RegionCellFeatureOptions,
-} from '@geokit/h3/cell-to-region-index';
+} from '@twinfile/geokit/h3/cell-to-region-index';
 
 export {
   buildCellToRegionMap,
@@ -30,7 +30,7 @@ export {
   resolveRegionSlugsForViewportCells,
   canonicalRegionH3CellId,
   normalizeRegionSlug,
-} from '@geokit/h3/cell-to-region-index';
+} from '@twinfile/geokit/h3/cell-to-region-index';
 
 /** Winner-takes-all cell → DMA slug map from census-catalog `marketCells`. */
 export function buildCellToDmaMap(

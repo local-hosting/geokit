@@ -1,6 +1,6 @@
 /**
- * @geokit/service — registry, composite routing, plugin hooks, shared HTTP utils.
- * Vendor service classes live in @geokit/* service packages packages.
+ * @twinfile/geokit/service — registry, composite routing, plugin hooks, shared HTTP utils.
+ * Vendor service classes live in @twinfile/geokit/* service packages packages.
  */
 
 // Re-export API providers (types, registry, implementations)

@@ -1,8 +1,8 @@
-import { pointInGeometry } from '@geokit/core/containment';
-import type { DMA } from '@geokit/core';
+import { pointInGeometry } from '@twinfile/geokit/core/containment';
+import type { DMA } from '@twinfile/geokit/core';
 import type { UsCrosswalkTables } from '../types';
 import { compactH3CellId } from '../h3/cell-id';
-import { asDmaSlugOrUndefined } from '@geokit/core';
+import { asDmaSlugOrUndefined } from '@twinfile/geokit/core';
 import { toDMA } from '../lookup/dma';
 import {
   getCountyBoundaryFeatures,

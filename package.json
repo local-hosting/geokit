@@ -1,6 +1,6 @@
 {
   "name": "@twinfile/geokit",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Geospatial SDK for Twinfile map stack",
   "license": "MPL-2.0",
   "type": "module",
@@ -13,7 +13,7 @@
     "access": "restricted"
   },
   "scripts": {
-    "build": "yarn build:core && yarn build:ui && yarn build:packages",
+    "build": "yarn build:env && yarn build:h3 && yarn build:core && yarn build:service && yarn build:ui && yarn build:foursquare && yarn generate:tsconfig-paths && yarn generate:vitest-aliases",
     "build:core": "node src/core/scripts/check-build-tsconfig.mjs && cd src/core && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json && node ../h3/scripts/check-no-src-declarations.mjs",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "test": "yarn test:core && yarn test:crosswalk && yarn validate:exports",
@@ -29,7 +29,9 @@
     "build:foursquare": "cd src/providers/foursquare && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "normalize:exports": "node scripts/normalize-package-exports.mjs",
     "validate:exports": "node scripts/validate-package-exports.mjs",
-    "prepublishOnly": "yarn build && yarn normalize:exports && yarn validate:exports"
+    "prepublishOnly": "yarn build && yarn normalize:exports && yarn validate:exports",
+    "generate:tsconfig-paths": "node scripts/generate-geokit-tsconfig-paths.mjs",
+    "generate:vitest-aliases": "node scripts/generate-vitest-aliases.mjs"
   },
   "exports": {
     "./core": {
@@ -435,6 +437,31 @@
       "types": "./src/h3/dist/esm/cell/cell-to-region-index.d.ts",
       "import": "./src/h3/dist/esm/cell/cell-to-region-index.js",
       "default": "./src/h3/dist/esm/cell/cell-to-region-index.js"
+    },
+    "./foursquare": {
+      "types": "./src/providers/foursquare/dist/esm/index.d.ts",
+      "import": "./src/providers/foursquare/dist/esm/index.js",
+      "default": "./src/providers/foursquare/dist/esm/index.js"
+    },
+    "./foursquare/foursquare-places": {
+      "types": "./src/providers/foursquare/dist/esm/foursquare-places.d.ts",
+      "import": "./src/providers/foursquare/dist/esm/foursquare-places.js",
+      "default": "./src/providers/foursquare/dist/esm/foursquare-places.js"
+    },
+    "./mapbox": {
+      "types": "./src/providers/mapbox/src/index.ts",
+      "import": "./src/providers/mapbox/src/index.ts",
+      "default": "./src/providers/mapbox/src/index.ts"
+    },
+    "./maptiler": {
+      "types": "./src/providers/maptiler/src/index.ts",
+      "import": "./src/providers/maptiler/src/index.ts",
+      "default": "./src/providers/maptiler/src/index.ts"
+    },
+    "./google": {
+      "types": "./src/providers/google/src/index.ts",
+      "import": "./src/providers/google/src/index.ts",
+      "default": "./src/providers/google/src/index.ts"
     },
     "./service": {
       "types": "./src/service/dist/esm/index.d.ts",
@@ -865,5 +892,14 @@
     "vue": "^3.5.13",
     "zod": "^3.25.0"
   },
-  "packageManager": "yarn@4.18.0"
+  "packageManager": "yarn@4.18.0",
+  "files": [
+    "src",
+    "config",
+    "scripts/normalize-package-exports.mjs",
+    "scripts/validate-package-exports.mjs",
+    "scripts/generate-geokit-tsconfig-paths.mjs",
+    "scripts/generate-vitest-aliases.mjs",
+    "tests/package-exports.test.mjs"
+  ]
 }

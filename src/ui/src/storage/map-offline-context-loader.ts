@@ -6,11 +6,11 @@ import type {
   MapOfflineCoverage,
   MapOfflineHostContext,
   MapOfflinePrefetchRequest,
-} from '@geokit/core/contract/offline';
+} from '@twinfile/geokit/core/contract/offline';
 import {
   defaultOfflineZoomRangeForMap,
   validateOfflinePrefetchRequest,
-} from '@geokit/core/contract/offline';
+} from '@twinfile/geokit/core/contract/offline';
 import {
   MapOfflineTileCache,
   type MapOfflinePrefetchOptions,

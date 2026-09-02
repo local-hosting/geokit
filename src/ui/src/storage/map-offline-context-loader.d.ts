@@ -1,7 +1,7 @@
 /**
  * Tier D — host hook: prefetchRegion(bounds) on map context load.
  */
-import type { MapOfflineCoverage, MapOfflineHostContext, MapOfflinePrefetchRequest } from '@geokit/core/contract/offline';
+import type { MapOfflineCoverage, MapOfflineHostContext, MapOfflinePrefetchRequest } from '@twinfile/geokit/core/contract/offline';
 import { type MapOfflinePrefetchOptions } from './map-offline-tile-cache';
 export interface MapOfflineContextLoaderConfig {
     urlTemplate: string;

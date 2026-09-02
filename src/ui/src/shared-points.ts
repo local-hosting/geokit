@@ -23,7 +23,7 @@ export {
   GKH3,
   GKDMA,
   GeoKind,
-} from '@geokit/crosswalk';
+} from '@twinfile/geokit/crosswalk';
 
 export {
   POINT_DMA_PROPERTY,

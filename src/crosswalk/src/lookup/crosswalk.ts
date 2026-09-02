@@ -5,7 +5,7 @@ import {
   type GeoPoint,
   type GeoRef,
   type MacroRegion,
-} from '@geokit/core';
+} from '@twinfile/geokit/core';
 import { GeoKind } from '../geo-kind.js';
 import type { CrosswalkCountry, CrosswalkResult, CrosswalkSpine } from '../types';
 import { geohashCellIdForLookup } from '../geohash/cell-id';
