@@ -11,8 +11,14 @@ const uiSelfPaths = {
   '@twinfile/geokit/ui/*': ['src/ui/src/*'],
 };
 
+const importPaths = { ...(imports.compilerOptions?.paths ?? {}) };
+for (const key of Object.keys(importPaths)) {
+  if (key === '@twinfile/geokit/ui' || key.startsWith('@twinfile/geokit/ui/')) {
+    delete importPaths[key];
+  }
+}
 const mergedPaths = {
-  ...(imports.compilerOptions?.paths ?? {}),
+  ...importPaths,
   ...uiSelfPaths,
 };
 
