@@ -36,18 +36,22 @@ function distImportToTypes(importPath) {
 
 function resolveExportTarget(entry) {
   if (typeof entry === 'string') {
-    return distImportToTypes(entry) ?? distImportToSource(entry) ?? entry;
+    const types = distImportToTypes(entry);
+    if (types && existsSync(join(repoRoot, types))) return types;
+    const source = distImportToSource(entry);
+    if (source && existsSync(join(repoRoot, source))) return source;
+    return entry.endsWith('.ts') && existsSync(join(repoRoot, entry)) ? entry : null;
   }
   if (entry.types && existsSync(join(repoRoot, entry.types))) return entry.types;
-  if (entry.source && existsSync(join(repoRoot, entry.source))) return entry.source;
   const runtime = entry.import ?? entry.default;
   if (typeof runtime === 'string') {
-    return (
-      distImportToTypes(runtime) ??
-      distImportToSource(runtime) ??
-      (runtime.endsWith('.ts') && existsSync(join(repoRoot, runtime)) ? runtime : null)
-    );
+    const types = distImportToTypes(runtime);
+    if (types && existsSync(join(repoRoot, types))) return types;
+    const source = distImportToSource(runtime);
+    if (source && existsSync(join(repoRoot, source))) return source;
+    if (runtime.endsWith('.ts') && existsSync(join(repoRoot, runtime))) return runtime;
   }
+  if (entry.source && existsSync(join(repoRoot, entry.source))) return entry.source;
   return null;
 }
 
