@@ -3,6 +3,9 @@
  * Route optimization, fleet management, and delivery planning
  */
 
+export type { ReachSpec } from './reach-polygon';
+export { reachPolygon } from './reach-polygon';
+
 import { haversineMeters } from '../distance';
 import { getBounds, getCenter } from '../bounds';
 import type { Coordinate } from '../../types';

@@ -48,7 +48,7 @@ export function listDmaSlugs(): string[] {
   const { dmaToZips } = requireUsCrosswalkTables();
   return Object.keys(dmaToZips)
     .map((slug) => asDmaSlugOrUndefined(slug))
-    .filter((slug): slug is string => Boolean(slug))
+    .filter((slug) => slug !== undefined)
     .sort();
 }
 

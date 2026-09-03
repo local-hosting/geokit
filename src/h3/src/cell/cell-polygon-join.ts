@@ -30,7 +30,7 @@ function outerRing(geometry: Polygon | MultiPolygon): Position[] {
   return geometry.coordinates[0]?.[0] ?? [];
 }
 
-function geometryCentroidLatLon(geometry: Polygon | MultiPolygon): LatLon | null {
+export function geometryCentroidLatLon(geometry: Polygon | MultiPolygon): LatLon | null {
   if (geometry.type === 'Polygon') {
     return polygonCentroid(geometry);
   }
