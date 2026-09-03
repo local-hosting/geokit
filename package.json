@@ -13,13 +13,15 @@
     "access": "restricted"
   },
   "scripts": {
-    "build": "yarn build:env && yarn build:h3 && yarn generate:tsconfig-paths && yarn build:core:bundle && yarn generate:pre-ui-tsconfig-paths && yarn build:core:types:pre-ui && yarn generate:tsconfig-paths && yarn build:service && yarn build:crosswalk && yarn generate:tsconfig-paths && yarn generate:ui-tsconfig-paths && yarn build:ui && yarn generate:tsconfig-paths && yarn build:core:types:shims && yarn build:foursquare && yarn generate:tsconfig-paths && yarn generate:vitest-aliases && node scripts/check-no-src-declarations.mjs",
+    "build": "yarn build:env && yarn build:h3 && yarn generate:tsconfig-paths && yarn build:core:bundle && yarn generate:pre-ui-tsconfig-paths && yarn build:core:types:pre-ui && yarn generate:tsconfig-paths && yarn build:service && yarn build:crosswalk && yarn generate:tsconfig-paths && yarn generate:ui-tsconfig-paths && yarn build:ui && yarn generate:tsconfig-paths && yarn build:core:types:shims && yarn build:foursquare && yarn generate:tsconfig-paths && node scripts/check-no-src-declarations.mjs",
     "build:core": "yarn build:core:bundle && yarn build:core:types",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "test": "yarn test:core && yarn test:crosswalk && yarn validate:exports",
+    "pretest": "yarn generate:dev-config",
     "test:core": "vitest run --config src/core/config/vitest.config.ts",
     "test:crosswalk": "vitest run --config config/vitest.crosswalk.config.ts",
     "typecheck": "tsc -p src/core/config/tsconfig.json --noEmit",
+    "pretypecheck": "yarn generate:tsconfig-paths",
     "demo": "vite --config vite.demo.config.js",
     "publish:package": "npm publish --registry=https://npm.pkg.github.com --ignore-scripts",
     "build:packages": "yarn build:env && yarn build:service && yarn build:h3 && yarn build:foursquare",
@@ -31,7 +33,7 @@
     "validate:exports": "node scripts/validate-package-exports.mjs",
     "prepublishOnly": "yarn build && yarn normalize:exports && yarn validate:exports",
     "generate:tsconfig-paths": "node scripts/generate-geokit-tsconfig-paths.mjs",
-    "generate:vitest-aliases": "node scripts/generate-vitest-aliases.mjs",
+    "generate:dev-config": "node scripts/generate-dev-config.mjs",
     "build:core:bundle": "node src/core/scripts/check-build-tsconfig.mjs && cd src/core && tsup --config config/tsup.config.js && node ../../scripts/check-no-src-declarations.mjs",
     "build:core:types": "cd src/core && NODE_OPTIONS='--max-old-space-size=4096' tsc -p config/tsconfig.build.json",
     "build:core:types:pre-ui": "cd src/core && NODE_OPTIONS='--max-old-space-size=4096' tsc -p config/tsconfig.build.pre-ui.json",
@@ -893,7 +895,8 @@
     "scripts/normalize-package-exports.mjs",
     "scripts/validate-package-exports.mjs",
     "scripts/generate-geokit-tsconfig-paths.mjs",
-    "scripts/generate-vitest-aliases.mjs",
+    "scripts/generate-dev-config.mjs",
+    "scripts/geokit-vitest-aliases.mjs",
     "tests/package-exports.test.mjs"
   ]
 }
