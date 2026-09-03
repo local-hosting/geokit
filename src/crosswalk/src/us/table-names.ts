@@ -41,4 +41,11 @@ export const US_CROSSWALK_PRESETS = {
     'dmaRegion',
   ] as const satisfies readonly UsCrosswalkTableName[],
   place: ['placeToDma', 'dmaRegion'] as const satisfies readonly UsCrosswalkTableName[],
+  demographicsShard: [
+    'h3ToDma',
+    'h3R5ToZips',
+    'zipToH3R5',
+    'zipToState',
+    'dmaToZips',
+  ] as const satisfies readonly UsCrosswalkTableName[],
 } as const;

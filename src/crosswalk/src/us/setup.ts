@@ -81,5 +81,3 @@ export {
   isCountyBoundariesLoaded,
   registerCountyBoundaries,
 } from './county-boundaries';
-
-export { asDmaSlugOrUndefined as canonicalDmaSlug } from '@twinfile/geokit/core';
