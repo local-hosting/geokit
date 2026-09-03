@@ -1,0 +1,14 @@
+{
+  "extends": [
+    "../tsconfig.json",
+    "../../../config/tsconfig.geokit-imports.json"
+  ],
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "outDir": "../dist/esm",
+    "rootDir": "../src",
+    "declaration": true,
+    "declarationMap": false
+  }
+}

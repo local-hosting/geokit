@@ -341,6 +341,8 @@ export {
   estimateTravelRadiusMeters,
   estimateTravelRadiusMiles,
 } from './utils/logistics/travel-radius';
+export type { ReachSpec } from './utils/logistics/reach-polygon';
+export { reachPolygon } from './utils/logistics/reach-polygon';
 
 // Spatial index interoperability utilities (type guards + constructors only; see ./spatial/decode for H3 decode)
 export {

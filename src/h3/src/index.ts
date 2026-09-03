@@ -5,6 +5,8 @@ export * from './adjacency/neighbors';
 export * from './geometry/polygon';
 export * from './cell/cell-polygon-join';
 export * from './cell/cell-crosswalk';
+export * from './cell/cell-id-resolution';
+export * from './cell/assign-features-by-centroid';
 export * from './geometry/metrics';
 export * from './geometry/type-safe';
 export * from './cell/cell-id';
