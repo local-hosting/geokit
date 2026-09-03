@@ -69,6 +69,19 @@ export {
   type CrosswalkOptions,
 } from './lookup/convert';
 export {
+  allZipCentroids,
+  buildZipToStateMap,
+  clearZipCentroidCache,
+  filterZipsByPolygon,
+  stateForH3Cell,
+  stateForPoint,
+  stateForZip,
+  usStateAbbrs,
+  zipsInPolygon,
+  type ZipCentroid,
+  type ZipsInPolygonOptions,
+} from './lookup/spatial';
+export {
   GEOHASH_ZIP_INDEX_PRECISION,
   geohashCellIdForLookup,
   normalizeGeohashCellId,

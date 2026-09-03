@@ -1,6 +1,6 @@
 {
   "name": "@twinfile/geokit",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Geospatial SDK for Twinfile map stack",
   "license": "MIT",
   "type": "module",

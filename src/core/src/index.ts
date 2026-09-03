@@ -337,6 +337,10 @@ export { lineIntersection, linesIntersect } from './utils/intersection';
 
 // Buffer utilities
 export { bufferPoint } from './utils/buffer/buffer-point';
+export {
+  estimateTravelRadiusMeters,
+  estimateTravelRadiusMiles,
+} from './utils/logistics/travel-radius';
 
 // Spatial index interoperability utilities (type guards + constructors only; see ./spatial/decode for H3 decode)
 export {
