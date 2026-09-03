@@ -1,6 +1,6 @@
 {
   "name": "@twinfile/geokit",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Geospatial SDK for Twinfile map stack",
   "license": "MIT",
   "type": "module",
@@ -13,7 +13,7 @@
     "access": "restricted"
   },
   "scripts": {
-    "build": "yarn build:env && yarn build:h3 && yarn generate:tsconfig-paths && yarn build:core:bundle && yarn generate:pre-ui-tsconfig-paths && yarn build:core:types:pre-ui && yarn generate:tsconfig-paths && yarn build:service && yarn build:crosswalk && yarn generate:tsconfig-paths && yarn generate:ui-tsconfig-paths && yarn build:ui && yarn generate:tsconfig-paths && yarn build:core:types:shims && yarn build:foursquare && yarn generate:tsconfig-paths && node scripts/check-no-src-declarations.mjs",
+    "build": "yarn build:env && yarn build:h3 && yarn build:formats && yarn generate:tsconfig-paths && yarn build:core:bundle && yarn generate:pre-ui-tsconfig-paths && yarn build:core:types:pre-ui && yarn generate:tsconfig-paths && yarn build:service && yarn build:crosswalk && yarn generate:tsconfig-paths && yarn generate:ui-tsconfig-paths && yarn build:ui && yarn generate:tsconfig-paths && yarn build:core:types:shims && yarn build:foursquare && yarn generate:tsconfig-paths && node scripts/check-no-src-declarations.mjs",
     "build:core": "yarn build:core:bundle && yarn build:core:types",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "test": "yarn test:core && yarn test:crosswalk && yarn validate:exports",
@@ -28,6 +28,7 @@
     "build:env": "cd src/env && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "build:service": "cd src/service && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "build:h3": "cd src/h3 && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
+    "build:formats": "cd src/formats && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "build:foursquare": "cd src/providers/foursquare && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "normalize:exports": "node scripts/normalize-package-exports.mjs",
     "validate:exports": "node scripts/validate-package-exports.mjs",
@@ -447,6 +448,11 @@
       "import": "./src/h3/dist/esm/cell/cell-to-region-index.js",
       "default": "./src/h3/dist/esm/cell/cell-to-region-index.js"
     },
+    "./formats": {
+      "types": "./src/formats/dist/esm/index.d.ts",
+      "import": "./src/formats/dist/esm/index.js",
+      "default": "./src/formats/dist/esm/index.js"
+    },
     "./foursquare": {
       "types": "./src/providers/foursquare/dist/esm/index.d.ts",
       "import": "./src/providers/foursquare/dist/esm/index.js",
@@ -856,6 +862,7 @@
     "latlon-geohash": "^2.0.0",
     "lru-cache": "^11.2.4",
     "mapbox-gl": "^3.17.0",
+    "shapefile": "^0.6.6",
     "topojson-client": "^3.1.0",
     "topojson-server": "^3.0.1",
     "topojson-simplify": "^3.0.3"
@@ -866,6 +873,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.0.0",
     "@types/topojson-client": "^3.1.5",
+    "@types/yauzl": "^2.10.3",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
     "@typescript-eslint/parser": "^8.47.0",
     "@vitest/browser": "^2.1.8",
@@ -886,6 +894,7 @@
     "vite": "^6.1.0",
     "vitest": "^2.1.8",
     "vue": "^3.5.13",
+    "yauzl": "^3.2.0",
     "zod": "^3.25.0"
   },
   "packageManager": "yarn@4.18.0",

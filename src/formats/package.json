@@ -1,0 +1,48 @@
+{
+  "name": "@geokit/formats",
+  "version": "0.1.0",
+  "description": "Convert shapefiles, CSV, and ZIP archives to GeoJSON",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
+    }
+  },
+  "scripts": {
+    "check:src": "node ../h3/scripts/check-no-src-declarations.mjs",
+    "typecheck": "yarn check:src && yarn run -T tsc -p tsconfig.json --noEmit",
+    "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json"
+  },
+  "peerDependencies": {
+    "@twinfile/geokit": ">=0.3.6",
+    "h3-js": "^4.3.0"
+  },
+  "peerDependenciesMeta": {
+    "h3-js": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "shapefile": "^0.6.6",
+    "yauzl": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "@types/node": "^24.10.1",
+    "@types/yauzl": "^2.10.3",
+    "h3-js": "^4.3.0",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/twinfile/geokit.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  }
+}
