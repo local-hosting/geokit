@@ -99,7 +99,6 @@ export {
 } from './load/registry';
 
 export {
-  canonicalDmaSlug,
   ensureUsCrosswalkLoaded,
   isUsCrosswalkLoaded,
   setCountyBoundaryLoader,
@@ -109,6 +108,24 @@ export {
   mergeDmaSlugList,
   type CountyBoundaryLoader,
 } from './us/setup';
+
+export {
+  LEGACY_DMA_SLUG_ALIASES,
+  resolveCanonicalDmaSlug,
+  slugToDmaDisplayName,
+  canonicalDmaSlug,
+} from './us/dma-labels';
+
+export {
+  applyCountyDmaFromCrosswalk,
+  crosswalkTableNameFromStem,
+  fipsToDmaAssignments,
+  isKnownDmaSlug,
+  listDmaSlugs,
+  requireUsCrosswalkTables,
+  zipToH3R5Table,
+  type CountyDmaAssignment,
+} from './us/table-access';
 
 export {
   buildCellToDmaMap,

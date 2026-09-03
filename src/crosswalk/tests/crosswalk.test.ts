@@ -11,6 +11,7 @@ import {
   getLoadedCrosswalkTableNames,
   isCrosswalkTableLoaded,
   US_CROSSWALK_PRESETS,
+  slugToDmaDisplayName,
 } from '../src/index.ts';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -123,6 +124,33 @@ describe('@twinfile/geokit/crosswalk', () => {
     const result = crosswalk(GKPlace('ak/dillingham'), { to: [GeoKind.DMA, GeoKind.Region] });
     expect(result.dma).toEqual([{ slug: 'anchorage', region: 'northwest' }]);
     expect(result.region).toEqual(['northwest']);
+  });
+
+  it('exposes dma table helpers for bulk shard builds', async () => {
+    resetCrosswalkForTest();
+    await loadUsCrosswalk({
+      tables: [...US_CROSSWALK_PRESETS.demographicsShard, 'countyToDma'],
+      projectH3: false,
+    });
+
+    const {
+      crosswalkTableNameFromStem,
+      fipsToDmaAssignments,
+      isKnownDmaSlug,
+      listDmaSlugs,
+      zipToH3R5Table,
+    } = await import('../src/index.ts');
+
+    expect(crosswalkTableNameFromStem('dma-to-zips')).toBe('dmaToZips');
+    expect(listDmaSlugs()).toContain('indianapolis');
+    expect(isKnownDmaSlug('indianapolis')).toBe(true);
+    expect(isKnownDmaSlug('not-a-market')).toBe(false);
+    expect(Object.keys(zipToH3R5Table()).length).toBeGreaterThan(0);
+    expect(slugToDmaDisplayName('hartford-new-haven')).toBe('Hartford & New Haven, CT');
+
+    const assignments = fipsToDmaAssignments();
+    expect(assignments.get('18097')?.dmaSlug).toBe('indianapolis');
+    expect(assignments.get('18097')?.dmaName).toBeTruthy();
   });
 });
 
