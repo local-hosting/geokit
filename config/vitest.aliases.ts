@@ -94,10 +94,14 @@ export function coreVitestAliases(repoRoot: string): Record<string, string> {
 }
 
 
-import geokitVitestAliasesJson from './vitest.geokit-aliases.json' with { type: 'json' };
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { buildGeokitVitestAliases } from '../scripts/geokit-vitest-aliases.mjs';
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export function loadGeokitVitestAliases(): Record<string, string> {
-  return geokitVitestAliasesJson as Record<string, string>;
+  return buildGeokitVitestAliases(repoRoot);
 }
 
 export function vitestAliasEntries(aliases: Record<string, string>) {

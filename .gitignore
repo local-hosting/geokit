@@ -1,6 +1,12 @@
 node_modules
 dist
 coverage
+
+# Generated monorepo path maps (yarn generate:dev-config)
+config/tsconfig.geokit-imports.json
+config/vitest.geokit-aliases.json
+src/core/config/tsconfig.build.pre-ui.paths.json
+src/ui/config/tsconfig.build.paths.json
 .DS_Store
 *.log
 .env
