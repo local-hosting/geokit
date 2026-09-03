@@ -1,4 +1,4 @@
-import { pointInGeometry } from '@twinfile/geokit/core/containment';
+import { pointInGeometry } from '@twinfile/geokit/core';
 import type { DMA } from '@twinfile/geokit/core';
 import type { UsCrosswalkTables } from '../types';
 import { compactH3CellId } from '../h3/cell-id';
