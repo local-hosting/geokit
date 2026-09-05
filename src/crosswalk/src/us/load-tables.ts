@@ -47,10 +47,6 @@ const TABLE_LOADERS: Record<UsCrosswalkTableName, TableLoader> = {
     const { COUNTY_TO_DMA } = await import('../../generated/us/county-to-dma');
     return { countyToDma: COUNTY_TO_DMA };
   },
-  dmaRegion: async () => {
-    const { DMA_REGION } = await import('../../generated/us/dma-region');
-    return { dmaRegion: DMA_REGION };
-  },
   zipToState: async () => {
     const { ZIP_TO_STATE } = await import('../../generated/us/zip-to-state');
     return { zipToState: ZIP_TO_STATE };

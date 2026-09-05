@@ -44,7 +44,6 @@ export type LoadCrosswalkOptions = {
 
 export type PlaceToDmaEntry = {
   dmaSlug: string;
-  region: string;
 };
 
 export type UsCrosswalkTables = {
@@ -57,7 +56,6 @@ export type UsCrosswalkTables = {
   dmaToZips: Readonly<Record<string, readonly string[]>>;
   dmaToCounties?: Readonly<Record<string, readonly string[]>>;
   countyToDma?: Readonly<Record<string, string>>;
-  dmaRegion?: Readonly<Record<string, string>>;
   zipToState?: Readonly<Record<string, string>>;
   placeToDma?: Readonly<Record<string, PlaceToDmaEntry>>;
 };

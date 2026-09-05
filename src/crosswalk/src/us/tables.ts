@@ -60,14 +60,13 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
   const dmaToZips = tables.dmaToZips;
   const dmaToCounties = tables.dmaToCounties;
   const countyToDma = tables.countyToDma;
-  const dmaRegion = tables.dmaRegion;
   const zipToState = tables.zipToState;
   const placeToDma = tables.placeToDma;
 
   const lookups = {
     dmaFromH3(h3Cell: string): DMA | undefined {
       const compact = compactH3CellId(h3Cell);
-      return toDMA(lookups, h3ToDma[compact]);
+      return toDMA(h3ToDma[compact]);
     },
 
     dmaFromPoint(lat: number, lon: number): DMA | undefined {
@@ -76,9 +75,9 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
         if (!feature.geometry) continue;
         if (!pointInGeometry([lat, lon], feature.geometry)) continue;
         const fromProps = asDmaSlugOrUndefined(feature.properties?.dmaSlug);
-        if (fromProps) return toDMA(lookups, fromProps);
+        if (fromProps) return toDMA(fromProps);
         const fips = feature.properties?.fips?.trim();
-        if (fips) return toDMA(lookups, lookups.dmaSlugForCounty(fips));
+        if (fips) return toDMA(lookups.dmaSlugForCounty(fips));
       }
       return undefined;
     },
@@ -99,7 +98,7 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
     },
 
     dmaFromGeohash(geohashCell: string): DMA | undefined {
-      return toDMA(lookups, lookupGeohashDmaSlug(geohashToDma, geohashCell));
+      return toDMA(lookupGeohashDmaSlug(geohashToDma, geohashCell));
     },
 
     zipsForGeohash(geohashCell: string): readonly string[] {
@@ -120,10 +119,10 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
       const geohash = zipToGeohashP8[zip.trim()] ?? zipToGeohashP8[zip.trim().padStart(5, '0')];
       if (geohash) {
         const dma = lookupGeohashDmaSlug(geohashToDma, geohash);
-        if (dma) return toDMA(lookups, dma);
+        if (dma) return toDMA(dma);
       }
       const h3 = zipToH3R5[zip.trim()] ?? zipToH3R5[zip.trim().padStart(5, '0')];
-      return h3 ? toDMA(lookups, h3ToDma[compactH3CellId(h3)]) : undefined;
+      return h3 ? toDMA(h3ToDma[compactH3CellId(h3)]) : undefined;
     },
 
     stateForZip(zip: string): string | undefined {
@@ -146,13 +145,6 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
       return dmaToCounties[slug] ?? [];
     },
 
-    regionForDMA(dmaSlug: string): string | undefined {
-      if (!dmaRegion) return undefined;
-      const slug = asDmaSlugOrUndefined(dmaSlug);
-      if (!slug) return undefined;
-      return dmaRegion[slug];
-    },
-
     dmaSlugForCounty(fips: string): string | undefined {
       if (!countyToDma) return undefined;
       const key = fips.trim();
@@ -160,7 +152,7 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
     },
 
     dmaFromCounty(fips: string): DMA | undefined {
-      return toDMA(lookups, lookups.dmaSlugForCounty(fips));
+      return toDMA(lookups.dmaSlugForCounty(fips));
     },
 
     dmaFromPlace(placeKey: string): DMA | undefined {
@@ -168,11 +160,11 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
       const key = placeKey.trim().toLowerCase();
       const entry = placeToDma[key];
       if (!entry) return undefined;
-      return toDMA(lookups, entry.dmaSlug, entry.region);
+      return toDMA(entry.dmaSlug);
     },
 
     dmaFromSlug(dmaSlug: string): DMA | undefined {
-      return toDMA(lookups, dmaSlug);
+      return toDMA(dmaSlug);
     },
   };
 

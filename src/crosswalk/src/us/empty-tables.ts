@@ -29,7 +29,6 @@ export function mergeUsCrosswalkTablePatch(
     dmaToZips: patch.dmaToZips ?? base.dmaToZips,
     dmaToCounties: patch.dmaToCounties ?? base.dmaToCounties,
     countyToDma: patch.countyToDma ?? base.countyToDma,
-    dmaRegion: patch.dmaRegion ?? base.dmaRegion,
     zipToState: patch.zipToState ?? base.zipToState,
     placeToDma: patch.placeToDma ?? base.placeToDma,
   };
