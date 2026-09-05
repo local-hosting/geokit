@@ -10,6 +10,5 @@ export { DMA_TO_ZIPS } from "./dma-to-zips.js";
 export { US_CROSSWALK_META } from "./meta.js";
 export { DMA_TO_COUNTIES } from "./dma-to-counties.js";
 export { COUNTY_TO_DMA } from "./county-to-dma.js";
-export { DMA_REGION } from "./dma-region.js";
 export { PLACE_TO_DMA } from "./place-to-dma.js";
 export { ZIP_TO_STATE } from "./zip-to-state.js";

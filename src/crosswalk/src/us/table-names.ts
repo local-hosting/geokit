@@ -8,7 +8,6 @@ export const US_CROSSWALK_TABLE_NAMES = [
   'dmaToZips',
   'dmaToCounties',
   'countyToDma',
-  'dmaRegion',
   'zipToState',
   'placeToDma',
 ] as const;
@@ -31,16 +30,14 @@ export const US_CROSSWALK_PRESETS = {
     'h3ToDma',
     'h3R5ToZips',
     'zipToState',
-    'dmaRegion',
   ] as const satisfies readonly UsCrosswalkTableName[],
   geohashZipResolve: [
     'zipToGeohashP8',
     'geohashToDma',
     'geohashP8ToZips',
     'zipToState',
-    'dmaRegion',
   ] as const satisfies readonly UsCrosswalkTableName[],
-  place: ['placeToDma', 'dmaRegion'] as const satisfies readonly UsCrosswalkTableName[],
+  place: ['placeToDma'] as const satisfies readonly UsCrosswalkTableName[],
   demographicsShard: [
     'h3ToDma',
     'h3R5ToZips',
