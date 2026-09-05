@@ -41,13 +41,12 @@ async function ensureCountyBoundariesLoaded(): Promise<void> {
 export async function ensureUsCrosswalkLoaded(): Promise<void> {
   const tablesReady =
     isCrosswalkCountryLoaded('us') &&
-    isCrosswalkTableLoaded('dmaRegion') &&
     isCrosswalkTableLoaded('countyToDma');
 
   if (!tablesReady) {
     if (!crosswalkLoadInflight) {
       crosswalkLoadInflight = loadCrosswalk('us', {
-        tables: [...US_CROSSWALK_PRESETS.dma, 'dmaRegion', 'countyToDma'],
+        tables: [...US_CROSSWALK_PRESETS.dma, 'countyToDma'],
         projectH3: false,
       }).finally(() => {
         crosswalkLoadInflight = null;

@@ -117,13 +117,12 @@ describe('@twinfile/geokit/crosswalk', () => {
     expect(getLoadedCrosswalkTableNames()).toEqual(['h3ToDma', 'h3R5ToZips']);
   });
 
-  it('resolves place key to dma and region', async () => {
+  it('resolves place key to dma', async () => {
     resetCrosswalkForTest();
     await loadUsCrosswalk({ tables: US_CROSSWALK_PRESETS.place, projectH3: false });
 
-    const result = crosswalk(GKPlace('ak/dillingham'), { to: [GeoKind.DMA, GeoKind.Region] });
-    expect(result.dma).toEqual([{ slug: 'anchorage', region: 'northwest' }]);
-    expect(result.region).toEqual(['northwest']);
+    const result = crosswalk(GKPlace('ak/dillingham'), { to: [GeoKind.DMA] });
+    expect(result.dma).toEqual([{ slug: 'anchorage', region: 'unknown' }]);
   });
 
   it('exposes dma table helpers for bulk shard builds', async () => {

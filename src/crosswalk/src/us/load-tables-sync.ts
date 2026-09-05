@@ -1,6 +1,5 @@
 import {
   COUNTY_TO_DMA,
-  DMA_REGION,
   DMA_TO_COUNTIES,
   DMA_TO_ZIPS,
   GEOHASH_P8_TO_ZIPS,
@@ -29,7 +28,6 @@ export function loadAllUsCrosswalkTablesSync(spine: CrosswalkSpine = 'h3'): void
     dmaToZips: DMA_TO_ZIPS,
     dmaToCounties: DMA_TO_COUNTIES,
     countyToDma: COUNTY_TO_DMA,
-    dmaRegion: DMA_REGION,
     zipToState: ZIP_TO_STATE,
     placeToDma: PLACE_TO_DMA,
   };
