@@ -162,4 +162,5 @@ export const refreshCityBoundaries = (
   config: Pick<CityBoundaryConfig, 'polygonSourceId' | 'lineSourceId'>
 ) => refreshBoundaryOutlineForPreset(map, cities, config, { fallbackToInput: true })!;
 
+export * from './boundary-outline-layer';
 export type { BoundaryOutlineLayerConfig } from './boundary-outline-layer';

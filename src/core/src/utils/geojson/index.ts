@@ -36,6 +36,18 @@ export {
 
 export { capPolygonCollectionForMapLibre, polygonsToBoundaryLines } from './boundary-lines';
 
+export {
+  MAPLIBRE_RING_VERTEX_BUDGET,
+  STATE_OUTLINE_MAX_RING_POINTS,
+  COUNTRY_OUTLINE_MAX_RING_POINTS,
+  STATE_OUTLINE_MAX_SEGMENT_DEG,
+  maxRingVertexCount,
+  assertRingVertexBudget,
+  ringSelfIntersectionCount,
+  maxRingSegmentLengthDeg,
+  capGeoJsonRingToMaxPoints,
+} from './vertex-budget';
+
 /**
  * Extract coordinates from a GeoJSON feature or geometry
  *

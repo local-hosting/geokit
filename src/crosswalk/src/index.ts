@@ -147,3 +147,36 @@ export {
   type RegionMarketCellsIndex,
   type RegionCellFeatureOptions,
 } from './h3/market-cells';
+
+export {
+  H3_MIN_RESOLUTION,
+  H3_MAX_RESOLUTION,
+  PLATFORM_H3_HERO_RESOLUTION,
+  PLATFORM_H3_RESOLUTION,
+  H3_ZIP_INDEX_RESOLUTION,
+  PLATFORM_H3_REFERENCE_RESOLUTION,
+  PLATFORM_H3_CROSSWALK_TIERS,
+  PLATFORM_H3_CROSSWALK_EXPORT_MAX,
+  PLATFORM_H3_CROSSWALK_EXPORT_TIERS,
+  VENUE_H3_RESOLUTION,
+  PLACE_H3_RESOLUTION,
+  GEOHASH_MIN_PRECISION,
+  GEOHASH_MAX_PRECISION,
+  PLATFORM_GEOHASH_PRECISION,
+  PLATFORM_GEOHASH_CROSSWALK_TIERS,
+  PLATFORM_GEOHASH_CROSSWALK_EXPORT_MAX,
+  PLATFORM_GEOHASH_CROSSWALK_EXPORT_TIERS,
+  type PlatformH3CrosswalkTier,
+  type PlatformGeohashCrosswalkTier,
+} from './platform-resolution.js';
+
+export { buildGeohashNativeFromH3, type GeohashToZips, type H3ToZips } from './h3/geohash-native.js';
+
+export {
+  invertH3ToZips,
+  rollupH3ToZips,
+  rollupGeohashToZips,
+  zipToH3ParentCell,
+  resolveH3ToZipsAtResolution,
+  resolveGeohashToZipsAtPrecision,
+} from './h3/zip-crosswalk-resolve.js';

@@ -19,3 +19,4 @@ export * from './viewport/viewport';
 export * from './session/session-loaded';
 export * from './viewport/map-viewport';
 export * from './viewport/viewport-coverage';
+export * from './cell/cell-display';
