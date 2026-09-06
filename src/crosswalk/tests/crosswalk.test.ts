@@ -157,7 +157,7 @@ describe('crosswalk guard', () => {
   it('only imports allowed @twinfile/geokit/core subpaths in src', () => {
     const srcDir = join(ROOT, '../src');
     const files = walk(srcDir);
-    const allowedCoreImports = /^@twinfile\/geokit\/core(?:\/containment)?$/;
+    const allowedCoreImports = /^@twinfile\/geokit\/core(?:\/(?:containment|geohash))?$/;
     for (const file of files) {
       if (!file.endsWith('.ts')) continue;
       const text = readFileSync(file, 'utf8');

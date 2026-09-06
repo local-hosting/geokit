@@ -34,7 +34,7 @@ export function crosswalkTableNameFromStem(stem: string): UsCrosswalkTableName {
     case 'county-to-dma':
       return 'countyToDma';
     case 'dma-region':
-      return 'dmaRegion';
+      throw new Error('dma-region is a CDN index stem, not a generated US crosswalk table');
     case 'zip-to-state':
       return 'zipToState';
     case 'place-to-dma':

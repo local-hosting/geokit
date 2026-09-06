@@ -75,32 +75,12 @@ function h3CellSamplePoints(h3Cell: string): Array<[number, number]> {
   return points;
 }
 
+import { buildGeohashNativeFromH3 } from '../src/h3/geohash-native.js';
+
 function buildGeohashP8ToZips(h3ToZips: Record<string, readonly string[]>): Record<string, string[]> {
-  const byHash = new Map<string, Set<string>>();
-  for (const [h3, zips] of Object.entries(h3ToZips)) {
-    if (zips.length === 0) continue;
-    try {
-      for (const [lat, lng] of h3CellSamplePoints(h3)) {
-        const hash = encodeGeohash(lat, lng, GEOHASH_ZIP_INDEX_PRECISION);
-        let bucket = byHash.get(hash);
-        if (!bucket) {
-          bucket = new Set<string>();
-          byHash.set(hash, bucket);
-        }
-        for (const zip of zips) bucket.add(zip);
-      }
-    } catch {
-      continue;
-    }
-  }
-  const out: Record<string, string[]> = {};
-  for (const [hash, bucket] of byHash) {
-    out[hash] = [...bucket].sort();
-  }
-  return out;
+  return buildGeohashNativeFromH3(h3ToZips as Record<string, string[]>, GEOHASH_ZIP_INDEX_PRECISION);
 }
 
-function invertZipToGeohash(map: Record<string, string[]>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [geohash, zips] of Object.entries(map)) {
     for (const zip of zips) {

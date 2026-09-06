@@ -1,6 +1,6 @@
 {
   "name": "@twinfile/geokit",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "Geospatial SDK for Twinfile map stack",
   "license": "MIT",
   "type": "module",
@@ -381,7 +381,8 @@
     "./crosswalk": {
       "types": "./src/crosswalk/dist/esm/src/index.d.ts",
       "import": "./src/crosswalk/dist/esm/src/index.js",
-      "default": "./src/crosswalk/dist/esm/src/index.js"
+      "default": "./src/crosswalk/dist/esm/src/index.js",
+      "source": "./src/crosswalk/src/index.ts"
     },
     "./crosswalk/us": {
       "types": "./src/crosswalk/dist/esm/src/us/index.d.ts",
@@ -451,7 +452,8 @@
     "./formats": {
       "types": "./src/formats/dist/esm/index.d.ts",
       "import": "./src/formats/dist/esm/index.js",
-      "default": "./src/formats/dist/esm/index.js"
+      "default": "./src/formats/dist/esm/index.js",
+      "source": "./src/formats/src/index.ts"
     },
     "./foursquare": {
       "types": "./src/providers/foursquare/dist/esm/index.d.ts",
