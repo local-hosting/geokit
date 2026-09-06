@@ -6,6 +6,7 @@ if [[ -z "${NODE_AUTH_TOKEN:-}" ]]; then
   exit 1
 fi
 cd "${root}"
+yarn generate:tsconfig-paths
 yarn build
 node scripts/prepare-publish-package-json.mjs
 echo "publish-packages: @twinfile/geokit@$(node -p "require('./package.json').version")"
