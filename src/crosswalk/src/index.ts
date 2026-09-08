@@ -14,6 +14,13 @@ export type {
 } from '@twinfile/geokit/core';
 
 export {
+  normalizeTractGeoid,
+  tractCountyFips,
+  tractStateFips,
+  stateAbbrForTract,
+} from './us/tract-geoid.js';
+export { STATE_FIPS_TO_ABBR, stateAbbrForTractFips } from './us/state-fips.js';
+export {
   GKCountry,
   GKCounty,
   GKDMA,
@@ -23,6 +30,7 @@ export {
   GKPlace,
   GKPlaceInState,
   GKPoint,
+  GKTract,
   GKZip,
   asDMA,
   asDmaSlug,
@@ -59,6 +67,8 @@ export {
   geohashCellToLatLon,
   h3ForPoint,
   h3ForZip,
+  h3ForTract,
+  tractsForH3,
   pointForGeohash,
   pointForH3,
   pointForZip,
@@ -74,6 +84,8 @@ export {
   clearZipCentroidCache,
   filterZipsByPolygon,
   stateForH3Cell,
+  statesForH3Cell,
+  stateForTract,
   stateForPoint,
   stateForZip,
   usStateAbbrs,
@@ -124,6 +136,8 @@ export {
   listDmaSlugs,
   requireUsCrosswalkTables,
   zipToH3R5Table,
+  tractToH3R1Table,
+  h3R1ToTractsTable,
   type CountyDmaAssignment,
 } from './us/table-access';
 

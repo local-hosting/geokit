@@ -10,6 +10,8 @@ import {
   ZIP_TO_GEOHASH_P8,
   ZIP_TO_H3_R5,
   ZIP_TO_STATE,
+  TRACT_TO_H3_R1,
+  H3_R1_TO_TRACTS,
 } from '../../generated/us/index.js';
 import { US_CROSSWALK_TABLE_NAMES } from './table-names';
 import { createUsTableLookups } from './tables';
@@ -30,6 +32,8 @@ export function loadAllUsCrosswalkTablesSync(spine: CrosswalkSpine = 'h3'): void
     countyToDma: COUNTY_TO_DMA,
     zipToState: ZIP_TO_STATE,
     placeToDma: PLACE_TO_DMA,
+    tractToH3R1: TRACT_TO_H3_R1,
+    h3R1ToTracts: H3_R1_TO_TRACTS,
   };
   const lookups = createUsTableLookups(tables);
   setUsCrosswalkRegistry(tables, lookups, US_CROSSWALK_TABLE_NAMES, spine);

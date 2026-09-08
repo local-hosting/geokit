@@ -62,6 +62,8 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
   const countyToDma = tables.countyToDma;
   const zipToState = tables.zipToState;
   const placeToDma = tables.placeToDma;
+  const tractToH3R1 = tables.tractToH3R1;
+  const h3R1ToTracts = tables.h3R1ToTracts;
 
   const lookups = {
     dmaFromH3(h3Cell: string): DMA | undefined {
@@ -165,6 +167,18 @@ export function createUsTableLookups(tables: UsCrosswalkTables) {
 
     dmaFromSlug(dmaSlug: string): DMA | undefined {
       return toDMA(dmaSlug);
+    },
+
+    h3ForTract(geoid: string): string | undefined {
+      if (!tractToH3R1) return undefined;
+      const key = geoid.trim().padStart(11, '0');
+      return tractToH3R1[key] ?? tractToH3R1[geoid.trim()];
+    },
+
+    tractsForH3(h3Cell: string): readonly string[] {
+      if (!h3R1ToTracts) return [];
+      const compact = compactH3CellId(h3Cell);
+      return h3R1ToTracts[compact] ?? h3R1ToTracts[h3Cell] ?? [];
     },
   };
 

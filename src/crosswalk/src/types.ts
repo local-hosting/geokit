@@ -30,6 +30,7 @@ export type CrosswalkResult = {
   readonly region?: readonly MacroRegion[];
   readonly state?: readonly StateCode[];
   readonly county?: readonly CountyFips[];
+  readonly tract?: readonly string[];
 };
 
 export type CrosswalkSpine = 'h3' | 'geohash';
@@ -58,4 +59,6 @@ export type UsCrosswalkTables = {
   countyToDma?: Readonly<Record<string, string>>;
   zipToState?: Readonly<Record<string, string>>;
   placeToDma?: Readonly<Record<string, PlaceToDmaEntry>>;
+  tractToH3R1?: Readonly<Record<string, string>>;
+  h3R1ToTracts?: Readonly<Record<string, readonly string[]>>;
 };
