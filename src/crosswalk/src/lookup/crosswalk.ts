@@ -11,6 +11,7 @@ import type { CrosswalkCountry, CrosswalkResult, CrosswalkSpine } from '../types
 import { geohashCellIdForLookup } from '../geohash/cell-id';
 import { geohashCellToLatLon, geohashForLatLon, geohashForPoint } from './geohash';
 import { compactH3CellId } from '../h3/cell-id';
+import { normalizeTractGeoid, stateAbbrForTract, tractCountyFips } from '../us/tract-geoid.js';
 import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from '../h3/project';
 import { requireUsCrosswalkLookups, getCrosswalkSpine } from '../load/registry';
 import {
@@ -42,6 +43,12 @@ function regionsFromDmas(dmas: readonly DMA[]): readonly MacroRegion[] {
   return [...new Set(dmas.map((dma) => dma.region))].sort() as readonly MacroRegion[];
 }
 
+function statesForTractGeoids(geoids: readonly string[]) {
+  return brandStateList(
+    geoids.map((geoid) => stateAbbrForTract(geoid)).filter((s): s is string => Boolean(s)),
+  );
+}
+
 function statesForZips(
   lookups: ReturnType<typeof requireUsCrosswalkLookups>,
   zips: readonly string[]
@@ -66,6 +73,7 @@ function pickFields(result: CrosswalkResult, to: readonly GeoKind[] | undefined)
     ...(shouldInclude(GeoKind.Region, to) && result.region ? { region: result.region } : {}),
     ...(shouldInclude(GeoKind.State, to) && result.state ? { state: result.state } : {}),
     ...(shouldInclude(GeoKind.County, to) && result.county ? { county: result.county } : {}),
+    ...(shouldInclude(GeoKind.Tract, to) && result.tract ? { tract: result.tract } : {}),
     ...(result.point ? { point: result.point } : {}),
   };
 }
@@ -103,17 +111,26 @@ function expandFromH3Cell(
   const h3 = compactH3CellId(h3Cell);
   const zips = lookups.zipsForH3(h3);
   const dma = lookups.dmaFromH3(h3);
-  const resolvedPoint = point ?? (h3CellToLatLng(h3) as GeoPoint);
-  const geohash = geohashForLatLon(resolvedPoint);
+  const resolvedPoint =
+    point ?? (isH3ProjectionLoaded() ? (h3CellToLatLng(h3) as GeoPoint) : undefined);
+  const geohash = resolvedPoint ? geohashForLatLon(resolvedPoint) : undefined;
+  const tracts = lookups.tractsForH3(h3);
+  const tractStates = tracts.length > 0 ? statesForTractGeoids(tracts) : [];
+  const zipStates = statesForZips(lookups, zips);
+  const state =
+    tractStates.length > 0
+      ? brandStateList([...tractStates, ...zipStates])
+      : zipStates;
 
   return {
-    point: resolvedPoint,
+    ...(resolvedPoint ? { point: resolvedPoint } : {}),
     h3: brandH3List([h3]),
-    geohash: brandGeohashList([geohash]),
+    ...(geohash ? { geohash: brandGeohashList([geohash]) } : {}),
     zip: brandZipList(zips),
     dma: optionalDMA(dma),
     region: dma ? optionalMacroRegion(dma.region) : [],
-    state: statesForZips(lookups, zips),
+    state,
+    ...(tracts.length > 0 ? { tract: [...tracts].sort() } : {}),
   };
 }
 
@@ -138,6 +155,23 @@ function expandFromGeohashCell(
     dma: optionalDMA(dma),
     region: dma ? optionalMacroRegion(dma.region) : [],
     state: statesForZips(lookups, zips),
+  };
+}
+
+
+function expandFromTractGeoid(
+  lookups: ReturnType<typeof requireUsCrosswalkLookups>,
+  geoid: string,
+): Omit<CrosswalkResult, 'country'> {
+  const tract = normalizeTractGeoid(geoid);
+  const h3 = lookups.h3ForTract(tract);
+  const county = brandCountyList([tractCountyFips(tract)]);
+  const state = statesForTractGeoids([tract]);
+  return {
+    tract: [tract],
+    county,
+    state,
+    ...(h3 ? { h3: brandH3List([h3]) } : {}),
   };
 }
 
@@ -235,6 +269,9 @@ export function crosswalk(from: GeoRef, options: CrosswalkOptions = {}): Crosswa
       break;
     case GeoKind.State:
       partial = {};
+      break;
+    case GeoKind.Tract:
+      partial = expandFromTractGeoid(lookups, from.value);
       break;
     default: {
       const _exhaustive: never = from;

@@ -31,5 +31,7 @@ export function mergeUsCrosswalkTablePatch(
     countyToDma: patch.countyToDma ?? base.countyToDma,
     zipToState: patch.zipToState ?? base.zipToState,
     placeToDma: patch.placeToDma ?? base.placeToDma,
+    tractToH3R1: patch.tractToH3R1 ?? base.tractToH3R1,
+    h3R1ToTracts: patch.h3R1ToTracts ?? base.h3R1ToTracts,
   };
 }

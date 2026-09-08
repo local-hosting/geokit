@@ -39,6 +39,10 @@ export function crosswalkTableNameFromStem(stem: string): UsCrosswalkTableName {
       return 'zipToState';
     case 'place-to-dma':
       return 'placeToDma';
+    case 'tract-to-h3-r1':
+      return 'tractToH3R1';
+    case 'h3-r1-to-tracts':
+      return 'h3R1ToTracts';
     default:
       throw new Error(`Unknown US crosswalk table stem: ${stem}`);
   }
@@ -59,6 +63,22 @@ export function isKnownDmaSlug(slug: string): boolean {
 }
 
 /** Full zip→H3 r5 map for bulk shard builds (prefer {@link h3ForZip} for single lookups). */
+export function tractToH3R1Table(): Record<string, string> {
+  const table = requireUsCrosswalkTables().tractToH3R1;
+  if (!table) {
+    throw new Error('tractToH3R1 not loaded — loadCrosswalk("us", { tables: ["tractToH3R1"] })');
+  }
+  return { ...table };
+}
+
+export function h3R1ToTractsTable(): Record<string, readonly string[]> {
+  const table = requireUsCrosswalkTables().h3R1ToTracts;
+  if (!table) {
+    throw new Error('h3R1ToTracts not loaded — loadCrosswalk("us", { tables: ["h3R1ToTracts"] })');
+  }
+  return { ...table };
+}
+
 export function zipToH3R5Table(): Record<string, string> {
   return { ...requireUsCrosswalkTables().zipToH3R5 };
 }

@@ -12,3 +12,5 @@ export { DMA_TO_COUNTIES } from "./dma-to-counties.js";
 export { COUNTY_TO_DMA } from "./county-to-dma.js";
 export { PLACE_TO_DMA } from "./place-to-dma.js";
 export { ZIP_TO_STATE } from "./zip-to-state.js";
+export { TRACT_TO_H3_R1 } from "./tract-to-h3-r1.js";
+export { H3_R1_TO_TRACTS } from "./h3-r1-to-tracts.js";

@@ -103,7 +103,7 @@ describe('@twinfile/geokit/crosswalk', () => {
     expect(isCrosswalkTableLoaded('h3R5ToZips')).toBe(false);
     expect(getLoadedCrosswalkTableNames()).toEqual(['h3ToDma']);
 
-    const dma = convert(GKH3('81267fffffffff'), GeoKind.DMA);
+    const dma = convert(GKH3('8526690fffffffff'), GeoKind.DMA);
     expect(dma?.slug).toBe('bowling-green');
   });
 

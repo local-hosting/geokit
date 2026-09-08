@@ -63,3 +63,13 @@ export function GKPlaceInState(
 export function GKCountry(raw: string): Extract<GeoRef, { kind: 'country' }> {
   return { kind: 'country', value: asCountryCode(raw) };
 }
+
+
+/** Census tract GEOID (11-digit) → {@link GeoRef} tract. */
+export function GKTract(raw: string): Extract<GeoRef, { kind: 'tract' }> {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length < 10) {
+    throw new Error(`tract GEOID must be at least 10 digits, got "${raw}"`);
+  }
+  return { kind: 'tract', value: trimmed.padStart(11, '0').slice(0, 11) };
+}

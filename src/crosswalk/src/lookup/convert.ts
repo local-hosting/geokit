@@ -30,6 +30,14 @@ export function zipsForH3(h3Cell: string): readonly string[] {
   return requireUsCrosswalkLookups().zipsForH3(h3Cell);
 }
 
+export function h3ForTract(geoid: string): string | undefined {
+  return requireUsCrosswalkLookups().h3ForTract(geoid);
+}
+
+export function tractsForH3(h3Cell: string): readonly string[] {
+  return requireUsCrosswalkLookups().tractsForH3(h3Cell);
+}
+
 export function h3ForZip(zip: string): string | undefined {
   return requireUsCrosswalkLookups().h3ForZip(zip);
 }

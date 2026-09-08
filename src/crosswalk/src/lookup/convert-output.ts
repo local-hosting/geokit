@@ -26,6 +26,8 @@ export function pickConvertOutput<K extends GeoKind>(
       return result.state as ConvertOutput<K>;
     case GeoKind.County:
       return result.county as ConvertOutput<K>;
+    case GeoKind.Tract:
+      return result.tract as ConvertOutput<K>;
     default: {
       const _exhaustive: never = kind;
       return _exhaustive;

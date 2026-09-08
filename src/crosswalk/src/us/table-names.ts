@@ -10,6 +10,8 @@ export const US_CROSSWALK_TABLE_NAMES = [
   'countyToDma',
   'zipToState',
   'placeToDma',
+  'tractToH3R1',
+  'h3R1ToTracts',
 ] as const;
 
 export type UsCrosswalkTableName = (typeof US_CROSSWALK_TABLE_NAMES)[number];
@@ -38,6 +40,7 @@ export const US_CROSSWALK_PRESETS = {
     'zipToState',
   ] as const satisfies readonly UsCrosswalkTableName[],
   place: ['placeToDma'] as const satisfies readonly UsCrosswalkTableName[],
+  tractResolve: ['tractToH3R1', 'h3R1ToTracts'] as const satisfies readonly UsCrosswalkTableName[],
   demographicsShard: [
     'h3ToDma',
     'h3R5ToZips',

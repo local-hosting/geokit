@@ -51,6 +51,15 @@ const TABLE_LOADERS: Record<UsCrosswalkTableName, TableLoader> = {
     const { ZIP_TO_STATE } = await import('../../generated/us/zip-to-state');
     return { zipToState: ZIP_TO_STATE };
   },
+
+  tractToH3R1: async () => {
+    const { TRACT_TO_H3_R1 } = await import('../../generated/us/tract-to-h3-r1');
+    return { tractToH3R1: TRACT_TO_H3_R1 };
+  },
+  h3R1ToTracts: async () => {
+    const { H3_R1_TO_TRACTS } = await import('../../generated/us/h3-r1-to-tracts');
+    return { h3R1ToTracts: H3_R1_TO_TRACTS };
+  },
   placeToDma: async () => {
     const { PLACE_TO_DMA } = await import('../../generated/us/place-to-dma');
     return { placeToDma: PLACE_TO_DMA };

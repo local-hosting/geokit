@@ -35,5 +35,6 @@ export {
   GKPlace,
   GKPlaceInState,
   GKPoint,
+  GKTract,
   GKZip,
 } from './refs';

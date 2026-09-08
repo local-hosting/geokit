@@ -392,6 +392,7 @@ export {
   GKPlace,
   GKPlaceInState,
   GKPoint,
+  GKTract,
   GKZip,
 } from './utils/geo-identity';
 
