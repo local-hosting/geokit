@@ -8,7 +8,8 @@ import { GKH3, GKPoint } from '@twinfile/geokit/core';
 import { GeoKind } from '../geo-kind.js';
 import { getUsCrosswalkTables, requireUsCrosswalkLookups } from '../load/registry';
 import { crosswalk } from './crosswalk';
-import { pointForZip } from './convert';
+import { pointForZip, tractsForH3 } from './convert';
+import { stateAbbrForTract } from '../us/tract-geoid.js';
 
 const DEFAULT_H3_RESOLUTION = 5;
 
@@ -108,6 +109,27 @@ export function stateForH3Cell(h3Cell: string): string | undefined {
   const result = crosswalk(GKH3(h3Cell), { to: [GeoKind.State] });
   return result.state?.[0];
 }
+
+/**
+ * Unique USPS state abbreviations (lowercase) for tracts assigned to an H3 cell.
+ * Prefer this over {@link stateForH3Cell} when attributing tract-native data (e.g. CDC SVI).
+ */
+export function statesForH3Cell(h3Cell: string): readonly string[] {
+  const states = new Set<string>();
+  for (const geoid of tractsForH3(h3Cell)) {
+    const state = stateAbbrForTract(geoid);
+    if (state) states.add(state);
+  }
+  return [...states].sort();
+}
+
+/**
+ * USPS state abbreviation (lowercase) for a census tract GEOID.
+ */
+export function stateForTract(geoid: string): string | undefined {
+  return stateAbbrForTract(geoid);
+}
+
 
 /**
  * Build a ZIP → state map for the given ZIP codes.

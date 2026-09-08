@@ -48,6 +48,7 @@ export const GeoKind = {
   State: 'state',
   County: 'county',
   Place: 'place',
+  Tract: 'tract',
 } as const;
 
 export type GeoKind = (typeof GeoKind)[keyof typeof GeoKind];
@@ -64,7 +65,8 @@ export type GeoRef =
   | { readonly kind: 'region'; readonly value: MacroRegion }
   | { readonly kind: 'state'; readonly value: StateCode }
   | { readonly kind: 'county'; readonly value: CountyFips }
-  | { readonly kind: 'place'; readonly value: PlaceKey };
+  | { readonly kind: 'place'; readonly value: PlaceKey }
+  | { readonly kind: 'tract'; readonly value: string };
 
 /** @deprecated Use {@link GeoRef} factories (`Zip()`, `latLng()`, `H3()`, …). */
 export type GeoRefInput =
@@ -76,6 +78,7 @@ export type GeoRefInput =
   | { dmaSlug: string | DmaSlug }
   | { countyFips: string | CountyFips }
   | { placeKey: string | PlaceKey }
+  | { tractGeoid: string }
   | { state: string | StateCode; placeSlug: string };
 
 /** Catalog/admin string identities (non-geometry). */
@@ -112,4 +115,6 @@ export type ConvertOutput<K extends GeoKind> = K extends 'country'
                   ? readonly CountyFips[] | undefined
                   : K extends 'place'
                     ? DMA | undefined
-                    : never;
+                    : K extends 'tract'
+                      ? readonly string[] | undefined
+                      : never;

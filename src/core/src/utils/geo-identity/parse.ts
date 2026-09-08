@@ -6,6 +6,7 @@ import {
   GKH3,
   GKPlace,
   GKPoint,
+  GKTract,
   GKZip,
 } from './refs';
 import { placeKeyFromStateAndSlug } from './normalize';
@@ -38,6 +39,10 @@ function isCountyInput(input: GeoRefInput): input is { countyFips: string } {
   return 'countyFips' in input;
 }
 
+function isTractGeoidInput(input: GeoRefInput): input is { tractGeoid: string } {
+  return 'tractGeoid' in input;
+}
+
 function isPlaceKeyInput(input: GeoRefInput): input is { placeKey: string } {
   return 'placeKey' in input;
 }
@@ -67,6 +72,9 @@ export function parseGeoRef(input: GeoRefInput): GeoRef {
   }
   if (isCountyInput(input)) {
     return GKCounty(input.countyFips);
+  }
+  if (isTractGeoidInput(input)) {
+    return GKTract(input.tractGeoid);
   }
   if (isPlaceKeyInput(input)) {
     return GKPlace(input.placeKey);

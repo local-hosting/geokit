@@ -1,6 +1,6 @@
 {
   "name": "@twinfile/geokit",
-  "version": "0.3.8",
+  "version": "0.4.0",
   "description": "Geospatial SDK for Twinfile map stack",
   "license": "MIT",
   "type": "module",
@@ -23,7 +23,7 @@
     "typecheck": "tsc -p src/core/config/tsconfig.json --noEmit",
     "pretypecheck": "yarn generate:tsconfig-paths",
     "demo": "vite --config vite.demo.config.js",
-    "publish:package": "npm publish --registry=https://npm.pkg.github.com --ignore-scripts",
+    "publish:package": "node scripts/publish-consumer-build.mjs && npm publish --registry=https://npm.pkg.github.com",
     "build:packages": "yarn build:env && yarn build:service && yarn build:h3 && yarn build:foursquare",
     "build:env": "cd src/env && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "build:service": "cd src/service && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
@@ -32,7 +32,7 @@
     "build:foursquare": "cd src/providers/foursquare && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "normalize:exports": "node scripts/normalize-package-exports.mjs",
     "validate:exports": "node scripts/validate-package-exports.mjs",
-    "prepublishOnly": "yarn build && yarn normalize:exports && yarn validate:exports",
+    "prepublishOnly": "node scripts/publish-consumer-build.mjs && yarn normalize:exports && yarn validate:exports",
     "generate:tsconfig-paths": "node scripts/generate-geokit-tsconfig-paths.mjs",
     "generate:dev-config": "node scripts/generate-dev-config.mjs",
     "build:core:bundle": "node src/core/scripts/check-build-tsconfig.mjs && cd src/core && tsup --config config/tsup.config.js && node ../../scripts/check-no-src-declarations.mjs",
@@ -49,7 +49,8 @@
       "types": "./src/core/dist/esm/index.d.ts",
       "import": "./src/core/dist/esm/index.js",
       "require": "./src/core/dist/cjs/index.cjs",
-      "default": "./src/core/dist/esm/index.js"
+      "default": "./src/core/dist/esm/index.js",
+      "development": "./src/core/src/index.ts"
     },
     "./core/bounds": {
       "source": "./src/core/src/utils/bounds/index.ts",
@@ -382,7 +383,8 @@
       "types": "./src/crosswalk/dist/esm/src/index.d.ts",
       "import": "./src/crosswalk/dist/esm/src/index.js",
       "default": "./src/crosswalk/dist/esm/src/index.js",
-      "source": "./src/crosswalk/src/index.ts"
+      "source": "./src/crosswalk/src/index.ts",
+      "development": "./src/crosswalk/src/index.ts"
     },
     "./crosswalk/us": {
       "types": "./src/crosswalk/dist/esm/src/us/index.d.ts",
@@ -437,7 +439,8 @@
     "./h3": {
       "types": "./src/h3/dist/esm/index.d.ts",
       "import": "./src/h3/dist/esm/index.js",
-      "default": "./src/h3/dist/esm/index.js"
+      "default": "./src/h3/dist/esm/index.js",
+      "development": "./src/h3/src/index.ts"
     },
     "./h3/lite": {
       "types": "./src/h3/dist/esm/lite.d.ts",
