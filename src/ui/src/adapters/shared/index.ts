@@ -29,6 +29,16 @@ export {
 } from '../../components/elements/map/surface/map-url-sync';
 
 export {
+  applyCameraFrameToMap,
+  bindMapMoveendLocalSync,
+  loadLocalCameraFrame,
+  normalizeStoredCameraFrame,
+  readCameraFrameFromMap,
+  restoreLocalCameraToMap,
+  type MapLocalSyncHandle,
+} from '../../components/elements/map/surface/map-local-sync';
+
+export {
   onGkMapReadyDocument,
   onGkMapReadyOnce,
   type GkMapReadyOnceOptions,

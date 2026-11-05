@@ -1,6 +1,6 @@
 # Offline maps
 
-Shared contract in `@geokit/core/contract`. Web storage in `@geokit/ui/storage`. Swift mirror: [`geokit-swift/docs/offline.md`](../../geokit-swift/docs/offline.md).
+Shared contract in `@twinfile/geokit/core/contract`. Web storage in `@twinfile/geokit/ui/storage`. Swift mirror: [`geokit-swift/docs/offline.md`](../../geokit-swift/docs/offline.md).
 
 Geokit stores **map runtime state** (camera, tile cache, snapshots) keyed by `mapId`. Domain data (venues, markers, sync) stays in the host app.
 
@@ -16,11 +16,11 @@ Geokit stores **map runtime state** (camera, tile cache, snapshots) keyed by `ma
 ## Web imports
 
 ```typescript
-import { MapOfflineDefaults, validateOfflinePrefetchRequest } from '@geokit/core/contract';
-import { MapLocalStore, MapOfflineTileCache, MapOfflineContextLoader } from '@geokit/ui/storage';
+import { MapOfflineDefaults, validateOfflinePrefetchRequest } from '@twinfile/geokit/core/contract';
+import { MapLocalStore, MapOfflineTileCache, MapOfflineContextLoader } from '@twinfile/geokit/ui/storage';
 ```
 
-`@geokit/core/storage` re-exports `@geokit/ui/storage` for one release cycle — prefer the UI path in new code.
+`@twinfile/geokit/core/storage` re-exports `@twinfile/geokit/ui/storage` for one release cycle — prefer the UI path in new code.
 
 ## Defaults (`MapOfflineDefaults`)
 

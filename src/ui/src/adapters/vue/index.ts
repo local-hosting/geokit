@@ -19,6 +19,15 @@ export type {
 
 export { useGkMapPointEvents } from './useGkMapPointEvents';
 export { useGkMapMoveend } from './useGkMapMoveend';
+export { useGkMapLocalCamera, type UseGkMapLocalCameraOptions } from './useGkMapLocalCamera';
+export {
+  applyCameraFrameToMap,
+  bindMapMoveendLocalSync,
+  loadLocalCameraFrame,
+  readCameraFrameFromMap,
+  restoreLocalCameraToMap,
+  type MapLocalSyncHandle,
+} from '../shared/index';
 export { useGkFlyToBounds } from './useGkFlyToBounds';
 export {
   bindGkFlyToBounds,
