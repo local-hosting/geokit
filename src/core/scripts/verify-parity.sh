@@ -3,12 +3,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 GEOKIT_ROOT="$(cd "$ROOT/../.." && pwd)"
 SWIFT_ROOT="$(cd "$GEOKIT_ROOT/../geokit-swift" && pwd)"
-LINK_DIR="$GEOKIT_ROOT/node_modules/@twinfile"
-LINK_PATH="$LINK_DIR/geokit"
 
 cd "$GEOKIT_ROOT"
-mkdir -p "$LINK_DIR"
-ln -sfn "$GEOKIT_ROOT" "$LINK_PATH"
+node scripts/link-self-for-dev.mjs
 yarn build:h3
 yarn build:core:bundle
 
