@@ -20,6 +20,8 @@
     "check": "node scripts/check-neutral-language.mjs && yarn generate:tsconfig-paths && yarn test:crosswalk",
     "pretest": "yarn generate:dev-config",
     "test:core": "vitest run --config src/core/config/vitest.config.ts",
+    "verify:parity": "bash src/core/scripts/verify-parity.sh",
+    "link-self": "node scripts/link-self-for-dev.mjs",
     "test:crosswalk": "vitest run --config config/vitest.crosswalk.config.ts",
     "typecheck": "tsc -p src/core/config/tsconfig.json --noEmit",
     "pretypecheck": "yarn generate:tsconfig-paths",
