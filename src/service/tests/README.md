@@ -31,7 +31,7 @@ This directory contains tests for wired API providers in geokit (routing, geocod
 
 - **placeSearch()**: `Promise<PlaceSearchResult[]>` - Always returns array (empty array if no results, throws on error)
 
-Ratings, reviews, weather, and behavioral enrichment are ingested in `packages/pipeline` and served via host catalogs — not live vendor calls from geokit.
+Ratings, reviews, weather, and behavioral enrichment are ingested in `packages/pipeline` and served from host catalogs — not live vendor calls from geokit.
 
 ## Response Guarantees
 
