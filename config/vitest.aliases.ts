@@ -1,4 +1,8 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { buildGeokitVitestAliases } from '../scripts/geokit-vitest-aliases.mjs';
+
+const defaultRepoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export function pluginVitestAliases(repoRoot: string): Record<string, string> {
   const serviceRoot = path.join(repoRoot, 'src/service');
@@ -94,13 +98,7 @@ export function coreVitestAliases(repoRoot: string): Record<string, string> {
 }
 
 
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { buildGeokitVitestAliases } from '../scripts/geokit-vitest-aliases.mjs';
-
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-
-export function loadGeokitVitestAliases(): Record<string, string> {
+export function loadGeokitVitestAliases(repoRoot = defaultRepoRoot): Record<string, string> {
   return buildGeokitVitestAliases(repoRoot);
 }
 

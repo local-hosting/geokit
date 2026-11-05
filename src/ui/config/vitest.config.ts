@@ -27,7 +27,7 @@ export default defineConfig({
       { find: '@twinfile/geokit/h3/lite', replacement: path.join(h3Root, 'lite.ts') },
       { find: '@twinfile/geokit/h3', replacement: path.join(h3Root, 'index.ts') },
       { find: '@twinfile/geokit/ui/config/tile-cdn', replacement: path.join(uiRoot, 'src/config/tile-cdn.ts') },
-      { find: /^@geokit\/core$/, replacement: path.join(coreSrc, 'index.ts') },
+      { find: /^@twinfile\/geokit\/core$/, replacement: path.join(coreSrc, 'index.ts') },
       { find: './elements-lite.js', replacement: path.join(coreDist, 'index.js') },
     ],
   },

@@ -1,7 +1,7 @@
 {
-  "name": "@geokit/core",
+  "name": "@twinfile/geokit-core",
   "version": "0.2.33",
-  "description": "Geospatial utilities (slim core - add @geokit/ui for map components, @geokit/service for place search)",
+  "description": "Geospatial utilities (slim core - add @twinfile/geokit/ui for map components, @twinfile/geokit/service for place search)",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",
@@ -48,8 +48,8 @@
       "import": "./dist/esm/config/env/service-keys.js",
       "default": "./dist/esm/config/env/service-keys.js"
     },
-    "./config/map-style": "@geokit/ui/config/map-style",
-    "./config/tile-cdn": "@geokit/ui/config/tile-cdn",
+    "./config/map-style": "@twinfile/geokit/ui/config/map-style",
+    "./config/tile-cdn": "@twinfile/geokit/ui/config/tile-cdn",
     "./contract": {
       "source": "./src/contract/index.ts",
       "types": "./dist/esm/contract/index.d.ts",
@@ -89,7 +89,7 @@
       "import": "./dist/esm/utils/geojson/index.js",
       "require": "./dist/cjs/utils/geojson/index.cjs"
     },
-    "./geojson-loader": "@geokit/ui/geojson-loader",
+    "./geojson-loader": "@twinfile/geokit/ui/geojson-loader",
     "./h3": {
       "source": "./src/utils/h3/index.ts",
       "types": "./dist/esm/utils/h3/index.d.ts",
@@ -137,7 +137,7 @@
       "require": "./dist/cjs/static-map/index.cjs",
       "default": "./dist/esm/static-map/index.js"
     },
-    "./storage": "@geokit/ui/storage",
+    "./storage": "@twinfile/geokit/ui/storage",
     "./turf": {
       "source": "./src/utils/turf/index.ts",
       "types": "./dist/esm/utils/turf/index.d.ts",
@@ -180,11 +180,11 @@
       "require": "./dist/cjs/types/map-provider.cjs",
       "default": "./dist/esm/types/map-provider.js"
     },
-    "./ui": "@geokit/ui",
-    "./adapters/shared": "@geokit/ui/adapters/shared",
-    "./vue": "@geokit/ui/vue",
-    "./react": "@geokit/ui/react",
-    "./svelte": "@geokit/ui/svelte",
+    "./ui": "@twinfile/geokit-ui",
+    "./adapters/shared": "@twinfile/geokit/ui/adapters/shared",
+    "./vue": "@twinfile/geokit/ui/vue",
+    "./react": "@twinfile/geokit/ui/react",
+    "./svelte": "@twinfile/geokit/ui/svelte",
     "./h3/cell-to-region-index": {
       "source": "./src/utils/h3/cell-to-region-index.ts",
       "types": "./dist/esm/utils/h3/cell-to-region-index.d.ts",
@@ -253,9 +253,9 @@
       "import": "./dist/esm/types/layer-datasets.js",
       "default": "./dist/esm/types/layer-datasets.js"
     },
-    "./contract/bootstrap": "@geokit/ui/bootstrap/ensure-map-ready",
-    "./contract/lifecycle": "@geokit/ui/lifecycle",
-    "./storage/map-offline-context-loader": "@geokit/ui/storage/map-offline-context-loader",
+    "./contract/bootstrap": "@twinfile/geokit/ui/bootstrap/ensure-map-ready",
+    "./contract/lifecycle": "@twinfile/geokit/ui/lifecycle",
+    "./storage/map-offline-context-loader": "@twinfile/geokit/ui/storage/map-offline-context-loader",
     "./types/cell-layers.types": {
       "source": "./src/types/cell-layers.types.ts",
       "types": "./dist/esm/types/cell-layers.types.d.ts",
@@ -269,9 +269,9 @@
       "require": "./dist/cjs/contract/offline.cjs",
       "default": "./dist/esm/contract/offline.js"
     },
-    "./storage/map-local-store": "@geokit/ui/storage/map-local-store",
-    "./storage/map-offline-tile-cache": "@geokit/ui/storage/map-offline-tile-cache",
-    "./storage/indexed-db": "@geokit/ui/storage/indexed-db"
+    "./storage/map-local-store": "@twinfile/geokit/ui/storage/map-local-store",
+    "./storage/map-offline-tile-cache": "@twinfile/geokit/ui/storage/map-offline-tile-cache",
+    "./storage/indexed-db": "@twinfile/geokit/ui/storage/indexed-db"
   },
   "sideEffects": [
     "*.css"
@@ -392,10 +392,10 @@
     "topojson-simplify": "^3.0.3"
   },
   "peerDependencies": {
-    "@geokit/service": ">=0.1.0"
+    "@twinfile/geokit-service": ">=0.1.0"
   },
   "peerDependenciesMeta": {
-    "@geokit/service": {
+    "@twinfile/geokit-service": {
       "optional": true
     }
   },

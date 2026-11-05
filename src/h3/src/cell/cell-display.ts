@@ -50,7 +50,6 @@ export function compactH3CrosswalkResolutionFromCellId(cellId: string): number |
 }
 
 
-
 /** Platform H3 r0 master id (compact) for an r1 published cell. */
 export function h3R0MasterFromR1(r1Cell: string): string {
   const compact = compactH3CellId(r1Cell);
