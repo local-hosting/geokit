@@ -1,7 +1,7 @@
-# Turf-backed geometry (`geokit/turf`)
+# turf
 
-Measurement and containment via Turf.js. Parity Tier 1.5 with geokit-swift.
+Turf.js-backed geometry barrel (`@twinfile/geokit/core/turf`): containment, measure, conversions, bounds geo, **`getCenter`**, and **`bufferLine` / `bufferPolygon`** (Node-only; Swift has point buffer only).
 
-Swift does not yet support line/polygon buffers (`BufferError.unsupportedGeometry`).
+Point buffers in `@twinfile/geokit/core/buffer` stay turf-free for Vitest; Tier 1.5 parity fixtures use that implementation.
 
-Regenerate fixtures: `yarn export:parity-fixtures`.
+See `geokit/docs/parity.md` and `geokit-swift` Tier 1.5 modules.
