@@ -17,6 +17,7 @@
     "build:core": "yarn build:core:bundle && yarn build:core:types",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "test": "yarn test:core && yarn test:crosswalk && yarn validate:exports",
+    "check:imports": "node scripts/check-legacy-imports.mjs",
     "pretest": "yarn generate:dev-config",
     "test:core": "vitest run --config src/core/config/vitest.config.ts",
     "test:crosswalk": "vitest run --config config/vitest.crosswalk.config.ts",
