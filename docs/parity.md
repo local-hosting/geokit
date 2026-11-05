@@ -4,6 +4,8 @@ Canonical Swift notes: [`geokit-swift/docs/parity.md`](../../geokit-swift/docs/p
 
 ## Module map
 
+Layer overview (detail: cheat sheet below and [`geokit-swift/docs/module-map.md`](../../geokit-swift/docs/module-map.md)):
+
 | Layer | TypeScript | Swift |
 |-------|------------|-------|
 | Core utils | `src/core/src/utils/*` | `GeoKitCore` |
@@ -17,9 +19,9 @@ Canonical Swift notes: [`geokit-swift/docs/parity.md`](../../geokit-swift/docs/p
 ## Fixture contract
 
 - **File:** `geokit-swift/Tests/GeoKitCoreTests/Fixtures/parity-fixtures.json`
-- **Full verify (Twinfile layout):** `bash geokit/src/core/scripts/verify-parity.sh` from repo root (builds core, exports fixtures, runs Swift `GeoKitCoreTests`)
-- **Export only:** after `yarn build:h3 && yarn build:core:bundle` in `geokit/`, run `node geokit/src/core/scripts/export-parity-fixtures.mjs` → fixture path above (requires `@twinfile/geokit` self-link under `geokit/node_modules/` — `verify-parity.sh` creates it)
-- **Drift check:** `node geokit/src/core/scripts/check-parity-fixtures.mjs` from `geokit/src/core/` (after core dist exists)
+- **Full verify (Twinfile layout):** `bash geokit/src/core/scripts/verify-parity.sh` from repo root, or `yarn verify:parity` from `geokit/`
+- **Export only:** `yarn link-self` in `geokit/`, then `yarn build:h3 && yarn build:core:bundle`, then `node geokit/src/core/scripts/export-parity-fixtures.mjs` → fixture path above
+- **Drift check:** `yarn link-self` (if needed), then `node geokit/src/core/scripts/check-parity-fixtures.mjs` from `geokit/src/core/` (after core dist exists)
 
 ## API cheat sheet (cross-platform)
 
@@ -34,6 +36,8 @@ Use **GeoKit wrappers** on both platforms for behavior locked by `parity-fixture
 | Turf bucket (Tier 1.5) | `@twinfile/geokit/core/turf` | `GeoKitCore` → `Containment`, `Centroid`, `Area`, `Length`, `Buffer`, `Conversions`, `BoundsGeo`, `CoordinateExtraction` |
 | Map contract (Tier 2) | `@twinfile/geokit/core/contract` | `GeoKitContract` |
 | Map UI (Tier 2) | `@twinfile/geokit/ui` | `GeoKitUI`, `GeoKitUIMapbox` |
+
+**Import convention (TypeScript):** Tier 1 geo → `@twinfile/geokit/core/*` and `@twinfile/geokit/h3`. Turf-backed measure/contain/center-on-geometry → prefer **`@twinfile/geokit/core/turf`** (also re-exports `getCenter`, Node-only line/polygon buffers).
 
 ### Call style
 
