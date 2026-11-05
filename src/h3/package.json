@@ -1,5 +1,5 @@
 {
-  "name": "@geokit/h3",
+  "name": "@twinfile/geokit-h3",
   "version": "0.1.0",
   "description": "H3 hex grid geometry utilities for Geokit",
   "license": "MIT",

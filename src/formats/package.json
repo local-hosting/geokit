@@ -1,5 +1,5 @@
 {
-  "name": "@geokit/formats",
+  "name": "@twinfile/geokit-formats",
   "version": "0.1.0",
   "description": "Convert shapefiles, CSV, and ZIP archives to GeoJSON",
   "license": "MIT",
