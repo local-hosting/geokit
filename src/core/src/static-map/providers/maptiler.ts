@@ -12,7 +12,7 @@ import {
   simplifyGeometryRings,
   type MapRegionPathStyle,
 } from '../region-path';
-import { resolveMaptilerStaticMapsBase } from '../../config/tile-cdn';
+import { resolveMaptilerStaticMapsBase } from '../basemap';
 import {
   staticMapDimensions,
   staticMapImageSuffix,

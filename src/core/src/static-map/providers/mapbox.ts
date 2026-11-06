@@ -6,7 +6,7 @@ import type {
   MapStaticSnapshotAdapter,
   MapStaticSnapshotArgs,
 } from '../../types/static-map';
-import { resolveMapboxStaticStyle } from '../../config/map-style';
+import { resolveMapboxStaticStyle } from '../basemap';
 import type { MapStyleId } from '../../types/static-map';
 import {
   DEFAULT_REGION_PATH_STYLE,

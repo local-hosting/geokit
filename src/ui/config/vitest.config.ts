@@ -14,13 +14,11 @@ export default defineConfig({
     alias: [
       { find: '@twinfile/geokit/core/bounds', replacement: path.join(coreDist, 'utils/bounds/index.js') },
       { find: '@twinfile/geokit/core/coordinates', replacement: path.join(coreDist, 'utils/coordinates/index.js') },
-      { find: '@twinfile/geokit/core/geojson-loader', replacement: path.join(coreDist, 'utils/geojson-loader/index.js') },
       { find: '@twinfile/geokit/core/geojson', replacement: path.join(coreDist, 'utils/geojson/index.js') },
       { find: '@twinfile/geokit/core/simplify', replacement: path.join(coreDist, 'utils/simplify/index.js') },
       { find: '@twinfile/geokit/core/config/maptiler-dev-proxy', replacement: path.join(coreDist, 'config/maptiler-dev-proxy.js') },
       { find: '@twinfile/geokit/core/types/layer-datasets', replacement: path.join(coreDist, 'types/layer-datasets.js') },
       { find: '@twinfile/geokit/core/types/cell-layers.types', replacement: path.join(coreDist, 'types/cell-layers.types.js') },
-      { find: '@twinfile/geokit/core/storage/map-offline-context-loader', replacement: path.join(coreDist, 'storage/map-offline-context-loader.js') },
       { find: '@twinfile/geokit/core/types', replacement: path.join(coreDist, 'types/index.js') },
       { find: '@twinfile/geokit/core/containment', replacement: path.join(coreSrc, 'utils/containment/index.ts') },
       { find: '@twinfile/geokit/h3/cell-to-region-index', replacement: path.join(h3Root, 'cell/cell-to-region-index.ts') },

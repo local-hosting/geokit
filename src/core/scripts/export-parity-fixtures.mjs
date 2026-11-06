@@ -14,6 +14,13 @@ import { lineLengthMeters, perimeterMeters } from '../dist/esm/utils/length/inde
 import { bufferPoint } from '../dist/esm/utils/buffer/index.js';
 import { toDMS, coordinatesToDMS } from '../dist/esm/utils/conversions/dms.js';
 import { bboxToPolygon, bboxToPolygonGeometry } from '../dist/esm/utils/bounds/bbox-to-polygon.js';
+import {
+  MapOfflineDefaults,
+  estimateOfflineTileCount,
+  enumerateOfflineTileCoordinates,
+  resolveOfflineCoverage,
+  validateOfflinePrefetchRequest,
+} from '../dist/esm/contract/offline.js';
 
 
 const nyc = { latitude: 40.7128, longitude: -74.006 };
@@ -50,8 +57,36 @@ const nycBuffer1km = bufferPoint([nyc.latitude, nyc.longitude], 1000);
 const nycDms = coordinatesToDMS(nyc.latitude, nyc.longitude);
 
 
+const offlineBounds = { south: 40.7, west: -74.1, north: 40.8, east: -73.9 };
+const offlineTileZoom = { minZoom: 10, maxZoom: 11 };
+const offlineTileCount = estimateOfflineTileCount(offlineBounds, offlineTileZoom);
+const offlineZoomClamp = validateOfflinePrefetchRequest(
+  {
+    mapId: 'card-1',
+    bounds: offlineBounds,
+    zoomRange: { minZoom: 10, maxZoom: 20 },
+  },
+  'web'
+);
+const offlineSparse = resolveOfflineCoverage(10, 100, 'snapshotFallback');
+const offlineLive = resolveOfflineCoverage(90, 100, 'cacheFirst');
+let offlineOversizedError = null;
+try {
+  validateOfflinePrefetchRequest(
+    {
+      mapId: 'card-1',
+      bounds: offlineBounds,
+      zoomRange: { minZoom: 10, maxZoom: 12 },
+      budget: { maxBytes: 100_000_000, maxPrefetchZoom: 15, maxTileCount: 1 },
+    },
+    'web'
+  );
+} catch (error) {
+  offlineOversizedError = error.code;
+}
+
 const fixtures = {
-  version: 4,
+  version: 5,
   description: 'Shared parity fixtures — generated from geokit',
   coordinates: { nyc, la, nearNyc },
   bounds: {
@@ -388,6 +423,51 @@ const fixtures = {
         polygon: samplePolygon,
         expected: getBounds([samplePolygon]),
       },
+    },
+  },
+  offline: {
+    defaults: {
+      webMaxPrefetchZoom: MapOfflineDefaults.webStorageBudget.maxPrefetchZoom,
+      webMaxTileCount: MapOfflineDefaults.webStorageBudget.maxTileCount,
+      nativeMapboxMaxPrefetchZoom: MapOfflineDefaults.nativeMapboxStorageBudget.maxPrefetchZoom,
+      liveMapCoverageThreshold: MapOfflineDefaults.liveMapCoverageThreshold,
+      snapshotFallbackCoverageThreshold: MapOfflineDefaults.snapshotFallbackCoverageThreshold,
+    },
+    webZoomClamp: {
+      bounds: offlineBounds,
+      inputMinZoom: 10,
+      inputMaxZoom: 20,
+      expectedMaxZoom: offlineZoomClamp.zoomRange.maxZoom,
+    },
+    tileCount: {
+      bounds: offlineBounds,
+      minZoom: offlineTileZoom.minZoom,
+      maxZoom: offlineTileZoom.maxZoom,
+      expected: offlineTileCount,
+      enumerated: enumerateOfflineTileCoordinates(offlineBounds, offlineTileZoom).length,
+    },
+    sparseCoverage: {
+      tilesCached: 10,
+      tilesRequired: 100,
+      policy: 'snapshotFallback',
+      recommendsLiveMap: offlineSparse.recommendsLiveMap,
+      recommendsSnapshotFallback: offlineSparse.recommendsSnapshotFallback,
+      status: offlineSparse.status,
+    },
+    liveCoverage: {
+      tilesCached: 90,
+      tilesRequired: 100,
+      policy: 'cacheFirst',
+      recommendsLiveMap: offlineLive.recommendsLiveMap,
+      recommendsSnapshotFallback: offlineLive.recommendsSnapshotFallback,
+      status: offlineLive.status,
+    },
+    oversizedPrefetch: {
+      bounds: offlineBounds,
+      minZoom: 10,
+      maxZoom: 12,
+      maxTileCount: 1,
+      expectedError: offlineOversizedError,
     },
   },
   validation: {
