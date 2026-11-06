@@ -329,9 +329,9 @@ export class MapPublicNav extends MapControlsState {
     if (provider?.getStyleForTheme) {
       const styleForTheme = provider.getStyleForTheme(styleName);
       if (styleForTheme == null) {
-        if (providerName === 'maptiler') {
+        if (providerName === 'maptiler' || providerName === 'protomaps') {
           debug.log(
-            '[gk-map] updateMapStyle skipped: no MapTiler API key (set via configure() or api-key attribute)'
+            '[gk-map] updateMapStyle skipped: no style for provider (set an API key, style URL, or PMTiles archive)'
           );
           return;
         }

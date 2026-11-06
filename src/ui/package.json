@@ -367,7 +367,10 @@
   },
   "dependencies": {
     "@maptiler/sdk": "3.10.2",
-    "mapbox-gl": "^3.17.0"
+    "@protomaps/basemaps": "^5.7.2",
+    "mapbox-gl": "^3.17.0",
+    "maplibre-gl": "~5.14.0",
+    "pmtiles": "^4.5.0"
   },
   "peerDependencies": {
     "@twinfile/geokit-service": ">=0.1.0",

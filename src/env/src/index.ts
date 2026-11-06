@@ -1,10 +1,11 @@
 export type { GeokitEnv, EnvAliasGroup } from './types/env';
-export type { MapStaticProviderId } from './types/map-provider';
+export type { MapStaticProviderId, MapUiProviderId } from './types/map-provider';
 export {
   FOURSQUARE_KEY_KEYS,
   GOOGLE_PLACES_KEY_KEYS,
   GEOKIT_ENV_ALIAS_GROUPS,
   MAPBOX_KEY_KEYS,
+  PROTOMAPS_KEY_KEYS,
   MAP_GENERIC_API_KEY_KEYS,
   MAP_HOST_URL_KEYS,
   MAP_PROVIDER_KEYS,
@@ -34,6 +35,7 @@ export {
   resolveDedicatedMapKeysFromEnv,
   resolveMapApiKeyFromEnv,
   resolveMapboxKeyFromEnv,
+  resolveProtomapsKeyFromEnv,
   resolveMapProviderIdFromEnv,
   resolveMapRefererFromEnv,
   resolveMaptilerKeyFromEnv,

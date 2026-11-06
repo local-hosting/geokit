@@ -11,6 +11,10 @@ export default defineConfig(({ mode }) => {
     root: resolve(repoRoot, 'demo'),
     resolve: {
       alias: {
+        'maplibre-gl/dist/maplibre-gl.css': resolve(
+          repoRoot,
+          'node_modules/maplibre-gl/dist/maplibre-gl.css'
+        ),
         'maplibre-gl': resolve(repoRoot, 'node_modules/maplibre-gl/dist/maplibre-gl-dev.js'),
       },
       preserveSymlinks: false,

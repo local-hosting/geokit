@@ -13,6 +13,8 @@ export const MAPBOX_KEY_KEYS = [
   'GEOKIT_MAPBOX_KEY',
 ] as const;
 
+export const PROTOMAPS_KEY_KEYS = ['PROTOMAPS_KEY', 'GEOKIT_PROTOMAPS_KEY'] as const;
+
 export const ROUTING_TOKEN_KEYS = ['GEOKIT_ROUTING_TOKEN', 'ROUTING_TOKEN'] as const;
 
 export const MAP_REFERER_KEYS = [

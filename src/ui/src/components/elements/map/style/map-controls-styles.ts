@@ -42,6 +42,7 @@ export function injectHideAttributionStyles(): void {
     .gk-hide-attribution .mapboxgl-compact-show,
     .gk-hide-attribution a[href*="maptiler"],
     .gk-hide-attribution a[href*="mapbox"],
+    .gk-hide-attribution a[href*="protomaps"],
     .gk-hide-attribution a[href*="maplibre"],
     .gk-hide-attribution a[href*="openstreetmap"] {
       display: none !important;

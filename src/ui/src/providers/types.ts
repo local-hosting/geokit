@@ -12,6 +12,10 @@ export interface UIProviderConfig {
   accessToken?: string;
   /** Full MapLibre style.json URL — overrides built-in theme/style names. */
   styleUrl?: string;
+  /** Protomaps label language (`en` by default). Two-letter code used in hosted style URLs. */
+  labelLanguage?: string;
+  /** PMTiles archive URL. Used when the map should read a Protomaps basemap file instead of the hosted API. */
+  pmtilesUrl?: string;
   /** Optional URL to load MapTiler SDK from (e.g. external script URL). Script must set window.maptilersdk. */
   sdkScriptUrl?: string;
   /** MapLibre transformRequest — rewrite tile/style URLs (e.g. dev proxy for referrer-restricted keys). */

@@ -32,7 +32,8 @@ const providerConfigs = new Map<string, UIProviderConfig>();
  *
  * configure({
  *   maptiler: { apiKey: 'YOUR_API_KEY' },
- *   mapbox: { accessToken: 'YOUR_ACCESS_TOKEN' }
+ *   mapbox: { accessToken: 'YOUR_ACCESS_TOKEN' },
+ *   protomaps: { apiKey: 'YOUR_API_KEY' }
  * });
  * ```
  */

@@ -803,6 +803,7 @@
   },
   "dependencies": {
     "@maptiler/sdk": "3.10.2",
+    "@protomaps/basemaps": "^5.7.2",
     "@turf/along": "^7.3.0",
     "@turf/area": "^7.3.0",
     "@turf/bbox": "^7.3.0",
@@ -829,6 +830,8 @@
     "latlon-geohash": "^2.0.0",
     "lru-cache": "^11.2.4",
     "mapbox-gl": "^3.17.0",
+    "maplibre-gl": "~5.14.0",
+    "pmtiles": "^4.5.0",
     "shapefile": "^0.6.6",
     "topojson-client": "^3.1.0",
     "topojson-server": "^3.0.1",
