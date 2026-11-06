@@ -48,8 +48,6 @@
       "import": "./dist/esm/config/env/service-keys.js",
       "default": "./dist/esm/config/env/service-keys.js"
     },
-    "./config/map-style": "@twinfile/geokit/ui/config/map-style",
-    "./config/tile-cdn": "@twinfile/geokit/ui/config/tile-cdn",
     "./contract": {
       "source": "./src/contract/index.ts",
       "types": "./dist/esm/contract/index.d.ts",
@@ -89,7 +87,6 @@
       "import": "./dist/esm/utils/geojson/index.js",
       "require": "./dist/cjs/utils/geojson/index.cjs"
     },
-    "./geojson-loader": "@twinfile/geokit/ui/geojson-loader",
     "./h3": {
       "source": "./src/utils/h3/index.ts",
       "types": "./dist/esm/utils/h3/index.d.ts",
@@ -137,7 +134,6 @@
       "require": "./dist/cjs/static-map/index.cjs",
       "default": "./dist/esm/static-map/index.js"
     },
-    "./storage": "@twinfile/geokit/ui/storage",
     "./turf": {
       "source": "./src/utils/turf/index.ts",
       "types": "./dist/esm/utils/turf/index.d.ts",
@@ -253,9 +249,6 @@
       "import": "./dist/esm/types/layer-datasets.js",
       "default": "./dist/esm/types/layer-datasets.js"
     },
-    "./contract/bootstrap": "@twinfile/geokit/ui/bootstrap/ensure-map-ready",
-    "./contract/lifecycle": "@twinfile/geokit/ui/lifecycle",
-    "./storage/map-offline-context-loader": "@twinfile/geokit/ui/storage/map-offline-context-loader",
     "./types/cell-layers.types": {
       "source": "./src/types/cell-layers.types.ts",
       "types": "./dist/esm/types/cell-layers.types.d.ts",
@@ -268,10 +261,7 @@
       "import": "./dist/esm/contract/offline.js",
       "require": "./dist/cjs/contract/offline.cjs",
       "default": "./dist/esm/contract/offline.js"
-    },
-    "./storage/map-local-store": "@twinfile/geokit/ui/storage/map-local-store",
-    "./storage/map-offline-tile-cache": "@twinfile/geokit/ui/storage/map-offline-tile-cache",
-    "./storage/indexed-db": "@twinfile/geokit/ui/storage/indexed-db"
+    }
   },
   "sideEffects": [
     "*.css"

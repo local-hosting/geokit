@@ -36,9 +36,7 @@ export default defineConfig({
         'src/utils/**/*.ts',
         '../api/src/providers/**/*.ts',
         'src/config/env/**/*.ts',
-        'src/config/tile-cdn.ts',
         'src/contract/**/*.ts',
-        'src/storage/**/*.ts',
       ],
       exclude: [
         'node_modules/',

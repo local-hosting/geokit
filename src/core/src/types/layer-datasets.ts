@@ -1,5 +1,5 @@
 /**
- * gk-layer dataset registry types (shared between core geojson-loader and @twinfile/geokit/ui).
+ * gk-layer dataset registry types. The loader lives in `@twinfile/geokit/ui/geojson-loader`.
  */
 
 export type LayerDatasetId = string;

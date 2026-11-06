@@ -6,7 +6,7 @@ import type {
   MapStaticSnapshotArgs,
   ResolvedMapStaticProvider,
 } from '../types/static-map';
-import { resolveMapboxStaticStyle } from '../config/map-style';
+import { resolveMapboxStaticStyle } from './basemap';
 import type { MapRenderDimensions, MapStyleId, MapViewport } from '../types/static-map';
 
 export const DEFAULT_MAP_STYLE: MapStyleId = resolveMapboxStaticStyle();
