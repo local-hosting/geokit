@@ -22,7 +22,12 @@ const defaultStyleUrl = (apiKey: string) => buildMaptilerStyleUrl('dataviz-dark'
 /**
  * Check current style and replace if deprecated/invalid. Safe to call repeatedly.
  */
-export function checkAndUpdateStyle(map: MapStyleLike | null, apiKey: string): void {
+export function checkAndUpdateStyle(
+  map: MapStyleLike | null,
+  apiKey: string,
+  provider = 'maptiler'
+): void {
+  if (provider !== 'maptiler') return;
   if (!map?.setStyle || typeof map.setStyle !== 'function') return;
   if (!apiKey) return;
 

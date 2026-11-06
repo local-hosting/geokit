@@ -177,6 +177,28 @@ export class MapConnectedInit extends MapBase {
     // (which doesn't happen in map pool reuse scenarios)
   }
 
+  protected protomapsConfigFromAttributes(): {
+    apiKey?: string;
+    styleUrl?: string;
+    pmtilesUrl?: string;
+    labelLanguage?: string;
+  } {
+    // Access env var - Vite will replace import.meta.env at build time
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - import.meta is available in ESNext modules
+    const envKey = import.meta.env?.PROTOMAPS_KEY || import.meta.env?.GEOKIT_PROTOMAPS_KEY;
+    const apiKey = this.getAttribute('api-key') || envKey || undefined;
+    const styleUrl = this.getAttribute('style-url') || undefined;
+    const pmtilesUrl = this.getAttribute('pmtiles-url') || undefined;
+    const labelLanguage = this.getAttribute('label-language') || undefined;
+    return {
+      ...(apiKey ? { apiKey } : {}),
+      ...(styleUrl ? { styleUrl } : {}),
+      ...(pmtilesUrl ? { pmtilesUrl } : {}),
+      ...(labelLanguage ? { labelLanguage } : {}),
+    };
+  }
+
   async initializeMap(): Promise<void> {
     // Prevent concurrent initialization
     if (this._isInitializing) {
@@ -225,6 +247,10 @@ export class MapConnectedInit extends MapBase {
           if (!hasMapboxCss) {
             await import('mapbox-gl/dist/mapbox-gl.css');
           }
+        } else if (providerName === 'protomaps') {
+          if (!isMaplibreLayoutCssLoaded()) {
+            await import('maplibre-gl/dist/maplibre-gl.css');
+          }
         }
 
         if (!existingProvider) {
@@ -247,18 +273,29 @@ export class MapConnectedInit extends MapBase {
               'mapbox',
               token ? { accessToken: token } : undefined
             );
+          } else if (providerName === 'protomaps') {
+            const { ProtomapsUIProvider } = await import('../../../providers/protomaps-provider');
+            registerUIProvider('protomaps', new ProtomapsUIProvider());
+            provider = await getProviderByName('protomaps', this.protomapsConfigFromAttributes());
           } else {
-            throw new Error(`Unknown provider: ${providerName}. Supported: maptiler, mapbox`);
+            throw new Error(
+              `Unknown provider: ${providerName}. Supported: maptiler, mapbox, protomaps`
+            );
           }
         } else {
           // Initialize existing provider with config (if provided)
-          let config: { accessToken?: string } | { apiKey?: string } | undefined = undefined;
+          let config:
+            | { accessToken?: string }
+            | { apiKey?: string; styleUrl?: string; pmtilesUrl?: string; labelLanguage?: string }
+            | undefined = undefined;
           if (providerName === 'mapbox') {
             // Access env var - Vite will replace import.meta.env at build time
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore - import.meta is available in ESNext modules
             const token = accessToken || import.meta.env?.MAPBOX_TOKEN;
             if (token) config = { accessToken: token };
+          } else if (providerName === 'protomaps') {
+            config = this.protomapsConfigFromAttributes();
           } else if (apiKey) {
             config = { apiKey };
           }
@@ -278,7 +315,7 @@ export class MapConnectedInit extends MapBase {
             provider = await getProviderByName('maptiler', { apiKey });
           } else {
             throw new Error(
-              'No UI provider set. Add provider="maptiler" or provider="mapbox" attribute, or provide api-key for auto MapTiler initialization'
+              'No UI provider set. Add provider="maptiler", provider="mapbox", or provider="protomaps", or provide api-key for auto MapTiler initialization'
             );
           }
         }

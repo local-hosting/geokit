@@ -4,6 +4,7 @@ import {
   resolveMapProviderIdFromEnv,
   resolveMapRefererFromEnv,
   resolveMapboxKeyFromEnv,
+  resolveProtomapsKeyFromEnv,
   resolveMaptilerKeyFromEnv,
 } from '../../src/map-credentials';
 
@@ -11,12 +12,19 @@ describe('map-credentials', () => {
   it('resolves maptiler and mapbox keys from env', () => {
     expect(resolveMaptilerKeyFromEnv({ MAPTILER_KEY: 'mt-key' })).toBe('mt-key');
     expect(resolveMapboxKeyFromEnv({ MAPBOX_TOKEN: 'mb-key' })).toBe('mb-key');
+    expect(resolveProtomapsKeyFromEnv({ PROTOMAPS_KEY: 'pm-key' })).toBe('pm-key');
+    expect(resolveProtomapsKeyFromEnv({ GEOKIT_PROTOMAPS_KEY: 'pm-alias' })).toBe('pm-alias');
   });
 
   it('chooses provider from hint and env keys', () => {
     expect(resolveMapProviderIdFromEnv({}, { providerHint: 'mapbox' })).toBe('mapbox');
     expect(resolveMapProviderIdFromEnv({ MAPTILER_KEY: 'mt' })).toBe('maptiler');
     expect(resolveMapProviderIdFromEnv({ MAPBOX_TOKEN: 'mb' })).toBe('mapbox');
+    expect(resolveMapProviderIdFromEnv({ PROTOMAPS_KEY: 'pm' })).toBe('protomaps');
+    expect(resolveMapProviderIdFromEnv({ GEOKIT_MAP_PROVIDER: 'protomaps' })).toBe('protomaps');
+    expect(
+      resolveMapProviderIdFromEnv({ MAPTILER_KEY: 'mt', PROTOMAPS_KEY: 'pm' })
+    ).toBe('maptiler');
   });
 
   it('throws for unknown provider values', () => {
@@ -29,6 +37,8 @@ describe('map-credentials', () => {
     const env = { GEOKIT_MAP_API_KEY: 'generic-key' };
     expect(resolveMapApiKeyFromEnv(env, 'maptiler')).toBe('generic-key');
     expect(resolveMapApiKeyFromEnv({ MAPBOX_TOKEN: 'mb' }, 'mapbox')).toBe('mb');
+    expect(resolveMapApiKeyFromEnv({ PROTOMAPS_KEY: 'pm' }, 'protomaps')).toBe('pm');
+    expect(resolveMapApiKeyFromEnv(env, 'protomaps')).toBe('generic-key');
   });
 
   it('resolves referer from env or map host base url', () => {

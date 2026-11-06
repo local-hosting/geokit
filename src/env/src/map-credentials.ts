@@ -1,4 +1,4 @@
-import type { MapStaticProviderId } from './types/map-provider';
+import type { MapUiProviderId } from './types/map-provider';
 import type { GeokitEnv } from './types/env';
 import {
   MAPBOX_KEY_KEYS,
@@ -6,15 +6,22 @@ import {
   MAP_PROVIDER_KEYS,
   MAP_REFERER_KEYS,
   MAPTILER_KEY_KEYS,
+  PROTOMAPS_KEY_KEYS,
 } from './types/env';
 import { firstEnv, readRuntimeEnv } from './primitives';
 
 export type MapProviderEnv = GeokitEnv;
 
-function normalizeProviderHint(hint: string | undefined): MapStaticProviderId | undefined {
+const MAP_UI_PROVIDER_IDS: readonly MapUiProviderId[] = ['maptiler', 'mapbox', 'protomaps'];
+
+function normalizeProviderHint(hint: string | undefined): MapUiProviderId | undefined {
   const trimmed = hint?.trim();
-  if (trimmed === 'maptiler' || trimmed === 'mapbox') return trimmed;
+  if (trimmed === 'maptiler' || trimmed === 'mapbox' || trimmed === 'protomaps') return trimmed;
   return undefined;
+}
+
+function isMapUiProviderId(value: string): value is MapUiProviderId {
+  return (MAP_UI_PROVIDER_IDS as readonly string[]).includes(value);
 }
 
 export function resolveMaptilerKeyFromEnv(env: GeokitEnv = readRuntimeEnv()): string | undefined {
@@ -23,6 +30,10 @@ export function resolveMaptilerKeyFromEnv(env: GeokitEnv = readRuntimeEnv()): st
 
 export function resolveMapboxKeyFromEnv(env: GeokitEnv = readRuntimeEnv()): string | undefined {
   return firstEnv(env, MAPBOX_KEY_KEYS);
+}
+
+export function resolveProtomapsKeyFromEnv(env: GeokitEnv = readRuntimeEnv()): string | undefined {
+  return firstEnv(env, PROTOMAPS_KEY_KEYS);
 }
 
 export function resolveMapGenericApiKeyFromEnv(
@@ -34,19 +45,21 @@ export function resolveMapGenericApiKeyFromEnv(
 export function resolveMapProviderIdFromEnv(
   env: GeokitEnv = readRuntimeEnv(),
   options?: { providerHint?: string }
-): MapStaticProviderId {
+): MapUiProviderId {
   const hint = normalizeProviderHint(options?.providerHint);
   const raw = hint ?? firstEnv(env, MAP_PROVIDER_KEYS);
 
   if (raw) {
-    if (raw === 'maptiler' || raw === 'mapbox') return raw;
+    if (isMapUiProviderId(raw)) return raw;
     throw new Error(`Unknown map provider "${raw}". Set GEOKIT_MAP_PROVIDER to a supported value.`);
   }
 
   const maptilerKey = resolveMaptilerKeyFromEnv(env);
   const mapboxKey = resolveMapboxKeyFromEnv(env);
+  const protomapsKey = resolveProtomapsKeyFromEnv(env);
   const genericKey = resolveMapGenericApiKeyFromEnv(env);
 
+  if (protomapsKey && !maptilerKey && !mapboxKey) return 'protomaps';
   if (genericKey && !maptilerKey && !mapboxKey) {
     return 'maptiler';
   }
@@ -59,15 +72,22 @@ export function resolveMapProviderIdFromEnv(
 
 export function resolveMapApiKeyFromEnv(
   env: GeokitEnv = readRuntimeEnv(),
-  providerId: MapStaticProviderId
+  providerId: MapUiProviderId
 ): string {
   const generic = resolveMapGenericApiKeyFromEnv(env);
 
-  if (providerId === 'maptiler') {
-    return resolveMaptilerKeyFromEnv(env) ?? generic ?? '';
+  switch (providerId) {
+    case 'maptiler':
+      return resolveMaptilerKeyFromEnv(env) ?? generic ?? '';
+    case 'mapbox':
+      return resolveMapboxKeyFromEnv(env) ?? generic ?? '';
+    case 'protomaps':
+      return resolveProtomapsKeyFromEnv(env) ?? generic ?? '';
+    default: {
+      const exhaustive: never = providerId;
+      return exhaustive;
+    }
   }
-
-  return resolveMapboxKeyFromEnv(env) ?? generic ?? '';
 }
 
 export function resolveMapRefererFromEnv(
@@ -89,9 +109,11 @@ export function resolveMapRefererFromEnv(
 export function resolveDedicatedMapKeysFromEnv(env: GeokitEnv = readRuntimeEnv()): {
   maptilerKey?: string;
   mapboxKey?: string;
+  protomapsKey?: string;
 } {
   return {
     maptilerKey: resolveMaptilerKeyFromEnv(env),
     mapboxKey: resolveMapboxKeyFromEnv(env),
+    protomapsKey: resolveProtomapsKeyFromEnv(env),
   };
 }
