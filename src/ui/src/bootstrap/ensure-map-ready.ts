@@ -8,6 +8,8 @@ import type { MapTilerTransformRequest } from '@twinfile/geokit/core/config/mapt
 export type MapReadyPhaseHandler = (phase: string, elapsedMs?: number) => void;
 
 export type EnsureMapReadyOptions = {
+  /** Interactive backend to initialize. Defaults to MapTiler. */
+  provider?: 'maptiler' | 'mapbox' | 'protomaps';
   maptiler?: {
     apiKey?: string;
     transformRequest?: MapTilerTransformRequest | null;
@@ -17,6 +19,12 @@ export type EnsureMapReadyOptions = {
     accessToken?: string;
     defer?: boolean;
     idleTimeoutMs?: number;
+  };
+  protomaps?: {
+    apiKey?: string;
+    styleUrl?: string;
+    pmtilesUrl?: string;
+    labelLanguage?: string;
   };
   /** Geocoding/isochrone API routers — false for map-only embeds (skips node-only env in browser). */
   apiRouters?: boolean | 'defer';
@@ -90,10 +98,27 @@ export function ensureMapboxApiReady(accessToken?: string, maptilerApiKey?: stri
   return mapboxReadyPromise;
 }
 
+async function registerProtomaps(
+  protomaps: NonNullable<EnsureMapReadyOptions['protomaps']>,
+  asDefault: boolean
+): Promise<void> {
+  const { configure, registerUIProvider, setUIProvider, getUIProviderByName } = await import(
+    '../providers/registry'
+  );
+  const { ProtomapsUIProvider } = await import('../providers/protomaps-provider');
+  configure({ protomaps });
+  if (!getUIProviderByName('protomaps')) {
+    registerUIProvider('protomaps', new ProtomapsUIProvider());
+  }
+  if (!asDefault) return;
+  await setUIProvider('protomaps', protomaps);
+}
+
 async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
   const totalStart = performance.now();
   phase(options.onPhase, 'init start');
 
+  const providerId = options.provider ?? 'maptiler';
   const maptiler = options.maptiler;
   const apiKey = maptiler?.apiKey;
   const maptilerConfig = apiKey
@@ -108,47 +133,67 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
   const { configure, registerUIProvider, setUIProvider, getUIProviderByName } = await import(
     '../providers/registry'
   );
-  const { MapTilerUIProvider } = await import('../providers/maptiler-provider');
   phase(options.onPhase, 'geokit core', geokitStep);
 
-  if (maptilerConfig) {
+  if (providerId === 'protomaps') {
+    const protomapsStep = performance.now();
+    const cssImports: Promise<unknown>[] = [];
+    if (options.importThemeCss !== false) {
+      cssImports.push(import('../theme.css'));
+      cssImports.push(import('maplibre-gl/dist/maplibre-gl.css'));
+    }
+    await Promise.all(cssImports);
+    if (options.protomaps) {
+      await registerProtomaps(options.protomaps, true);
+    } else {
+      console.warn('[gk-bootstrap] Protomaps config not set — Protomaps features disabled.');
+    }
+    phase(options.onPhase, 'protomaps provider', protomapsStep);
+  } else if (maptilerConfig) {
     configure({ maptiler: maptilerConfig });
   }
 
-  const maptilerStep = performance.now();
-  const cssStep = performance.now();
+  if (providerId !== 'protomaps') {
+    const { MapTilerUIProvider } = await import('../providers/maptiler-provider');
+    const maptilerStep = performance.now();
+    const cssStep = performance.now();
 
-  const cssImports: Promise<unknown>[] = [];
-  if (options.importThemeCss !== false) {
-    cssImports.push(import('../theme.css'));
-    cssImports.push(import('@maptiler/sdk/dist/maptiler-sdk.css'));
-  }
-
-  await Promise.all([
-    prefetchMapTilerSdk(apiKey).then(() => phase(options.onPhase, 'maptiler sdk', maptilerStep)),
-    cssImports.length
-      ? Promise.all(cssImports).then(() => phase(options.onPhase, 'css', cssStep))
-      : Promise.resolve(),
-  ]);
-
-  const providerStep = performance.now();
-  if (apiKey && maptilerConfig) {
-    let maptilerProvider = getUIProviderByName('maptiler');
-    if (!maptilerProvider) {
-      maptilerProvider = new MapTilerUIProvider();
-      registerUIProvider('maptiler', maptilerProvider);
+    const cssImports: Promise<unknown>[] = [];
+    if (options.importThemeCss !== false) {
+      cssImports.push(import('../theme.css'));
+      cssImports.push(import('@maptiler/sdk/dist/maptiler-sdk.css'));
     }
-    const timeoutMs = maptiler?.initTimeoutMs ?? 8000;
-    await Promise.race([
-      setUIProvider('maptiler', maptilerConfig).catch((err) => {
-        console.warn('[gk-bootstrap] Failed to initialize MapTiler UI provider:', err);
-      }),
-      new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+
+    await Promise.all([
+      prefetchMapTilerSdk(apiKey).then(() => phase(options.onPhase, 'maptiler sdk', maptilerStep)),
+      cssImports.length
+        ? Promise.all(cssImports).then(() => phase(options.onPhase, 'css', cssStep))
+        : Promise.resolve(),
     ]);
-  } else if (!apiKey) {
-    console.warn('[gk-bootstrap] MapTiler apiKey not set — MapTiler features disabled.');
+
+    const providerStep = performance.now();
+    if (apiKey && maptilerConfig) {
+      let maptilerProvider = getUIProviderByName('maptiler');
+      if (!maptilerProvider) {
+        maptilerProvider = new MapTilerUIProvider();
+        registerUIProvider('maptiler', maptilerProvider);
+      }
+      const timeoutMs = maptiler?.initTimeoutMs ?? 8000;
+      await Promise.race([
+        setUIProvider('maptiler', maptilerConfig).catch((err) => {
+          console.warn('[gk-bootstrap] Failed to initialize MapTiler UI provider:', err);
+        }),
+        new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+      ]);
+    } else if (!apiKey) {
+      console.warn('[gk-bootstrap] MapTiler apiKey not set — MapTiler features disabled.');
+    }
+    phase(options.onPhase, 'maptiler provider', providerStep);
+
+    if (options.protomaps) {
+      await registerProtomaps(options.protomaps, false);
+    }
   }
-  phase(options.onPhase, 'maptiler provider', providerStep);
 
   const apiRouters = options.apiRouters ?? 'defer';
   if (apiRouters !== false) {

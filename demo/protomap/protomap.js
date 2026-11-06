@@ -1,14 +1,16 @@
+import { configure } from '../../src/ui/src/providers/registry.ts';
 import { setupMapsDemo } from '../shared/bootstrap-maps.js';
 import { cellToBoundary, cellToLatLng, gridDisk, latLngToCell } from 'h3-js';
 import { registerMapTilerPlugin } from '../../src/providers/maptiler/src/index.ts';
-import { getServiceForCapability } from '../../src/service/src/src/providers/registry.ts';
+import { getServiceForCapability } from '../../src/service/src/services/registry.ts';
 
 const H3_SOURCE_ID = 'protomap-h3-source';
 const H3_LAYER_ID = 'protomap-h3-fill';
 const H3_RING = 2;
-const DEFAULT_LAT = 39.8283;
-const DEFAULT_LNG = -98.5795;
-const DEFAULT_ZOOM = 4;
+const PMTILES_URL = 'https://pmtiles.io/protomaps(vector)ODbL_firenze.pmtiles';
+const DEFAULT_LAT = 43.7696;
+const DEFAULT_LNG = 11.2558;
+const DEFAULT_ZOOM = 13;
 
 const mapElement = document.getElementById('protomap-map');
 const markerElement = document.getElementById('protomap-marker');
@@ -502,6 +504,8 @@ pinState = readInitialPin();
 applyPinToMarker();
 applyInitialMapView();
 
+configure({ protomaps: { pmtilesUrl: PMTILES_URL } });
+
 const { maptilerKey } = await setupMapsDemo({
   elements: ['marker', 'navigation-control'],
 });
@@ -509,7 +513,7 @@ const { maptilerKey } = await setupMapsDemo({
 if (maptilerKey) {
   await registerMapTilerPlugin({ maptilerApiKey: maptilerKey });
 } else {
-  setStatus('MAPTILER_KEY missing — basemap and search need a key');
+  setStatus('Basemap is the Florence PMTiles file. Search needs MAPTILER_KEY.');
 }
 
 bindUi();

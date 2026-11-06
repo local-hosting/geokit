@@ -92,17 +92,32 @@ import { MapConnectedInit } from './map-connected-init';
 import { mapEl } from './map-el';
 
 export class MapStyleSetup extends MapConnectedInit {
+  protected mapRenderProviderName(): string {
+    const attr = this.getAttribute('provider');
+    if (attr) return attr;
+    try {
+      return this.getUIProvider().getName();
+    } catch {
+      return 'maptiler';
+    }
+  }
+
   protected ensureValidMapStyleAfterLoad(): void {
     if (!this.map) return;
     const apiKey = this.getAttribute('api-key') || '';
+    const provider = this.mapRenderProviderName();
     ensureValidMapStyleAfterLoadFn(this.map as any, apiKey, () =>
-      checkAndUpdateStyleFn(this.map as any, apiKey)
+      checkAndUpdateStyleFn(this.map as any, apiKey, provider)
     );
   }
 
   protected checkAndUpdateStyle(): void {
     if (!this.map) return;
-    checkAndUpdateStyleFn(this.map as any, this.getAttribute('api-key') || '');
+    checkAndUpdateStyleFn(
+      this.map as any,
+      this.getAttribute('api-key') || '',
+      this.mapRenderProviderName()
+    );
   }
 
   protected setupStyleImageMissingHandler(): void {

@@ -89,7 +89,7 @@ export const DEMO_SECTIONS = [
         id: 'protomap',
         path: '/protomap/index.html',
         label: 'Protomap',
-        description: 'Shareable pin + H3 cells, MapTiler search, hash URL (no Redis)',
+        description: 'Shareable pin + H3 cells on a Protomaps PMTiles basemap',
       },
     ],
   },
