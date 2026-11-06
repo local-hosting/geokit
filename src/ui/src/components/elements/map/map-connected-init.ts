@@ -13,6 +13,7 @@ import {
   registerUIProvider,
   getProviderByName,
   getUIProviderByName,
+  setUIProvider,
 } from '../../../providers/registry';
 import { MapTilerUIProvider } from '../../../providers/maptiler-provider';
 import type { PointElement } from '../point/point';
@@ -301,6 +302,7 @@ export class MapConnectedInit extends MapBase {
           }
           provider = await getProviderByName(providerName, config);
         }
+        await setUIProvider(providerName);
       } else {
         // Auto-initialize MapTiler provider if api-key is present
         try {
@@ -313,6 +315,10 @@ export class MapConnectedInit extends MapBase {
               registerUIProvider('maptiler', new MapTilerUIProvider());
             }
             provider = await getProviderByName('maptiler', { apiKey });
+            if (!this.getAttribute('provider')) {
+              this.setAttribute('provider', 'maptiler');
+            }
+            await setUIProvider('maptiler');
           } else {
             throw new Error(
               'No UI provider set. Add provider="maptiler", provider="mapbox", or provider="protomaps", or provide api-key for auto MapTiler initialization'

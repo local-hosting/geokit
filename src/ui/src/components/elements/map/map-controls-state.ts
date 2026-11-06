@@ -18,7 +18,6 @@ import { MapTilerUIProvider } from '../../../providers/maptiler-provider';
 import type { PointElement } from '../point/point';
 import type { PolygonElement } from '../polygon';
 import { type IsochroneElement } from '../isochrone/isochrone';
-import type { MapInstance } from '../../../providers/types';
 import {
   type ThemeName,
   type Theme,
@@ -88,6 +87,7 @@ import {
   DEFAULT_SHARED_POINT_ID_PROPERTIES,
 } from '../../../utils/layer-styles';
 
+import { applyMapCameraAttribute } from './map-camera-attribute';
 import { MapStyleSetup } from './map-style-setup';
 import { mapEl } from './map-el';
 
@@ -209,44 +209,19 @@ export class MapControlsState extends MapStyleSetup {
     switch (name) {
       case 'lat':
       case 'lng':
-        this.updateCenter();
-        break;
       case 'zoom':
-        if (newValue) {
-          const setZoom = (this.map as { setZoom?: (zoom: number) => void }).setZoom;
-          if (setZoom) {
-            setZoom(parseFloat(newValue));
-          }
-        }
-        break;
       case 'pitch':
-        if (newValue) {
-          const setPitch = (this.map as { setPitch?: (pitch: number) => void }).setPitch;
-          if (setPitch) {
-            setPitch(parseFloat(newValue));
-          }
-        }
-        break;
       case 'bearing':
-        if (newValue) {
-          const setBearing = (this.map as { setBearing?: (bearing: number) => void }).setBearing;
-          if (setBearing) {
-            setBearing(parseFloat(newValue));
-          }
-        }
+        applyMapCameraAttribute(
+          this.map,
+          name,
+          this.getAttribute('lat'),
+          this.getAttribute('lng'),
+          newValue,
+        );
         break;
-    }
-  }
-
-  protected updateCenter(): void {
-    if (!this.map) return;
-
-    const lat = parseFloat(this.getAttribute('lat') || '0');
-    const lng = parseFloat(this.getAttribute('lng') || '0');
-
-    const setCenter = (this.map as { setCenter?: (center: [number, number]) => void }).setCenter;
-    if (setCenter) {
-      setCenter([lng, lat]);
+      default:
+        break;
     }
   }
 
