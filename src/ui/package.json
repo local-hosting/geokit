@@ -331,15 +331,18 @@
   },
   "sideEffects": [
     "*.css",
+    "./dist/esm/index.js",
     "./dist/esm/core.js",
-    "./dist/esm/components/elements/*.js",
-    "./dist/esm/components/controls/*.js",
+    "./dist/esm/components/elements/**/*.js",
+    "./dist/esm/components/controls/**/*.js",
+    "./dist/cjs/index.cjs",
     "./dist/cjs/core.cjs",
-    "./dist/cjs/components/elements/*.cjs",
-    "./dist/cjs/components/controls/*.cjs",
+    "./dist/cjs/components/elements/**/*.cjs",
+    "./dist/cjs/components/controls/**/*.cjs",
+    "./src/index.ts",
     "./src/core.ts",
-    "./src/components/elements/*.ts",
-    "./src/components/controls/*.ts"
+    "./src/components/elements/**/*.ts",
+    "./src/components/controls/**/*.ts"
   ],
   "files": [
     "dist",
