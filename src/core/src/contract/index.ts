@@ -1,6 +1,6 @@
 /**
- * GeoKit contract — offline policy, provider ids, local storage.
- * Map bootstrap and surface lifecycle: @twinfile/geokit/ui or @twinfile/geokit/ui (re-export).
+ * GeoKit contract — offline policy and provider ids.
+ * Map storage and bootstrap live in `@twinfile/geokit/ui`.
  */
 
 export type { MapStaticProviderId } from '../types/map-provider';
@@ -38,7 +38,3 @@ export {
   defaultOfflineZoomRangeForMap,
   resolveOfflineBoundsFromPins,
 } from './offline';
-
-export { MapLocalStore, type MapSnapshotRecord } from '@twinfile/geokit/ui/storage/map-local-store';
-
-export { MapOfflineTileCache, TILE_CACHE_NAME } from '@twinfile/geokit/ui/storage/map-offline-tile-cache';

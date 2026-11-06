@@ -136,7 +136,8 @@ Detail: [`geokit-swift/docs/parity.md`](../../geokit-swift/docs/parity.md) (prov
 | 1 | Bounds, distance, bearing, coordinates, geohash, GeoJSON | Shared fixtures |
 | 1 | H3 (`@twinfile/geokit/h3`) | Shared fixtures where Swift implements H3 |
 | 1.5 | `@twinfile/geokit/core/turf` | Shared fixtures; Swift line/polygon buffers unsupported |
-| 2 | `@twinfile/geokit/core/contract`, `ensureMapReady` (`@twinfile/geokit/ui`) | Partial |
+| 2 | Offline policy numbers in `@twinfile/geokit/core/contract` | Shared fixtures (`offline` in `parity-fixtures.json`) |
+| 2 | `ensureMapReady` (`@twinfile/geokit/ui`), lifecycle timing | Conceptual mirror |
 | 3 | Service registry, MCP tools, extended Turf, `@twinfile/geokit/crosswalk` | Node-only |
 
 **Epsilon:** lat/lon ±0.0001; H3 and geohash ids exact match.

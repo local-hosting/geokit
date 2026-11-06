@@ -13,7 +13,7 @@
     "access": "restricted"
   },
   "scripts": {
-    "build": "yarn generate:tsconfig-paths && yarn build:env && yarn build:h3 && yarn generate:tsconfig-paths && yarn build:core:bundle && yarn generate:pre-ui-tsconfig-paths && yarn build:core:types:pre-ui && yarn generate:tsconfig-paths && yarn build:formats && yarn generate:tsconfig-paths && yarn build:service && yarn build:crosswalk && yarn generate:tsconfig-paths && yarn generate:ui-tsconfig-paths && yarn build:ui && yarn generate:tsconfig-paths && yarn build:core:types:shims && yarn build:foursquare && yarn generate:tsconfig-paths && node scripts/check-no-src-declarations.mjs",
+    "build": "yarn generate:tsconfig-paths && yarn build:env && yarn build:h3 && yarn generate:tsconfig-paths && yarn build:core:bundle && yarn generate:pre-ui-tsconfig-paths && yarn build:core:types:pre-ui && yarn generate:tsconfig-paths && yarn build:formats && yarn generate:tsconfig-paths && yarn build:service && yarn build:crosswalk && yarn generate:tsconfig-paths && yarn generate:ui-tsconfig-paths && yarn build:ui && yarn generate:tsconfig-paths && yarn build:foursquare && yarn generate:tsconfig-paths && node scripts/check-no-src-declarations.mjs",
     "build:core": "yarn build:core:bundle && yarn build:core:types",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "test": "yarn test:core && yarn test:crosswalk && yarn validate:exports",
@@ -43,8 +43,7 @@
     "build:core:types:pre-ui": "cd src/core && NODE_OPTIONS='--max-old-space-size=4096' tsc -p config/tsconfig.build.pre-ui.json",
     "generate:pre-ui-tsconfig-paths": "node scripts/generate-pre-ui-tsconfig-paths.mjs",
     "build:crosswalk": "cd src/crosswalk && tsup --config config/tsup.config.js && NODE_OPTIONS='--max-old-space-size=4096' tsc -p config/tsconfig.build.json && node ../../scripts/copy-crosswalk-generated-declarations.mjs",
-    "generate:ui-tsconfig-paths": "node scripts/generate-ui-tsconfig-paths.mjs",
-    "build:core:types:shims": "cd src/core && NODE_OPTIONS='--max-old-space-size=4096' tsc -p config/tsconfig.build.shims.json && node ../../scripts/copy-core-shim-declarations.mjs"
+    "generate:ui-tsconfig-paths": "node scripts/generate-ui-tsconfig-paths.mjs"
   },
   "exports": {
     "./core": {
@@ -88,16 +87,6 @@
       "import": "./src/core/dist/esm/config/env/service-keys.js",
       "default": "./src/core/dist/esm/config/env/service-keys.js"
     },
-    "./core/config/map-style": {
-      "types": "./src/ui/dist/esm/config/map-style.d.ts",
-      "import": "./src/ui/dist/esm/config/map-style.js",
-      "default": "./src/ui/dist/esm/config/map-style.js"
-    },
-    "./core/config/tile-cdn": {
-      "types": "./src/ui/dist/esm/config/tile-cdn.d.ts",
-      "import": "./src/ui/dist/esm/config/tile-cdn.js",
-      "default": "./src/ui/dist/esm/config/tile-cdn.js"
-    },
     "./core/contract": {
       "source": "./src/core/src/contract/index.ts",
       "types": "./src/core/dist/esm/contract/index.d.ts",
@@ -136,11 +125,6 @@
       "types": "./src/core/dist/esm/utils/geojson/index.d.ts",
       "import": "./src/core/dist/esm/utils/geojson/index.js",
       "require": "./src/core/dist/cjs/utils/geojson/index.cjs"
-    },
-    "./core/geojson-loader": {
-      "types": "./src/ui/dist/esm/geojson-loader/index.d.ts",
-      "import": "./src/ui/dist/esm/geojson-loader/index.js",
-      "default": "./src/ui/dist/esm/geojson-loader/index.js"
     },
     "./core/h3": {
       "source": "./src/core/src/utils/h3/index.ts",
@@ -188,11 +172,6 @@
       "import": "./src/core/dist/esm/static-map/index.js",
       "require": "./src/core/dist/cjs/static-map/index.cjs",
       "default": "./src/core/dist/esm/static-map/index.js"
-    },
-    "./core/storage": {
-      "types": "./src/ui/dist/esm/storage/index.d.ts",
-      "import": "./src/ui/dist/esm/storage/index.js",
-      "default": "./src/ui/dist/esm/storage/index.js"
     },
     "./core/turf": {
       "source": "./src/core/src/utils/turf/index.ts",
@@ -349,11 +328,6 @@
       "require": "./src/ui/dist/cjs/lifecycle.cjs",
       "default": "./src/ui/dist/esm/lifecycle.js"
     },
-    "./core/storage/map-offline-context-loader": {
-      "types": "./src/ui/dist/esm/storage/map-offline-context-loader.d.ts",
-      "import": "./src/ui/dist/esm/storage/map-offline-context-loader.js",
-      "default": "./src/ui/dist/esm/storage/map-offline-context-loader.js"
-    },
     "./core/types/cell-layers.types": {
       "source": "./src/core/src/types/cell-layers.types.ts",
       "types": "./src/core/dist/esm/types/cell-layers.types.d.ts",
@@ -366,21 +340,6 @@
       "import": "./src/core/dist/esm/contract/offline.js",
       "require": "./src/core/dist/cjs/contract/offline.cjs",
       "default": "./src/core/dist/esm/contract/offline.js"
-    },
-    "./core/storage/map-local-store": {
-      "types": "./src/ui/dist/esm/storage/map-local-store.d.ts",
-      "import": "./src/ui/dist/esm/storage/map-local-store.js",
-      "default": "./src/ui/dist/esm/storage/map-local-store.js"
-    },
-    "./core/storage/map-offline-tile-cache": {
-      "types": "./src/ui/dist/esm/storage/map-offline-tile-cache.d.ts",
-      "import": "./src/ui/dist/esm/storage/map-offline-tile-cache.js",
-      "default": "./src/ui/dist/esm/storage/map-offline-tile-cache.js"
-    },
-    "./core/storage/indexed-db": {
-      "types": "./src/ui/dist/esm/storage/indexed-db.d.ts",
-      "import": "./src/ui/dist/esm/storage/indexed-db.js",
-      "default": "./src/ui/dist/esm/storage/indexed-db.js"
     },
     "./crosswalk": {
       "types": "./src/crosswalk/dist/esm/src/index.d.ts",

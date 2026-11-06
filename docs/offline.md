@@ -20,8 +20,6 @@ import { MapOfflineDefaults, validateOfflinePrefetchRequest } from '@twinfile/ge
 import { MapLocalStore, MapOfflineTileCache, MapOfflineContextLoader } from '@twinfile/geokit/ui/storage';
 ```
 
-`@twinfile/geokit/core/storage` re-exports `@twinfile/geokit/ui/storage` for one release cycle — prefer the UI path in new code.
-
 ## Defaults (`MapOfflineDefaults`)
 
 | Setting | Web | Native Mapbox |
