@@ -18,7 +18,7 @@ export function createLibraryTsupConfig(packageRoot) {
         const rel = relative(packageRoot, full).replace(/\\/g, '/');
         if (statSync(full).isDirectory()) {
           entries.push(...walk(full));
-        } else if (name.endsWith('.ts') && !name.endsWith('.d.ts')) {
+        } else if (/\.(ts|js)$/.test(name) && !name.endsWith('.d.ts')) {
           entries.push(rel);
         }
       }
@@ -96,7 +96,7 @@ export function createLibraryTsupConfig(packageRoot) {
       dts: false,
       bundle: false,
       splitting: false,
-      sourcemap: true,
+      sourcemap: false,
       clean: true,
       platform: 'node',
       tsconfig,
@@ -109,7 +109,7 @@ export function createLibraryTsupConfig(packageRoot) {
       outExtension: () => ({ js: '.cjs' }),
       bundle: false,
       splitting: false,
-      sourcemap: true,
+      sourcemap: false,
       clean: false,
       platform: 'node',
       tsconfig,
