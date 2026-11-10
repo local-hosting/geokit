@@ -11,7 +11,7 @@ export const H3_MAX_RESOLUTION = 15;
 /** Coarse global hero / low-zoom DMA tier. */
 export const PLATFORM_H3_HERO_RESOLUTION = 0;
 
-/** Place sync and Fieldwise map grid. */
+/** Place sync and default platform map grid (H3). */
 export const PLATFORM_H3_RESOLUTION = 1;
 
 /** Native zip-h3-index resolution (do not use for platform grid). */
@@ -46,7 +46,7 @@ export const PLACE_H3_RESOLUTION = PLATFORM_H3_RESOLUTION;
 export const GEOHASH_MIN_PRECISION = 1;
 export const GEOHASH_MAX_PRECISION = 12;
 
-/** Fieldwise map grid and default CDN browse tier. */
+/** Platform map grid and default CDN browse tier (geohash). */
 export const PLATFORM_GEOHASH_PRECISION = 6;
 
 /** Native geohash precision for ZIP index (built from H3 r5 footprints). */
