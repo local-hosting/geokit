@@ -18,7 +18,7 @@
     "build:core": "yarn build:core:bundle && yarn build:core:types",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "test": "yarn test:core && yarn test:crosswalk && yarn validate:exports",
-    "check": "node scripts/check-neutral-language.mjs && yarn generate:tsconfig-paths && yarn test:crosswalk",
+    "check": "node scripts/check-vendor-neutral.mjs && yarn generate:tsconfig-paths && yarn test:crosswalk",
     "pretest": "yarn generate:dev-config",
     "test:core": "vitest run --config src/core/config/vitest.config.ts",
     "verify:parity": "bash src/core/scripts/verify-parity.sh",
