@@ -390,6 +390,9 @@ export class MapConnectedInit extends MapBase {
         mapEl(this).showPlaceholder('Loading map...');
         this.isInitialized = false;
         this._isInitializing = false;
+        window.setTimeout(() => {
+          if (!this.isInitialized && this.isConnected) void this.initializeMap();
+        }, 500);
         return;
       }
 
@@ -612,11 +615,12 @@ export class MapConnectedInit extends MapBase {
             }
             if (fallbackCount >= fallbackMax) {
               window.clearInterval(fallbackId);
-              debug.log('[gk-map] fallback: style never loaded after 5s, will retry', {
+              debug.log('[gk-map] fallback: style never loaded after 5s', {
                 _isFrozen: this._isFrozen,
               });
-              // Style never loaded - keep showing "Loading map..." and let pool retry
-              mapEl(this).showPlaceholder('Loading map...');
+              mapEl(this).showPlaceholder(
+                'Map unavailable — check MapTiler key, network, or WebGL limits',
+              );
               this.isInitialized = false;
               return;
             }
@@ -633,7 +637,11 @@ export class MapConnectedInit extends MapBase {
       } else {
         console.error('[gk-map] Failed to initialize map:', error);
       }
-      mapEl(this).showPlaceholder('Loading map...');
+      const hint =
+        message.includes('No UI provider') || message.includes('api-key')
+          ? 'Map unavailable — set MAPTILER_KEY or provider on gk-map'
+          : 'Map unavailable — see console for details';
+      mapEl(this).showPlaceholder(hint);
       this.isInitialized = false;
       this.dispatchEvent(
         new CustomEvent('gk-map-failed', { detail: { element: this, error }, bubbles: true })
