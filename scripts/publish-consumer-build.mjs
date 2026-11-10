@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build dist artifacts required by server-side consumers (fieldwise-feeds, etc.)
+ * Build dist artifacts required by server-side consumers of geokit packages
  * without the full UI/core typecheck graph that blocks `yarn build` in CI-less publish.
  */
 import { spawnSync } from 'node:child_process';
