@@ -24,7 +24,7 @@ export type StateCode = string & { __brand: 'StateCode' };
 /** Place crosswalk key (`state/place-slug`, lowercase). */
 export type PlaceKey = string & { __brand: 'PlaceKey' };
 
-/** Fieldwise macro-region slug (lowercase kebab-case). */
+/** US macro-region slug (lowercase kebab-case). */
 export type MacroRegion = string & { __brand: 'MacroRegion' };
 
 /** ISO-like country code used in crosswalk (lowercase). */
