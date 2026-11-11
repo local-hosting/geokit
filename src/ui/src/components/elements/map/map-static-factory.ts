@@ -89,6 +89,7 @@ import {
 } from '../../../utils/layer-styles';
 
 import { MapControlsApi } from './map-controls-api';
+import { registerGkMapViteHmrHandlers } from '../../../bootstrap/vite-gk-map-hmr';
 
 export class MapElement extends MapControlsApi {
   public static create(
@@ -329,12 +330,5 @@ if (!customElements.get('gk-map')) {
   customElements.define('gk-map', MapElement);
 }
 
-/** Vite HMR: tear down map instances so WebGL contexts are not leaked across reloads. */
-if (typeof import.meta !== 'undefined' && import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    document.querySelectorAll('gk-map').forEach((el) => {
-      void (el as MapElement).freeze?.();
-    });
-  });
-}
+registerGkMapViteHmrHandlers();
 

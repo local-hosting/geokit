@@ -126,6 +126,12 @@ export class MapConnectedInit extends MapBase {
       return;
     }
 
+    // Frozen while still in the tree (e.g. brief Vue patch disconnect or Vite module dispose)
+    if (this._isFrozen && !this.map && this.isConnected) {
+      void mapEl(this).unfreeze();
+      return;
+    }
+
     // Only show placeholder for standalone maps (not pool-managed)
     mapEl(this).showPlaceholderIfNeeded();
 

@@ -500,6 +500,13 @@
       "require": "./src/ui/dist/cjs/bootstrap/ensure-map-ready.cjs",
       "default": "./src/ui/dist/esm/bootstrap/ensure-map-ready.js"
     },
+    "./ui/bootstrap/vite-gk-map-hmr": {
+      "source": "./src/ui/src/bootstrap/vite-gk-map-hmr.ts",
+      "types": "./src/ui/dist/esm/bootstrap/vite-gk-map-hmr.d.ts",
+      "import": "./src/ui/dist/esm/bootstrap/vite-gk-map-hmr.js",
+      "require": "./src/ui/dist/cjs/bootstrap/vite-gk-map-hmr.cjs",
+      "default": "./src/ui/dist/esm/bootstrap/vite-gk-map-hmr.js"
+    },
     "./ui/adapters/shared": {
       "source": "./src/ui/src/adapters/shared/index.ts",
       "types": "./src/ui/dist/esm/adapters/shared/index.d.ts",
