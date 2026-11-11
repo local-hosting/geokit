@@ -15,6 +15,7 @@ import {
   getMaxActiveMaps,
   getWebGLMapBudget,
 } from '../map/lifecycle/map-freeze';
+import { registerGkMapViteHmrHandlers } from '../../../bootstrap/vite-gk-map-hmr';
 
 interface SlotInfo {
   slotElement: HTMLElement;
@@ -132,17 +133,6 @@ if (!customElements.get('gk-map-collection')) {
   customElements.define('gk-map-collection', MapCollectionElement);
 }
 
-/** Vite HMR: release WebGL contexts before the module reloads. */
-if (typeof import.meta !== 'undefined' && import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    document.querySelectorAll('gk-map-collection').forEach((el) => {
-      const collection = el as MapCollectionElement;
-      void collection.freezeAll?.();
-    });
-    document.querySelectorAll('gk-map').forEach((el) => {
-      const map = el as MapElement;
-      void map.freeze?.();
-    });
-  });
-}
+
+registerGkMapViteHmrHandlers();
 
