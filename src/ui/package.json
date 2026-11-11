@@ -17,6 +17,7 @@
     },
     "./theme.css": {
       "source": "./src/theme.css",
+      "types": "./src/theme.css.d.ts",
       "default": "./dist/ui/theme.css"
     },
     "./bootstrap/ensure-map-ready": {
