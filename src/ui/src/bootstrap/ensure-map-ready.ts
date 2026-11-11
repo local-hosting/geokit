@@ -153,7 +153,7 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
     configure({ maptiler: maptilerConfig });
   }
 
-  if (providerId !== 'protomaps') {
+  if (providerId !== 'protomaps' && providerId !== 'mapbox') {
     const { MapTilerUIProvider } = await import('../providers/maptiler-provider');
     const maptilerStep = performance.now();
     const cssStep = performance.now();

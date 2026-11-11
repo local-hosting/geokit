@@ -58,6 +58,14 @@ export function useGkMap(
       },
       onStuck: options.onStuck,
     });
+
+    const existingMap =
+      typeof element.getMap === 'function' ? (element.getMap() as unknown) : null;
+    if (existingMap) {
+      mapInstance.value = existingMap;
+      isReady.value = true;
+      element.hidePlaceholder?.();
+    }
   }
 
   if (elementRef) {

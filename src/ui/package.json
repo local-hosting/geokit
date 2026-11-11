@@ -27,6 +27,13 @@
       "require": "./dist/cjs/bootstrap/ensure-map-ready.cjs",
       "default": "./dist/esm/bootstrap/ensure-map-ready.js"
     },
+    "./bootstrap/vite-gk-map-hmr": {
+      "source": "./src/bootstrap/vite-gk-map-hmr.ts",
+      "types": "./dist/esm/bootstrap/vite-gk-map-hmr.d.ts",
+      "import": "./dist/esm/bootstrap/vite-gk-map-hmr.js",
+      "require": "./dist/cjs/bootstrap/vite-gk-map-hmr.cjs",
+      "default": "./dist/esm/bootstrap/vite-gk-map-hmr.js"
+    },
     "./adapters/shared": {
       "source": "./src/adapters/shared/index.ts",
       "types": "./dist/esm/adapters/shared/index.d.ts",

@@ -1,7 +1,8 @@
 import { copyFile, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { transformSync } from 'esbuild';
 
 /** Dual ESM/CJS build via tsup; declarations via tsc (tsup dts OOMs at ~290 entries). */
 
@@ -152,10 +153,43 @@ async function fixCjsRequires(dir) {
   }
 }
 
+/** Fail the build when dist/esm .js still contains TypeScript syntax (stale hand-edited artifacts). */
+function validateDistEsmJs(dir) {
+  /** @type {string[]} */
+  const failures = [];
+
+  /** @param {string} current */
+  function walk(current) {
+    for (const name of readdirSync(current)) {
+      const full = join(current, name);
+      if (statSync(full).isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!name.endsWith('.js')) continue;
+      const code = readFileSync(full, 'utf8');
+      try {
+        transformSync(code, { loader: 'js', format: 'esm' });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        failures.push(`${full.replace(`${geokitRoot}/`, '')}: ${message}`);
+      }
+    }
+  }
+
+  walk(dir);
+  if (failures.length > 0) {
+    console.error('[geokit build] dist/esm contains invalid JavaScript:');
+    for (const line of failures) console.error(`  ${line}`);
+    throw new Error(`[geokit build] ${failures.length} invalid dist/esm .js file(s)`);
+  }
+}
+
 async function finalizeBuild() {
   await copyThemeCss();
   await fixEsmImports(join(geokitRoot, 'dist/esm'));
   await fixCjsRequires(join(geokitRoot, 'dist/cjs'));
+  validateDistEsmJs(join(geokitRoot, 'dist/esm'));
   console.log('[geokit build] fixed ESM import and CJS require extensions');
 }
 
