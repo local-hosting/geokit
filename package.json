@@ -490,6 +490,7 @@
     },
     "./ui/theme.css": {
       "source": "./src/ui/src/theme.css",
+      "types": "./src/ui/src/theme.css.d.ts",
       "default": "./src/ui/dist/ui/theme.css"
     },
     "./ui/bootstrap/ensure-map-ready": {
