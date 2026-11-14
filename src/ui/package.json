@@ -68,6 +68,12 @@
       "import": "./dist/esm/shared-points.js",
       "default": "./dist/esm/shared-points.js"
     },
+    "./shared-points/paint": {
+      "source": "./src/utils/paint/shared-point-paint.ts",
+      "types": "./dist/esm/utils/paint/shared-point-paint.d.ts",
+      "import": "./dist/esm/utils/paint/shared-point-paint.js",
+      "default": "./dist/esm/utils/paint/shared-point-paint.js"
+    },
     "./lazy-popup": {
       "source": "./src/lazy-popup.ts",
       "types": "./dist/esm/lazy-popup.d.ts",

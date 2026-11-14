@@ -5,9 +5,25 @@ import {
   normalizePointCoordinates,
 } from '../../../src/utils/shared-point-features';
 import {
+  annotatePointFeaturesStrokeFromFill,
+  literalNumberFromPaintExpression,
   paintColorFromProperty,
+  sharedPointOuterStrokeLayerId,
   sharedPointRadiusByPropertyExpression,
+  sharedPointRadiusPlusStrokeWidth,
+  sharedPointStrokeFromFillColorExpression,
+  sharedPointStrokeFromFillWidthExpression,
 } from '../../../src/utils/shared-point-paint';
+
+/** Stand-in for Loro pack identity `blendHexWithBlack(hex, 0.45)`. */
+function darkenTowardBlack(hex: string, blackWeight = 0.45): string {
+  const clean = hex.replace('#', '');
+  const mix = (channel: number) => Math.round(channel * (1 - blackWeight));
+  const toHex = (n: number) => n.toString(16).padStart(2, '0');
+  return `#${toHex(mix(parseInt(clean.slice(0, 2), 16)))}${toHex(
+    mix(parseInt(clean.slice(2, 4), 16))
+  )}${toHex(mix(parseInt(clean.slice(4, 6), 16)))}`;
+}
 
 describe('geodesic circle', () => {
   it('generates a closed ring with steps + 1 coordinates', () => {
@@ -45,6 +61,51 @@ describe('shared point paint', () => {
     const expr = sharedPointRadiusByPropertyExpression('brand', 'acme');
     expect(expr[0]).toBe('*');
     expect(expr[2][0]).toBe('case');
+  });
+
+  it('builds stroke expressions via caller fill transform', () => {
+    expect(sharedPointStrokeFromFillWidthExpression()).toEqual(['literal', 1.25]);
+    expect(sharedPointStrokeFromFillColorExpression('#c3d361', darkenTowardBlack)).toEqual([
+      'coalesce',
+      ['get', '_stroke'],
+      '#6b7435',
+    ]);
+  });
+
+  it('annotates point features with transformed _stroke from fill', () => {
+    const out = annotatePointFeaturesStrokeFromFill(
+      {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [0, 0] },
+            properties: { _color: '#2dbad2' },
+          },
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [1, 1] },
+            properties: {},
+          },
+        ],
+      },
+      { fallbackFill: '#c3d361', transformFill: darkenTowardBlack }
+    );
+    expect(out.features[0]?.properties?._stroke).toBe('#196674');
+    expect(out.features[1]?.properties?._stroke).toBe('#6b7435');
+  });
+
+  it('offsets radius by colored ring width for the outer white stroke layer', () => {
+    expect(sharedPointOuterStrokeLayerId('canvas-venues-point')).toBe(
+      'canvas-venues-point-outer-stroke'
+    );
+    expect(literalNumberFromPaintExpression(['literal', 3.5])).toBe(3.5);
+    expect(sharedPointRadiusPlusStrokeWidth(4, 3.5)).toBe(7.5);
+    expect(sharedPointRadiusPlusStrokeWidth(['literal', 4], 3.5)).toEqual([
+      '+',
+      ['literal', 4],
+      3.5,
+    ]);
   });
 });
 

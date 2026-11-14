@@ -157,6 +157,14 @@ export class PointLayerElement extends MapChildElement {
       sourceId: this.sourceId,
       pointLayerId: this.pointLayerId,
     });
+    if (
+      this.sourceId &&
+      this.pointLayerId &&
+      this.map.getSource?.(this.sourceId) &&
+      this.map.getLayer?.(this.pointLayerId)
+    ) {
+      return;
+    }
     void this.addLayers();
   }
 

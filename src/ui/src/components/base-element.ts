@@ -11,6 +11,11 @@ import { getServiceForCapability } from '@twinfile/geokit/service/registry';
 import { debug } from '../utils/logger';
 import type { BaseUIProvider, MapInstance, MapEvent } from '../providers/types';
 import type { ServiceCapability } from '@twinfile/geokit/service/types';
+import {
+  addControlToMapInstance,
+  mapSupportsAddControl,
+  removeControlFromMap,
+} from './map-control-ops';
 
 /**
  * Base class for all map UI components
@@ -23,6 +28,8 @@ export class BaseElement extends HTMLElement {
   protected isInitialized: boolean = false;
   private _controlAddedToMap: boolean = false;
   private _waitingForTransform: boolean = false;
+  /** Bumps on each recreate so superseded async recreates do not re-add stale controls. */
+  private _recreateGeneration: number = 0;
 
   // Shared style-ready cache per map instance
   // This allows multiple elements to share the same style-ready promise
@@ -264,11 +271,7 @@ export class BaseElement extends HTMLElement {
     // Remove control from map
     if (this.map && this.control) {
       try {
-        const removeControl = (this.map as { removeControl?: (control: unknown) => void })
-          .removeControl;
-        if (removeControl) {
-          removeControl(this.control);
-        }
+        removeControlFromMap(this.map, this.control);
       } catch {
         // Silently handle removal errors
       }
@@ -488,26 +491,20 @@ export class BaseElement extends HTMLElement {
     }
 
     const position = this.getAttribute('position') || this.getDefaultPosition();
-    const addControlMethod = (
-      this.map as { addControl?: (control: unknown, position: string) => void }
-    ).addControl;
-    const removeControlMethod = (this.map as { removeControl?: (control: unknown) => void })
-      .removeControl;
-
-    if (!addControlMethod) return;
+    if (!mapSupportsAddControl(this.map)) return;
 
     try {
       // If control was already added, remove it first to prevent duplicates
-      if (this._controlAddedToMap && removeControlMethod) {
+      if (this._controlAddedToMap) {
         try {
-          removeControlMethod.call(this.map, this.control);
+          removeControlFromMap(this.map, this.control);
         } catch {
           // Control might not be on map yet, ignore error
         }
       }
 
       // Add the control
-      addControlMethod.call(this.map, this.control, position);
+      addControlToMapInstance(this.map, this.control, position);
       this._controlAddedToMap = true;
     } catch (error) {
       console.error(`[gk-element] ${this.constructor.name}: Failed to add control:`, error);
@@ -521,16 +518,16 @@ export class BaseElement extends HTMLElement {
     if (!this.map || !this.control) return;
 
     try {
-      const removeControl = (this.map as { removeControl?: (control: unknown) => void })
-        .removeControl;
-      const addControl = (this.map as { addControl?: (control: unknown, position: string) => void })
-        .addControl;
-      if (removeControl && this._controlAddedToMap) {
-        removeControl(this.control);
+      if (this._controlAddedToMap) {
+        removeControlFromMap(this.map, this.control);
         this._controlAddedToMap = false;
       }
-      if (addControl) {
-        addControl(this.control, newPosition || this.getDefaultPosition());
+      if (mapSupportsAddControl(this.map)) {
+        addControlToMapInstance(
+          this.map,
+          this.control,
+          newPosition || this.getDefaultPosition()
+        );
         this._controlAddedToMap = true;
       }
     } catch (error) {
@@ -558,20 +555,28 @@ export class BaseElement extends HTMLElement {
   protected async recreateControl(): Promise<void> {
     if (!this.map || !this.control) return;
 
+    const generation = ++this._recreateGeneration;
+
     try {
-      const removeControl = (this.map as { removeControl?: (control: unknown) => void })
-        .removeControl;
-      if (removeControl) {
-        removeControl(this.control);
+      removeControlFromMap(this.map, this.control);
+      this._controlAddedToMap = false;
+      const nextControl = await this.createControl();
+
+      // A newer recreate started while we awaited — leave it to finish.
+      if (generation !== this._recreateGeneration) {
+        return;
       }
-      this.control = await this.createControl();
+
+      this.control = nextControl;
 
       if (this.control) {
         this.setupEventForwarding();
         this.addControlToMap();
       }
     } catch (error) {
-      console.error(`[gk-element] ${this.constructor.name}: Failed to recreate control:`, error);
+      if (generation === this._recreateGeneration) {
+        console.error(`[gk-element] ${this.constructor.name}: Failed to recreate control:`, error);
+      }
     }
   }
 

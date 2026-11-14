@@ -8,6 +8,7 @@ const coreSrc = path.join(coreRoot, 'src');
 const h3Root = path.join(uiRoot, '../h3/src');
 
 const geokitRoot = path.resolve(__dirname, '..');
+const serviceSrc = path.join(uiRoot, '../service/src');
 
 export default defineConfig({
   resolve: {
@@ -21,6 +22,10 @@ export default defineConfig({
       { find: '@twinfile/geokit/core/types/cell-layers.types', replacement: path.join(coreDist, 'types/cell-layers.types.js') },
       { find: '@twinfile/geokit/core/types', replacement: path.join(coreDist, 'types/index.js') },
       { find: '@twinfile/geokit/core/containment', replacement: path.join(coreSrc, 'utils/containment/index.ts') },
+      {
+        find: '@twinfile/geokit/service/types/api-composite',
+        replacement: path.join(serviceSrc, 'types/api-composite.ts'),
+      },
       { find: '@twinfile/geokit/h3/cell-to-region-index', replacement: path.join(h3Root, 'cell/cell-to-region-index.ts') },
       { find: '@twinfile/geokit/h3/lite', replacement: path.join(h3Root, 'lite.ts') },
       { find: '@twinfile/geokit/h3', replacement: path.join(h3Root, 'index.ts') },

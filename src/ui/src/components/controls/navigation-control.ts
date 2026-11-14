@@ -19,8 +19,8 @@ export class NavigationControlElement extends BaseControl {
   protected async createControl(): Promise<any> {
     const provider = this.getUIProvider();
     const options = {
-      showCompass: this.getBooleanAttribute('show-compass', false, true),
-      showZoom: this.getBooleanAttribute('show-zoom', false, true),
+      showCompass: this.getBooleanAttribute('show-compass', true),
+      showZoom: this.getBooleanAttribute('show-zoom', true),
     };
 
     return provider.createControl('navigation', options);
@@ -31,7 +31,13 @@ export class NavigationControlElement extends BaseControl {
     oldValue: string | null,
     newValue: string | null
   ): void {
-    this.handleRecreateableAttributeChange(name, oldValue, newValue, ['show-compass', 'show-zoom']);
+    this.handleRecreateableAttributeChange(
+      name,
+      oldValue,
+      newValue,
+      ['show-compass', 'show-zoom'],
+      { 'show-compass': true, 'show-zoom': true }
+    );
   }
 }
 

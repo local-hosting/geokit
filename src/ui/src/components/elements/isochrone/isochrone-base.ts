@@ -88,16 +88,24 @@ export class IsochroneBase extends MapChildElement {
     }
   }
 
-  /** Re-add isochrone layers after map style change (e.g. theme toggle). */
+  /** Re-add isochrone layers after map style change only when overlays were dropped. */
   protected override onStyleLoad(): void {
-    if (!isochroneEl(this).map) return;
-    // Clear cache so we re-add layers even though data is unchanged (style replace removed them)
-    isochroneEl(this).currentCacheKey = null;
-    // We're only called after gk-map-style-load (style already replaced). Use double rAF to avoid
-    // MapTiler coalesceChanges; don't use waitForStyleLoaded (style.load may have already fired).
+    const self = isochroneEl(this);
+    if (!self.map) return;
+    // Theme swaps preserve custom overlays via transformStyle — skip rebuild when still present.
+    if (
+      self.sourceId &&
+      self.fillLayerId &&
+      self.map.getSource?.(self.sourceId) &&
+      self.map.getLayer?.(self.fillLayerId)
+    ) {
+      return;
+    }
+    self.currentCacheKey = null;
+    // We're only called after gk-map-style-load. Use double rAF to avoid MapTiler coalesceChanges.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        isochroneEl(this).fetchAndRenderIsochrone();
+        self.fetchAndRenderIsochrone();
       });
     });
   }

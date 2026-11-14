@@ -36,6 +36,7 @@ import {
   MAP_PLACEHOLDER_STYLE,
   getPlaceholderSelector,
 } from './style/map-placeholder';
+import { mapStyleSwapOptions } from './style/preserve-custom-style-overlays';
 import {
   injectHideAttributionStyles as injectHideAttributionStylesFn,
   injectAutoHideStyles as injectAutoHideStylesFn,
@@ -354,9 +355,9 @@ export class MapPublicNav extends MapControlsState {
             provider: providerName,
             style: typeof styleForTheme === 'string' ? styleForTheme : '(object)',
           });
-          // Register error/style.load handlers before setStyle so we catch load failures and do not dispatch re-add
+          // Safety-net re-add for CE children if transformStyle cannot preserve overlays.
           mapEl(this)._onStyleLoadReaddLayers();
-          map.setStyle(styleForTheme);
+          map.setStyle(styleForTheme, mapStyleSwapOptions());
           return;
         } catch (error) {
           console.warn('[gk-map] Failed to update map style:', error);
@@ -376,7 +377,7 @@ export class MapPublicNav extends MapControlsState {
       const styleUrl = `https://api.maptiler.com/maps/${mapName}/style.json?key=${apiKey}`;
       try {
         mapEl(this)._onStyleLoadReaddLayers();
-        map.setStyle(styleUrl);
+        map.setStyle(styleUrl, mapStyleSwapOptions());
         return;
       } catch (error) {
         console.warn('[gk-map] Failed to update map style:', error);
@@ -397,7 +398,7 @@ export class MapPublicNav extends MapControlsState {
       if (sdkStyle) {
         try {
           mapEl(this)._onStyleLoadReaddLayers();
-          map.setStyle(sdkStyle);
+          map.setStyle(sdkStyle, mapStyleSwapOptions());
           return;
         } catch (error) {
           console.warn('[gk-map] Failed to update map style via SDK:', error);
@@ -409,7 +410,7 @@ export class MapPublicNav extends MapControlsState {
       try {
         mapEl(this)._onStyleLoadReaddLayers();
         const styleUrl = `https://api.maptiler.com/maps/${normalized}/style.json?key=${apiKey}`;
-        map.setStyle(styleUrl);
+        map.setStyle(styleUrl, mapStyleSwapOptions());
       } catch (error) {
         console.warn('[gk-map] Failed to update map style:', error);
       }
@@ -417,9 +418,7 @@ export class MapPublicNav extends MapControlsState {
   }
 
   /**
-   * When map style is replaced (e.g. theme toggle), custom layers/sources are removed.
-   * Listen for style.load only (not 'load' or 'idle') to avoid dispatching during initial load
-   * or transitional state. Defers dispatch with double rAF and only dispatches when style is
-   * ready to avoid "Cannot convert undefined or null to object" in MapTiler's coalesceChanges.
+   * Theme swaps use `mapStyleSwapOptions()` so app overlays survive `setStyle`.
+   * `gk-map-style-load` remains a safety net when overlays cannot be preserved.
    */
 }

@@ -117,21 +117,20 @@ export async function syncSharedPointGlowPaint(
   const glowBlur = options.paint?.glowBlur ?? SHARED_POINT_DEFAULT_GLOW_BLUR;
   const featureStateHover = buildHealFeatureStateHover(glowRadius, options);
 
-  if (options.paint && featureStateHover) {
+  // Always prefer app paint (floating-badge shadow/stroke). Never clobber with default glow radius.
+  if (options.paint) {
     applySharedPointLayerPaint(map, {
       ...options.paint,
       ids,
-      featureStateHover,
+      ...(featureStateHover ? { featureStateHover } : {}),
       glowBlur,
     });
     return true;
   }
 
-  const glowColor =
-    options.paint?.glowColorExpression ??
-    paintColorFromProperty('_color', options.glowColorFallback ?? '#888888');
+  const glowColor = paintColorFromProperty('_color', options.glowColorFallback ?? '#888888');
   const healGlowRadius = styles.getGlowRadiusInterpolation({ scale: SHARED_POINT_GLOW_RADIUS_SCALE });
-  const glowOpacity = options.paint?.glowOpacity ?? SHARED_POINT_DEFAULT_GLOW_OPACITY;
+  const glowOpacity = SHARED_POINT_DEFAULT_GLOW_OPACITY;
 
   map.setPaintProperty(ids.glowLayerId, 'circle-radius', healGlowRadius);
   map.setPaintProperty(ids.glowLayerId, 'circle-color', glowColor);
@@ -139,8 +138,7 @@ export async function syncSharedPointGlowPaint(
   map.setPaintProperty(ids.glowLayerId, 'circle-blur', glowBlur);
 
   if (map.getLayer?.(ids.pointLayerId)) {
-    const pointRadius =
-      options.paint?.pointRadiusExpression ?? readPointRadiusFromMap(map, ids.pointLayerId);
+    const pointRadius = readPointRadiusFromMap(map, ids.pointLayerId);
     map.setPaintProperty(ids.pointLayerId, 'circle-radius', pointRadius);
   }
 

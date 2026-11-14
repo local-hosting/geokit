@@ -3,6 +3,22 @@
  */
 
 import { safeResizeMap } from '../../../../utils/map-surface/map-utils';
+import {
+  canCreateAnotherMap,
+  reconcileLiveMapCountFromDom,
+} from './map-webgl-budget';
+
+export {
+  WEBGL_CONTEXTS_PER_MAP,
+  WEBGL_CONTEXT_BUDGET,
+  getWebGLMapBudget,
+  getLiveMapCount,
+  registerLiveMap,
+  unregisterLiveMap,
+  reconcileLiveMapCountFromDom,
+  canCreateAnotherMap,
+  getMaxActiveMaps,
+} from './map-webgl-budget';
 
 type MapLike = {
   isStyleLoaded?: () => boolean;
@@ -137,54 +153,29 @@ export function resizeAndRepaintMap(map: MapLike | null, hostElement?: HTMLEleme
   });
 }
 
-/** MapTiler/MapLibre may allocate more than one WebGL context per map instance. */
-export const WEBGL_CONTEXTS_PER_MAP = 2;
-
-/** Conservative per-page budget (Safari/WebKit is often ~8). */
-export const WEBGL_CONTEXT_BUDGET = 8;
-
-/** Live map instances on the page (one per gk-map with an active MapTiler/MapLibre map). */
-let liveMapCount = 0;
-
-/** Max map instances allowed before the browser drops older WebGL contexts. */
-export function getWebGLMapBudget(): number {
-  return Math.max(1, Math.floor(WEBGL_CONTEXT_BUDGET / WEBGL_CONTEXTS_PER_MAP));
-}
-
-export function getLiveMapCount(): number {
-  return liveMapCount;
-}
-
-export function registerLiveMap(): void {
-  liveMapCount++;
-}
-
-export function unregisterLiveMap(): void {
-  liveMapCount = Math.max(0, liveMapCount - 1);
-}
-
-export function canCreateAnotherMap(): boolean {
-  return liveMapCount < getWebGLMapBudget();
-}
-
 /**
  * Wait until a new map can be created without exceeding the WebGL budget.
  * Returns false when the budget stays full past timeoutMs.
  */
 export async function waitUntilCanCreateMap(timeoutMs: number = 8000): Promise<boolean> {
+  if (typeof document !== 'undefined') {
+    reconcileLiveMapCountFromDom(document);
+  }
   const start = Date.now();
   while (!canCreateAnotherMap()) {
     if (Date.now() - start > timeoutMs) {
+      if (typeof document !== 'undefined') {
+        reconcileLiveMapCountFromDom(document);
+        if (canCreateAnotherMap()) return true;
+      }
       return false;
     }
     await delayForWebGLRelease(150);
+    if (typeof document !== 'undefined') {
+      reconcileLiveMapCountFromDom(document);
+    }
   }
   return true;
-}
-
-/** Cap pool size so concurrent maps stay under typical WebGL limits. */
-export function getMaxActiveMaps(requestedPoolSize: number): number {
-  return Math.min(Math.max(1, requestedPoolSize), getWebGLMapBudget());
 }
 
 /**

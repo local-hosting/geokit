@@ -45,4 +45,15 @@ describe('getFeatureId', () => {
       })
     ).toBeNull();
   });
+
+  it('falls back to feature.id when properties lack id fields', () => {
+    expect(
+      getFeatureId({
+        type: 'Feature',
+        id: 'buffalo-harbor',
+        properties: {},
+        geometry: { type: 'Point', coordinates: [0, 0] },
+      })
+    ).toBe('buffalo-harbor');
+  });
 });

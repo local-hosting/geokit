@@ -112,6 +112,33 @@ export interface SharedPointLayersConfig {
   selectionShadowColor?: string;
   /** Point outline width used to size the selection ring/shadow (px). */
   selectionPointStrokeWidth?: number;
+  /** Outer stroke outside the colored ring (e.g. white halo around a badge). */
+  outerStrokeColor?: string | unknown[];
+  /** Outer stroke width (number or `['literal', n]`). When > 0, an outer-stroke layer is created. */
+  outerStrokeWidth?: number | unknown[];
+  /** Glow/shadow screen offset `[x, y]` (MapLibre: negatives = left/up). */
+  glowTranslate?: [number, number] | unknown[];
+  /** Ground-shadow pitch alignment (`'map'` foreshortens with camera pitch). */
+  glowPitchAlignment?: 'map' | 'viewport';
+  /** Ground-shadow pitch scale (`'map'` scales with perspective distance). */
+  glowPitchScale?: 'map' | 'viewport';
+  /** Point/badge screen offset `[x, y]` (e.g. `[0, -5]` floats above a ground shadow). */
+  pointTranslate?: [number, number] | unknown[];
+  /** `circle-translate-anchor` for badge float (`viewport` = straight up on screen). */
+  pointTranslateAnchor?: 'map' | 'viewport';
+  /** Hover float translate (slightly higher than `pointTranslate`). */
+  hoverTranslate?: [number, number] | unknown[];
+  /** Selected badge settle translate. */
+  selectedTranslate?: [number, number] | unknown[];
+  /** Selection shadow screen offset `[x, y]` (defaults to a slight south cast). */
+  selectionShadowTranslate?: [number, number] | unknown[];
+  /**
+   * Draw an enlarged grounded badge on the selection source (floating-badge style).
+   * Pair with feature-state `selected` hide on the floating point layers.
+   */
+  selectionGroundBadge?: boolean;
+  /** Fallback ring color for the grounded selection badge. */
+  selectionGroundBadgeFallbackColor?: string;
 }
 
 export interface CircleLayerConfig {
@@ -154,6 +181,26 @@ export function resolveGlowBlur(element: Element | null = document.documentEleme
 /** Resolve default layer/point color from CSS (theme.css must be loaded) */
 export function resolveDefaultLayerColor(element: Element | null = document.documentElement): string {
   return getCSSVariable(element, '--gk-point-color', '');
+}
+
+/**
+ * MapTiler helpers.addPoint only accepts a single string color.
+ * Prefer a plain string or `['literal', '#hex']`; otherwise theme `--gk-point-color`.
+ */
+export function resolveMapTilerHelperPointColor(
+  circleColor: string | unknown[] | undefined,
+  element: Element | null = document.documentElement
+): string {
+  if (typeof circleColor === 'string' && circleColor.trim()) return circleColor.trim();
+  if (
+    Array.isArray(circleColor) &&
+    circleColor[0] === 'literal' &&
+    typeof circleColor[1] === 'string' &&
+    circleColor[1].trim()
+  ) {
+    return circleColor[1].trim();
+  }
+  return resolveDefaultLayerColor(element) || '#ffffff';
 }
 
 /** Resolve glow paint color: explicit glow → point fill → theme default */

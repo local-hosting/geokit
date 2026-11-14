@@ -49,9 +49,17 @@ export class PolylineElement extends MapChildElement {
     this.waitForStyleLoaded(() => this.createPolyline());
   }
 
-  /** Re-add polyline layers after map style change (e.g. theme toggle). */
+  /** Re-add polyline layers after map style change only when overlays were dropped. */
   protected override onStyleLoad(): void {
     if (!this.map) return;
+    if (
+      this.sourceId &&
+      this.layerId &&
+      this.map.getSource?.(this.sourceId) &&
+      this.map.getLayer?.(this.layerId)
+    ) {
+      return;
+    }
     this.waitForStyleLoaded(() => this.createPolyline());
   }
 
