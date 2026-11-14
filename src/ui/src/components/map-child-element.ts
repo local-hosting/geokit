@@ -257,9 +257,9 @@ export class MapChildElement extends BaseElement {
         this._mapUnloadHandler = handleMapUnload;
         parent.addEventListener('gk-map-unload', handleMapUnload);
 
-        // Listen for style load (e.g. after theme toggle) so children re-add their layers.
-        // Defer by one frame so we don't add layers in the same frame as the event (avoids
-        // MapTiler coalesceChanges "Cannot convert undefined or null to object" during render).
+        // Safety net: theme swaps usually preserve overlays via transformStyle; children
+        // no-op onStyleLoad when their source/layer still exist. Defer one frame to avoid
+        // MapTiler coalesceChanges during the same render as the event.
         const handleStyleLoad = () => {
           debug.log('gk-map-style-load received', { tagName: this.tagName });
           requestAnimationFrame(() => {
@@ -325,11 +325,11 @@ export class MapChildElement extends BaseElement {
   }
 
   /**
-   * Called when map style is replaced (e.g. theme toggle).
-   * Override in subclasses to re-add sources and layers.
+   * Called after `gk-map-style-load` (fallback when overlays were not preserved).
+   * Override in subclasses; prefer no-op when source/layer still exist.
    */
   protected onStyleLoad(): void {
-    // Default: no-op; PointElement, IsochroneElement, PopupElement override to re-add layers
+    // Default: no-op; PointElement, IsochroneElement, PopupElement override when needed
   }
 
   /**

@@ -125,10 +125,18 @@ export class PolygonElement extends MapChildElement {
     }
   }
 
-  /** Re-add polygon layers after map style change (e.g. theme toggle). */
+  /** Re-add polygon layers after map style change only when overlays were dropped. */
   protected override onStyleLoad(): void {
     if (!this.map) return;
     debug.log(' onStyleLoad', { layerId: this.layerId, sourceId: this.sourceId });
+    if (
+      this.sourceId &&
+      this.layerId &&
+      this.map.getSource?.(this.sourceId) &&
+      this.map.getLayer?.(this.layerId)
+    ) {
+      return;
+    }
     try {
       this.createPolygon();
     } catch (error) {

@@ -3,7 +3,7 @@
  */
 
 type MapStyleLike = {
-  setStyle?: (style: string) => void;
+  setStyle?: (style: string | object, options?: object) => void;
   getStyle?: () => { name?: string } | string | undefined;
   isStyleLoaded?: () => boolean;
   once?: (event: string, fn: () => void) => void;
@@ -16,6 +16,7 @@ type MapStyleLike = {
 };
 
 import { buildMaptilerStyleUrl } from '@twinfile/geokit/ui/config/tile-cdn';
+import { mapStyleSwapOptions } from './preserve-custom-style-overlays';
 
 const defaultStyleUrl = (apiKey: string) => buildMaptilerStyleUrl('dataviz-dark', apiKey);
 
@@ -52,11 +53,12 @@ export function checkAndUpdateStyle(
     if (!needsReplacement) return;
 
     const validStyle = defaultStyleUrl(apiKey);
+    const swapOpts = mapStyleSwapOptions();
     if (typeof map.isStyleLoaded === 'function' && !map.isStyleLoaded()) {
       map.once?.('load', () => {
         try {
           if (map.isStyleLoaded?.()) {
-            map.setStyle?.(validStyle);
+            map.setStyle?.(validStyle, swapOpts);
           }
         } catch {
           // ignore
@@ -65,7 +67,7 @@ export function checkAndUpdateStyle(
       return;
     }
     try {
-      map.setStyle(validStyle);
+      map.setStyle(validStyle, swapOpts);
     } catch {
       // ignore
     }

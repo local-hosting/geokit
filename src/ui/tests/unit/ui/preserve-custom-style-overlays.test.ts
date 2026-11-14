@@ -1,0 +1,76 @@
+import { describe, expect, it } from 'vitest'
+
+import {
+  mapHasOverlay,
+  mapStyleSwapOptions,
+  preserveCustomStyleOverlays,
+} from '../../../src/components/elements/map/style/preserve-custom-style-overlays'
+
+describe('preserveCustomStyleOverlays', () => {
+  it('keeps venue sources and layers when swapping basemap themes', () => {
+    const previous = {
+      version: 8,
+      sources: {
+        basemap: { type: 'vector', tiles: ['https://a/{z}/{x}/{y}.pbf'] },
+        'canvas-venues': {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: [{ type: 'Feature', properties: { venueId: 'dock' }, geometry: { type: 'Point', coordinates: [0, 0] } }],
+          },
+        },
+        'canvas-venues-selection': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+      },
+      layers: [
+        { id: 'water', type: 'fill', source: 'basemap' },
+        { id: 'canvas-venues-glow', type: 'circle', source: 'canvas-venues' },
+        { id: 'canvas-venues-point', type: 'circle', source: 'canvas-venues' },
+      ],
+    }
+    const next = {
+      version: 8,
+      sources: {
+        basemap: { type: 'vector', tiles: ['https://b/{z}/{x}/{y}.pbf'] },
+      },
+      layers: [{ id: 'water', type: 'fill', source: 'basemap' }],
+    }
+
+    const merged = preserveCustomStyleOverlays(previous, next)
+
+    expect(merged.sources?.['canvas-venues']).toEqual(previous.sources['canvas-venues'])
+    expect(merged.sources?.['canvas-venues-selection']).toBeTruthy()
+    expect(merged.sources?.basemap).toEqual(next.sources.basemap)
+    expect(merged.layers?.map((l) => l.id)).toEqual([
+      'water',
+      'canvas-venues-glow',
+      'canvas-venues-point',
+    ])
+  })
+
+  it('returns next style unchanged when there is no previous style', () => {
+    const next = { version: 8, sources: {}, layers: [] }
+    expect(preserveCustomStyleOverlays(null, next)).toBe(next)
+  })
+
+  it('exposes transformStyle options for setStyle theme swaps', () => {
+    const opts = mapStyleSwapOptions()
+    const previous = {
+      sources: { 'canvas-venues': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } } },
+      layers: [{ id: 'canvas-venues-point', type: 'circle', source: 'canvas-venues' }],
+    }
+    const next = { sources: { basemap: { type: 'vector' } }, layers: [{ id: 'road', type: 'line', source: 'basemap' }] }
+    const merged = opts.transformStyle(previous, next)
+    expect(merged.layers?.map((l) => l.id)).toContain('canvas-venues-point')
+    expect(merged.sources?.['canvas-venues']).toBeTruthy()
+  })
+
+  it('mapHasOverlay is true only when both source and layer exist', () => {
+    const map = {
+      getSource: (id: string) => (id === 'canvas-venues' ? {} : undefined),
+      getLayer: (id: string) => (id === 'canvas-venues-point' ? {} : undefined),
+    }
+    expect(mapHasOverlay(map, 'canvas-venues', 'canvas-venues-point')).toBe(true)
+    expect(mapHasOverlay(map, 'canvas-venues', 'missing')).toBe(false)
+    expect(mapHasOverlay(null, 'canvas-venues', 'canvas-venues-point')).toBe(false)
+  })
+})

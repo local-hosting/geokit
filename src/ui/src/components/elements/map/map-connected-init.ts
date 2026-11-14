@@ -132,6 +132,8 @@ export class MapConnectedInit extends MapBase {
       return;
     }
 
+    // Theme class before placeholder so first paint matches theme attr / browser preference
+    mapEl(this).applyThemeChromeBeforePaint();
     // Only show placeholder for standalone maps (not pool-managed)
     mapEl(this).showPlaceholderIfNeeded();
 

@@ -82,10 +82,18 @@ describe('createSharedPointLayerController', () => {
         strokeColorExpression: ['literal', '#000'],
       }),
       getPaintFingerprint: () => `${geojson.features.length}:light`,
+      selectionShadowColor: 'rgba(0, 0, 0, 0.4)',
+      selectionPointStrokeWidth: 2.75,
     });
 
     await controller.updateLayers();
     expect(mocks.syncExistingSharedPointLayers).toHaveBeenCalledTimes(1);
+    expect(mocks.syncExistingSharedPointLayers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selectionShadowColor: 'rgba(0, 0, 0, 0.4)',
+        selectionPointStrokeWidth: 2.75,
+      })
+    );
 
     geojson = EMPTY_FC;
     await controller.updateLayers();
@@ -94,7 +102,76 @@ describe('createSharedPointLayerController', () => {
       expect.objectContaining({
         geojson: EMPTY_FC,
         healIncompleteLayerSet: false,
+        selectionShadowColor: 'rgba(0, 0, 0, 0.4)',
       })
+    );
+  });
+
+  it('does not let a stale empty updateLayers overwrite a newer venue paint', async () => {
+    let geojson = EMPTY_FC;
+    const styleReadyGates: Array<() => void> = [];
+    const map = {
+      getSource: vi.fn(() => ({})),
+      getLayer: vi.fn(() => ({})),
+    };
+    const gkMap = {
+      getMap: () => map,
+      getAttribute: () => null,
+      whenStyleReady: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            styleReadyGates.push(resolve);
+          }),
+      ),
+    };
+
+    const controller = createSharedPointLayerController({
+      getGkMap: () => gkMap,
+      ids: {
+        sourceId: 'canvas-venues',
+        glowLayerId: 'canvas-venues-glow',
+        pointLayerId: 'canvas-venues-point',
+      },
+      getGeoJson: () => geojson,
+      getPaintConfig: () => ({
+        ids: {
+          sourceId: 'canvas-venues',
+          glowLayerId: 'canvas-venues-glow',
+          pointLayerId: 'canvas-venues-point',
+        },
+        pointColorExpression: ['literal', '#fff'],
+        pointRadiusExpression: ['literal', 4],
+        glowColorExpression: ['literal', '#888'],
+        glowOpacity: 0.2,
+        glowBlur: 1,
+        strokeWidthExpression: ['literal', 0],
+        strokeColorExpression: ['literal', '#000'],
+      }),
+      getPaintFingerprint: () => `${geojson.features.length}:light`,
+    });
+
+    const staleEmpty = controller.updateLayers();
+    await vi.waitFor(() => expect(styleReadyGates.length).toBe(1));
+
+    geojson = ONE_FC;
+    const newerFull = controller.updateLayers();
+    await vi.waitFor(() => expect(styleReadyGates.length).toBe(2));
+
+    // Newer paint finishes first…
+    styleReadyGates[1]?.();
+    await newerFull;
+    expect(mocks.syncExistingSharedPointLayers).toHaveBeenLastCalledWith(
+      expect.objectContaining({ geojson: ONE_FC }),
+    );
+
+    // …then the stale empty await resumes and must not wipe venues.
+    styleReadyGates[0]?.();
+    await staleEmpty;
+
+    expect(mocks.syncExistingSharedPointLayers).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        geojson: ONE_FC,
+      }),
     );
   });
 });
