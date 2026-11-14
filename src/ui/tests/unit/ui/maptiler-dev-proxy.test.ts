@@ -11,8 +11,8 @@ describe('rewriteMapTilerUrl', () => {
     const options = { enabled: true };
     expect(
       rewriteMapTilerUrl('https://api.maptiler.com/maps/basic/style.json?key=x', options)
-    ).toBe('/__maptiler-api/maps/basic/style.json?key=x');
-    expect(rewriteMapTilerUrl('https://cdn.maptiler.com/foo', options)).toBe('/__maptiler-cdn/foo');
+    ).toBe('/__geo/maptiler-api/maps/basic/style.json?key=x');
+    expect(rewriteMapTilerUrl('https://cdn.maptiler.com/foo', options)).toBe('/__geo/maptiler-cdn/foo');
   });
 
   it('passes through when disabled', () => {
@@ -44,13 +44,13 @@ describe('rewriteMapTilerStyleResourceUrls', () => {
     rewriteMapTilerStyleResourceUrls(style, transformRequest);
 
     expect((style.sources as Record<string, { url: string }>).land.url).toBe(
-      '/__maptiler-api/tiles/land/tiles.json?key=x'
+      '/__geo/maptiler-api/tiles/land/tiles.json?key=x'
     );
     expect((style.sources as Record<string, { tiles: string[] }>).dem.tiles[0]).toBe(
-      '/__maptiler-api/tiles/dem/{z}/{x}/{y}.png?key=x'
+      '/__geo/maptiler-api/tiles/dem/{z}/{x}/{y}.png?key=x'
     );
-    expect(style.sprite).toBe('/__maptiler-api/maps/backdrop-dark/sprite?key=x');
-    expect(style.glyphs).toBe('/__maptiler-api/fonts/{fontstack}/{range}.pbf?key=x');
+    expect(style.sprite).toBe('/__geo/maptiler-api/maps/backdrop-dark/sprite?key=x');
+    expect(style.glyphs).toBe('/__geo/maptiler-api/fonts/{fontstack}/{range}.pbf?key=x');
   });
 });
 
@@ -68,6 +68,9 @@ describe('inlineMapTilerTileJsonSources', () => {
         ok: true,
         json: async () => ({
           tiles: ['https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key=x'],
+          minzoom: 0,
+          maxzoom: 15,
+          bounds: [-180, -85, 180, 85],
         }),
       }))
     );
@@ -87,7 +90,11 @@ describe('inlineMapTilerTileJsonSources', () => {
     const planet = (style.sources as Record<string, Record<string, unknown>>).maptiler_planet;
     expect(planet.url).toBeUndefined();
     const tile = (planet.tiles as string[])[0];
-    expect(tile).toContain('/__maptiler-api/tiles/v3/{z}/{x}/{y}.pbf?key=x');
+    expect(tile).toContain('/__geo/maptiler-api/tiles/v3/{z}/{x}/{y}.pbf?key=x');
+    // Without maxzoom, MapLibre requests z16+ tiles that MapTiler rejects ("Out of bounds").
+    expect(planet.minzoom).toBe(0);
+    expect(planet.maxzoom).toBe(15);
+    expect(planet.bounds).toEqual([-180, -85, 180, 85]);
   });
 
   it('leaves source unchanged when TileJSON fetch fails', async () => {

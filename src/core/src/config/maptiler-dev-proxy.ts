@@ -3,6 +3,12 @@
  * MapLibre web workers omit Referer, which breaks referrer-restricted API keys.
  */
 
+import {
+  GEO_MAPTILER_API_PROXY,
+  GEO_MAPTILER_CDN_PROXY,
+  absolutizeSameOriginGeoProxyPath,
+} from './geo-proxy';
+
 export type MapTilerTransformRequest = (url: string, resourceType?: string) => { url: string };
 
 export type MapTilerDevProxyOptions = {
@@ -24,11 +30,7 @@ function rewriteWithPrefixes(url: string, fromPrefix: string, toPrefix: string):
 }
 
 function absolutizeSameOriginProxyPath(url: string): string {
-  if (typeof window === 'undefined') return url;
-  if (url.startsWith('/__maptiler-api/') || url.startsWith('/__maptiler-cdn/')) {
-    return `${window.location.origin}${url}`;
-  }
-  return url;
+  return absolutizeSameOriginGeoProxyPath(url);
 }
 
 /** Rewrite MapTiler HTTPS URLs to same-origin dev proxy paths. */
@@ -37,8 +39,8 @@ export function rewriteMapTilerUrl(url: string, options: MapTilerDevProxyOptions
 
   const apiPrefix = options.apiPrefix ?? DEFAULT_API_PREFIX;
   const cdnPrefix = options.cdnPrefix ?? DEFAULT_CDN_PREFIX;
-  const proxyApiPrefix = options.proxyApiPrefix ?? '/__maptiler-api/';
-  const proxyCdnPrefix = options.proxyCdnPrefix ?? '/__maptiler-cdn/';
+  const proxyApiPrefix = options.proxyApiPrefix ?? GEO_MAPTILER_API_PROXY;
+  const proxyCdnPrefix = options.proxyCdnPrefix ?? GEO_MAPTILER_CDN_PROXY;
 
   return (
     rewriteWithPrefixes(url, apiPrefix, proxyApiPrefix) ??

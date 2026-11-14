@@ -15,6 +15,8 @@ import { ProviderCache, coordinateCacheKey } from '@twinfile/geokit/service';
 import { RequestQueue } from '@twinfile/geokit/service';
 import { requireAPIKey, fetchWithRetry } from '@twinfile/geokit/service';
 import type { FeatureCollection } from 'geojson';
+import { normalizeMaptilerGeocodeCollection } from './normalize-maptiler-geocode';
+import { resolveMaptilerRequestReferer } from './maptiler-referer';
 
 const PROVIDER_NAME = 'MapTiler';
 
@@ -51,6 +53,12 @@ export class MapTilerService extends Service {
 
   getCapabilities(): ServiceCapability[] {
     return ['geocoding'];
+  }
+
+  private requestReferer(): string {
+    const referer =
+      typeof this.config?.referer === 'string' ? this.config.referer : undefined;
+    return resolveMaptilerRequestReferer({ referer });
   }
 
   /**
@@ -106,15 +114,13 @@ export class MapTilerService extends Service {
 
       const fetchFn = () =>
         fetch(url.toString(), {
-          headers: { Referer: 'http://localhost:5173/' },
+          headers: { Referer: this.requestReferer() },
         });
 
       const response = await fetchWithRetry(fetchFn, PROVIDER_NAME);
 
-      const data = await response.json();
-
-      // MapTiler returns { type: 'FeatureCollection', features: [...] }
-      const result = data as FeatureCollection;
+      const data = (await response.json()) as FeatureCollection;
+      const result = normalizeMaptilerGeocodeCollection(data);
 
       // Store in cache
       this.cache.set(cacheKey, result);
@@ -173,7 +179,7 @@ export class MapTilerService extends Service {
 
       const fetchFn = () =>
         fetch(url.toString(), {
-          headers: { Referer: 'http://localhost:5173/' },
+          headers: { Referer: this.requestReferer() },
         });
 
       const response = await fetchWithRetry(fetchFn, PROVIDER_NAME);
