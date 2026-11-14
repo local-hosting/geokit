@@ -53,6 +53,7 @@ function isMapTilerStyleUrl(url: string): boolean {
     url.includes('/style.json') &&
     (url.startsWith('https://') ||
       url.startsWith('http://') ||
+      url.startsWith('/__geo/maptiler-api/') ||
       url.startsWith('/__maptiler-api/') ||
       url.includes('/maps/'))
   );
@@ -439,5 +440,31 @@ export class MapTilerUIProvider extends BaseUIProvider {
     };
     const mapName = themeToStyle[key] ?? key;
     return buildMaptilerStyleUrl(mapName, this.config.apiKey);
+  }
+
+  /**
+   * Same style as getStyleForTheme, but when a transformRequest is configured (dev proxy),
+   * return an inlined StyleSpec so setStyle does not leave workers fetching api.maptiler.com.
+   */
+  async resolveStyleForTheme(
+    styleName: string
+  ): Promise<string | Record<string, unknown> | null> {
+    const styleUrl = this.getStyleForTheme(styleName);
+    if (styleUrl == null) return null;
+
+    const transformRequest =
+      this.config?.transformRequest ?? getProviderConfig('maptiler')?.transformRequest;
+    if (typeof transformRequest !== 'function' || typeof styleUrl !== 'string') {
+      return styleUrl;
+    }
+    if (!isMapTilerStyleUrl(styleUrl)) return styleUrl;
+
+    const styleFetchUrl = transformRequest(styleUrl, 'Style').url;
+    try {
+      return await getProxiedStyleObject(styleFetchUrl, transformRequest);
+    } catch (e) {
+      console.warn('[gk-maptiler] resolveStyleForTheme proxy failed, using URL:', e);
+      return styleFetchUrl;
+    }
   }
 }

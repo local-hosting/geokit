@@ -21,6 +21,8 @@ type RasterDemSourceSpec = {
   url?: string;
   tiles?: string[];
   tileSize: number;
+  minzoom?: number;
+  maxzoom?: number;
 };
 
 type RasterSourceSpec = {
@@ -28,7 +30,15 @@ type RasterSourceSpec = {
   url?: string;
   tiles?: string[];
   tileSize: number;
+  minzoom?: number;
+  maxzoom?: number;
 };
+
+/** MapTiler hand-drawn-hillshade tiles.json maxzoom (requests above this return 400). */
+export const MAPTILER_HAND_DRAWN_HILLSHADE_MAX_ZOOM = 9;
+
+/** MapTiler terrain-rgb-v2 tiles.json maxzoom. */
+export const MAPTILER_TERRAIN_RGB_MAX_ZOOM = 14;
 
 /** When transformRequest is set (e.g. host dev proxy), use tile templates so DEM tiles are rewritten. */
 function mapTilerTileTemplate(
@@ -55,7 +65,13 @@ export function buildTerrainDemSource(options: {
   if (provider === 'maptiler' && apiKey) {
     const proxiedTiles = mapTilerTileTemplate('terrain-rgb-v2', apiKey, 'webp');
     if (proxiedTiles) {
-      return { type: 'raster-dem', tiles: [proxiedTiles], tileSize: 256 };
+      return {
+        type: 'raster-dem',
+        tiles: [proxiedTiles],
+        tileSize: 256,
+        minzoom: 0,
+        maxzoom: MAPTILER_TERRAIN_RGB_MAX_ZOOM,
+      };
     }
     const url =
       explicitUrl || `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${apiKey}`;
@@ -75,9 +91,16 @@ export function buildTerrainDemSource(options: {
 
 /** Build raster source for MapTiler hand-drawn hillshade. */
 export function buildHillshadeRasterSource(apiKey: string, fallbackUrl: string): RasterSourceSpec {
-  const proxiedTiles = mapTilerTileTemplate('hand-drawn-hillshade', apiKey, 'png');
+  const proxiedTiles = mapTilerTileTemplate('hand-drawn-hillshade', apiKey, 'webp');
   if (proxiedTiles) {
-    return { type: 'raster', tiles: [proxiedTiles], tileSize: 256 };
+    // Inline tile templates skip tiles.json — must cap zoom or MapLibre over-fetches and MapTiler 400s.
+    return {
+      type: 'raster',
+      tiles: [proxiedTiles],
+      tileSize: 256,
+      minzoom: 0,
+      maxzoom: MAPTILER_HAND_DRAWN_HILLSHADE_MAX_ZOOM,
+    };
   }
   return { type: 'raster', url: fallbackUrl, tileSize: 256 };
 }
@@ -307,7 +330,7 @@ export function cleanup3DBuildings(map: MapInstance | null, handler: (() => void
 }
 
 /**
- * Add MapTiler hand-drawn hillshade as a raster overlay (available up to zoom 12).
+ * Add MapTiler hand-drawn hillshade as a raster overlay (available up to zoom 9).
  * Returns an update function the caller can invoke when the enabled attribute changes.
  */
 export function setupHillshade(ctx: MapTerrainContext): (() => void) | null {

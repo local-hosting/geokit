@@ -3,6 +3,12 @@
  * MapLibre web workers omit Referer, which breaks referrer-restricted API keys.
  */
 
+import {
+  GEO_MAPTILER_API_PROXY,
+  GEO_MAPTILER_CDN_PROXY,
+  absolutizeSameOriginGeoProxyPath,
+} from '../config/geo-proxy';
+
 export type MapTilerTransformRequest = (url: string, resourceType?: string) => { url: string };
 
 export type MapTilerDevProxyOptions = {
@@ -24,11 +30,7 @@ function rewriteWithPrefixes(url: string, fromPrefix: string, toPrefix: string):
 }
 
 function absolutizeSameOriginProxyPath(url: string): string {
-  if (typeof window === 'undefined') return url;
-  if (url.startsWith('/__maptiler-api/') || url.startsWith('/__maptiler-cdn/')) {
-    return `${window.location.origin}${url}`;
-  }
-  return url;
+  return absolutizeSameOriginGeoProxyPath(url);
 }
 
 /** Rewrite MapTiler HTTPS URLs to same-origin dev proxy paths. */
@@ -37,8 +39,8 @@ export function rewriteMapTilerUrl(url: string, options: MapTilerDevProxyOptions
 
   const apiPrefix = options.apiPrefix ?? DEFAULT_API_PREFIX;
   const cdnPrefix = options.cdnPrefix ?? DEFAULT_CDN_PREFIX;
-  const proxyApiPrefix = options.proxyApiPrefix ?? '/__maptiler-api/';
-  const proxyCdnPrefix = options.proxyCdnPrefix ?? '/__maptiler-cdn/';
+  const proxyApiPrefix = options.proxyApiPrefix ?? GEO_MAPTILER_API_PROXY;
+  const proxyCdnPrefix = options.proxyCdnPrefix ?? GEO_MAPTILER_CDN_PROXY;
 
   return (
     rewriteWithPrefixes(url, apiPrefix, proxyApiPrefix) ??
@@ -113,7 +115,12 @@ export async function inlineMapTilerTileJsonSources(
       try {
         const resp = await fetch(tileJsonUrl);
         if (!resp.ok) return;
-        const tileJson = (await resp.json()) as { tiles?: unknown[] };
+        const tileJson = (await resp.json()) as {
+          tiles?: unknown[];
+          minzoom?: unknown;
+          maxzoom?: unknown;
+          bounds?: unknown;
+        };
         if (!Array.isArray(tileJson.tiles) || tileJson.tiles.length === 0) return;
 
         src.tiles = tileJson.tiles.map((tile) =>
@@ -121,6 +128,11 @@ export async function inlineMapTilerTileJsonSources(
             ? absolutizeSameOriginProxyPath(transformRequest(tile, 'Tile').url)
             : tile
         );
+        // Preserve TileJSON zoom/bounds so MapLibre overzooms instead of fetching
+        // unavailable high-z tiles (MapTiler returns 400 "Out of bounds").
+        if (typeof tileJson.minzoom === 'number') src.minzoom = tileJson.minzoom;
+        if (typeof tileJson.maxzoom === 'number') src.maxzoom = tileJson.maxzoom;
+        if (Array.isArray(tileJson.bounds)) src.bounds = tileJson.bounds;
         delete src.url;
       } catch {
         /* keep url fallback when TileJSON fetch fails */

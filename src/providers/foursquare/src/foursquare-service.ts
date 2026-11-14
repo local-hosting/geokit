@@ -105,6 +105,8 @@ export class FoursquareService extends Service {
     const categories = options.categories;
 
     try {
+      const baseUrl =
+        typeof this.config?.baseUrl === 'string' ? this.config.baseUrl : undefined;
       const url = buildFoursquarePlacesSearchUrl({
         query,
         ll,
@@ -115,6 +117,7 @@ export class FoursquareService extends Service {
         openNow,
         minPrice,
         maxPrice,
+        baseUrl,
         fields:
           'fsq_place_id,name,location,latitude,longitude,categories,distance,rating,price,hours,tel,website',
       });

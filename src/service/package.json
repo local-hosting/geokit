@@ -39,6 +39,16 @@
       "types": "./dist/esm/setup-capability-routers.d.ts",
       "import": "./dist/esm/setup-capability-routers.js",
       "default": "./dist/esm/setup-capability-routers.js"
+    },
+    "./place-search": {
+      "types": "./dist/esm/search-places-with-geocode-fallback.d.ts",
+      "import": "./dist/esm/search-places-with-geocode-fallback.js",
+      "default": "./dist/esm/search-places-with-geocode-fallback.js"
+    },
+    "./geocode-to-place-search": {
+      "types": "./dist/esm/geocode-to-place-search.d.ts",
+      "import": "./dist/esm/geocode-to-place-search.js",
+      "default": "./dist/esm/geocode-to-place-search.js"
     }
   },
   "scripts": {

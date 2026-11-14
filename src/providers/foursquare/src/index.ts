@@ -14,7 +14,13 @@ export const registerFoursquarePlugin = createKeyedPluginRegistrar(
   foursquarePlugin,
   (overrides) => {
     const apiKey = overrides?.foursquareApiKey ?? resolveFoursquareApiKey();
-    return apiKey ? { apiKey } : null;
+    if (!apiKey) return null;
+    return {
+      apiKey,
+      ...(overrides?.foursquarePlacesApiBase
+        ? { baseUrl: overrides.foursquarePlacesApiBase }
+        : {}),
+    };
   }
 );
 

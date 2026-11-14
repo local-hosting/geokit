@@ -15,6 +15,8 @@ export interface CapabilityRouterEnvOverrides {
   maptilerApiKey?: string;
   mapboxAccessToken?: string;
   foursquareApiKey?: string;
+  /** Same-origin proxy prefix or absolute Places API base (browser CORS bypass). */
+  foursquarePlacesApiBase?: string;
   googlePlacesApiKey?: string;
   hereApiKey?: string;
   esriApiKey?: string;

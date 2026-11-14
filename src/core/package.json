@@ -243,6 +243,12 @@
       "import": "./dist/esm/config/maptiler-dev-proxy.js",
       "default": "./dist/esm/config/maptiler-dev-proxy.js"
     },
+    "./config/geo-proxy": {
+      "source": "./src/config/geo-proxy.ts",
+      "types": "./dist/esm/config/geo-proxy.d.ts",
+      "import": "./dist/esm/config/geo-proxy.js",
+      "default": "./dist/esm/config/geo-proxy.js"
+    },
     "./types/layer-datasets": {
       "source": "./src/types/layer-datasets.ts",
       "types": "./dist/esm/types/layer-datasets.d.ts",

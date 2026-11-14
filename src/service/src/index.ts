@@ -8,3 +8,5 @@ export * from './services/index';
 export * from './plugin';
 export * from './place-search-cache';
 export * from './setup-capability-routers';
+export * from './geocode-to-place-search';
+export * from './search-places-with-geocode-fallback';
