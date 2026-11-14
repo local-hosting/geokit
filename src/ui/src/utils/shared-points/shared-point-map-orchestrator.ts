@@ -12,6 +12,12 @@ import {
   ensureGeodesicRadiusRingLayers,
   updateGeodesicRadiusRingData,
 } from '../map-surface/geodesic-circle';
+import {
+  DEFAULT_SHARED_POINT_ID_PROPERTIES,
+  ensureSharedPointSelectionRingLayer,
+  setSharedPointSelection,
+  updateSharedPointSelection,
+} from '../layers/styles/shared-point-layers';
 
 export type SharedPointMapLike = {
   getSource?(id: string): unknown;
@@ -33,10 +39,18 @@ export type SharedPointMapOrchestratorOptions = SharedPointLayerControllerOption
   onSelectionCoordsChange?: (coords: { lng: number; lat: number } | null) => void;
 };
 
+export type SharedPointSelectionUpdateMeta = {
+  featureId?: string | null;
+  properties?: Record<string, unknown> | null;
+};
+
 export type SharedPointMapOrchestrator = SharedPointLayerController & {
   getIsochroneSourceId: () => string;
   ensureSelectionLayers: (map: SharedPointMapLike) => void;
-  updateSelectionCoords: (coords: { lng: number; lat: number } | null) => void;
+  updateSelectionCoords: (
+    coords: { lng: number; lat: number } | null,
+    meta?: SharedPointSelectionUpdateMeta
+  ) => void;
 };
 
 const EMPTY_FC: FeatureCollection = { type: 'FeatureCollection', features: [] };
@@ -112,11 +126,78 @@ export function createSharedPointMapOrchestrator(
     );
   }
 
-  function updateSelectionCoords(coords: { lng: number; lat: number } | null): void {
+  function resolveSelectionRingColor(): string {
+    const value =
+      typeof options.selectionRingColor === 'function'
+        ? options.selectionRingColor()
+        : options.selectionRingColor;
+    return value?.trim() || '#ffffff';
+  }
+
+  function updateSelectionCoords(
+    coords: { lng: number; lat: number } | null,
+    meta?: SharedPointSelectionUpdateMeta
+  ): void {
     options.onSelectionCoordsChange?.(coords);
     const gkMap = options.getGkMap();
     const map = gkMap?.getMap?.();
-    if (!map || !options.radiusRings?.length) return;
+    if (!map) return;
+
+    const ids = typeof options.ids === 'function' ? options.ids() : options.ids;
+    const ringColor = resolveSelectionRingColor();
+    const paint = options.getPaintConfig?.();
+    const selectionGroundBadge = paint?.selectionGroundBadge === true;
+    const selectionStrokeWidth =
+      typeof options.selectionPointStrokeWidth === 'function'
+        ? options.selectionPointStrokeWidth()
+        : options.selectionPointStrokeWidth;
+
+    // Do not resize the halo from the inner white disk — that draws a grey ring on the center.
+    // Floating-badge active state skips the halo entirely.
+    if (map.getLayer?.(ids.pointLayerId) && !selectionGroundBadge) {
+      ensureSharedPointSelectionRingLayer(
+        map as never,
+        ids.sourceId,
+        ids.pointLayerId,
+        ringColor,
+        paint?.pointRadiusExpression,
+        selectionStrokeWidth ?? 0
+      );
+    }
+
+    const featureId = meta?.featureId ?? null;
+    if (featureId != null || coords == null) {
+      setSharedPointSelection(
+        map as never,
+        ids.sourceId,
+        {
+          featureId: coords && featureId ? featureId : null,
+          lngLat: coords,
+          properties: meta?.properties ?? null,
+        },
+        {
+          pointLayerId: ids.pointLayerId,
+          glowLayerId: ids.glowLayerId,
+          promoteId: options.promoteId || 'venueId',
+          selectionRingColor: ringColor,
+          selectionPointStrokeWidth: selectionStrokeWidth,
+          selectionGroundBadge,
+          selectionGroundBadgeFallbackColor: paint?.selectionGroundBadgeFallbackColor,
+          idProperties: [
+            options.promoteId || 'venueId',
+            ...DEFAULT_SHARED_POINT_ID_PROPERTIES,
+          ].filter((v, i, arr): v is string => !!v && arr.indexOf(v) === i),
+        }
+      );
+    } else {
+      updateSharedPointSelection(
+        map as never,
+        ids.sourceId,
+        coords ? { lngLat: coords, ...(meta?.properties ? { properties: meta.properties } : {}) } : null
+      );
+    }
+
+    if (!options.radiusRings?.length) return;
     updateGeodesicRadiusRingData(
       map as never,
       resolveMarketSlug(),

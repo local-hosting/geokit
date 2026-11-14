@@ -5,6 +5,7 @@
  * Provides common utilities for attribute handling
  */
 
+import { booleanAttributeChanged, parseBooleanAttribute } from './boolean-attr';
 import { MapChildElement } from './map-child-element';
 
 /**
@@ -13,46 +14,41 @@ import { MapChildElement } from './map-child-element';
  */
 export class BaseControl extends MapChildElement {
   /**
-   * Get a boolean attribute value
-   * Handles common patterns: 'true' string, 'false' string, or default value
+   * Get a boolean attribute value.
+   * @param defaultWhenAbsent — value when the attribute is missing (show-compass defaults true)
    */
-  protected getBooleanAttribute(
-    name: string,
-    defaultValue: boolean = false,
-    defaultTrue: boolean = false
-  ): boolean {
-    const value = this.getAttribute(name);
-
-    if (value === null || value === undefined) {
-      return defaultTrue ? true : defaultValue;
-    }
-
-    if (defaultTrue) {
-      // For attributes that default to true (like show-compass, show-zoom)
-      return value !== 'false';
-    }
-
-    // For attributes that default to false (like track-user-location)
-    return value === 'true' || value === '';
+  protected getBooleanAttribute(name: string, defaultWhenAbsent: boolean = false): boolean {
+    return parseBooleanAttribute(this.getAttribute(name), defaultWhenAbsent);
   }
 
   /**
    * Handle attribute changes that require control recreation
    * Common pattern used by navigation, fullscreen, and geolocate controls
+   *
+   * @param booleanDefaults — for boolean attrs, skip recreate when parsed value is unchanged
+   *   (e.g. null → "true" for default-true attrs)
    */
   protected handleRecreateableAttributeChange(
     name: string,
     oldValue: string | null,
     newValue: string | null,
-    recreateableAttributes: string[]
+    recreateableAttributes: string[],
+    booleanDefaults?: Record<string, boolean>
   ): void {
     // Call parent method for position handling
     super.handleAttributeChange(name, oldValue, newValue);
 
-    // Handle control-specific attributes that require recreation
-    if (recreateableAttributes.includes(name) && this.control && this.map) {
-      this.recreateControl();
+    if (!recreateableAttributes.includes(name) || !this.control || !this.map) {
+      return;
     }
+
+    if (booleanDefaults && name in booleanDefaults) {
+      if (!booleanAttributeChanged(oldValue, newValue, booleanDefaults[name]!)) {
+        return;
+      }
+    }
+
+    void this.recreateControl();
   }
 
   /**

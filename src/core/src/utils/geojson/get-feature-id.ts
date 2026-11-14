@@ -24,13 +24,19 @@ export function getFeatureId(
   feature: Feature,
   idProperties: string[] = ['id', 'slug']
 ): string | null {
-  if (!feature?.properties) return null;
+  if (!feature) return null;
 
-  for (const prop of idProperties) {
-    const value = feature.properties[prop];
-    if (value !== undefined && value !== null) {
-      return String(value);
+  if (feature.properties) {
+    for (const prop of idProperties) {
+      const value = feature.properties[prop];
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        return String(value);
+      }
     }
+  }
+
+  if (feature.id !== undefined && feature.id !== null && String(feature.id).trim() !== '') {
+    return String(feature.id);
   }
 
   return null;

@@ -210,7 +210,7 @@ export class PointBase extends MapChildElement {
     pointEl(this).waitForStyleLoaded(() => pointEl(this).addPoint());
   }
 
-  /** Re-add point layers after map style change (e.g. theme toggle). */
+  /** Re-add point layers after map style change only when overlays were dropped. */
   protected override onStyleLoad(): void {
     debug.log('onStyleLoad', {
       hasMap: !!pointEl(this).map,
@@ -218,6 +218,15 @@ export class PointBase extends MapChildElement {
       layerId: pointEl(this).layerId,
     });
     if (!pointEl(this).map) return;
+    // Theme swaps preserve custom overlays — skip rebuild when source+layer survived.
+    if (
+      pointEl(this).sourceId &&
+      pointEl(this).layerId &&
+      pointEl(this).map.getSource?.(pointEl(this).sourceId) &&
+      pointEl(this).map.getLayer?.(pointEl(this).layerId)
+    ) {
+      return;
+    }
     const hadSelected = !!pointEl(this).selectedLayers;
     // Wait for new style to be ready so addSource/addLayer succeed (e.g. when switching to light, style may not be ready yet).
     pointEl(this).waitForStyleLoaded(() => {

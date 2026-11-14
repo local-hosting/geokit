@@ -25,9 +25,9 @@ export class GeolocateControlElement extends BaseControl {
     const provider = this.getUIProvider();
 
     const options = {
-      trackUserLocation: this.getBooleanAttribute('track-user-location', false, false),
-      showAccuracyCircle: this.getBooleanAttribute('show-accuracy-circle', false, true),
-      showUserHeading: this.getBooleanAttribute('show-user-heading', false, false),
+      trackUserLocation: this.getBooleanAttribute('track-user-location'),
+      showAccuracyCircle: this.getBooleanAttribute('show-accuracy-circle', true),
+      showUserHeading: this.getBooleanAttribute('show-user-heading'),
     };
 
     return provider.createControl('geolocate', options);
@@ -79,11 +79,17 @@ export class GeolocateControlElement extends BaseControl {
     oldValue: string | null,
     newValue: string | null
   ): void {
-    this.handleRecreateableAttributeChange(name, oldValue, newValue, [
-      'track-user-location',
-      'show-accuracy-circle',
-      'show-user-heading',
-    ]);
+    this.handleRecreateableAttributeChange(
+      name,
+      oldValue,
+      newValue,
+      ['track-user-location', 'show-accuracy-circle', 'show-user-heading'],
+      {
+        'track-user-location': false,
+        'show-accuracy-circle': true,
+        'show-user-heading': false,
+      }
+    );
   }
 }
 

@@ -20,4 +20,9 @@ describe('MapTiler theme style resolution (light/dark toggle)', () => {
     expect(navSource).toMatch(/resolveStyleForTheme/)
     expect(navSource).toMatch(/_updateMapStyleAsync/)
   })
+
+  it('theme setStyle preserves custom overlays instead of wiping venues', () => {
+    expect(navSource).toMatch(/mapStyleSwapOptions/)
+    expect(navSource).toMatch(/setStyle\([^)]*mapStyleSwapOptions\(\)/)
+  })
 })

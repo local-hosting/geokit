@@ -570,6 +570,12 @@
       "import": "./src/ui/dist/esm/shared-points.js",
       "default": "./src/ui/dist/esm/shared-points.js"
     },
+    "./ui/shared-points/paint": {
+      "source": "./src/ui/src/utils/paint/shared-point-paint.ts",
+      "types": "./src/ui/dist/esm/utils/paint/shared-point-paint.d.ts",
+      "import": "./src/ui/dist/esm/utils/paint/shared-point-paint.js",
+      "default": "./src/ui/dist/esm/utils/paint/shared-point-paint.js"
+    },
     "./ui/lazy-popup": {
       "source": "./src/ui/src/lazy-popup.ts",
       "types": "./src/ui/dist/esm/lazy-popup.d.ts",

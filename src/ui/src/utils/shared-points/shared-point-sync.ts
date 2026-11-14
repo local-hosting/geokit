@@ -2,13 +2,15 @@
  * Sync helpers for shared point layer sets (source + glow + point + hover + selection).
  */
 
-import type { FeatureCollection } from 'geojson';
+import type { FeatureCollection, Point } from 'geojson';
 import type { MapInstance } from '../../providers/types';
 import { updateSourceData } from '../map-surface/map-utils';
 import {
+  annotatePointFeaturesFloatingBadgeHover,
   applySharedPointLayerPaint,
   attachSharedPointHoverGlowRadiusSync,
   paintColorFromProperty,
+  sharedPointRadiusPlusStrokeWidth,
   sharedPointStrokeColorExpression,
   sharedPointStrokeWidthExpression,
   SHARED_POINT_DEFAULT_GLOW_HOVER_OPACITY,
@@ -19,6 +21,30 @@ import {
   type SharedPointFeatureStateHoverOptions,
   type SharedPointLayerIds,
 } from '../paint/shared-point-paint';
+
+function geojsonWithFloatingBadgeHoverColors(
+  geojson: FeatureCollection,
+  paint: {
+    selectionGroundBadge?: boolean;
+    selectionGroundBadgeFallbackColor?: string;
+  }
+): FeatureCollection {
+  if (!paint.selectionGroundBadge) return geojson;
+  return annotatePointFeaturesFloatingBadgeHover(geojson as FeatureCollection<Point>, {
+    fallbackColor: paint.selectionGroundBadgeFallbackColor?.trim() || '#888888',
+  });
+}
+
+function shouldApplyFeatureStateHoverGlow(
+  useFeatureStateHover: boolean,
+  paint: { skipFeatureStateHoverGlow?: boolean; selectionGroundBadge?: boolean }
+): boolean {
+  return (
+    useFeatureStateHover &&
+    !paint.skipFeatureStateHoverGlow &&
+    !paint.selectionGroundBadge
+  );
+}
 import { ensureSharedPointLayerSetHealed } from './shared-point-heal';
 import {
   applyEmbedScaleToSharedPointLayerOptions,
@@ -26,12 +52,19 @@ import {
   COMPACT_EMBED_MIN_RADIUS_PX,
 } from '../map-surface/embed-point-scale';
 
-function resolveCompactGlowBlur(compactPoints?: boolean, glowBlur?: number): number | undefined {
+function resolveCompactGlowBlur(
+  compactPoints?: boolean,
+  glowBlur?: number | unknown[]
+): number | unknown[] | undefined {
   if (glowBlur != null) return glowBlur;
   return compactPoints ? COMPACT_EMBED_GLOW_BLUR : undefined;
 }
 
-function applySharedPointGlowBlur(map: MapInstance, glowLayerId: string, glowBlur: number): void {
+function applySharedPointGlowBlur(
+  map: MapInstance,
+  glowLayerId: string,
+  glowBlur: number | unknown[]
+): void {
   if (!map.getLayer?.(glowLayerId)) return;
   try {
     map.setPaintProperty?.(glowLayerId, 'circle-blur', glowBlur);
@@ -49,7 +82,7 @@ export interface SharedPointLayerPaintConfig {
   glowColor?: string | unknown[];
   glowOpacity: number | unknown[];
   glowHoverOpacity: number | unknown[];
-  glowBlur: number;
+  glowBlur: number | unknown[];
   pointRadius: unknown;
   glowRadius: unknown[];
   filter?: unknown[];
@@ -58,6 +91,18 @@ export interface SharedPointLayerPaintConfig {
   selectionRingColor?: string;
   selectionShadowColor?: string;
   selectionPointStrokeWidth?: number;
+  outerStrokeColor?: string | unknown[];
+  outerStrokeWidth?: number | unknown[];
+  glowTranslate?: [number, number] | unknown[];
+  glowPitchAlignment?: 'map' | 'viewport';
+  glowPitchScale?: 'map' | 'viewport';
+  pointTranslate?: [number, number] | unknown[];
+  pointTranslateAnchor?: 'map' | 'viewport';
+  hoverTranslate?: [number, number] | unknown[];
+  selectedTranslate?: [number, number] | unknown[];
+  selectionShadowTranslate?: [number, number] | unknown[];
+  selectionGroundBadge?: boolean;
+  selectionGroundBadgeFallbackColor?: string;
 }
 
 export type { SharedPointLayerIds, ApplySharedPointPaintOptions };
@@ -108,7 +153,10 @@ export function getSharedPointRelatedLayerIds(ids: SharedPointLayerIds): string[
   return [
     glowLayerId,
     pointLayerId,
+    `${pointLayerId}-outer-stroke`,
     `${pointLayerId}-selection-shadow`,
+    `${pointLayerId}-selection-badge-outer`,
+    `${pointLayerId}-selection-badge`,
     `${pointLayerId}-selection-ring`,
     `${glowLayerId}-hover`,
     `${pointLayerId}-hover`,
@@ -312,7 +360,7 @@ export interface SyncExistingSharedPointLayersOptions {
   compactPoints?: boolean;
   embedPointScale?: number;
   referenceHeightPx?: number;
-  glowBlur?: number;
+  glowBlur?: number | unknown[];
   /** Recreate missing glow/point layers when the set is incomplete. Default true. */
   healIncompleteLayerSet?: boolean;
   promoteId?: string;
@@ -351,15 +399,24 @@ export async function syncExistingSharedPointLayers(
     embedPointScale,
     referenceHeightPx,
   });
-  const resolvedGlowBlur = resolveCompactGlowBlur(compactPoints, glowBlur);
+  const resolvedGlowBlur = resolveCompactGlowBlur(
+    compactPoints,
+    paint.glowBlur ?? glowBlur
+  );
   const healIncompleteLayerSet = options.healIncompleteLayerSet !== false;
-  const ok = await updateSharedPointSourceData(map, ids.sourceId, geojson, updateOptions);
+  const annotatedGeojson = geojsonWithFloatingBadgeHoverColors(geojson, paint);
+  const ok = await updateSharedPointSourceData(
+    map,
+    ids.sourceId,
+    annotatedGeojson,
+    updateOptions
+  );
 
   if (healIncompleteLayerSet && !isSharedPointLayerSetComplete(map, ids)) {
     await createSharedPointLayersFromPaint({
       map,
       ids,
-      geojson,
+      geojson: annotatedGeojson,
       paint,
       circleOpacity: pointOpacity,
       glowHoverOpacity,
@@ -380,8 +437,12 @@ export async function syncExistingSharedPointLayers(
   }
 
   if (ok || map.getSource?.(ids.sourceId)) {
+    const applyHoverGlow = shouldApplyFeatureStateHoverGlow(
+      useFeatureStateHover,
+      scaled.paint
+    );
     let featureStateHover: SharedPointFeatureStateHoverOptions | undefined;
-    if (useFeatureStateHover) {
+    if (applyHoverGlow) {
       const { getGlowRadiusInterpolation } = await getLayerStylesModule();
       featureStateHover = buildFeatureStateHoverOptions(
         getGlowRadiusInterpolation({
@@ -399,15 +460,23 @@ export async function syncExistingSharedPointLayers(
       selectionPointStrokeWidth: options.selectionPointStrokeWidth,
       glowColorFallback: '#888888',
       glowHoverOpacity,
-      useFeatureStateHover,
+      useFeatureStateHover: applyHoverGlow,
       pointOpacity,
       glowHitAreaScale: scaled.glowHitAreaScale,
     });
 
     applySharedPointLayerPaint(map, { ...scaled.paint, featureStateHover });
-    if (resolvedGlowBlur != null) {
+    // Prefer paint zoom-scaled blur; only fall back to compact numeric blur when paint omits it.
+    if (scaled.paint.glowBlur == null && resolvedGlowBlur != null) {
       applySharedPointGlowBlur(map, ids.glowLayerId, resolvedGlowBlur);
     }
+    await ensureFloatingBadgeChrome(map, ids, scaled.paint);
+    await attachSharedPointHoverAfterMount(map, ids, {
+      promoteId: options.promoteId,
+      paint: scaled.paint,
+      glowHoverOpacity,
+      pointOpacity,
+    });
   }
   return ok;
 }
@@ -444,7 +513,7 @@ export interface CreateSharedPointLayersFromPaintOptions {
   paint: ApplySharedPointPaintOptions;
   circleOpacity?: number | unknown[];
   glowHoverOpacity?: number;
-  glowBlur?: number;
+  glowBlur?: number | unknown[];
   glowHitAreaScale?: number;
   selectionRingColor?: string;
   selectionShadowColor?: string;
@@ -498,14 +567,19 @@ export async function createSharedPointLayersFromPaint(
     embedPointScale,
     referenceHeightPx,
   });
+  const annotatedGeojson = geojsonWithFloatingBadgeHoverColors(geojson, paint);
   const resolvedGlowBlur =
-    resolveCompactGlowBlur(compactPoints, glowBlur) ?? SHARED_POINT_GLOW_BLUR;
+    resolveCompactGlowBlur(compactPoints, scaled.paint.glowBlur ?? glowBlur) ??
+    SHARED_POINT_GLOW_BLUR;
+  const applyHoverGlow = shouldApplyFeatureStateHoverGlow(useFeatureStateHover, scaled.paint);
 
   const { getGlowRadiusInterpolation } = await getLayerStylesModule();
-  const glowRadius = getGlowRadiusInterpolation({
-    scale: scaled.glowHitAreaScale,
-    ...(compactPoints ? { minRadiusPx: COMPACT_EMBED_MIN_RADIUS_PX } : {}),
-  });
+  const glowRadius =
+    scaled.paint.glowRadiusExpression ??
+    getGlowRadiusInterpolation({
+      scale: scaled.glowHitAreaScale,
+      ...(compactPoints ? { minRadiusPx: COMPACT_EMBED_MIN_RADIUS_PX } : {}),
+    });
   const resolvedPointOpacity =
     typeof circleOpacity === 'number' || Array.isArray(circleOpacity) ? circleOpacity : 0.95;
   const strokeWidthExpression =
@@ -513,13 +587,15 @@ export async function createSharedPointLayersFromPaint(
   const strokeColorExpression =
     scaled.paint.strokeColorExpression ?? sharedPointStrokeColorExpression();
   const glowColorExpression = scaled.paint.glowColorExpression ?? paintColorFromProperty();
+  const outerStrokeWidthExpression = scaled.paint.outerStrokeWidthExpression;
+  const outerStrokeColorExpression = scaled.paint.outerStrokeColorExpression;
 
   const layerSetOptions = {
     ids,
-    geojson,
+    geojson: annotatedGeojson,
     mapProvider,
     useMapTilerPointHelper,
-    useFeatureStateHover,
+    useFeatureStateHover: applyHoverGlow,
     promoteId,
     circleColor: scaled.paint.pointColorExpression,
     circleOpacity,
@@ -534,6 +610,44 @@ export async function createSharedPointLayersFromPaint(
     selectionRingColor,
     selectionShadowColor,
     selectionPointStrokeWidth,
+    ...(outerStrokeWidthExpression != null && outerStrokeColorExpression != null
+      ? {
+          outerStrokeWidth: outerStrokeWidthExpression,
+          outerStrokeColor: outerStrokeColorExpression,
+        }
+      : {}),
+    ...(scaled.paint.glowTranslate != null
+      ? { glowTranslate: scaled.paint.glowTranslate }
+      : {}),
+    ...(scaled.paint.glowPitchAlignment != null
+      ? { glowPitchAlignment: scaled.paint.glowPitchAlignment }
+      : {}),
+    ...(scaled.paint.glowPitchScale != null
+      ? { glowPitchScale: scaled.paint.glowPitchScale }
+      : {}),
+    ...(scaled.paint.pointTranslate != null
+      ? { pointTranslate: scaled.paint.pointTranslate }
+      : {}),
+    ...(scaled.paint.pointTranslateAnchor != null
+      ? { pointTranslateAnchor: scaled.paint.pointTranslateAnchor }
+      : {}),
+    ...(scaled.paint.hoverTranslate != null
+      ? { hoverTranslate: scaled.paint.hoverTranslate }
+      : {}),
+    ...(scaled.paint.selectedTranslate != null
+      ? { selectedTranslate: scaled.paint.selectedTranslate }
+      : {}),
+    ...(scaled.paint.selectionShadowTranslate != null
+      ? { selectionShadowTranslate: scaled.paint.selectionShadowTranslate }
+      : {}),
+    ...(scaled.paint.selectionGroundBadge
+      ? { selectionGroundBadge: true }
+      : {}),
+    ...(scaled.paint.selectionGroundBadgeFallbackColor
+      ? {
+          selectionGroundBadgeFallbackColor: scaled.paint.selectionGroundBadgeFallbackColor,
+        }
+      : {}),
   };
 
   const healSharedPointLayerSet = async () => {
@@ -558,14 +672,14 @@ export async function createSharedPointLayersFromPaint(
     selectionPointStrokeWidth,
     glowColorFallback: '#888888',
     glowHoverOpacity,
-    useFeatureStateHover,
+    useFeatureStateHover: applyHoverGlow,
     pointOpacity: resolvedPointOpacity,
     glowHitAreaScale: scaled.glowHitAreaScale,
   });
 
   applySharedPointLayerPaint(map, {
     ...scaled.paint,
-    featureStateHover: useFeatureStateHover
+    featureStateHover: applyHoverGlow
       ? buildFeatureStateHoverOptions(
           glowRadius,
           scaled.paint.glowOpacity ?? SHARED_POINT_UNIFORM_GLOW_OPACITY,
@@ -573,5 +687,156 @@ export async function createSharedPointLayersFromPaint(
           glowHoverOpacity
         )
       : undefined,
+  });
+
+  await ensureFloatingBadgeChrome(map, ids, scaled.paint);
+
+  // Layers may mount async (MapTiler helper) — re-attach after wait/heal so hits work.
+  await attachSharedPointHoverAfterMount(map, ids, {
+    promoteId,
+    paint: scaled.paint,
+    glowHoverOpacity,
+    pointOpacity: resolvedPointOpacity,
+  });
+}
+
+/** Ensure white outer stroke + selection badge layers exist for floating-badge paint. */
+async function ensureFloatingBadgeChrome(
+  map: MapInstance,
+  ids: SharedPointLayerIds,
+  paint: ApplySharedPointPaintOptions
+): Promise<void> {
+  if (!paint.selectionGroundBadge) return;
+  const styles = await getLayerStylesModule();
+  if (
+    paint.outerStrokeWidthExpression != null &&
+    paint.outerStrokeColorExpression != null &&
+    typeof styles.setupSharedPointOuterStrokeLayer === 'function'
+  ) {
+    styles.setupSharedPointOuterStrokeLayer(map, ids.sourceId, ids.pointLayerId, {
+      pointRadius: paint.pointRadiusExpression ?? 4,
+      coloredStrokeWidth: paint.strokeWidthExpression ?? 0,
+      outerStrokeWidth: paint.outerStrokeWidthExpression,
+      outerStrokeColor: paint.outerStrokeColorExpression,
+      outerStrokeOpacity: paint.outerStrokeOpacity,
+      pointTranslate: paint.pointTranslate,
+    });
+  }
+  if (
+    paint.glassRadiusExpression != null &&
+    paint.glassColorExpression != null &&
+    typeof styles.setupSharedPointGlassLayer === 'function'
+  ) {
+    styles.setupSharedPointGlassLayer(map, ids.sourceId, ids.pointLayerId, {
+      glassRadius: paint.glassRadiusExpression,
+      glassColor: paint.glassColorExpression,
+      glassOpacity: paint.glassOpacity,
+      glassBlur: paint.glassBlur,
+      pointTranslate: paint.pointTranslate,
+    });
+  }
+  if (typeof styles.setupSelectionGroundBadgeLayers === 'function') {
+    styles.setupSelectionGroundBadgeLayers(map, ids.sourceId, ids.pointLayerId, {
+      fallbackColor: paint.selectionGroundBadgeFallbackColor,
+    });
+  }
+  if (map.setPaintProperty) {
+    for (const layerId of [
+      ids.pointLayerId,
+      `${ids.pointLayerId}-outer-stroke`,
+      `${ids.pointLayerId}-glass`,
+      `${ids.pointLayerId}-selection-badge`,
+      `${ids.pointLayerId}-selection-badge-outer`,
+    ]) {
+      if (!map.getLayer?.(layerId)) continue;
+      try {
+        if (paint.pointTranslateAnchor) {
+          map.setPaintProperty(layerId, 'circle-translate-anchor', paint.pointTranslateAnchor);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    // Resting float height — selection badge translate is owned by select/hover animation.
+    for (const layerId of [
+      ids.pointLayerId,
+      `${ids.pointLayerId}-outer-stroke`,
+      `${ids.pointLayerId}-glass`,
+    ]) {
+      if (!map.getLayer?.(layerId) || paint.pointTranslate == null) continue;
+      try {
+        map.setPaintProperty(layerId, 'circle-translate', paint.pointTranslate);
+      } catch {
+        /* ignore */
+      }
+    }
+    // Force zoom-scaled radius/stroke + white-core selection chrome.
+    const sel = `${ids.pointLayerId}-selection-badge`;
+    const selOuter = `${ids.pointLayerId}-selection-badge-outer`;
+    try {
+      if (map.getLayer?.(sel) && paint.pointRadiusExpression != null) {
+        map.setPaintProperty(sel, 'circle-radius', paint.pointRadiusExpression);
+        if (paint.strokeWidthExpression != null) {
+          map.setPaintProperty(sel, 'circle-stroke-width', paint.strokeWidthExpression);
+        }
+        if (paint.selectionFillExpression != null) {
+          map.setPaintProperty(sel, 'circle-color', paint.selectionFillExpression);
+        }
+        if (paint.selectionStrokeColorExpression != null) {
+          map.setPaintProperty(sel, 'circle-stroke-color', paint.selectionStrokeColorExpression);
+        }
+      }
+      if (map.getLayer?.(selOuter) && paint.pointRadiusExpression != null) {
+        const ring = paint.strokeWidthExpression ?? 0;
+        map.setPaintProperty(
+          selOuter,
+          'circle-radius',
+          sharedPointRadiusPlusStrokeWidth(paint.pointRadiusExpression, ring as number | unknown[])
+        );
+        if (paint.outerStrokeWidthExpression != null) {
+          map.setPaintProperty(selOuter, 'circle-stroke-width', paint.outerStrokeWidthExpression);
+        }
+        if (paint.selectionOuterStrokeColorExpression != null) {
+          map.setPaintProperty(
+            selOuter,
+            'circle-stroke-color',
+            paint.selectionOuterStrokeColorExpression
+          );
+        }
+      }
+    } catch {
+      /* style swap */
+    }
+  }
+}
+
+async function attachSharedPointHoverAfterMount(
+  map: MapInstance,
+  ids: SharedPointLayerIds,
+  options: {
+    promoteId?: string;
+    paint: ApplySharedPointPaintOptions;
+    glowHoverOpacity: number;
+    pointOpacity: number | unknown[];
+  }
+): Promise<void> {
+  const styles = await getLayerStylesModule();
+  const ensure = styles.ensureSharedPointHoverLayers;
+  if (typeof ensure !== 'function') return;
+  ensure(map, ids.sourceId, ids.glowLayerId, ids.pointLayerId, {
+    glowRadius: options.paint.glowRadiusExpression ?? [],
+    glowColor: options.paint.glowColorExpression ?? '#000000',
+    glowBlur: options.paint.glowBlur ?? 0,
+    glowHoverOpacity: options.glowHoverOpacity,
+    circleColor: options.paint.pointColorExpression ?? '#ffffff',
+    pointRadius: options.paint.pointRadiusExpression ?? 4,
+    promoteId: options.promoteId,
+    selectionGroundBadge: options.paint.selectionGroundBadge,
+    selectionGroundBadgeFallbackColor: options.paint.selectionGroundBadgeFallbackColor,
+    selectionPointStrokeWidth: 0,
+    selectionRingColor: undefined,
+    floatTranslate: options.paint.pointTranslate,
+    hoverTranslate: options.paint.hoverTranslate,
+    selectedTranslate: options.paint.selectedTranslate,
   });
 }

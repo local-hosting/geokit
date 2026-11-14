@@ -42,6 +42,10 @@ export interface SharedPointLayerControllerOptions {
   getPaintFingerprint: () => string;
   glowHoverOpacity?: number | (() => number);
   selectionRingColor?: string | (() => string);
+  /** Soft drop shadow under the selected point (raised look). */
+  selectionShadowColor?: string | (() => string);
+  /** Point outline width so the selection ring clears the stroke. */
+  selectionPointStrokeWidth?: number | (() => number);
   ensureMapTilerReady?: () => Promise<void>;
   /** Remove other point sources sharing a prefix on first create. */
   pruneSourcePrefix?:
@@ -64,6 +68,8 @@ export function createSharedPointLayerController(
   let sourceToleranceVerified = false;
   let lastPaintFingerprint: string | null = null;
   let layerCleanup: (() => void) | null = null;
+  /** Bumped per updateLayers — stale awaits must not overwrite a newer paint. */
+  let updateGeneration = 0;
 
   function resolveSharedPointPaintOptions() {
     const glowHoverOpacity =
@@ -74,7 +80,20 @@ export function createSharedPointLayerController(
       typeof options.selectionRingColor === 'function'
         ? options.selectionRingColor()
         : options.selectionRingColor;
-    return { glowHoverOpacity, selectionRingColor };
+    const selectionShadowColor =
+      typeof options.selectionShadowColor === 'function'
+        ? options.selectionShadowColor()
+        : options.selectionShadowColor;
+    const selectionPointStrokeWidth =
+      typeof options.selectionPointStrokeWidth === 'function'
+        ? options.selectionPointStrokeWidth()
+        : options.selectionPointStrokeWidth;
+    return {
+      glowHoverOpacity,
+      selectionRingColor,
+      selectionShadowColor,
+      selectionPointStrokeWidth,
+    };
   }
 
   async function ensureSharedPointLayerSetMounted(
@@ -84,7 +103,12 @@ export function createSharedPointLayerController(
     geojson: FeatureCollection,
     paintConfig: ApplySharedPointPaintOptions
   ): Promise<boolean> {
-    const { glowHoverOpacity, selectionRingColor } = resolveSharedPointPaintOptions();
+    const {
+      glowHoverOpacity,
+      selectionRingColor,
+      selectionShadowColor,
+      selectionPointStrokeWidth,
+    } = resolveSharedPointPaintOptions();
     const mapProvider = gkMap.getAttribute?.('provider');
     const useMapTilerPointHelper = mapProvider === 'maptiler';
 
@@ -98,6 +122,8 @@ export function createSharedPointLayerController(
         mapProvider,
         useMapTilerPointHelper,
         selectionRingColor,
+        selectionShadowColor,
+        selectionPointStrokeWidth,
         glowHoverOpacity,
         healIncompleteLayerSet,
       });
@@ -120,6 +146,7 @@ export function createSharedPointLayerController(
       await ensureSharedPointLayerSetHealed(currentMap as never, ids, {
         paint: paintConfig,
         selectionRingColor,
+        selectionPointStrokeWidth,
         glowColorFallback: '#888888',
       });
     }
@@ -137,25 +164,22 @@ export function createSharedPointLayerController(
 
 
   async function updateLayers(): Promise<void> {
+    const generation = ++updateGeneration;
     const gkMap = options.getGkMap();
     if (!gkMap?.getMap?.()) return;
 
-    const paintFingerprint = options.getPaintFingerprint();
+    const paintFingerprintEarly = options.getPaintFingerprint();
     const currentMapEarly = gkMap.getMap?.();
     const idsEarly =
       typeof options.ids === 'function' ? options.ids() : options.ids;
     if (
       layersCreated &&
-      paintFingerprint === lastPaintFingerprint &&
+      paintFingerprintEarly === lastPaintFingerprint &&
       currentMapEarly &&
       isSharedPointLayerSetFullyComplete(currentMapEarly as never, idsEarly)
     ) {
       return;
     }
-
-    const geojson = options.getGeoJson();
-    const paintConfig = options.getPaintConfig();
-    const ids = typeof options.ids === "function" ? options.ids() : options.ids;
 
     if (typeof gkMap.whenStyleReady === 'function') {
       try {
@@ -164,6 +188,14 @@ export function createSharedPointLayerController(
         return;
       }
     }
+
+    if (generation !== updateGeneration) return;
+
+    // Re-read after style-ready — concurrent updates may have newer GeoJSON.
+    const paintFingerprint = options.getPaintFingerprint();
+    const geojson = options.getGeoJson();
+    const paintConfig = options.getPaintConfig();
+    const ids = typeof options.ids === 'function' ? options.ids() : options.ids;
 
     const currentMap = gkMap.getMap?.();
     if (!currentMap) return;
@@ -197,11 +229,13 @@ export function createSharedPointLayerController(
           geojson,
           paintConfig
         );
+        if (generation !== updateGeneration) return;
         layersCreated = complete;
         lastPaintFingerprint = paintFingerprint;
         if (complete) {
           attachHoverGlowSync(currentMap, ids.glowLayerId);
           await options.onAfterCreate?.(currentMap);
+          if (generation !== updateGeneration) return;
           gkMap.setAttribute?.('data-before-isochrone-layer', ids.glowLayerId);
         }
         return;
@@ -221,9 +255,15 @@ export function createSharedPointLayerController(
         options.ensureMapTilerReady
       ) {
         await options.ensureMapTilerReady();
+        if (generation !== updateGeneration) return;
       }
 
-      const { glowHoverOpacity, selectionRingColor } = resolveSharedPointPaintOptions();
+      const {
+        glowHoverOpacity,
+        selectionRingColor,
+        selectionShadowColor,
+        selectionPointStrokeWidth,
+      } = resolveSharedPointPaintOptions();
 
       await createSharedPointLayersFromPaint({
         map: currentMap as never,
@@ -232,10 +272,13 @@ export function createSharedPointLayerController(
         paint: paintConfig,
         glowHoverOpacity,
         selectionRingColor,
+        selectionShadowColor,
+        selectionPointStrokeWidth,
         promoteId: options.promoteId,
         mapProvider: gkMap.getAttribute?.('provider'),
         useMapTilerPointHelper: gkMap.getAttribute?.('provider') === 'maptiler',
       });
+      if (generation !== updateGeneration) return;
 
       const complete = await ensureSharedPointLayerSetMounted(
         gkMap,
@@ -244,12 +287,14 @@ export function createSharedPointLayerController(
         geojson,
         paintConfig
       );
+      if (generation !== updateGeneration) return;
       layersCreated = complete;
       lastPaintFingerprint = paintFingerprint;
 
       if (complete) {
         attachHoverGlowSync(currentMap, ids.glowLayerId);
         await options.onAfterCreate?.(currentMap);
+        if (generation !== updateGeneration) return;
         gkMap.setAttribute?.('data-before-isochrone-layer', ids.glowLayerId);
       }
     } catch {
@@ -262,6 +307,7 @@ export function createSharedPointLayerController(
     layerCleanup = null;
     layersCreated = false;
     lastPaintFingerprint = null;
+    updateGeneration += 1;
   }
 
   function isCreated(): boolean {

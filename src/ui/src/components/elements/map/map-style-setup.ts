@@ -254,18 +254,37 @@ export class MapStyleSetup extends MapConnectedInit {
   }
 
   /**
-   * Sync theme class to element: gk-theme-light or gk-theme-dark when theme attr set;
-   * otherwise none (default comes from injected :root + @media (prefers-color-scheme: dark)).
+   * Resolve theme chrome before first placeholder paint.
+   * Explicit `theme` wins; otherwise follow the browser (`prefers-color-scheme`).
+   */
+  protected applyThemeChromeBeforePaint(): void {
+    const themeAttr = this.getAttribute('theme');
+    if (themeAttr && isValidTheme(themeAttr)) {
+      this._currentTheme = getTheme(themeAttr);
+      this._usingSystemTheme = false;
+    } else if (!this.getAttribute('map-style')) {
+      this._currentTheme = getTheme(getSystemTheme());
+      this._usingSystemTheme = true;
+    } else {
+      // map-style without theme: tiles from attr; chrome still follows the browser
+      this._currentTheme = getTheme(getSystemTheme());
+    }
+    this.syncThemeClass();
+  }
+
+  /**
+   * Sync theme class to element: gk-theme-light or gk-theme-dark.
+   * Explicit `theme` attr wins; otherwise browser preference (or active system theme).
    */
   protected syncThemeClass(): void {
     this.classList.remove('gk-theme-light', 'gk-theme-dark');
     const themeAttr = this.getAttribute('theme');
     if (themeAttr && isValidTheme(themeAttr)) {
       this.classList.add('gk-theme-' + themeAttr);
-    } else if (this._usingSystemTheme) {
-      // When using system theme, also sync the class for CSS variables
-      this.classList.add('gk-theme-' + this._currentTheme.name);
+      return;
     }
+    const name = this._usingSystemTheme ? this._currentTheme.name : getSystemTheme();
+    this.classList.add('gk-theme-' + name);
   }
 
   /**
@@ -326,8 +345,8 @@ export class MapStyleSetup extends MapConnectedInit {
     const themeAttr = this.getAttribute('theme');
     if (themeAttr && isValidTheme(themeAttr)) {
       this._currentTheme = getTheme(themeAttr);
-      this.syncThemeClass();
     }
+    this.syncThemeClass();
   }
 
   /**

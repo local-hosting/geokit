@@ -109,6 +109,76 @@ describe('applySharedPointLayerPaint', () => {
       ['literal', 0]
     );
   });
+
+  it('keeps the shadow on the map spot and floats the badge above it', () => {
+    const setPaintProperty = vi.fn();
+    const map = {
+      getSource: vi.fn(() => ({})),
+      getLayer: vi.fn((id: string) =>
+        id === 'demo-points-points' ||
+        id === 'demo-points-glow' ||
+        id === 'demo-points-points-outer-stroke'
+          ? {}
+          : undefined
+      ),
+      setPaintProperty,
+    };
+    const glowRadiusExpression = ['literal', 14] as unknown[];
+    const glowTranslate: [number, number] = [0, 0];
+    const pointTranslate: [number, number] = [0, -5];
+
+    applySharedPointLayerPaint(map as never, {
+      ids: {
+        sourceId: 'demo-points',
+        glowLayerId: 'demo-points-glow',
+        pointLayerId: 'demo-points-points',
+      },
+      pointColorExpression: ['literal', '#ffffff'],
+      pointRadiusExpression: ['literal', 5],
+      glowOpacity: 0.4,
+      glowBlur: 0.25,
+      glowRadiusExpression,
+      glowTranslate,
+      glowPitchAlignment: 'map',
+      glowPitchScale: 'map',
+      pointTranslate,
+      outerStrokeWidthExpression: ['literal', 2.5],
+      outerStrokeColorExpression: ['literal', '#ffffff'],
+      strokeWidthExpression: ['literal', 7],
+    });
+
+    expect(setPaintProperty).toHaveBeenCalledWith(
+      'demo-points-glow',
+      'circle-radius',
+      glowRadiusExpression
+    );
+    expect(setPaintProperty).toHaveBeenCalledWith(
+      'demo-points-glow',
+      'circle-translate',
+      glowTranslate
+    );
+    expect(setPaintProperty).toHaveBeenCalledWith(
+      'demo-points-glow',
+      'circle-pitch-alignment',
+      'map'
+    );
+    expect(setPaintProperty).toHaveBeenCalledWith(
+      'demo-points-glow',
+      'circle-pitch-scale',
+      'map'
+    );
+    expect(setPaintProperty).toHaveBeenCalledWith(
+      'demo-points-points',
+      'circle-translate',
+      pointTranslate
+    );
+    expect(setPaintProperty).toHaveBeenCalledWith(
+      'demo-points-points-outer-stroke',
+      'circle-translate',
+      pointTranslate
+    );
+  });
+
 });
 
 describe('createSharedPointLayersFromPaint', () => {
