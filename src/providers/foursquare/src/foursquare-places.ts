@@ -31,8 +31,39 @@ export function foursquarePlacesHeaders(apiKey: string): Record<string, string> 
   };
 }
 
+export type ResolveFoursquarePlacesApiBaseOptions = {
+  baseUrl?: string;
+  env?: {
+    FOURSQUARE_PLACES_API_BASE?: string;
+    VITE_FOURSQUARE_PLACES_API_BASE?: string;
+  };
+  /** Used when no baseUrl/env is set (e.g. same-origin `/__geo/foursquare` in the browser). */
+  fallbackBase?: string;
+};
+
+/** Strip trailing slash; resolve relative proxy paths against `window.location.origin` when present. */
+export function resolveFoursquarePlacesApiBase(
+  options: ResolveFoursquarePlacesApiBaseOptions = {},
+): string {
+  const raw =
+    options.baseUrl?.trim() ||
+    options.env?.FOURSQUARE_PLACES_API_BASE?.trim() ||
+    options.env?.VITE_FOURSQUARE_PLACES_API_BASE?.trim() ||
+    options.fallbackBase?.trim() ||
+    FOURSQUARE_PLACES_API_BASE;
+  const trimmed = raw.replace(/\/$/, '');
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
+  }
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+}
+
 export function buildFoursquarePlacesSearchUrl(params: FoursquarePlacesSearchParams): URL {
-  const url = new URL(`${FOURSQUARE_PLACES_API_BASE}/places/search`);
+  const base = resolveFoursquarePlacesApiBase({ baseUrl: params.baseUrl });
+  const url = new URL(`${base}/places/search`);
 
   if (params.query) {
     url.searchParams.set('query', params.query);

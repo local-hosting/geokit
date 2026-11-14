@@ -1,3 +1,5 @@
+import type { FeatureCollection } from 'geojson';
+
 import { buildPlaceSearchCacheKey } from '../place-search-cache';
 import { ProviderCache } from './cache';
 import { RequestQueue } from './request-queue';
@@ -25,7 +27,7 @@ export abstract class Service {
 
   fetchIsochrone?(options: IsochroneOptions): Promise<unknown>;
   hasIsochroneCached?(options: IsochroneOptions): boolean;
-  geocode?(options: GeocodeOptions): Promise<unknown>;
+  geocode?(options: GeocodeOptions): Promise<FeatureCollection>;
   reverseGeocode?(options: ReverseGeocodeOptions): Promise<ReverseGeocodeResult | null>;
   directions?(options: DirectionsOptions): Promise<unknown>;
   placeSearch?(options: PlaceSearchOptions): Promise<PlaceSearchResult[]>;

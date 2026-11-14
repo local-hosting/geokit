@@ -268,6 +268,14 @@ export abstract class BaseUIProvider {
   getStyleForTheme?(styleName: string): string | Record<string, unknown> | null;
 
   /**
+   * Async variant of getStyleForTheme for providers that must fetch/rewrite style JSON
+   * (e.g. MapTiler + dev proxy: inline TileJSON so workers do not hit referrer-locked hosts).
+   */
+  resolveStyleForTheme?(
+    styleName: string
+  ): Promise<string | Record<string, unknown> | null>;
+
+  /**
    * Get helper methods (optional)
    */
   getHelpers(): any {

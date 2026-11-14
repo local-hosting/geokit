@@ -309,6 +309,12 @@
       "import": "./src/core/dist/esm/config/maptiler-dev-proxy.js",
       "default": "./src/core/dist/esm/config/maptiler-dev-proxy.js"
     },
+    "./core/config/geo-proxy": {
+      "source": "./src/core/src/config/geo-proxy.ts",
+      "types": "./src/core/dist/esm/config/geo-proxy.d.ts",
+      "import": "./src/core/dist/esm/config/geo-proxy.js",
+      "default": "./src/core/dist/esm/config/geo-proxy.js"
+    },
     "./core/types/layer-datasets": {
       "source": "./src/core/src/types/layer-datasets.ts",
       "types": "./src/core/dist/esm/types/layer-datasets.d.ts",
@@ -375,11 +381,13 @@
       "default": "./src/crosswalk/dist/esm/src/h3/market-cells.js"
     },
     "./env": {
+      "source": "./src/env/src/index.ts",
       "types": "./src/env/dist/esm/index.d.ts",
       "import": "./src/env/dist/esm/index.js",
       "default": "./src/env/dist/esm/index.js"
     },
     "./env/service-keys": {
+      "source": "./src/env/src/service-keys.ts",
       "types": "./src/env/dist/esm/service-keys.d.ts",
       "import": "./src/env/dist/esm/service-keys.js",
       "default": "./src/env/dist/esm/service-keys.js"
@@ -422,11 +430,13 @@
       "source": "./src/formats/src/index.ts"
     },
     "./foursquare": {
+      "source": "./src/providers/foursquare/src/index.ts",
       "types": "./src/providers/foursquare/dist/esm/index.d.ts",
       "import": "./src/providers/foursquare/dist/esm/index.js",
       "default": "./src/providers/foursquare/dist/esm/index.js"
     },
     "./foursquare/foursquare-places": {
+      "source": "./src/providers/foursquare/src/foursquare-places.ts",
       "types": "./src/providers/foursquare/dist/esm/foursquare-places.d.ts",
       "import": "./src/providers/foursquare/dist/esm/foursquare-places.js",
       "default": "./src/providers/foursquare/dist/esm/foursquare-places.js"
@@ -447,39 +457,58 @@
       "default": "./src/providers/google/src/index.ts"
     },
     "./service": {
+      "source": "./src/service/src/index.ts",
       "types": "./src/service/dist/esm/index.d.ts",
       "import": "./src/service/dist/esm/index.js",
       "default": "./src/service/dist/esm/index.js"
     },
     "./service/registry": {
+      "source": "./src/service/src/services/registry.ts",
       "types": "./src/service/dist/esm/services/registry.d.ts",
       "import": "./src/service/dist/esm/services/registry.js",
       "default": "./src/service/dist/esm/services/registry.js"
     },
     "./service/types": {
+      "source": "./src/service/src/services/types.ts",
       "types": "./src/service/dist/esm/services/types.d.ts",
       "import": "./src/service/dist/esm/services/types.js",
       "default": "./src/service/dist/esm/services/types.js"
     },
     "./service/types/api-composite": {
+      "source": "./src/service/src/types/api-composite.ts",
       "types": "./src/service/dist/esm/types/api-composite.d.ts",
       "import": "./src/service/dist/esm/types/api-composite.js",
       "default": "./src/service/dist/esm/types/api-composite.js"
     },
     "./service/plugin": {
+      "source": "./src/service/src/plugin.ts",
       "types": "./src/service/dist/esm/plugin.d.ts",
       "import": "./src/service/dist/esm/plugin.js",
       "default": "./src/service/dist/esm/plugin.js"
     },
     "./service/builtins": {
+      "source": "./src/service/src/builtins.ts",
       "types": "./src/service/dist/esm/builtins.d.ts",
       "import": "./src/service/dist/esm/builtins.js",
       "default": "./src/service/dist/esm/builtins.js"
     },
     "./service/setup-capability-routers": {
+      "source": "./src/service/src/setup-capability-routers.ts",
       "types": "./src/service/dist/esm/setup-capability-routers.d.ts",
       "import": "./src/service/dist/esm/setup-capability-routers.js",
       "default": "./src/service/dist/esm/setup-capability-routers.js"
+    },
+    "./service/place-search": {
+      "source": "./src/service/src/search-places-with-geocode-fallback.ts",
+      "types": "./src/service/dist/esm/search-places-with-geocode-fallback.d.ts",
+      "import": "./src/service/dist/esm/search-places-with-geocode-fallback.js",
+      "default": "./src/service/dist/esm/search-places-with-geocode-fallback.js"
+    },
+    "./service/geocode-to-place-search": {
+      "source": "./src/service/src/geocode-to-place-search.ts",
+      "types": "./src/service/dist/esm/geocode-to-place-search.d.ts",
+      "import": "./src/service/dist/esm/geocode-to-place-search.js",
+      "default": "./src/service/dist/esm/geocode-to-place-search.js"
     },
     "./ui": {
       "source": "./src/ui/src/index.ts",
@@ -779,7 +808,14 @@
       "import": "./src/ui/dist/esm/config/tile-cdn.js",
       "default": "./src/ui/dist/esm/config/tile-cdn.js"
     },
+    "./ui/config/geo-proxy": {
+      "source": "./src/ui/src/config/geo-proxy.ts",
+      "types": "./src/ui/dist/esm/config/geo-proxy.d.ts",
+      "import": "./src/ui/dist/esm/config/geo-proxy.js",
+      "default": "./src/ui/dist/esm/config/geo-proxy.js"
+    },
     "./ui/config/maptiler-dev-proxy": {
+      "source": "./src/ui/src/config/maptiler-dev-proxy.ts",
       "types": "./src/ui/dist/esm/config/maptiler-dev-proxy.d.ts",
       "import": "./src/ui/dist/esm/config/maptiler-dev-proxy.js",
       "default": "./src/ui/dist/esm/config/maptiler-dev-proxy.js"

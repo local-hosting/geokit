@@ -21,6 +21,11 @@ export interface FoursquarePlacesSearchParams {
   minPrice?: number;
   maxPrice?: number;
   fields?: string;
+  /**
+   * API origin or same-origin proxy prefix (no trailing slash).
+   * Browser apps should use a host proxy (e.g. `/__foursquare-api`) — Places API has no CORS.
+   */
+  baseUrl?: string;
 }
 
 export interface FoursquarePlaceLocation {

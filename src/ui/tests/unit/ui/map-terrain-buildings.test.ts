@@ -25,6 +25,7 @@ describe('map-terrain-buildings', () => {
     expect(spec.tiles).toEqual([
       '/proxy/https://api.maptiler.com/tiles/terrain-rgb-v2/{z}/{x}/{y}.webp?key=test-key',
     ]);
+    expect(spec.maxzoom).toBe(14);
     expect(spec.url).toBeUndefined();
   });
 
@@ -51,8 +52,17 @@ describe('map-terrain-buildings', () => {
     );
 
     expect(spec.tiles).toEqual([
-      '/proxy/https://api.maptiler.com/tiles/hand-drawn-hillshade/{z}/{x}/{y}.png?key=test-key',
+      '/proxy/https://api.maptiler.com/tiles/hand-drawn-hillshade/{z}/{x}/{y}.webp?key=test-key',
     ]);
+    expect(spec.maxzoom).toBe(9);
+    expect(spec.minzoom).toBe(0);
     expect(spec.url).toBeUndefined();
+  });
+
+  it('buildHillshadeRasterSource without proxy keeps tiles.json (maxzoom from MapTiler)', () => {
+    const fallback =
+      'https://api.maptiler.com/tiles/hand-drawn-hillshade/tiles.json?key=test-key';
+    const spec = buildHillshadeRasterSource('test-key', fallback);
+    expect(spec).toEqual({ type: 'raster', url: fallback, tileSize: 256 });
   });
 });

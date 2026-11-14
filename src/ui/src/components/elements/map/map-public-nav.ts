@@ -311,6 +311,11 @@ export class MapPublicNav extends MapControlsState {
    * previous style. Ensure MapTiler API key is set (e.g. gk-map api-key or provider config).
    */
   protected updateMapStyle(styleName: string): void {
+    void this._updateMapStyleAsync(styleName);
+  }
+
+  /** Theme/style swap — prefer async proxied StyleSpec when the provider can resolve one. */
+  protected async _updateMapStyleAsync(styleName: string): Promise<void> {
     if (!this.map) return;
 
     const map = this.map as any;
@@ -324,10 +329,17 @@ export class MapPublicNav extends MapControlsState {
     const providerName = this.getAttribute('provider') || 'maptiler';
     const provider = getUIProviderByName(providerName);
 
-    // Resolve style URL first. For MapTiler, getStyleForTheme returns null when no API key is configured;
-    // calling setStyle without a valid key triggers "The distant style could not be loaded". Skip theme switch.
-    if (provider?.getStyleForTheme) {
-      const styleForTheme = provider.getStyleForTheme(styleName);
+    // Resolve style first. Prefer resolveStyleForTheme (MapTiler + proxy inlines TileJSON) so
+    // workers do not fetch api.maptiler.com without Referer after a light/dark toggle.
+    const resolveStyle =
+      typeof provider?.resolveStyleForTheme === 'function'
+        ? () => provider.resolveStyleForTheme!(styleName)
+        : typeof provider?.getStyleForTheme === 'function'
+          ? async () => provider.getStyleForTheme!(styleName)
+          : null;
+
+    if (resolveStyle) {
+      const styleForTheme = await resolveStyle();
       if (styleForTheme == null) {
         if (providerName === 'maptiler' || providerName === 'protomaps') {
           debug.log(
@@ -338,7 +350,7 @@ export class MapPublicNav extends MapControlsState {
         // Other providers: no style for this theme name, fall through to fallbacks
       } else {
         try {
-          debug.log('[gk-map] setStyle via provider getStyleForTheme', {
+          debug.log('[gk-map] setStyle via provider resolveStyleForTheme/getStyleForTheme', {
             provider: providerName,
             style: typeof styleForTheme === 'string' ? styleForTheme : '(object)',
           });
