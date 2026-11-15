@@ -20,6 +20,7 @@ import {
 } from '../../../utils/choropleth-fill-paint';
 
 import { isochroneEl } from './isochrone-el';
+import { shouldDeferH3PolygonBeforeTessellation } from './isochrone-h3-display-policy';
 export interface IsochroneOptions {
   lat: number;
   lng: number;
@@ -56,7 +57,8 @@ export class IsochroneBase extends MapChildElement {
   protected currentCacheKey: string | null = null;
   protected intersectionObserver: IntersectionObserver | null = null;
   protected isElementVisible: boolean | null = true; // Default to true for immediate rendering
-  protected hasUpgradedResolution: boolean = false; // Track if resolution has been upgraded
+  /** H3: tessellation applied for current fetch (see `prepareIsochroneDisplayData`). */
+  protected hasUpgradedResolution: boolean = false;
   protected mapInteractionListeners: Array<() => void> = []; // Store cleanup functions for map event listeners
   protected upgradeDebounceTimer: number | null = null; // Debounce timer for resolution upgrades
   protected pendingUpgrade: boolean = false; // Track if an upgrade is pending
@@ -82,8 +84,10 @@ export class IsochroneBase extends MapChildElement {
     // Fetch immediately - map is ready, no need to wait
     isochroneEl(this).fetchAndRenderIsochrone();
 
-    // H3 render mode only: upgrade raw polygon to hex cells on zoom/interaction
-    if (isochroneEl(this).render === 'h3') {
+    if (
+      isochroneEl(this).render === 'h3' &&
+      shouldDeferH3PolygonBeforeTessellation()
+    ) {
       isochroneEl(this).setupMapInteractionListeners();
     }
   }

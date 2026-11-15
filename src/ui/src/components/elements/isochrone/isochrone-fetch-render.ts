@@ -11,7 +11,6 @@
 
 import { MapChildElement } from '../../map-child-element';
 import { getServiceForCapability } from '@twinfile/geokit/service/registry';
-import { smoothFeatureCollection } from '@twinfile/geokit/core';
 import { debug } from '../../../utils/logger';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
 import { getIsochroneCacheKey } from './isochrone-fetch';
@@ -21,6 +20,7 @@ import {
 } from '../../../utils/choropleth-fill-paint';
 
 import { isochroneEl } from './isochrone-el';
+import { prepareIsochroneDisplayData } from './isochrone-render-pipeline';
 export interface IsochroneOptions {
   lat: number;
   lng: number;
@@ -134,8 +134,7 @@ export class IsochroneFetchRender extends IsochroneBase {
     }
 
     try {
-      // Store original API result for resolution upgrades
-      // We need the original polygon to convert to higher resolution later
+      // Raw API polygon (events / optional legacy H3 upgrade path)
       (this as any)._originalIsochroneData = result;
 
       if (!result || !result.features || result.features.length === 0) {
@@ -156,16 +155,20 @@ export class IsochroneFetchRender extends IsochroneBase {
         return;
       }
 
-      // For H3 mode: start with raw polygon for instant visibility
-      // Convert to hexagons only when user zooms/interacts
-      // This provides fastest initial rendering
-      // For polygon mode: apply Chaikin smoothing for smoother edges
-      const processedData =
-        isochroneEl(this).render === 'polygon'
-          ? smoothFeatureCollection(3)(result) // 3 iterations for smooth curves
-          : result;
-      // Don't convert to H3 on initial render - use raw polygon for speed
-      // Conversion to H3 will happen on map interaction via upgradeResolution()
+      const self = isochroneEl(this);
+      if (self.render === 'h3') {
+        self.hasUpgradedResolution = false;
+      }
+      const processedData = await prepareIsochroneDisplayData({
+        result,
+        render: self.render,
+        h3Resolution: self.h3Resolution,
+        color: self.color,
+        opacity: self.opacity,
+      });
+      if (self.render === 'h3') {
+        self.hasUpgradedResolution = true;
+      }
 
       // Ensure IDs exist (generated once per element lifetime)
       if (!isochroneEl(this).sourceId) {
