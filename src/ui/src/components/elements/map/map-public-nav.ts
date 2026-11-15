@@ -36,7 +36,11 @@ import {
   MAP_PLACEHOLDER_STYLE,
   getPlaceholderSelector,
 } from './style/map-placeholder';
-import { mapStyleSwapOptions } from './style/preserve-custom-style-overlays';
+import {
+  mapStyleSwapOptions,
+  styleWithPreservedOverlays,
+  type StyleOverlaySpec,
+} from './style/preserve-custom-style-overlays';
 import {
   injectHideAttributionStyles as injectHideAttributionStylesFn,
   injectAutoHideStyles as injectAutoHideStylesFn,
@@ -327,6 +331,18 @@ export class MapPublicNav extends MapControlsState {
     // Temporarily filter that single message so the console stays clean when theme/style load fails.
     this._installStyleLoadConsoleFilter();
 
+    // MapTiler often ignores transformStyle — pre-merge overlays into object styles before commit.
+    const commitStyle = (next: string | StyleOverlaySpec | object): void => {
+      const previous =
+        typeof map.getStyle === 'function' ? (map.getStyle() as StyleOverlaySpec) : null;
+      const merged = styleWithPreservedOverlays(
+        previous,
+        next as string | StyleOverlaySpec
+      );
+      mapEl(this)._onStyleLoadReaddLayers();
+      map.setStyle(merged, mapStyleSwapOptions());
+    };
+
     const providerName = this.getAttribute('provider') || 'maptiler';
     const provider = getUIProviderByName(providerName);
 
@@ -355,9 +371,7 @@ export class MapPublicNav extends MapControlsState {
             provider: providerName,
             style: typeof styleForTheme === 'string' ? styleForTheme : '(object)',
           });
-          // Safety-net re-add for CE children if transformStyle cannot preserve overlays.
-          mapEl(this)._onStyleLoadReaddLayers();
-          map.setStyle(styleForTheme, mapStyleSwapOptions());
+          commitStyle(styleForTheme);
           return;
         } catch (error) {
           console.warn('[gk-map] Failed to update map style:', error);
@@ -376,8 +390,7 @@ export class MapPublicNav extends MapControlsState {
         normalized === 'light' ? 'dataviz' : normalized === 'dark' ? 'dataviz-dark' : normalized;
       const styleUrl = `https://api.maptiler.com/maps/${mapName}/style.json?key=${apiKey}`;
       try {
-        mapEl(this)._onStyleLoadReaddLayers();
-        map.setStyle(styleUrl, mapStyleSwapOptions());
+        commitStyle(styleUrl);
         return;
       } catch (error) {
         console.warn('[gk-map] Failed to update map style:', error);
@@ -397,8 +410,7 @@ export class MapPublicNav extends MapControlsState {
       const sdkStyle = styleMap[normalized];
       if (sdkStyle) {
         try {
-          mapEl(this)._onStyleLoadReaddLayers();
-          map.setStyle(sdkStyle, mapStyleSwapOptions());
+          commitStyle(sdkStyle as StyleOverlaySpec | string);
           return;
         } catch (error) {
           console.warn('[gk-map] Failed to update map style via SDK:', error);
@@ -408,9 +420,8 @@ export class MapPublicNav extends MapControlsState {
 
     if (apiKey) {
       try {
-        mapEl(this)._onStyleLoadReaddLayers();
         const styleUrl = `https://api.maptiler.com/maps/${normalized}/style.json?key=${apiKey}`;
-        map.setStyle(styleUrl, mapStyleSwapOptions());
+        commitStyle(styleUrl);
       } catch (error) {
         console.warn('[gk-map] Failed to update map style:', error);
       }
