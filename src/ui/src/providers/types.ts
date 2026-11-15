@@ -172,7 +172,12 @@ export interface MapInstance {
 
   // Style properties
   setPaintProperty?(layerId: string, property: string, value: unknown): void;
+  getPaintProperty?(layerId: string, property: string): unknown;
   setLayoutProperty?(layerId: string, property: string, value: unknown): void;
+
+  // IControl attach (MapLibre / MapTiler)
+  addControl?(control: unknown, position?: string): void;
+  removeControl?(control: unknown): void;
 
   // Map controls
   setCenter?(center: [number, number]): void;

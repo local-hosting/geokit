@@ -183,7 +183,7 @@ export class MapBase extends BaseElement {
   public hasPainted: boolean = false;
 
   /** Polls isStyleLoaded when the MapLibre `load` event is slow; cleared on teardown/freeze. */
-  protected _styleLoadPollInterval: ReturnType<typeof setInterval> | null = null;
+  protected _styleLoadPollInterval: number | null = null;
 
   protected clearStyleLoadPoll(): void {
     if (this._styleLoadPollInterval != null) {

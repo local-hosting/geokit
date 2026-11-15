@@ -653,7 +653,7 @@ export class MapConnectedInit extends MapBase {
               );
               return;
             }
-          }, fallbackMs);
+          }, fallbackMs) as number;
         }
       }
     } catch (error) {
