@@ -1,0 +1,66 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { describe, expect, it } from 'vitest'
+
+const themeCss = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), '../../../src/theme.css'),
+  'utf8',
+)
+
+describe('gk-ctrl-action-icon theme (MapLibre control style)', () => {
+  it('paints save/snap with MapLibre background-image SVGs, not CSS masks', () => {
+    expect(themeCss).toMatch(
+      /button\.gk-ctrl-action-icon--save[\s\S]*?background-image:\s*url\("data:image\/svg\+xml;charset=utf-8,/,
+    )
+    expect(themeCss).toMatch(
+      /button\.gk-ctrl-action-icon--snap[\s\S]*?background-image:\s*url\("data:image\/svg\+xml;charset=utf-8,/,
+    )
+    expect(themeCss).toMatch(
+      /button\.gk-ctrl-action-icon--save[\s\S]*?fill='%23333'/,
+    )
+    expect(themeCss).toMatch(
+      /button\.gk-ctrl-action-icon--snap[\s\S]*?fill='%23333'/,
+    )
+    // Heroicons solid viewfinder-circle (save map position) — corner bracket + center target
+    expect(themeCss).toMatch(/gk-ctrl-action-icon--save[\s\S]*?M6 3a3 3 0 0 0-3 3v2\.25/)
+    expect(themeCss).toMatch(/gk-ctrl-action-icon--save[\s\S]*?a3\.75 3\.75 0 1 0 0 7\.5/)
+    // Heroicons solid arrow-left-circle (snap back) — filled circle with left arrow
+    expect(themeCss).toMatch(
+      /gk-ctrl-action-icon--snap[\s\S]*?M12 2\.25c-5\.385 0-9\.75 4\.365-9\.75 9\.75/,
+    )
+    expect(themeCss).toMatch(/gk-ctrl-action-icon--snap[\s\S]*?l-1\.72-1\.72h5\.69/)
+    expect(themeCss).not.toMatch(/gk-ctrl-action-icon--save[\s\S]{0,400}mask-image:/)
+    expect(themeCss).not.toMatch(/gk-ctrl-action-icon--snap[\s\S]{0,400}mask-image:/)
+    // No floppy / plain uturn leftovers
+    expect(themeCss).not.toMatch(/gk-ctrl-action-icon--save[\s\S]*?zm6 16a3 3 0 1 0 0-6/)
+    expect(themeCss).not.toMatch(/gk-ctrl-action-icon--snap[\s\S]*?M9\.53 2\.47a\.75\.75/)
+  })
+
+  it('lets action icons use --gk-control-icon-filter like terrain/zoom', () => {
+    const block = themeCss.match(
+      /gk-map button\.gk-ctrl-action-icon \.maplibregl-ctrl-icon,[\s\S]*?\}/,
+    )?.[0]
+    expect(block).toBeTruthy()
+    expect(block).not.toMatch(/filter:\s*none/)
+    expect(block).not.toMatch(/mask-image:/)
+    expect(block).toMatch(/background-repeat:\s*no-repeat/)
+    expect(block).toMatch(/background-position:\s*(center|50%)/)
+  })
+
+  it('sizes save/snap glyphs like MapLibre terrain (intrinsic ~18px, not full 29px button)', () => {
+    // MapLibre terrain uses width/height 22; solid Heroicons need more padding → 18.
+    expect(themeCss).toMatch(
+      /gk-ctrl-action-icon--save[\s\S]*?width='18' height='18'/,
+    )
+    expect(themeCss).toMatch(
+      /gk-ctrl-action-icon--snap[\s\S]*?width='18' height='18'/,
+    )
+    expect(themeCss).not.toMatch(
+      /gk-ctrl-action-icon--save[\s\S]*?width='29' height='29'/,
+    )
+    expect(themeCss).not.toMatch(
+      /gk-ctrl-action-icon--snap[\s\S]*?width='29' height='29'/,
+    )
+  })
+})
