@@ -22,6 +22,7 @@ import {
 } from '../../../utils/choropleth-fill-paint';
 
 import { isochroneEl } from './isochrone-el';
+import { shouldDeferH3PolygonBeforeTessellation } from './isochrone-h3-display-policy';
 export interface IsochroneOptions {
   lat: number;
   lng: number;
@@ -113,9 +114,8 @@ export class IsochroneUpgrade extends IsochroneFetchRender {
   }
 
   /**
-   * Convert raw polygon to H3 hexagons when user interacts with the map
-   * Initial render uses raw polygon for instant visibility
-   * This conversion happens on zoom/interaction for better visual quality
+   * Legacy deferred tessellation (when `shouldDeferH3PolygonBeforeTessellation()`).
+   * Default path tessellates in `fetchAndRenderIsochrone` via `prepareIsochroneDisplayData`.
    */
   protected async upgradeResolution(targetResolution: number): Promise<void> {
     if (!isochroneEl(this).map || !isochroneEl(this).sourceId || isochroneEl(this).render !== 'h3' || isochroneEl(this).hasUpgradedResolution) {
@@ -196,8 +196,15 @@ export class IsochroneUpgrade extends IsochroneFetchRender {
         if (name === 'time' || name === 'mode') {
           isochroneEl(this).currentCacheKey = null;
         }
-        if (name === 'render' && newValue === 'h3') {
+        if (
+          name === 'render' &&
+          newValue === 'h3' &&
+          shouldDeferH3PolygonBeforeTessellation()
+        ) {
           isochroneEl(this).setupMapInteractionListeners();
+        }
+        if (name === 'h3-resolution' || name === 'render') {
+          isochroneEl(this).hasUpgradedResolution = false;
         }
         isochroneEl(this).waitForStyleLoaded(() => isochroneEl(this).fetchAndRenderIsochrone());
       }
