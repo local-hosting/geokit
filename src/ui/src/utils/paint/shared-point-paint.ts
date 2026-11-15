@@ -81,30 +81,30 @@ export const SHARED_POINT_HOVER_GLOW_RADIUS_EXPRESSION: unknown[] = [
  * Radius tracks map zoom — readable at city scale, larger when zoomed in.
  */
 /** Bump when floating-badge size/look constants change so apps re-apply paint. */
-export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 19;
+export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 27;
 
 export const SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION: unknown[] = [
   'interpolate',
   ['exponential', 1.75],
   ['zoom'],
   0,
-  1.5,
+  1.25,
   4,
-  1.75,
+  1.5,
   6,
-  2.25,
+  2,
   8,
-  3.25,
+  2.75,
   10,
-  6.5,
+  5,
   12,
-  13,
+  10,
   14,
-  22,
+  17,
   16,
-  34,
+  26,
   18,
-  44,
+  34,
 ];
 
 /** Colored ring width — thin when zoomed out, full token width when close in. */
@@ -134,7 +134,10 @@ export function sharedPointFloatingBadgeRingWidthExpression(
   ];
 }
 
-/** Outer stroke width — scales with zoom alongside the ring. */
+/**
+ * Outer stroke width — keeps a readable rim when zoomed out (old curve fell under ~2px
+ * and vanished on city/continental views).
+ */
 export function sharedPointFloatingBadgeOuterStrokeWidthExpression(
   maxWidth = SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_WIDTH
 ): unknown[] {
@@ -143,22 +146,26 @@ export function sharedPointFloatingBadgeOuterStrokeWidthExpression(
     ['exponential', 1.75],
     ['zoom'],
     0,
-    Math.max(0.6, maxWidth * 0.28),
+    Math.max(2.25, maxWidth * 0.55),
     6,
-    maxWidth * 0.4,
+    Math.max(2.75, maxWidth * 0.65),
+    8,
+    maxWidth * 0.8,
     10,
-    maxWidth * 0.6,
+    maxWidth * 0.95,
+    12,
+    maxWidth * 1.1,
     14,
-    maxWidth * 1.35,
+    maxWidth * 1.45,
     16,
-    maxWidth * 1.6,
+    maxWidth * 1.7,
     18,
-    maxWidth * 1.85,
+    maxWidth * 2,
   ];
 }
 
 export const SHARED_POINT_FLOATING_BADGE_FILL = '#ffffff';
-/** Unselected inner fill + outer stroke — light tint of the key color (white = selected only). */
+/** Soft tint of the key color — frosted glass / hover helpers (core fill is white when unselected). */
 export const SHARED_POINT_FLOATING_BADGE_SOFT_LIGHTEN = 0.55;
 export const SHARED_POINT_FLOATING_BADGE_SOFT_COLOR_PROPERTY = '_colorSoft';
 /** Frosted disc behind unselected badges (MapLibre blur stand-in for glass). */
@@ -167,7 +174,8 @@ export const SHARED_POINT_FLOATING_BADGE_GLASS_BLUR = 0.65;
 /** Tight frost bloom — must stay smaller than the ground shadow after float. */
 export const SHARED_POINT_FLOATING_BADGE_GLASS_PAD = 1.5;
 export const SHARED_POINT_FLOATING_BADGE_COLORED_RING_WIDTH = 7;
-export const SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_WIDTH = 2.5;
+/** Outer band peeks from under core+ring — wider than the middle ring reads as a rim. */
+export const SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_WIDTH = 7;
 export const SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_COLOR = '#ffffff';
 /** Unselected key ring — slight see-through for a glassier edge. */
 export const SHARED_POINT_FLOATING_BADGE_STROKE_OPACITY = 0.82;
@@ -182,28 +190,28 @@ export const SHARED_POINT_FLOATING_BADGE_SHADOW_BLUR = 0.55;
  * Pad past the fill so the ellipse peeks under ring + outer + glass after float.
  * Zoom stops keep continental pads tiny (no fat black disks).
  */
-export const SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD = 10;
+export const SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD = 15;
 /** South-biased cast — light from above; peeks under the badge’s south edge. */
 export const SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE: [number, number] = [1, 5];
-/** Resting viewport lift — unselected badges sit clearly above the ground shadow (deep zoom max). */
-export const SHARED_POINT_FLOATING_BADGE_FLOAT_TRANSLATE: [number, number] = [0, -24];
-/** Active/selected badge — lowered toward the map, shadow stays put (deep zoom max). */
-export const SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE: [number, number] = [0, -14];
+/** Resting viewport lift — unselected badges stay grounded (deep zoom max). */
+export const SHARED_POINT_FLOATING_BADGE_FLOAT_TRANSLATE: [number, number] = [0, 0];
+/** Active/selected badge — lifts above the map; shadow stays put (deep zoom max). */
+export const SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE: [number, number] = [0, -6];
 export const SHARED_POINT_FLOATING_BADGE_SELECT_ANIMATION_MS = 180;
 /** Hover ring color lerp duration (linear — instant start/stop, fluid mid). */
 export const SHARED_POINT_FLOATING_BADGE_HOVER_ANIMATION_MS = 120;
 /** Mix toward white on hover (0–1) — lighter tint of the key ring color. */
 export const SHARED_POINT_FLOATING_BADGE_HOVER_LIGHTEN = 0.5;
 /** Outer white stroke width on hover — unused (stroke stays put). */
-export const SHARED_POINT_FLOATING_BADGE_HOVER_OUTER_STROKE_WIDTH = 4.5;
+export const SHARED_POINT_FLOATING_BADGE_HOVER_OUTER_STROKE_WIDTH = 9;
 /** Hover keeps resting height — lighten only, no raise/lower (deep zoom max). */
-export const SHARED_POINT_FLOATING_BADGE_HOVER_TRANSLATE: [number, number] = [0, -24];
+export const SHARED_POINT_FLOATING_BADGE_HOVER_TRANSLATE: [number, number] = [0, 0];
 /** Scale ground-shadow radius while hovered (< 1). */
 export const SHARED_POINT_FLOATING_BADGE_HOVER_SHADOW_SCALE = 0.78;
-/** Scale ground-shadow radius while selected (> 1). */
-export const SHARED_POINT_FLOATING_BADGE_SELECTED_SHADOW_SCALE = 1.22;
-/** Ground-shadow opacity while selected (slightly stronger than resting). */
-export const SHARED_POINT_FLOATING_BADGE_SELECTED_SHADOW_OPACITY = 0.32;
+/** Scale ground-shadow radius while selected (> 1 — wider while badge is lifted). */
+export const SHARED_POINT_FLOATING_BADGE_SELECTED_SHADOW_SCALE = 1.35;
+/** Ground-shadow opacity while selected (fainter while airborne). */
+export const SHARED_POINT_FLOATING_BADGE_SELECTED_SHADOW_OPACITY = 0.14;
 /**
  * Float height as a fraction of max Y by zoom — near 0 when zoomed out so dots stay on points.
  * City zooms lift enough that frosted glass clears the ground shadow.
@@ -241,9 +249,9 @@ export const SHARED_POINT_FLOATING_BADGE_SHADOW_STRENGTH_ZOOM_STOPS: [number, nu
 export const SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_ALIGNMENT = 'map' as const;
 export const SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_SCALE = 'map' as const;
 export const SHARED_POINT_FLOATING_BADGE_SELECTION_SHADOW_COLOR = 'rgba(0, 0, 0, 0.32)';
-/** Floating-badge select = lowered badge only — no halo (transparent if anything restores stroke). */
+/** Floating-badge select = lifted badge only — no halo (transparent if anything restores stroke). */
 export const SHARED_POINT_FLOATING_BADGE_SELECTION_RING_COLOR = 'rgba(0, 0, 0, 0)';
-/** Selected badge keeps the same radius (only height changes). */
+/** Selected badge keeps the same radius as resting (only height changes). */
 export const SHARED_POINT_FLOATING_BADGE_SELECTED_RADIUS_SCALE = 1;
 export const SHARED_POINT_FLOATING_BADGE_RING_STROKE_WIDTH =
   SHARED_POINT_FLOATING_BADGE_COLORED_RING_WIDTH +
@@ -309,7 +317,7 @@ export function syncSharedPointSelectedLayerFilter(
 ): void {
   if (!map.setFilter) return;
   const filter = sharedPointExcludeFeatureIdFilter(options.promoteId, options.featureId);
-  // Hide floating badge + resting glow; selection source draws the lowered badge + stronger shadow.
+  // Hide floating badge + resting glow; selection source draws the lifted badge + softer shadow.
   const glowLayerId =
     options.glowLayerId ??
     (options.pointLayerId.endsWith('-point')
@@ -687,8 +695,31 @@ export function mergeZoomInterpolateSum(a: unknown[], b: unknown[]): unknown[] {
 }
 
 /**
- * Radius where an outer stroke should start: inner fill radius + colored ring width.
- * MapLibre draws circle-stroke outside circle-radius.
+ * Where the outer circle-stroke starts: fill radius + colored ring width.
+ * Fill plugs the seam under the ring; stroke draws the smooth visible rim.
+ */
+export function sharedPointFloatingBadgeOuterStrokeRadius(
+  pointRadius: unknown,
+  coloredRingWidth: number | unknown[]
+): unknown {
+  return sharedPointRadiusPlusStrokeWidth(pointRadius, coloredRingWidth);
+}
+
+/**
+ * Full outer extent (fill + ring + outer band) — glass / shadow sizing.
+ */
+export function sharedPointFloatingBadgeOuterDiscRadius(
+  pointRadius: unknown,
+  coloredRingWidth: number | unknown[],
+  outerStrokeWidth: number | unknown[]
+): unknown {
+  const withRing = sharedPointFloatingBadgeOuterStrokeRadius(pointRadius, coloredRingWidth);
+  return sharedPointRadiusPlusStrokeWidth(withRing, outerStrokeWidth);
+}
+
+/**
+ * Radius after adding a stroke/band width to a fill radius.
+ * MapLibre draws circle-stroke outside circle-radius; filled discs use the same sum.
  * `strokeWidth` may be a zoom interpolate (badge stack scales with the map).
  */
 export function sharedPointRadiusPlusStrokeWidth(
@@ -760,16 +791,54 @@ export function sampleSharedPointZoomStopFraction(
   return stops[stops.length - 1][1];
 }
 
+/** Viewport `circle-translate` with x locked to 0 (straight up on screen). */
+export function sharedPointFloatingBadgeViewportTranslate(y: number): [number, number] {
+  return [0, y];
+}
+
+/** True when `circle-translate` is a zoom interpolate expression. */
+export function sharedPointFloatingBadgeIsZoomTranslateExpression(
+  translate: unknown
+): translate is unknown[] {
+  return Array.isArray(translate) && translate[0] === 'interpolate';
+}
+
+/** Keep numeric lifts on the Y axis; pass zoom expressions through unchanged. */
+export function sharedPointFloatingBadgeNormalizeViewportTranslate(
+  translate: [number, number] | unknown[]
+): [number, number] | unknown[] {
+  if (sharedPointFloatingBadgeIsZoomTranslateExpression(translate)) return translate;
+  return sharedPointFloatingBadgeViewportTranslate((translate as [number, number])[1]);
+}
+
+/** Near-equal screen translates — skip restarting a lift that is already there. */
+export function sharedPointFloatingBadgeTranslatesNearlyEqual(
+  a: [number, number],
+  b: [number, number],
+  epsilon = 0.5
+): boolean {
+  return Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon;
+}
+
+/** Linear lerp between two viewport translates (`t` clamped 0–1). */
+export function sharedPointFloatingBadgeLerpTranslate(
+  from: [number, number],
+  to: [number, number],
+  t: number
+): [number, number] {
+  const u = Math.min(1, Math.max(0, t));
+  return [from[0] + (to[0] - from[0]) * u, from[1] + (to[1] - from[1]) * u];
+}
+
 /** Viewport translate at a zoom — used by select/hover JS animation. */
 export function sharedPointFloatingBadgeTranslateAtZoom(
   maxY: number,
   zoom: number
 ): [number, number] {
-  return [
-    0,
+  return sharedPointFloatingBadgeViewportTranslate(
     maxY *
-      sampleSharedPointZoomStopFraction(SHARED_POINT_FLOATING_BADGE_FLOAT_Y_ZOOM_STOPS, zoom),
-  ];
+      sampleSharedPointZoomStopFraction(SHARED_POINT_FLOATING_BADGE_FLOAT_Y_ZOOM_STOPS, zoom)
+  );
 }
 
 /** Zoom-interpolated `circle-translate` so float height collapses when zoomed out. */
@@ -860,8 +929,11 @@ export function sharedPointFloatingBadgeSelectionTranslateAt(
   durationMs = SHARED_POINT_FLOATING_BADGE_SELECT_ANIMATION_MS
 ): [number, number] {
   if (durationMs <= 0) return to;
-  const t = easeOutCubic(elapsedMs / durationMs);
-  return [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t];
+  return sharedPointFloatingBadgeLerpTranslate(
+    from,
+    to,
+    easeOutCubic(elapsedMs / durationMs)
+  );
 }
 
 function parseHexRgb(hex: string): [number, number, number] | null {
@@ -1130,7 +1202,7 @@ export type SharedPointFloatingBadgePaintOptions = {
 
 /**
  * Reusable floating-badge paint (ground shadow respects map pitch/perspective).
- * Look knobs come from `--gk-badge-*` design tokens; selection still uses JS settle.
+ * Look knobs come from `--gk-badge-*` design tokens; selection uses JS lift animation.
  * Pass into `createSharedPointLayersFromPaint` / orchestrator `getPaintConfig`.
  */
 export function sharedPointFloatingBadgePaintExpressions(
@@ -1158,8 +1230,8 @@ export function sharedPointFloatingBadgePaintExpressions(
   // MapLibre rejects `case` branches that are interpolate arrays for circle-radius —
   // keep resting shadow as a plain interpolate; selected uses selection-source shadow.
   return {
-    // Unselected: soft fill + key ring; white outer + drop shadow on every badge.
-    pointColorExpression: softFill as unknown[],
+    // Unselected: white core + key ring + white outer + drop shadow.
+    pointColorExpression: tokens.fill,
     pointRadiusExpression: SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
     // Plain string — some providers mishandle `['literal', '#000']` for circle-color.
     glowColorExpression: tokens.shadowColor,
@@ -1170,17 +1242,17 @@ export function sharedPointFloatingBadgePaintExpressions(
     glowPitchAlignment: SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_ALIGNMENT,
     glowPitchScale: SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_SCALE,
     pointTranslate: floatTranslate,
-    // Hover keeps resting height (lighten only); select still settles toward the shadow.
+    // Hover keeps resting height (lighten only); select lifts above the shadow.
     hoverTranslate: floatTranslate,
     /** Screen-space float — rest/select translate goes straight up, not map-north. */
     pointTranslateAnchor: 'viewport' as const,
     selectionShadowTranslate: shadowTranslate,
     selectionGroundBadge: true as const,
     selectionGroundBadgeFallbackColor: options.fallbackColor,
-    /** Selected: same chrome as resting (white core + key ring); only height/shadow change. */
-    selectionFillExpression: tokens.fill,
-    selectionStrokeColorExpression: ringColor as unknown[],
-    selectionOuterStrokeColorExpression: tokens.outerStrokeColor,
+    /** Selected: key-color core + white middle ring + key-color outer ring. */
+    selectionFillExpression: ringColor as unknown[],
+    selectionStrokeColorExpression: tokens.fill,
+    selectionOuterStrokeColorExpression: ringColor as unknown[],
     selectedShadowScale: tokens.selectedShadowScale,
     selectedShadowOpacity: tokens.selectedShadowOpacity,
     /** Skip default glow *expand* hover — floating badge lifts via JS; select uses selection shadow. */
@@ -1331,7 +1403,7 @@ export interface ApplySharedPointPaintOptions {
   pointTranslate?: [number, number] | unknown[];
   /** Hover float translate (slightly higher than `pointTranslate`). Applied via JS on hover. */
   hoverTranslate?: [number, number] | unknown[];
-  /** Selected badge settle translate (zoom expression or `[x, y]`). */
+  /** Selected badge lift translate (zoom expression or `[x, y]`). */
   selectedTranslate?: [number, number] | unknown[];
   /** `circle-translate-anchor` for badge layers (`viewport` = straight up on screen). */
   pointTranslateAnchor?: 'map' | 'viewport';
@@ -1350,7 +1422,7 @@ export interface ApplySharedPointPaintOptions {
   selectionGroundBadge?: boolean;
   /** Fallback ring color for the grounded selection badge (locker / theme color). */
   selectionGroundBadgeFallbackColor?: string;
-  /** Selected badge fill (white core). */
+  /** Selected badge fill (key-color core). */
   selectionFillExpression?: unknown[];
   /** Selected badge ring stroke (key / locker color). */
   selectionStrokeColorExpression?: string | unknown[];
@@ -1483,22 +1555,29 @@ export function applySharedPointLayerPaint(
   const outerStrokeLayerId = sharedPointOuterStrokeLayerId(pointLayerId);
   if (map.getLayer?.(outerStrokeLayerId) && outerStrokeWidthExpression != null) {
     const coloredRingWidth = literalNumberFromPaintExpression(strokeWidthExpression);
-    // Prefer the zoom expression — literalNumber is 0 for interpolates and collapses the halo.
+    const ringForRadius = Array.isArray(strokeWidthExpression)
+      ? strokeWidthExpression
+      : coloredRingWidth;
+    // Fill to ring edge (seam plug) + circle-stroke rim (smooth outer edge).
     map.setPaintProperty?.(
       outerStrokeLayerId,
       'circle-radius',
-      Array.isArray(strokeWidthExpression)
-        ? sharedPointRadiusPlusStrokeWidth(pointRadiusExpression, strokeWidthExpression)
-        : sharedPointRadiusPlusStrokeWidth(pointRadiusExpression, coloredRingWidth)
+      sharedPointFloatingBadgeOuterStrokeRadius(pointRadiusExpression, ringForRadius)
     );
     map.setPaintProperty?.(outerStrokeLayerId, 'circle-stroke-width', outerStrokeWidthExpression);
     if (outerStrokeColorExpression != null) {
+      map.setPaintProperty?.(outerStrokeLayerId, 'circle-color', outerStrokeColorExpression);
       map.setPaintProperty?.(
         outerStrokeLayerId,
         'circle-stroke-color',
         outerStrokeColorExpression
       );
     }
+    map.setPaintProperty?.(
+      outerStrokeLayerId,
+      'circle-opacity',
+      pointOpacityExpression ?? outerStrokeOpacity ?? 1
+    );
     if (outerStrokeOpacity != null) {
       map.setPaintProperty?.(outerStrokeLayerId, 'circle-stroke-opacity', outerStrokeOpacity);
     }
@@ -1511,9 +1590,6 @@ export function applySharedPointLayerPaint(
         'circle-translate-anchor',
         pointTranslateAnchor
       );
-    }
-    if (pointOpacityExpression != null) {
-      map.setPaintProperty?.(outerStrokeLayerId, 'circle-opacity', pointOpacityExpression);
     }
   }
 
@@ -1572,42 +1648,47 @@ export function applySharedPointLayerPaint(
       typeof strokeColorExpression[strokeColorExpression.length - 1] === 'string'
         ? (strokeColorExpression[strokeColorExpression.length - 1] as string)
         : '#888888');
-    // White core + key ring (same as resting). Never paint fill as `_color` (solid disc).
-    const selectedFill =
-      options.selectionFillExpression ?? SHARED_POINT_FLOATING_BADGE_FILL;
+    // Key-color core + white middle ring (outer stroke is key color below).
+    const keyColorExpr = [
+      'coalesce',
+      ['get', '_color'],
+      ['get', 'color'],
+      ['get', 'marker-color'],
+      fallback,
+    ] as unknown[];
+    const selectedFill = options.selectionFillExpression ?? keyColorExpr;
     const selectedStroke =
-      options.selectionStrokeColorExpression ??
-      ([
-        'coalesce',
-        ['get', '_color'],
-        ['get', 'color'],
-        ['get', 'marker-color'],
-        fallback,
-      ] as unknown[]);
+      options.selectionStrokeColorExpression ?? SHARED_POINT_FLOATING_BADGE_FILL;
     map.setPaintProperty?.(selectionBadgeLayerId, 'circle-color', selectedFill);
     map.setPaintProperty?.(selectionBadgeLayerId, 'circle-stroke-color', selectedStroke);
-    // Keep selected badge on the same zoom-scaled size curve as resting dots.
-    map.setPaintProperty?.(selectionBadgeLayerId, 'circle-radius', pointRadiusExpression);
+    // Smaller selected core — white middle ring stays full width.
+    const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression(
+      Array.isArray(pointRadiusExpression)
+        ? pointRadiusExpression
+        : SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION
+    );
+    map.setPaintProperty?.(selectionBadgeLayerId, 'circle-radius', selectedRadius);
     map.setPaintProperty?.(selectionBadgeLayerId, 'circle-stroke-width', strokeWidthExpression);
     if (map.getLayer?.(selectionBadgeOuterLayerId) && outerStrokeWidthExpression != null) {
       const coloredRingWidth = literalNumberFromPaintExpression(strokeWidthExpression);
+      const ringForRadius = Array.isArray(strokeWidthExpression)
+        ? strokeWidthExpression
+        : coloredRingWidth;
+      const outerColor = options.selectionOuterStrokeColorExpression ?? keyColorExpr;
       map.setPaintProperty?.(
         selectionBadgeOuterLayerId,
         'circle-radius',
-        Array.isArray(strokeWidthExpression)
-          ? sharedPointRadiusPlusStrokeWidth(pointRadiusExpression, strokeWidthExpression)
-          : sharedPointRadiusPlusStrokeWidth(pointRadiusExpression, coloredRingWidth)
+        sharedPointFloatingBadgeOuterStrokeRadius(selectedRadius, ringForRadius)
       );
       map.setPaintProperty?.(
         selectionBadgeOuterLayerId,
         'circle-stroke-width',
         outerStrokeWidthExpression
       );
-      map.setPaintProperty?.(
-        selectionBadgeOuterLayerId,
-        'circle-stroke-color',
-        options.selectionOuterStrokeColorExpression ?? SHARED_POINT_FLOATING_BADGE_FILL
-      );
+      map.setPaintProperty?.(selectionBadgeOuterLayerId, 'circle-color', outerColor);
+      map.setPaintProperty?.(selectionBadgeOuterLayerId, 'circle-stroke-color', outerColor);
+      map.setPaintProperty?.(selectionBadgeOuterLayerId, 'circle-opacity', 1);
+      map.setPaintProperty?.(selectionBadgeOuterLayerId, 'circle-stroke-opacity', 1);
     }
   }
 

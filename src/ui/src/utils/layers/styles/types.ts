@@ -128,7 +128,7 @@ export interface SharedPointLayersConfig {
   pointTranslateAnchor?: 'map' | 'viewport';
   /** Hover float translate (slightly higher than `pointTranslate`). */
   hoverTranslate?: [number, number] | unknown[];
-  /** Selected badge settle translate. */
+  /** Selected badge lift translate. */
   selectedTranslate?: [number, number] | unknown[];
   /** Selection shadow screen offset `[x, y]` (defaults to a slight south cast). */
   selectionShadowTranslate?: [number, number] | unknown[];

@@ -32,14 +32,17 @@ import {
   sharedPointFloatingBadgeOuterStrokeWidthExpression,
   sharedPointFloatingBadgeRingWidthExpression,
   sharedPointFloatingBadgeSelectedRadiusExpression,
+  sharedPointFloatingBadgeNormalizeViewportTranslate,
   sharedPointFloatingBadgeSelectionTranslateAt,
   sharedPointFloatingBadgeShadowRadiusExpression,
   sharedPointFloatingBadgeSoftColor,
-  sharedPointFloatingBadgeTranslateAtZoom,
+  sharedPointFloatingBadgeTranslatesNearlyEqual,
   sharedPointGlassLayerId,
   sharedPointHitLayerIds,
   sharedPointHoverBadgeLayerId,
   sharedPointHoverBadgeOuterLayerId,
+  sharedPointFloatingBadgeOuterDiscRadius,
+  sharedPointFloatingBadgeOuterStrokeRadius,
   sharedPointOuterStrokeLayerId,
   sharedPointRadiusPlusStrokeWidth,
   sharedPointSelectionBadgeLayerId,
@@ -457,7 +460,7 @@ function setupSharedPointSelectionChrome(
     : options.pointRadius;
   const ringTranslate = selectionGroundBadge ? undefined : pointTranslate;
 
-  // Floating-badge active state = lowered badge + stronger grounded shadow (no halo ring).
+  // Floating-badge active state = lifted badge + softer ground shadow (no halo ring).
   if (!selectionGroundBadge) {
     setupSelectionRingLayer(
       map,
@@ -481,7 +484,7 @@ function setupSharedPointSelectionChrome(
     }
   }
   if (selectionGroundBadge) {
-    // Still need the empty selection source for the lowered badge feature.
+    // Still need the empty selection source for the lifted badge feature.
     setupSelectionRingLayer(
       map,
       sourceId,
@@ -989,8 +992,9 @@ export function setupSharedPointGlassLayer(
 }
 
 /**
- * Outer stroke around the colored ring (transparent fill + stroke outside fill+ring).
- * Drawn below the point layer so the colored ring sits on top of the white halo start.
+ * Outer band: fill plugs the seam under the colored ring; circle-stroke draws the
+ * smooth visible rim (filled-only outer edges look pixelated at large radii).
+ * Drawn below the point layer.
  */
 export function setupSharedPointOuterStrokeLayer(
   map: MapInstance,
@@ -1019,15 +1023,19 @@ export function setupSharedPointOuterStrokeLayer(
   const ringForRadius = Array.isArray(options.coloredStrokeWidth)
     ? options.coloredStrokeWidth
     : coloredWidth;
-  const radius = sharedPointRadiusPlusStrokeWidth(options.pointRadius, ringForRadius);
+  const radius = sharedPointFloatingBadgeOuterStrokeRadius(
+    options.pointRadius,
+    ringForRadius
+  );
+  const opacity = options.outerStrokeOpacity ?? 1;
   const paint: Record<string, unknown> = {
     'circle-radius': radius,
-    'circle-color': 'rgba(0,0,0,0)',
-    'circle-opacity': 1,
+    'circle-color': options.outerStrokeColor,
+    'circle-opacity': opacity,
     'circle-blur': 0,
     'circle-stroke-width': options.outerStrokeWidth,
     'circle-stroke-color': options.outerStrokeColor,
-    'circle-stroke-opacity': options.outerStrokeOpacity ?? 1,
+    'circle-stroke-opacity': opacity,
   };
   if (options.pointTranslate != null) {
     paint['circle-translate'] = options.pointTranslate;
@@ -1035,7 +1043,6 @@ export function setupSharedPointOuterStrokeLayer(
   }
 
   if (map.getLayer?.(outerStrokeLayerId)) {
-    // Layer may exist from an older failed paint — force white edge + safe radius.
     if (map.setPaintProperty) {
       try {
         for (const [key, value] of Object.entries(paint)) {
@@ -1154,6 +1161,9 @@ export function setupFloatingBadgeHoverBadgeLayers(
     }
   }
 
+  // Seam-plug fill + stroked rim under core+ring (same beforeId, outer first).
+  const hoverBadgeBeforeId = pointLayerId;
+  const hoverOuterRadius = sharedPointFloatingBadgeOuterStrokeRadius(badgeRadius, ringWidth);
   if (!map.getLayer?.(badgeOuterLayerId)) {
     try {
       map.addLayer(
@@ -1163,9 +1173,9 @@ export function setupFloatingBadgeHoverBadgeLayers(
           source: hoverSourceId,
           minzoom: 0,
           paint: {
-            'circle-radius': sharedPointRadiusPlusStrokeWidth(badgeRadius, ringWidth),
-            'circle-color': 'rgba(0,0,0,0)',
-            'circle-opacity': 1,
+            'circle-radius': hoverOuterRadius,
+            'circle-color': tokens.outerStrokeColor,
+            'circle-opacity': tokens.outerStrokeOpacity,
             'circle-blur': 0,
             'circle-stroke-width': outerWidth,
             'circle-stroke-color': tokens.outerStrokeColor,
@@ -1174,7 +1184,7 @@ export function setupFloatingBadgeHoverBadgeLayers(
             'circle-translate-anchor': 'viewport',
           },
         } as any,
-        pointLayerId
+        hoverBadgeBeforeId
       );
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add hover badge outer ${badgeOuterLayerId}:`, err);
@@ -1201,7 +1211,7 @@ export function setupFloatingBadgeHoverBadgeLayers(
             'circle-translate-anchor': 'viewport',
           },
         } as any,
-        map.getLayer?.(badgeOuterLayerId) ? badgeOuterLayerId : pointLayerId
+        hoverBadgeBeforeId
       );
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add hover badge ${badgeLayerId}:`, err);
@@ -1211,6 +1221,12 @@ export function setupFloatingBadgeHoverBadgeLayers(
       map.setPaintProperty(badgeLayerId, 'circle-translate', tokens.floatTranslate);
       map.setPaintProperty(badgeLayerId, 'circle-translate-anchor', 'viewport');
       if (map.getLayer?.(badgeOuterLayerId)) {
+        map.setPaintProperty(badgeOuterLayerId, 'circle-radius', hoverOuterRadius);
+        map.setPaintProperty(badgeOuterLayerId, 'circle-color', tokens.outerStrokeColor);
+        map.setPaintProperty(badgeOuterLayerId, 'circle-opacity', tokens.outerStrokeOpacity);
+        map.setPaintProperty(badgeOuterLayerId, 'circle-stroke-width', outerWidth);
+        map.setPaintProperty(badgeOuterLayerId, 'circle-stroke-color', tokens.outerStrokeColor);
+        map.setPaintProperty(badgeOuterLayerId, 'circle-stroke-opacity', tokens.outerStrokeOpacity);
         map.setPaintProperty(badgeOuterLayerId, 'circle-translate', tokens.floatTranslate);
         map.setPaintProperty(badgeOuterLayerId, 'circle-translate-anchor', 'viewport');
       }
@@ -1221,7 +1237,7 @@ export function setupFloatingBadgeHoverBadgeLayers(
 }
 
 /**
- * Enlarged grounded badge on the selection source (lands on the map when selected).
+ * Selection badge on the selection source (lifts above the map when selected).
  * Drawn above the selection shadow and below the selection ring.
  */
 export function setupSelectionGroundBadgeLayers(
@@ -1240,8 +1256,7 @@ export function setupSelectionGroundBadgeLayers(
   const fallbackColor = options?.fallbackColor?.trim() || '#888888';
   const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression();
   const tokens = resolveSharedPointFloatingBadgeTokens();
-  // Selected: white core + key ring + white outer (same chrome as resting).
-  const fillColor = tokens.fill;
+  // Selected: key-color core + white middle ring + key-color outer.
   const ringColor = [
     'coalesce',
     ['get', colorProperty],
@@ -1249,6 +1264,8 @@ export function setupSelectionGroundBadgeLayers(
     ['get', 'marker-color'],
     fallbackColor,
   ];
+  const fillColor = ringColor;
+  const middleRingColor = tokens.fill;
 
   if (!map.getSource?.(selectionSourceId)) return;
 
@@ -1257,7 +1274,7 @@ export function setupSelectionGroundBadgeLayers(
     tokens.outerStrokeWidth
   );
 
-  // Stronger grounded shadow under the selected badge (main glow is filtered away).
+  // Softer ground shadow under the lifted selected badge (main glow is filtered away).
   const selectedShadowRadius = scaleInterpolateRadiusStops(
     sharedPointFloatingBadgeShadowRadiusExpression(
       undefined,
@@ -1293,6 +1310,14 @@ export function setupSelectionGroundBadgeLayers(
     }
   }
 
+  // Seam-plug fill + stroked key rim under core + white ring (same beforeId, outer first).
+  const selectionBadgeBeforeId = map.getLayer?.(`${pointLayerId}-selection-ring`)
+    ? `${pointLayerId}-selection-ring`
+    : pointLayerId;
+  const outerStrokeRadius = sharedPointFloatingBadgeOuterStrokeRadius(
+    selectedRadius,
+    ringWidth
+  );
   if (!map.getLayer?.(badgeOuterLayerId)) {
     try {
       map.addLayer(
@@ -1302,19 +1327,18 @@ export function setupSelectionGroundBadgeLayers(
           source: selectionSourceId,
           minzoom: 0,
           paint: {
-            'circle-radius': sharedPointRadiusPlusStrokeWidth(selectedRadius, ringWidth),
-            'circle-color': 'rgba(0,0,0,0)',
+            'circle-radius': outerStrokeRadius,
+            'circle-color': ringColor,
             'circle-opacity': 1,
             'circle-blur': 0,
             'circle-stroke-width': outerWidth,
-            'circle-stroke-color': tokens.outerStrokeColor,
+            'circle-stroke-color': ringColor,
+            'circle-stroke-opacity': 1,
             'circle-translate': tokens.floatTranslate,
             'circle-translate-anchor': 'viewport',
           },
         } as any,
-        map.getLayer?.(`${pointLayerId}-selection-ring`)
-          ? `${pointLayerId}-selection-ring`
-          : pointLayerId
+        selectionBadgeBeforeId
       );
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add selection badge outer ${badgeOuterLayerId}:`, err);
@@ -1335,35 +1359,42 @@ export function setupSelectionGroundBadgeLayers(
             'circle-opacity': 1,
             'circle-blur': 0,
             'circle-stroke-width': ringWidth,
-            'circle-stroke-color': ringColor,
+            'circle-stroke-color': middleRingColor,
             'circle-translate': tokens.floatTranslate,
             'circle-translate-anchor': 'viewport',
           },
         } as any,
-        map.getLayer?.(badgeOuterLayerId) ? badgeOuterLayerId : pointLayerId
+        selectionBadgeBeforeId
       );
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add selection badge ${badgeLayerId}:`, err);
     }
   }
 
-  // Re-apply white-core chrome when layers already exist (paint revision / theme refresh).
+  // Re-apply key-core chrome when layers already exist (paint revision / theme refresh).
   if (map.setPaintProperty) {
     try {
       if (map.getLayer?.(badgeLayerId)) {
         map.setPaintProperty(badgeLayerId, 'circle-color', fillColor);
-        map.setPaintProperty(badgeLayerId, 'circle-stroke-color', ringColor);
+        map.setPaintProperty(badgeLayerId, 'circle-stroke-color', middleRingColor);
         map.setPaintProperty(badgeLayerId, 'circle-stroke-width', ringWidth);
         map.setPaintProperty(badgeLayerId, 'circle-radius', selectedRadius);
       }
       if (map.getLayer?.(badgeOuterLayerId)) {
-        map.setPaintProperty(badgeOuterLayerId, 'circle-stroke-color', tokens.outerStrokeColor);
+        map.setPaintProperty(badgeOuterLayerId, 'circle-color', ringColor);
+        map.setPaintProperty(badgeOuterLayerId, 'circle-stroke-color', ringColor);
+        map.setPaintProperty(badgeOuterLayerId, 'circle-opacity', 1);
+        map.setPaintProperty(badgeOuterLayerId, 'circle-stroke-opacity', 1);
         map.setPaintProperty(badgeOuterLayerId, 'circle-stroke-width', outerWidth);
-        map.setPaintProperty(
-          badgeOuterLayerId,
-          'circle-radius',
-          sharedPointRadiusPlusStrokeWidth(selectedRadius, ringWidth)
-        );
+        map.setPaintProperty(badgeOuterLayerId, 'circle-radius', outerStrokeRadius);
+      }
+      // Heal sessions that still have outer above the white ring.
+      if (
+        map.getLayer?.(badgeOuterLayerId) &&
+        map.getLayer?.(badgeLayerId) &&
+        typeof map.moveLayer === 'function'
+      ) {
+        map.moveLayer(badgeOuterLayerId, badgeLayerId);
       }
     } catch {
       /* style swap */
@@ -1396,7 +1427,21 @@ function setHoverBadgeRingColor(
   const layerId = hoverRingColorLayerId(pointLayerId, target);
   if (!map.getLayer?.(layerId)) return;
   try {
-    // Selected + unselected hover: lighten the key ring stroke (core stays white).
+    if (target === 'selection') {
+      // Selected: lighten key-color core + outer ring; middle ring stays white.
+      map.setPaintProperty(layerId, 'circle-color', color);
+      map.setPaintProperty(
+        layerId,
+        'circle-stroke-color',
+        resolveSharedPointFloatingBadgeTokens().fill
+      );
+      const outerId = sharedPointSelectionBadgeOuterLayerId(pointLayerId);
+      if (map.getLayer?.(outerId)) {
+        map.setPaintProperty(outerId, 'circle-color', color);
+      }
+      return;
+    }
+    // Unselected hover: lighten the key ring stroke (core stays white).
     map.setPaintProperty(layerId, 'circle-stroke-color', color);
   } catch {
     /* style swap */
@@ -1484,20 +1529,15 @@ function hoverBadgeLayerIds(pointLayerId: string): [string, string] {
   ];
 }
 
-function isZoomTranslateExpression(translate: unknown): translate is unknown[] {
-  return Array.isArray(translate) && translate[0] === 'interpolate';
-}
-
-function setHoverBadgeTranslate(
+function setBadgeLayersTranslate(
   map: MapInstance,
-  pointLayerId: string,
+  layerIds: readonly string[],
   translate: [number, number] | unknown[]
 ): void {
   if (!map.setPaintProperty) return;
-  const screenTranslate = isZoomTranslateExpression(translate)
-    ? translate
-    : ([0, (translate as [number, number])[1]] as [number, number]);
-  for (const layerId of hoverBadgeLayerIds(pointLayerId)) {
+  // Viewport anchor + x=0 — lift is straight up on screen away from the shadow.
+  const screenTranslate = sharedPointFloatingBadgeNormalizeViewportTranslate(translate);
+  for (const layerId of layerIds) {
     if (!map.getLayer?.(layerId)) continue;
     try {
       map.setPaintProperty(layerId, 'circle-translate-anchor', 'viewport');
@@ -1508,12 +1548,118 @@ function setHoverBadgeTranslate(
   }
 }
 
-function cancelHoverBadgeAnimation(map: MapInstance, pointLayerId: string): void {
-  const byLayer = hoverBadgeAnimByMap.get(map);
+function setHoverBadgeTranslate(
+  map: MapInstance,
+  pointLayerId: string,
+  translate: [number, number] | unknown[]
+): void {
+  setBadgeLayersTranslate(map, hoverBadgeLayerIds(pointLayerId), translate);
+}
+
+function setSelectionBadgeTranslate(
+  map: MapInstance,
+  pointLayerId: string,
+  translate: [number, number] | unknown[]
+): void {
+  setBadgeLayersTranslate(map, selectionBadgeLayerIds(pointLayerId), translate);
+}
+
+/** Numeric circle-translate already written by JS animation, if any. */
+function readNumericBadgeTranslate(
+  map: MapInstance,
+  layerIds: readonly string[]
+): [number, number] | null {
+  if (!map.getPaintProperty) return null;
+  for (const layerId of layerIds) {
+    if (!map.getLayer?.(layerId)) continue;
+    try {
+      const value = map.getPaintProperty(layerId, 'circle-translate');
+      if (
+        Array.isArray(value) &&
+        value.length === 2 &&
+        typeof value[0] === 'number' &&
+        typeof value[1] === 'number'
+      ) {
+        return [value[0], value[1]];
+      }
+    } catch {
+      /* style swap */
+    }
+  }
+  return null;
+}
+
+function cancelBadgeRaf(
+  store: WeakMap<MapInstance, Map<string, number>>,
+  map: MapInstance,
+  pointLayerId: string
+): void {
+  const byLayer = store.get(map);
   const rafId = byLayer?.get(pointLayerId);
   if (rafId == null) return;
   cancelAnimationFrame(rafId);
   byLayer.delete(pointLayerId);
+}
+
+function cancelHoverBadgeAnimation(map: MapInstance, pointLayerId: string): void {
+  cancelBadgeRaf(hoverBadgeAnimByMap, map, pointLayerId);
+}
+
+function cancelSelectionBadgeAnimation(map: MapInstance, pointLayerId: string): void {
+  cancelBadgeRaf(selectionBadgeAnimByMap, map, pointLayerId);
+}
+
+/** Shared rAF ease for hover/select badge translate. */
+function scheduleBadgeTranslateAnimation(input: {
+  store: WeakMap<MapInstance, Map<string, number>>;
+  map: MapInstance;
+  pointLayerId: string;
+  from: [number, number];
+  to: [number, number];
+  durationMs: number;
+  apply: (translate: [number, number]) => void;
+  onDone?: () => void;
+}): void {
+  const { store, map, pointLayerId, from, to, durationMs, apply, onDone } = input;
+  cancelBadgeRaf(store, map, pointLayerId);
+  if (sharedPointFloatingBadgeTranslatesNearlyEqual(from, to)) {
+    apply(to);
+    onDone?.();
+    return;
+  }
+  apply(from);
+  if (typeof requestAnimationFrame !== 'function' || durationMs <= 0) {
+    apply(to);
+    onDone?.();
+    return;
+  }
+
+  let byLayer = store.get(map);
+  if (!byLayer) {
+    byLayer = new Map();
+    store.set(map, byLayer);
+  }
+  const anims = byLayer;
+  const start = performance.now();
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    anims.delete(pointLayerId);
+    onDone?.();
+  };
+
+  const tick = (now: number) => {
+    const elapsed = now - start;
+    apply(sharedPointFloatingBadgeSelectionTranslateAt(from, to, elapsed, durationMs));
+    if (elapsed >= durationMs) {
+      finish();
+      return;
+    }
+    anims.set(pointLayerId, requestAnimationFrame(tick));
+  };
+
+  anims.set(pointLayerId, requestAnimationFrame(tick));
 }
 
 /** Ease hover-overlay badge between rest and hover height. */
@@ -1528,85 +1674,19 @@ export function animateSharedPointHoverBadgeTranslate(
   }
 ): void {
   const tokens = resolveSharedPointFloatingBadgeTokens();
-  const durationMs = options.durationMs ?? tokens.hoverAnimationMs;
-  const { from, to, onDone } = options;
-
-  cancelHoverBadgeAnimation(map, pointLayerId);
-  setHoverBadgeTranslate(map, pointLayerId, from);
-
-  if (typeof requestAnimationFrame !== 'function' || durationMs <= 0) {
-    setHoverBadgeTranslate(map, pointLayerId, to);
-    onDone?.();
-    return;
-  }
-
-  let byLayer = hoverBadgeAnimByMap.get(map);
-  if (!byLayer) {
-    byLayer = new Map();
-    hoverBadgeAnimByMap.set(map, byLayer);
-  }
-  const anims = byLayer;
-  const start = performance.now();
-  let done = false;
-  const finish = () => {
-    if (done) return;
-    done = true;
-    anims.delete(pointLayerId);
-    onDone?.();
-  };
-
-  const tick = (now: number) => {
-    const elapsed = now - start;
-    setHoverBadgeTranslate(
-      map,
-      pointLayerId,
-      sharedPointFloatingBadgeSelectionTranslateAt(from, to, elapsed, durationMs)
-    );
-    if (elapsed >= durationMs) {
-      finish();
-      return;
-    }
-    anims.set(pointLayerId, requestAnimationFrame(tick));
-  };
-
-  anims.set(pointLayerId, requestAnimationFrame(tick));
+  scheduleBadgeTranslateAnimation({
+    store: hoverBadgeAnimByMap,
+    map,
+    pointLayerId,
+    from: options.from,
+    to: options.to,
+    durationMs: options.durationMs ?? tokens.hoverAnimationMs,
+    apply: (translate) => setHoverBadgeTranslate(map, pointLayerId, translate),
+    onDone: options.onDone,
+  });
 }
 
-function setSelectionBadgeTranslate(
-  map: MapInstance,
-  pointLayerId: string,
-  translate: [number, number] | unknown[]
-): void {
-  if (!map.setPaintProperty) return;
-  // Viewport anchor + x=0 — select settle is straight down on screen toward the shadow.
-  const screenTranslate = isZoomTranslateExpression(translate)
-    ? translate
-    : ([0, (translate as [number, number])[1]] as [number, number]);
-  for (const layerId of selectionBadgeLayerIds(pointLayerId)) {
-    if (!map.getLayer?.(layerId)) continue;
-    try {
-      map.setPaintProperty(layerId, 'circle-translate-anchor', 'viewport');
-      map.setPaintProperty(layerId, 'circle-translate', screenTranslate);
-    } catch {
-      /* style swap */
-    }
-  }
-}
-
-function resolveBadgeTranslateAtMapZoom(map: MapInstance, maxY: number): [number, number] {
-  const zoom = typeof map.getZoom === 'function' ? map.getZoom() : 16;
-  return sharedPointFloatingBadgeTranslateAtZoom(maxY, zoom);
-}
-
-function cancelSelectionBadgeAnimation(map: MapInstance, pointLayerId: string): void {
-  const byLayer = selectionBadgeAnimByMap.get(map);
-  const rafId = byLayer?.get(pointLayerId);
-  if (rafId == null) return;
-  cancelAnimationFrame(rafId);
-  byLayer.delete(pointLayerId);
-}
-
-/** Ease grounded selection badge from float height down to selected (or custom from/to). */
+/** Ease selection badge from resting height up to selected (or custom from/to). */
 export function animateSharedPointSelectionBadgeTranslate(
   map: MapInstance,
   pointLayerId: string,
@@ -1618,50 +1698,23 @@ export function animateSharedPointSelectionBadgeTranslate(
   }
 ): void {
   const tokens = resolveSharedPointFloatingBadgeTokens();
-  const from = options?.from ?? resolveBadgeTranslateAtMapZoom(map, tokens.floatTranslate[1]);
-  const to = options?.to ?? resolveBadgeTranslateAtMapZoom(map, tokens.selectedTranslate[1]);
-  const durationMs = options?.durationMs ?? tokens.selectAnimationMs;
-  const onDone = options?.onDone;
-
-  cancelSelectionBadgeAnimation(map, pointLayerId);
-  setSelectionBadgeTranslate(map, pointLayerId, from);
-
-  if (typeof requestAnimationFrame !== 'function' || durationMs <= 0) {
-    setSelectionBadgeTranslate(map, pointLayerId, to);
-    onDone?.();
-    return;
-  }
-
-  let byLayer = selectionBadgeAnimByMap.get(map);
-  if (!byLayer) {
-    byLayer = new Map();
-    selectionBadgeAnimByMap.set(map, byLayer);
-  }
-  const anims = byLayer;
-  const start = performance.now();
-  let done = false;
-  const finish = () => {
-    if (done) return;
-    done = true;
-    anims.delete(pointLayerId);
-    onDone?.();
-  };
-
-  const tick = (now: number) => {
-    const elapsed = now - start;
-    setSelectionBadgeTranslate(
-      map,
-      pointLayerId,
-      sharedPointFloatingBadgeSelectionTranslateAt(from, to, elapsed, durationMs)
-    );
-    if (elapsed >= durationMs) {
-      finish();
-      return;
-    }
-    anims.set(pointLayerId, requestAnimationFrame(tick));
-  };
-
-  anims.set(pointLayerId, requestAnimationFrame(tick));
+  // Prefer current paint translate so a second select/re-apply does not snap down to rest.
+  // Token screen offsets (not zoom-scaled): Places fly must not settle the pop.
+  const from =
+    options?.from ??
+    readNumericBadgeTranslate(map, selectionBadgeLayerIds(pointLayerId)) ??
+    tokens.floatTranslate;
+  const to = options?.to ?? tokens.selectedTranslate;
+  scheduleBadgeTranslateAnimation({
+    store: selectionBadgeAnimByMap,
+    map,
+    pointLayerId,
+    from,
+    to,
+    durationMs: options?.durationMs ?? tokens.selectAnimationMs,
+    apply: (translate) => setSelectionBadgeTranslate(map, pointLayerId, translate),
+    onDone: options?.onDone,
+  });
 }
 
 function setupSelectionShadowLayer(
@@ -2215,9 +2268,18 @@ export function setSharedPointSelection(
     getSharedPointSelectionMap(map).set(sourceId, { featureId, lngLat: resolvedLngLat });
     ensureSelectionRingReady(map, sourceId, options);
     const selectionChanged = featureId !== previousFeatureId;
-    if (options?.selectionGroundBadge && pointLayerId && selectionChanged) {
-      // Land grounded badge only when selection changes — re-click must not re-jump.
-      animateSharedPointSelectionBadgeTranslate(map, pointLayerId);
+    if (options?.selectionGroundBadge && pointLayerId) {
+      if (selectionChanged) {
+        // Lift from current height — re-apply must not restart from rest (up→down→up).
+        animateSharedPointSelectionBadgeTranslate(map, pointLayerId);
+      } else if (!selectionBadgeAnimByMap.get(map)?.has(pointLayerId)) {
+        // Same selection after layer rebuild: hold full selected screen lift (not zoom-scaled).
+        setSelectionBadgeTranslate(
+          map,
+          pointLayerId,
+          resolveSharedPointFloatingBadgeTokens().selectedTranslate
+        );
+      }
     }
     updateSharedPointSelection(map, sourceId, {
       lngLat: resolvedLngLat,
@@ -2232,16 +2294,17 @@ export function setSharedPointSelection(
         promoteId,
         featureId,
       });
-      // White core + key ring (same chrome as resting).
+      // Key-color core + white middle ring + key-color outer.
       const badgeId = sharedPointSelectionBadgeLayerId(pointLayerId);
+      const badgeOuterId = sharedPointSelectionBadgeOuterLayerId(pointLayerId);
+      const whiteChrome = resolveSharedPointFloatingBadgeTokens().fill;
       if (map.getLayer?.(badgeId) && map.setPaintProperty) {
         try {
-          map.setPaintProperty(
-            badgeId,
-            'circle-color',
-            resolveSharedPointFloatingBadgeTokens().fill
-          );
-          map.setPaintProperty(badgeId, 'circle-stroke-color', keyColor);
+          map.setPaintProperty(badgeId, 'circle-color', keyColor);
+          map.setPaintProperty(badgeId, 'circle-stroke-color', whiteChrome);
+          if (map.getLayer?.(badgeOuterId)) {
+            map.setPaintProperty(badgeOuterId, 'circle-color', keyColor);
+          }
         } catch {
           /* style swap */
         }
@@ -2516,22 +2579,27 @@ function setupHoverLayers(
 
   function restoreSelectionBadgeRingColor(): void {
     const badgeId = sharedPointSelectionBadgeLayerId(pointLayerId);
+    const badgeOuterId = sharedPointSelectionBadgeOuterLayerId(pointLayerId);
     const fallback = options.selectionGroundBadgeFallbackColor?.trim() || '#888888';
     if (!map.getLayer?.(badgeId) || !map.setPaintProperty) return;
+    const keyColorExpr = [
+      'coalesce',
+      ['get', '_color'],
+      ['get', 'color'],
+      ['get', 'marker-color'],
+      fallback,
+    ];
     try {
-      // Restore white core + key ring after hover lighten.
+      // Restore key-color core + white middle + key outer after hover lighten.
+      map.setPaintProperty(badgeId, 'circle-color', keyColorExpr);
       map.setPaintProperty(
         badgeId,
-        'circle-color',
+        'circle-stroke-color',
         resolveSharedPointFloatingBadgeTokens().fill
       );
-      map.setPaintProperty(badgeId, 'circle-stroke-color', [
-        'coalesce',
-        ['get', '_color'],
-        ['get', 'color'],
-        ['get', 'marker-color'],
-        fallback,
-      ]);
+      if (map.getLayer?.(badgeOuterId)) {
+        map.setPaintProperty(badgeOuterId, 'circle-color', keyColorExpr);
+      }
     } catch {
       /* style swap */
     }
