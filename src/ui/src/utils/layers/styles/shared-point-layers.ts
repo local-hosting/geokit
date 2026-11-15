@@ -196,12 +196,12 @@ type SharedPointGlowLayerConfig = {
   pointLayerId: string;
   baseGlowRadius: unknown[] | number;
   resolvedGlowColor: string | unknown[];
-  glowBlur: number | undefined;
+  glowBlur: number | unknown[] | undefined;
   hoverPaint: ReturnType<typeof resolveSharedPointFeatureStateHoverPaint>;
   glowOpacity: number | unknown[] | undefined;
   filter?: unknown[];
   beforeLayerId?: string;
-  glowTranslate?: [number, number];
+  glowTranslate?: [number, number] | unknown[];
   glowPitchAlignment?: 'map' | 'viewport';
   glowPitchScale?: 'map' | 'viewport';
 };
@@ -440,8 +440,8 @@ function setupSharedPointSelectionChrome(
     selectionShadowColor?: string;
     pointRadius: unknown;
     pointStrokeWidth: unknown;
-    pointTranslate?: [number, number];
-    selectionShadowTranslate: [number, number];
+    pointTranslate?: [number, number] | unknown[];
+    selectionShadowTranslate: [number, number] | unknown[];
     selectionGroundBadge?: boolean;
     selectionGroundBadgeFallbackColor?: string;
   }
@@ -893,7 +893,7 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
 export interface HoverLayerOptions {
   glowRadius: unknown[];
   glowColor: string | unknown[];
-  glowBlur: number;
+  glowBlur: number | unknown[];
   glowHoverOpacity?: number | unknown[];
   circleColor: string | unknown[];
   pointRadius: unknown;
@@ -902,7 +902,7 @@ export interface HoverLayerOptions {
   /** Keep selection halo off when grounded floating-badge is active. */
   selectionGroundBadge?: boolean;
   selectionGroundBadgeFallbackColor?: string;
-  selectionPointStrokeWidth?: number;
+  selectionPointStrokeWidth?: number | unknown[];
   selectionRingColor?: string;
   /** Resting badge translate (floating-badge). Zoom expression or `[x, y]`. */
   floatTranslate?: [number, number] | unknown[];
@@ -946,7 +946,7 @@ export function setupSharedPointGlassLayer(
     glassOpacity?: number;
     glassBlur?: number;
     filter?: unknown[];
-    pointTranslate?: [number, number];
+    pointTranslate?: [number, number] | unknown[];
   }
 ): void {
   const glassLayerId = sharedPointGlassLayerId(pointLayerId);
@@ -1450,7 +1450,8 @@ function setHoverBadgeRingColor(
 
 function cancelHoverBadgeRingColorAnimation(map: MapInstance, pointLayerId: string): void {
   const byLayer = hoverRingColorAnimByMap.get(map);
-  const rafId = byLayer?.get(pointLayerId);
+  if (!byLayer) return;
+  const rafId = byLayer.get(pointLayerId);
   if (rafId == null) return;
   cancelAnimationFrame(rafId);
   byLayer.delete(pointLayerId);
@@ -1595,7 +1596,8 @@ function cancelBadgeRaf(
   pointLayerId: string
 ): void {
   const byLayer = store.get(map);
-  const rafId = byLayer?.get(pointLayerId);
+  if (!byLayer) return;
+  const rafId = byLayer.get(pointLayerId);
   if (rafId == null) return;
   cancelAnimationFrame(rafId);
   byLayer.delete(pointLayerId);
@@ -1724,7 +1726,7 @@ function setupSelectionShadowLayer(
   selectionShadowColor: string,
   pointRadius?: unknown,
   pointStrokeWidth?: unknown,
-  selectionShadowTranslate: [number, number] = DEFAULT_SELECTION_SHADOW_TRANSLATE
+  selectionShadowTranslate: [number, number] | unknown[] = DEFAULT_SELECTION_SHADOW_TRANSLATE
 ): void {
   const selectionSourceId = `${sourceId}-selection`;
   const shadowLayerId = `${pointLayerId}-selection-shadow`;
@@ -1767,7 +1769,7 @@ function setupSelectionRingLayer(
   selectionRingColor: string,
   pointRadius?: unknown,
   pointStrokeWidth?: unknown,
-  pointTranslate?: [number, number]
+  pointTranslate?: [number, number] | unknown[]
 ): void {
   const selectionSourceId = `${sourceId}-selection`;
   const ringLayerId = `${pointLayerId}-selection-ring`;
@@ -2082,7 +2084,7 @@ export interface SetSharedPointSelectionOptions {
   /** Ring stroke color when the selection layer must be mounted lazily. */
   selectionRingColor?: string;
   /** Point outline width (px) for ring radius math when mounting lazily. */
-  selectionPointStrokeWidth?: number;
+  selectionPointStrokeWidth?: number | unknown[];
   /**
    * Floating-badge active state: grounded badge only — keep the halo layer
    * mounted for the selection source, but never restore its stroke.
