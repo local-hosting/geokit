@@ -4,6 +4,7 @@ import {
   mapHasOverlay,
   mapStyleSwapOptions,
   preserveCustomStyleOverlays,
+  styleWithPreservedOverlays,
 } from '../../../src/components/elements/map/style/preserve-custom-style-overlays'
 
 describe('preserveCustomStyleOverlays', () => {
@@ -72,5 +73,30 @@ describe('preserveCustomStyleOverlays', () => {
     expect(mapHasOverlay(map, 'canvas-venues', 'canvas-venues-point')).toBe(true)
     expect(mapHasOverlay(map, 'canvas-venues', 'missing')).toBe(false)
     expect(mapHasOverlay(null, 'canvas-venues', 'canvas-venues-point')).toBe(false)
+  })
+
+  it('pre-merges overlays into object styles when MapTiler ignores transformStyle', () => {
+    const previous = {
+      sources: {
+        'canvas-venues': {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [0, 0] } }] },
+        },
+      },
+      layers: [{ id: 'canvas-venues-point', type: 'circle', source: 'canvas-venues' }],
+    }
+    const next = {
+      version: 8,
+      sources: { basemap: { type: 'vector' } },
+      layers: [{ id: 'water', type: 'fill', source: 'basemap' }],
+    }
+    const merged = styleWithPreservedOverlays(previous, next)
+    expect(typeof merged).toBe('object')
+    expect((merged as typeof next).sources?.['canvas-venues']).toBeTruthy()
+    expect((merged as typeof next).layers?.map((l) => l.id)).toContain('canvas-venues-point')
+    // URL styles still rely on transformStyle / remount safety net.
+    expect(styleWithPreservedOverlays(previous, 'https://example.com/style.json')).toBe(
+      'https://example.com/style.json',
+    )
   })
 })

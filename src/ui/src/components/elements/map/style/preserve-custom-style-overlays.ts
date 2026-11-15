@@ -50,6 +50,19 @@ export function mapStyleSwapOptions(): {
   }
 }
 
+/**
+ * MapTiler's `setStyle` often ignores `transformStyle`. When the next style is already
+ * an object, merge overlays from `previous` up front so venues never flash away.
+ * URL/string styles still rely on `transformStyle` + remount safety nets.
+ */
+export function styleWithPreservedOverlays(
+  previousStyle: StyleOverlaySpec | null | undefined,
+  nextStyle: string | StyleOverlaySpec
+): string | StyleOverlaySpec {
+  if (typeof nextStyle === 'string') return nextStyle
+  return preserveCustomStyleOverlays(previousStyle, nextStyle)
+}
+
 /** True when an app overlay source+layer survived a basemap style swap. */
 export function mapHasOverlay(
   map:
