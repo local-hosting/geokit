@@ -139,9 +139,15 @@ export class MapControlsState extends MapStyleSetup {
       return;
     }
 
-    // Terrain toggle from Layers sidebar: re-run terrain logic when terrain-enabled changes
-    if (name === 'terrain-enabled' && this._terrainZoomHandler) {
-      this._terrainZoomHandler();
+    // Terrain toggle: re-run or lazily setup/cleanup when terrain-enabled changes
+    if (name === 'terrain-enabled') {
+      if (this._terrainZoomHandler) {
+        this._terrainZoomHandler();
+      } else if (newValue !== null && newValue !== 'false') {
+        this.setupTerrain();
+      } else {
+        this.cleanupTerrain();
+      }
       return;
     }
 
