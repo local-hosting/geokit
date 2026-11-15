@@ -84,8 +84,8 @@ export interface SharedPointLayersConfig {
   glowOpacity: number | unknown[];
   /** Glow opacity on hover (number or data-driven expression) */
   glowHoverOpacity: number | unknown[];
-  /** Glow blur */
-  glowBlur: number;
+  /** Glow blur (number or MapLibre expression) */
+  glowBlur: number | unknown[];
   /** Point radius expression */
   pointRadius: unknown;
   /** Glow radius expression */
@@ -111,7 +111,7 @@ export interface SharedPointLayersConfig {
   /** Soft drop shadow under the selected point (same selection source as the ring). */
   selectionShadowColor?: string;
   /** Point outline width used to size the selection ring/shadow (px). */
-  selectionPointStrokeWidth?: number;
+  selectionPointStrokeWidth?: number | unknown[];
   /** Outer stroke outside the colored ring (e.g. white halo around a badge). */
   outerStrokeColor?: string | unknown[];
   /** Outer stroke width (number or `['literal', n]`). When > 0, an outer-stroke layer is created. */
