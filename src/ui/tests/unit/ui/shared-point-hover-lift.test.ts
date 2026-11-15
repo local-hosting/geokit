@@ -105,9 +105,9 @@ describe('floating-badge per-feature hover', () => {
       pointRadius: 4,
       promoteId: 'venueId',
       selectionGroundBadge: true,
-      floatTranslate: [0, -24],
-      hoverTranslate: [0, -24],
-      selectedTranslate: [0, -14],
+      floatTranslate: [0, 0],
+      hoverTranslate: [0, 0],
+      selectedTranslate: [0, -24],
     });
 
     const move = listeners.get('mousemove:venues-point')?.[0];

@@ -10,6 +10,7 @@ import {
   applySharedPointLayerPaint,
   attachSharedPointHoverGlowRadiusSync,
   paintColorFromProperty,
+  sharedPointFloatingBadgeSelectedRadiusExpression,
   sharedPointRadiusPlusStrokeWidth,
   sharedPointStrokeColorExpression,
   sharedPointStrokeWidthExpression,
@@ -770,12 +771,15 @@ async function ensureFloatingBadgeChrome(
         /* ignore */
       }
     }
-    // Force zoom-scaled radius/stroke + white-core selection chrome.
+    // Force zoom-scaled radius/stroke + key-core selection chrome.
     const sel = `${ids.pointLayerId}-selection-badge`;
     const selOuter = `${ids.pointLayerId}-selection-badge-outer`;
     try {
       if (map.getLayer?.(sel) && paint.pointRadiusExpression != null) {
-        map.setPaintProperty(sel, 'circle-radius', paint.pointRadiusExpression);
+        const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression(
+          paint.pointRadiusExpression as unknown[]
+        );
+        map.setPaintProperty(sel, 'circle-radius', selectedRadius);
         if (paint.strokeWidthExpression != null) {
           map.setPaintProperty(sel, 'circle-stroke-width', paint.strokeWidthExpression);
         }
@@ -788,10 +792,13 @@ async function ensureFloatingBadgeChrome(
       }
       if (map.getLayer?.(selOuter) && paint.pointRadiusExpression != null) {
         const ring = paint.strokeWidthExpression ?? 0;
+        const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression(
+          paint.pointRadiusExpression as unknown[]
+        );
         map.setPaintProperty(
           selOuter,
           'circle-radius',
-          sharedPointRadiusPlusStrokeWidth(paint.pointRadiusExpression, ring as number | unknown[])
+          sharedPointRadiusPlusStrokeWidth(selectedRadius, ring as number | unknown[])
         );
         if (paint.outerStrokeWidthExpression != null) {
           map.setPaintProperty(selOuter, 'circle-stroke-width', paint.outerStrokeWidthExpression);
