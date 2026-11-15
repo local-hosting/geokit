@@ -1,6 +1,6 @@
 {
   "name": "@twinfile/geokit",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Geospatial SDK for Twinfile map hosts and place search",
   "license": "MPL-2.0",
   "type": "module",
@@ -409,9 +409,10 @@
     },
     "./h3": {
       "types": "./src/h3/dist/esm/index.d.ts",
+      "source": "./src/h3/src/index.ts",
       "import": "./src/h3/dist/esm/index.js",
       "default": "./src/h3/dist/esm/index.js",
-      "development": "./src/h3/dist/esm/index.js"
+      "development": "./src/h3/src/index.ts"
     },
     "./h3/lite": {
       "types": "./src/h3/dist/esm/lite.d.ts",
