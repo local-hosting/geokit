@@ -750,6 +750,12 @@
       "require": "./src/ui/dist/cjs/utils/boundary-outline-preset.cjs",
       "default": "./src/ui/dist/esm/utils/boundary-outline-preset.js"
     },
+    "./ui/controls/terrain": {
+      "source": "./src/ui/src/components/controls/terrain-control.ts",
+      "types": "./src/ui/dist/esm/components/controls/terrain-control.d.ts",
+      "import": "./src/ui/dist/esm/components/controls/terrain-control.js",
+      "default": "./src/ui/dist/esm/components/controls/terrain-control.js"
+    },
     "./ui/elements/isochrone": {
       "source": "./src/ui/src/components/elements/isochrone/isochrone.ts",
       "types": "./src/ui/dist/esm/components/elements/isochrone/isochrone.d.ts",

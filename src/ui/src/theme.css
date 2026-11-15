@@ -288,12 +288,14 @@ gk-map .mapboxgl-ctrl-group {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--gk-control-border) !important;
-  border-radius: 10px !important;
+  border-radius: var(--gk-control-radius, 10px) !important;
+  overflow: hidden;
   box-shadow: var(--gk-control-shadow), var(--gk-control-inset-highlight) !important;
 }
 
-gk-map .maplibregl-ctrl,
-gk-map .mapboxgl-ctrl {
+/* Non-group controls only — do not wipe glass chrome on dual-class ctrl-groups. */
+gk-map .maplibregl-ctrl:not(.maplibregl-ctrl-group),
+gk-map .mapboxgl-ctrl:not(.mapboxgl-ctrl-group) {
   background: transparent !important;
   border: none !important;
 }

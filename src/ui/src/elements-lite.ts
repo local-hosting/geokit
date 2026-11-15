@@ -38,8 +38,9 @@ if (typeof globalThis.requestIdleCallback === 'undefined') {
 // Re-export UI providers (types, registry, implementations)
 export * from './providers';
 
-// Re-export only the navigation control (the only one geoview creates)
+// Re-export map chrome controls used at startup (nav + terrain)
 export { NavigationControlElement } from './components/controls/navigation-control';
+export { TerrainControlElement } from './components/controls/terrain-control';
 
 // Re-export element classes needed at startup (map only)
 export { MapElement } from './components/elements/map/map';

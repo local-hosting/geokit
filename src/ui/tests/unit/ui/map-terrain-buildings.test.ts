@@ -1,13 +1,60 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   buildHillshadeRasterSource,
   buildTerrainDemSource,
+  createTerrainZoomHandler,
 } from '../../../src/components/elements/map/map-terrain-buildings';
 import { configure } from '../../../src/providers/registry';
+
+function createMapStub() {
+  return {
+    addSource: vi.fn(),
+    getSource: vi.fn(() => null),
+    setTerrain: vi.fn(),
+    getZoom: vi.fn(() => 8),
+    on: vi.fn(),
+    off: vi.fn(),
+  };
+}
 
 describe('map-terrain-buildings', () => {
   afterEach(() => {
     configure({ maptiler: { transformRequest: undefined } });
+  });
+
+  it('createTerrainZoomHandler enables terrain without terrain-min-zoom', () => {
+    configure({
+      maptiler: {
+        transformRequest: (url: string) => ({ url: `/proxy/${url}` }),
+      },
+    });
+    const map = createMapStub();
+    const attrs = new Map<string, string>([
+      ['terrain-enabled', 'true'],
+      ['provider', 'maptiler'],
+      ['api-key', 'test-key'],
+    ]);
+
+    const handler = createTerrainZoomHandler({
+      getAttribute: (name) => attrs.get(name) ?? null,
+      map: map as never,
+    });
+
+    expect(handler).not.toBeNull();
+    expect(map.addSource).toHaveBeenCalled();
+    expect(map.setTerrain).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'gk-terrain-dem' })
+    );
+  });
+
+  it('createTerrainZoomHandler returns null when terrain-enabled is off', () => {
+    const map = createMapStub();
+    const handler = createTerrainZoomHandler({
+      getAttribute: (name) => (name === 'terrain-enabled' ? 'false' : null),
+      map: map as never,
+    });
+    expect(handler).toBeNull();
+    expect(map.addSource).not.toHaveBeenCalled();
   });
 
   it('buildTerrainDemSource uses proxied tile templates when transformRequest is set', () => {
