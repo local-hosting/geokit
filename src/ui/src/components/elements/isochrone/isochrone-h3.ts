@@ -25,25 +25,40 @@ export function convertToH3(
   const processedFeatures: GeoJSON.Feature[] = [];
 
   for (const feature of featureCollection.features) {
-    if (feature.geometry.type !== 'Polygon') {
+    const geom = feature.geometry;
+    const polygons: Polygon[] =
+      geom.type === 'Polygon'
+        ? [geom as Polygon]
+        : geom.type === 'MultiPolygon'
+          ? (geom.coordinates as number[][][][]).map((coordinates) => ({
+              type: 'Polygon' as const,
+              coordinates,
+            }))
+          : [];
+
+    if (polygons.length === 0) {
       processedFeatures.push(feature);
       continue;
     }
 
-    const polygon = feature.geometry as Polygon;
     const fillColor = feature.properties?.fill || feature.properties?.color || color;
     const contour = feature.properties?.contour;
 
     try {
-      const hexagons = polygonToH3(polygon, resolution);
+      const hexSet = new Set<string>();
+      for (const polygon of polygons) {
+        for (const cell of polygonToH3(polygon, resolution)) {
+          hexSet.add(cell);
+        }
+      }
+      const hexagons = [...hexSet].sort();
 
       if (hexagons.length === 0) {
         processedFeatures.push(feature);
         continue;
       }
 
-      const sortedHexagons = [...hexagons].sort();
-      const mergedGeometry = h3SetToMultiPolygon(sortedHexagons);
+      const mergedGeometry = h3SetToMultiPolygon(hexagons);
 
       if (
         !mergedGeometry ||

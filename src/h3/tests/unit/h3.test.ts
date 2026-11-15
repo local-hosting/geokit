@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { polygonToCells } from 'h3-js';
 import {
   coordinatesToH3,
   h3ToCoordinates,
@@ -14,6 +15,7 @@ import {
   h3EdgeLength,
   h3CellArea,
   h3SetToMultiPolygon,
+  fillInteriorH3Holes,
   polygonToH3,
   // Type-safe functions
   coordinatesToH3Point,
@@ -505,6 +507,39 @@ describe('h3', () => {
       expect(Array.isArray(cells)).toBe(true);
       expect(cells.length).toBeGreaterThan(0);
       expect(cells.every((cell) => typeof cell === 'string')).toBe(true);
+    });
+
+    it('includes overlapping cells so partial coverage does not leave center-containment holes', () => {
+      // Large enough that both modes return cells; overlapping must be a strict
+      // superset (hexes the polygon only clips, whose centers fall outside).
+      const polygon = {
+        type: 'Polygon' as const,
+        coordinates: [
+          [
+            [-78.95, 42.85],
+            [-78.8, 42.85],
+            [-78.8, 42.95],
+            [-78.95, 42.95],
+            [-78.95, 42.85],
+          ],
+        ],
+      };
+      const cells = polygonToH3(polygon, 8);
+      const centerOnly = polygonToCells(polygon.coordinates, 8, true);
+      expect(cells.length).toBeGreaterThan(centerOnly.length);
+      for (const id of centerOnly) {
+        expect(cells).toContain(id);
+      }
+    });
+
+    it('fills enclosed holes so dissolved coverage is not Swiss cheese', () => {
+      const center = coordinatesToH3(8)([42.9, -78.88]);
+      const ring = h3Neighbors(center, 1).filter((id) => id !== center);
+      expect(ring.length).toBeGreaterThan(0);
+      expect(ring).not.toContain(center);
+
+      const filled = fillInteriorH3Holes(ring, 8);
+      expect(filled).toContain(center);
     });
 
     it('should return empty array for invalid polygon', () => {

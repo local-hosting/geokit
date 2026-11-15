@@ -16,6 +16,7 @@ import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
 import { getIsochroneCacheKey } from './isochrone-fetch';
 import {
   buildChoroplethFillPaint,
+  FLAT_CHOROPLETH_FILL_ANTIALIAS_OPTIONS,
   type FillAntialiasMap,
 } from '../../../utils/choropleth-fill-paint';
 
@@ -200,8 +201,19 @@ export class IsochroneFetchRender extends IsochroneBase {
         // Update paint properties in case color/opacity/stroke changed
         try {
           if (isochroneEl(this).fillLayerId && isochroneEl(this).map.getLayer?.(isochroneEl(this).fillLayerId)) {
-            isochroneEl(this).map.setPaintProperty?.(isochroneEl(this).fillLayerId, 'fill-color', isochroneEl(this).color);
-            isochroneEl(this).map.setPaintProperty?.(isochroneEl(this).fillLayerId, 'fill-opacity', isochroneEl(this).opacity);
+            const fillId = isochroneEl(this).fillLayerId;
+            const fillPaint = buildChoroplethFillPaint(
+              isochroneEl(this).map as FillAntialiasMap,
+              {
+                'fill-color': isochroneEl(this).color,
+                'fill-opacity': isochroneEl(this).opacity,
+                'fill-outline-color': 'transparent',
+              },
+              FLAT_CHOROPLETH_FILL_ANTIALIAS_OPTIONS,
+            );
+            for (const [key, value] of Object.entries(fillPaint)) {
+              isochroneEl(this).map.setPaintProperty?.(fillId, key, value);
+            }
           }
           if (isochroneEl(this).lineLayerId && isochroneEl(this).map.getLayer?.(isochroneEl(this).lineLayerId)) {
             isochroneEl(this).map.setPaintProperty?.(isochroneEl(this).lineLayerId, 'line-color', isochroneEl(this).strokeColor);
@@ -231,8 +243,9 @@ export class IsochroneFetchRender extends IsochroneBase {
               {
                 'fill-color': isochroneEl(this).color,
                 'fill-opacity': isochroneEl(this).opacity,
+                'fill-outline-color': 'transparent',
               },
-              {}
+              FLAT_CHOROPLETH_FILL_ANTIALIAS_OPTIONS,
             ),
           };
           if (beforeLayerId != null) {

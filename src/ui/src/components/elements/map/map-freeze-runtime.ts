@@ -37,6 +37,11 @@ import {
   getPlaceholderSelector,
 } from './style/map-placeholder';
 import {
+  classifyMapInitFailure,
+  mapUnavailableLogDetail,
+  mapUnavailableMessage,
+} from './style/map-unavailable-message';
+import {
   injectHideAttributionStyles as injectHideAttributionStylesFn,
   injectAutoHideStyles as injectAutoHideStylesFn,
   isMaplibreLayoutCssLoaded,
@@ -175,17 +180,27 @@ export class MapFreezeRuntime extends MapChildrenTrack {
         return true;
       }
 
-      this.showPlaceholder('Map failed to load');
+      const kind = 'generic' as const;
+      console.error('[gk-map]', mapUnavailableLogDetail(kind, 'unfreeze returned without map'));
+      this.showPlaceholder(mapUnavailableMessage(kind));
       this.dispatchEvent(
-        new CustomEvent('gk-map-failed', { detail: { element: this }, bubbles: true })
+        new CustomEvent('gk-map-failed', {
+          detail: { element: this, reason: kind },
+          bubbles: true,
+        })
       );
       return false;
     } catch (error) {
-      debug.warn('[gk-map] Failed to unfreeze:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      const kind = classifyMapInitFailure(message);
+      debug.warn('[gk-map]', mapUnavailableLogDetail(kind, message), error);
       this._isFrozen = false;
-      this.showPlaceholder('Map load error');
+      this.showPlaceholder(mapUnavailableMessage(kind));
       this.dispatchEvent(
-        new CustomEvent('gk-map-failed', { detail: { element: this, error }, bubbles: true })
+        new CustomEvent('gk-map-failed', {
+          detail: { element: this, error, reason: kind },
+          bubbles: true,
+        })
       );
       return false;
     } finally {
@@ -246,6 +261,7 @@ export class MapFreezeRuntime extends MapChildrenTrack {
    * Shared by freeze, re-init, and failed-load cleanup paths.
    */
   protected async teardownMapInstance(options: { markFrozen: boolean }): Promise<void> {
+    this.clearStyleLoadPoll();
     if (!this.map) {
       if (options.markFrozen) {
         this._isFrozen = true;

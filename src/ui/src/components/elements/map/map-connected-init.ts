@@ -31,12 +31,18 @@ import {
   getSystemThemeMediaQuery,
 } from '../../../utils/theme';
 import { debug } from '../../../utils/logger';
+import { shouldSilenceStyleLoadPoll } from './style/style-load-poll-guard';
 import {
   STUCK_PLACEHOLDER_MS as STUCK_MS,
   createPlaceholderContent as createPlaceholderContentFn,
   MAP_PLACEHOLDER_STYLE,
   getPlaceholderSelector,
 } from './style/map-placeholder';
+import {
+  classifyMapInitFailure,
+  mapUnavailableLogDetail,
+  mapUnavailableMessage,
+} from './style/map-unavailable-message';
 import {
   injectHideAttributionStyles as injectHideAttributionStylesFn,
   injectAutoHideStyles as injectAutoHideStylesFn,
@@ -605,16 +611,24 @@ export class MapConnectedInit extends MapBase {
       } else {
         if (this.map) {
           debug.log('[gk-map] waiting for map load event (and 5s fallback)');
-          this.map.once('load', () => dispatchMapReady());
+          this.map.once('load', () => {
+            this.clearStyleLoadPoll();
+            dispatchMapReady();
+          });
           // Fallback: if 'load' never fires but style has loaded (e.g. pool/managed timing), unblock placeholder
           const fallbackMs = 500;
-          const fallbackMax = 10; // 5s total (style load or show "Map unavailable")
+          const fallbackMax = 10; // 5s total (style load or plain unavailable placeholder)
           let fallbackCount = 0;
-          const fallbackId = window.setInterval(() => {
+          this.clearStyleLoadPoll();
+          this._styleLoadPollInterval = window.setInterval(() => {
+            if (shouldSilenceStyleLoadPoll({ hasMap: Boolean(this.map), isFrozen: this._isFrozen })) {
+              this.clearStyleLoadPoll();
+              return;
+            }
             fallbackCount += 1;
             const map = this.map as { isStyleLoaded?: () => boolean } | undefined;
             if (typeof map?.isStyleLoaded === 'function' && map.isStyleLoaded()) {
-              window.clearInterval(fallbackId);
+              this.clearStyleLoadPoll();
               debug.log('[gk-map] fallback: style loaded, dispatching map-ready', {
                 check: fallbackCount,
               });
@@ -622,14 +636,21 @@ export class MapConnectedInit extends MapBase {
               return;
             }
             if (fallbackCount >= fallbackMax) {
-              window.clearInterval(fallbackId);
-              debug.log('[gk-map] fallback: style never loaded after 5s', {
-                _isFrozen: this._isFrozen,
-              });
-              mapEl(this).showPlaceholder(
-                'Map unavailable — check MapTiler key, network, or WebGL limits',
+              this.clearStyleLoadPoll();
+              const kind = 'style-timeout' as const;
+              console.error(
+                '[gk-map]',
+                mapUnavailableLogDetail(kind),
+                { _isFrozen: this._isFrozen, check: fallbackCount },
               );
+              mapEl(this).showPlaceholder(mapUnavailableMessage(kind));
               this.isInitialized = false;
+              this.dispatchEvent(
+                new CustomEvent('gk-map-failed', {
+                  detail: { element: this, reason: kind },
+                  bubbles: true,
+                }),
+              );
               return;
             }
           }, fallbackMs);
@@ -637,22 +658,19 @@ export class MapConnectedInit extends MapBase {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const isWebGLContextLost = /losecontext|context already lost|invalid_operation/i.test(
-        message
-      );
-      if (isWebGLContextLost) {
-        debug.warn('[gk-map] WebGL context unavailable (e.g. too many maps):', message);
+      const kind = classifyMapInitFailure(message);
+      if (kind === 'webgl') {
+        debug.warn('[gk-map]', mapUnavailableLogDetail(kind, message));
       } else {
-        console.error('[gk-map] Failed to initialize map:', error);
+        console.error('[gk-map]', mapUnavailableLogDetail(kind, message), error);
       }
-      const hint =
-        message.includes('No UI provider') || message.includes('api-key')
-          ? 'Map unavailable — set MAPTILER_KEY or provider on gk-map'
-          : 'Map unavailable — see console for details';
-      mapEl(this).showPlaceholder(hint);
+      mapEl(this).showPlaceholder(mapUnavailableMessage(kind));
       this.isInitialized = false;
       this.dispatchEvent(
-        new CustomEvent('gk-map-failed', { detail: { element: this, error }, bubbles: true })
+        new CustomEvent('gk-map-failed', {
+          detail: { element: this, error, reason: kind },
+          bubbles: true,
+        })
       );
     } finally {
       this._isInitializing = false;
