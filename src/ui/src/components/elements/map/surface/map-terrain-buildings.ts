@@ -109,15 +109,16 @@ export function buildHillshadeRasterSource(apiKey: string, fallbackUrl: string):
  * Create zoom handler that toggles 3D terrain. Caller must attach to map.on('zoom', handler) and store handler for cleanup.
  */
 export function createTerrainZoomHandler(ctx: MapTerrainContext): (() => void) | null {
-  const minZoomAttr = ctx.getAttribute('terrain-min-zoom');
-  if (minZoomAttr === null || minZoomAttr === '') return null;
-
   const enabledAttr = ctx.getAttribute('terrain-enabled');
   const toggleEnabled = enabledAttr !== null && enabledAttr !== 'false';
   if (!toggleEnabled) return null;
+  if (!ctx.map) return null;
 
-  const minZoom = parseFloat(minZoomAttr);
-  if (!Number.isFinite(minZoom) || !ctx.map) return null;
+  // Absent terrain-min-zoom → always on when enabled (toggle controls / hosts).
+  const minZoomAttr = ctx.getAttribute('terrain-min-zoom');
+  const minZoom =
+    minZoomAttr === null || minZoomAttr === '' ? 0 : parseFloat(minZoomAttr);
+  if (!Number.isFinite(minZoom)) return null;
 
   const map = ctx.map as any;
   if (!map.addSource || !map.setTerrain) return null;
@@ -130,13 +131,13 @@ export function createTerrainZoomHandler(ctx: MapTerrainContext): (() => void) |
     ? parseFloat(String(exaggerationAttr))
     : 1;
 
-  if (map.getSource?.(TERRAIN_SOURCE_ID)) return null;
-
-  try {
-    map.addSource(TERRAIN_SOURCE_ID, buildTerrainDemSource({ provider, apiKey, explicitUrl }));
-  } catch (err) {
-    debug.warn('[gk-map] Failed to add terrain source', err);
-    return null;
+  if (!map.getSource?.(TERRAIN_SOURCE_ID)) {
+    try {
+      map.addSource(TERRAIN_SOURCE_ID, buildTerrainDemSource({ provider, apiKey, explicitUrl }));
+    } catch (err) {
+      debug.warn('[gk-map] Failed to add terrain source', err);
+      return null;
+    }
   }
 
   const updateTerrain = (): void => {

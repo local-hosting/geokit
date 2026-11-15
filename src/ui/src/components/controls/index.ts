@@ -8,4 +8,6 @@ export { NavigationControlElement } from './navigation-control';
 export { ScaleControlElement } from './scale-control';
 export { FullscreenControlElement } from './fullscreen-control';
 export { GeolocateControlElement } from './geolocate-control';
+export { TerrainControlElement } from './terrain-control';
+export { createTerrainToggleControl } from './create-terrain-toggle-control';
 

@@ -572,7 +572,7 @@ export class MapConnectedInit extends MapBase {
         void mapEl(this).scheduleOfflinePrefetchOnContextLoad();
 
         // 3D terrain / hillshade are opt-in via attributes (default off)
-        if (mapEl(this).isMapOverlayEnabled('terrain-enabled') && this.getAttribute('terrain-min-zoom')) {
+        if (mapEl(this).isMapOverlayEnabled('terrain-enabled')) {
           mapEl(this).setupTerrain();
         } else {
           mapEl(this).cleanupTerrain();
