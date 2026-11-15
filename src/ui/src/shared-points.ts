@@ -108,6 +108,8 @@ export {
   sharedPointOuterStrokeLayerId,
   literalNumberFromPaintExpression,
   sharedPointRadiusPlusStrokeWidth,
+  sharedPointFloatingBadgeOuterDiscRadius,
+  sharedPointFloatingBadgeOuterStrokeRadius,
   sharedPointOffsetRadiusExpression,
   sharedPointFloatingBadgeShadowRadiusExpression,
   sharedPointFloatingBadgePaintExpressions,
