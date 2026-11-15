@@ -182,6 +182,16 @@ export class MapBase extends BaseElement {
   /** True after map has fired 'idle' (tiles painted). Used by map-collection for status. */
   public hasPainted: boolean = false;
 
+  /** Polls isStyleLoaded when the MapLibre `load` event is slow; cleared on teardown/freeze. */
+  protected _styleLoadPollInterval: ReturnType<typeof setInterval> | null = null;
+
+  protected clearStyleLoadPoll(): void {
+    if (this._styleLoadPollInterval != null) {
+      window.clearInterval(this._styleLoadPollInterval);
+      this._styleLoadPollInterval = null;
+    }
+  }
+
   constructor() {
     super();
     this.map = null;

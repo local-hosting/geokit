@@ -54,6 +54,58 @@ describe('createSharedPointMapOrchestrator selection ring', () => {
     vi.clearAllMocks();
   });
 
+  it('pre-creates selection isochrone fill with antialias + transparent outline (no hex seam folds)', () => {
+    const layers = new Set<string>();
+    const map = {
+      getSource: vi.fn((id: string) => (id.startsWith('isochrone-') ? undefined : {})),
+      getLayer: vi.fn((id: string) => {
+        if (layers.has(id)) return {};
+        if (id.includes('point') || id.includes('glow')) return {};
+        return undefined;
+      }),
+      addSource: vi.fn(),
+      addLayer: vi.fn((spec: { id: string }) => {
+        layers.add(spec.id);
+      }),
+      setPaintProperty: vi.fn(),
+      moveLayer: vi.fn(),
+    };
+    const gkMap = { getMap: () => map };
+
+    const orchestrator = createSharedPointMapOrchestrator({
+      marketSlug: 'canvas',
+      isochroneFillColor: '#c3d361',
+      selectionRingColor: '#ffffff',
+      getGkMap: () => gkMap,
+      ids: {
+        sourceId: 'canvas-venues',
+        glowLayerId: 'canvas-venues-glow',
+        pointLayerId: 'canvas-venues-point',
+      },
+      getGeoJson: () => EMPTY_FC,
+      getPaintConfig: () => ({
+        ids: {
+          sourceId: 'canvas-venues',
+          glowLayerId: 'canvas-venues-glow',
+          pointLayerId: 'canvas-venues-point',
+        },
+        pointColorExpression: ['literal', '#fff'],
+        pointRadiusExpression: ['literal', 4],
+        glowColorExpression: ['literal', '#888'],
+      }),
+    });
+
+    orchestrator.ensureSelectionLayers(map as never);
+
+    const fillCall = map.addLayer.mock.calls.find(
+      (c) => (c[0] as { id?: string })?.id === 'polygon-fill-isochrone-selection-canvas',
+    );
+    expect(fillCall).toBeTruthy();
+    const paint = (fillCall![0] as { paint: Record<string, unknown> }).paint;
+    expect(paint['fill-antialias']).toBe(true);
+    expect(paint['fill-outline-color']).toBe('transparent');
+  });
+
   it('writes the white selection ring when selection coords update (even without radius rings)', () => {
     const map = {
       getSource: vi.fn(() => ({})),

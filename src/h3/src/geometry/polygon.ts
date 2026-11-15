@@ -1,4 +1,7 @@
-import { cellsToMultiPolygon, polygonToCells } from 'h3-js';
+import {
+  cellsToMultiPolygon,
+  polygonToCellsExperimental,
+} from 'h3-js';
 import type { Polygon } from '../types';
 
 /**
@@ -31,6 +34,50 @@ export function h3SetToMultiPolygon(h3Indices: string[]): {
 }
 
 /**
+ * Fill interior holes left after tessellation (missing cells completely
+ * enclosed by the selected set). Iterates until stable.
+ */
+export function fillInteriorH3Holes(
+  cells: readonly string[],
+  resolution: number,
+): string[] {
+  const set = new Set(cells);
+  if (set.size === 0) return [];
+
+  let grew = true;
+  while (grew) {
+    grew = false;
+    const mp = cellsToMultiPolygon([...set], true);
+    for (const poly of mp) {
+      // poly[0] = outer ring; poly[1..] = holes
+      for (let i = 1; i < poly.length; i++) {
+        const holeRing = poly[i];
+        if (!holeRing || holeRing.length < 4) continue;
+        let holeCells: string[];
+        try {
+          holeCells = polygonToCellsExperimental(
+            [holeRing],
+            resolution,
+            'containmentOverlapping',
+            true,
+          );
+        } catch {
+          continue;
+        }
+        for (const cell of holeCells) {
+          if (!set.has(cell)) {
+            set.add(cell);
+            grew = true;
+          }
+        }
+      }
+    }
+  }
+
+  return [...set];
+}
+
+/**
  * Fill a polygon with H3 cells
  *
  * @param polygon - GeoJSON Polygon
@@ -47,8 +94,19 @@ export function h3SetToMultiPolygon(h3Indices: string[]): {
  * ```
  */
 export function polygonToH3(polygon: Polygon, resolution: number): string[] {
-  // GeoJSON uses [lng, lat] format
-  // h3-js polygonToCells with isGeoJson=true expects [lng, lat] format
-  // So we pass the coordinates directly without swapping
-  return polygonToCells(polygon.coordinates, resolution, true);
+  // Overlapping containment — not center-only — so clipped hexes still fill.
+  // Then fill any enclosed holes so irregular isochrone outlines don't leave
+  // Swiss-cheese gaps after dissolve.
+  let cells: string[];
+  try {
+    cells = polygonToCellsExperimental(
+      polygon.coordinates,
+      resolution,
+      'containmentOverlapping',
+      true,
+    );
+  } catch {
+    return [];
+  }
+  return fillInteriorH3Holes(cells, resolution);
 }

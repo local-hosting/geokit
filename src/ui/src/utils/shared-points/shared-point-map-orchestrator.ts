@@ -91,7 +91,9 @@ export function createSharedPointMapOrchestrator(
         paint: {
           'fill-color': options.isochroneFillColor,
           'fill-opacity': 0,
-          'fill-antialias': false,
+          // Dissolved H3 multipolygons: antialias + no outline avoids earcut seam quilt.
+          'fill-antialias': true,
+          'fill-outline-color': 'transparent',
         },
       };
       if (beforeLayer) map.addLayer?.(fillSpec, beforeLayer);
