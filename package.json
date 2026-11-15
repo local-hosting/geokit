@@ -757,6 +757,12 @@
       "import": "./src/ui/dist/esm/components/controls/terrain-control.js",
       "default": "./src/ui/dist/esm/components/controls/terrain-control.js"
     },
+    "./ui/controls/actions": {
+      "source": "./src/ui/src/components/controls/actions-control.ts",
+      "types": "./src/ui/dist/esm/components/controls/actions-control.d.ts",
+      "import": "./src/ui/dist/esm/components/controls/actions-control.js",
+      "default": "./src/ui/dist/esm/components/controls/actions-control.js"
+    },
     "./ui/elements/isochrone": {
       "source": "./src/ui/src/components/elements/isochrone/isochrone.ts",
       "types": "./src/ui/dist/esm/components/elements/isochrone/isochrone.d.ts",
