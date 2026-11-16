@@ -68,7 +68,7 @@ describe('marker-selection-chrome', () => {
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-rounded-body`,
       'icon-color',
-      fill
+      SHARED_POINT_FLOATING_BADGE_FILL
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-rounded-ring`,

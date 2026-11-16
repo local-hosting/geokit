@@ -1,5 +1,5 @@
-import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@twinfile/geokit/service/plugin';
-import { resolveHereApiKey } from '@twinfile/geokit/env/service-keys';
+import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@local-hosting/geokit/service/plugin';
+import { resolveHereApiKey } from '@local-hosting/geokit/env/service-keys';
 import { HerePlacesService } from './here-places-service';
 
 export const herePlacesPlugin: GeokitServicePlugin = {

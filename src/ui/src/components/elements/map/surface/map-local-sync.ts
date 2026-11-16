@@ -1,5 +1,5 @@
-import type { MapCameraFrame, MapLocalPersistScope } from '@twinfile/geokit/core/contract/offline';
-import { MapOfflineDefaults } from '@twinfile/geokit/core/contract/offline';
+import type { MapCameraFrame, MapLocalPersistScope } from '@local-hosting/geokit/core/contract/offline';
+import { MapOfflineDefaults } from '@local-hosting/geokit/core/contract/offline';
 import { MapLocalStore } from '../../../../storage/map-local-store';
 
 type MapMoveendLike = {

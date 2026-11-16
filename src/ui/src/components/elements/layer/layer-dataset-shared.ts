@@ -1,6 +1,6 @@
-import type { CellLayerId } from '@twinfile/geokit/core/types/cell-layers.types';
-import { bindDebouncedMapMoveend } from '@twinfile/geokit/ui/geojson-loader';
-import { mapViewportBounds } from '@twinfile/geokit/h3';
+import type { CellLayerId } from '@local-hosting/geokit/core/types/cell-layers.types';
+import { bindDebouncedMapMoveend } from '@local-hosting/geokit/ui/geojson-loader';
+import { mapViewportBounds } from '@local-hosting/geokit/h3';
 import {
   stackGkOutlineLayersAboveDatasetFill,
   findInsertBeforeLayer,

@@ -1,21 +1,21 @@
 # UI providers (map backends)
 
-Map rendering only. HTTP geocoding, isochrones, and place search use `@twinfile/geokit/service` and `src/providers/*` — see [architecture.md](architecture.md).
+Map rendering only. HTTP geocoding, isochrones, and place search use `@local-hosting/geokit/service` and `src/providers/*` — see [architecture.md](architecture.md).
 
 Swift mirror: [`geokit-swift/docs/providers.md`](../../geokit-swift/docs/providers.md).
 
 ## Platform matrix
 
-| | TypeScript (`@twinfile/geokit/ui`) | Swift (`geokit-swift`) |
+| | TypeScript (`@local-hosting/geokit/ui`) | Swift (`geokit-swift`) |
 |---|---------------------------|-------------------------|
 | Primary GL backend | MapTiler (`@maptiler/sdk`) | Mapbox (`MapboxMaps`) |
 | Alternate backend | Mapbox GL JS, Protomaps (`maplibre-gl`) | Apple MapKit |
 | Static snapshot ids | `maptiler` \| `mapbox` | `mapbox` \| `apple` |
 | Registry | `configure()`, `src/ui/src/providers/registry.ts` | `GeoKitMapProviderRegistry` |
-| Env default | `GEOKIT_MAP_PROVIDER`, `MAP_PROVIDER` (`@twinfile/geokit/env`) | same + `Info.plist` |
+| Env default | `GEOKIT_MAP_PROVIDER`, `MAP_PROVIDER` (`@local-hosting/geokit/env`) | same + `Info.plist` |
 | Per-map override | `<gk-map provider="…">` | `MapContentRequest.mapProviderId` |
 
-Default on web: **maptiler** (`resolveMapProviderIdFromEnv` in `@twinfile/geokit/env`). Default on Swift: **mapbox**.
+Default on web: **maptiler** (`resolveMapProviderIdFromEnv` in `@local-hosting/geokit/env`). Default on Swift: **mapbox**.
 
 ## Protomaps
 
@@ -42,8 +42,8 @@ Env: `GEOKIT_MAP_PROVIDER=protomaps` and `PROTOMAPS_KEY` (alias `GEOKIT_PROTOMAP
 | Mapbox GL | `src/ui/src/providers/mapbox-provider.ts` | `GeoKitUIMapbox/` |
 | Protomaps | `src/ui/src/providers/protomaps-provider.ts` | — |
 | Apple Maps | — | `GeoKitUI/Providers/Apple/` |
-| Bootstrap | `ensureMapReady` (`@twinfile/geokit/ui/bootstrap/ensure-map-ready`) | `GeoKitMapBootstrap.prepare()` |
+| Bootstrap | `ensureMapReady` (`@local-hosting/geokit/ui/bootstrap/ensure-map-ready`) | `GeoKitMapBootstrap.prepare()` |
 
 ## Choropleth fills
 
-Semi-transparent polygon fills can show triangulation artifacts. Use `buildChoroplethFillPaint` from `@twinfile/geokit/ui/choropleth-fill-paint` for fill layers on admin boundaries and regions.
+Semi-transparent polygon fills can show triangulation artifacts. Use `buildChoroplethFillPaint` from `@local-hosting/geokit/ui/choropleth-fill-paint` for fill layers on admin boundaries and regions.

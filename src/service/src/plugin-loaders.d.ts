@@ -1,4 +1,4 @@
-// Plugins import @twinfile/geokit/service, so typing these specifiers here would cycle the service declaration build.
+// Plugins import @local-hosting/geokit/service, so typing these specifiers here would cycle the service declaration build.
 type PluginModuleLoader = () => Promise<Record<string, unknown>>;
 
 export declare const loadMapTilerPlugin: PluginModuleLoader;

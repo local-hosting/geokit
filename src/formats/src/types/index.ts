@@ -4,7 +4,7 @@ import type {
   Geometry,
   MultiPolygon,
   Polygon,
-} from '@twinfile/geokit/core';
+} from '@local-hosting/geokit/core';
 
 export type { Feature, FeatureCollection, Geometry, MultiPolygon, Polygon };
 

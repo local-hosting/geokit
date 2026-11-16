@@ -7,9 +7,9 @@
  * Heavy / interaction-only elements are excluded to keep the initial
  * bundle lean.  Import them from their dedicated entry points:
  *
- *   import { PopupElement }         from '@twinfile/geokit/ui/elements/popup';
- *   import { MapCollectionElement } from '@twinfile/geokit/ui/elements/map-collection';
- *   await import('@twinfile/geokit/ui/elements/isochrone');
+ *   import { PopupElement }         from '@local-hosting/geokit/ui/elements/popup';
+ *   import { MapCollectionElement } from '@local-hosting/geokit/ui/elements/map-collection';
+ *   await import('@local-hosting/geokit/ui/elements/isochrone');
  */
 
 // Polyfill requestIdleCallback for Safari (unsupported natively).
@@ -49,7 +49,7 @@ export { parseUrlHashState } from './components/elements/map/surface/map-url-syn
 // Re-export only the lightweight utilities needed at startup.
 // Heavy modules (layer-styles ~312 KB, feature-state-hover) are excluded;
 // import them from their dedicated entry points:
-//   import { ... } from '@twinfile/geokit/ui/layer-styles';
+//   import { ... } from '@local-hosting/geokit/ui/layer-styles';
 export * from './utils/map-utils';
 export * from './utils/map-terrain-disable';
 export * from './utils/layer-stack';
@@ -57,4 +57,4 @@ export * from './utils/geojson-source-options';
 export * from './utils/fill-antialias';
 export * from './utils/theme';
 export * from './utils/logger';
-export { getFeatureId } from '@twinfile/geokit/core/geojson';
+export { getFeatureId } from '@local-hosting/geokit/core/geojson';

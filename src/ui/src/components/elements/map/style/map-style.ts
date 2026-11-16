@@ -15,7 +15,7 @@ type MapStyleLike = {
   hasImage?: (id: string) => boolean;
 };
 
-import { buildMaptilerStyleUrl } from '@twinfile/geokit/ui/config/tile-cdn';
+import { buildMaptilerStyleUrl } from '@local-hosting/geokit/ui/config/tile-cdn';
 import { isReservedMapStyleImageId } from '../../../../utils/map-surface/map-style-images';
 import { mapStyleSwapOptions } from './preserve-custom-style-overlays';
 

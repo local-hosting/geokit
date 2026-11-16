@@ -1,5 +1,7 @@
 import type { MapInstance } from '../../providers/types';
+import { getSharedPointSelection } from '../layers/styles/shared-point-layers';
 import type { ApplySharedPointPaintOptions, SharedPointLayerIds } from '../paint/shared-point-paint';
+import { syncSharedPointSelectedLayerFilter } from '../paint/shared-point-paint';
 import {
   ensureSharedPointBadgeIconLayers,
   raiseSharedPointBadgeIconLayersOnTop,
@@ -136,6 +138,23 @@ export function syncFloatingBadgeStackShapeFilters(
   }
 }
 
+/** Shape filters after layer heal — keep the selected feature off the resting stack. */
+export function syncFloatingBadgeStackFilters(
+  map: MapInstance,
+  ids: SharedPointLayerIds,
+  promoteId = 'id'
+): void {
+  syncFloatingBadgeStackShapeFilters(map, ids);
+  const featureId = getSharedPointSelection(map, ids.sourceId)?.featureId ?? null;
+  if (featureId == null) return;
+  syncSharedPointSelectedLayerFilter(map, {
+    pointLayerId: ids.pointLayerId,
+    glowLayerId: ids.glowLayerId,
+    promoteId,
+    featureId,
+  });
+}
+
 export type EnsureFloatingBadgeMarkerStackOptions = {
   map: MapInstance;
   ids: SharedPointLayerIds;
@@ -173,7 +192,7 @@ export async function ensureFloatingBadgeMarkerStack(
     selectionIconTranslate: paint.selectedTranslate,
   });
   raiseSharedPointBadgeIconLayersOnTop(map, ids.pointLayerId);
-  syncFloatingBadgeStackShapeFilters(map, ids);
+  syncFloatingBadgeStackFilters(map, ids);
   applySharedPointRoundedRectChromePaint(map, ids.pointLayerId, paint);
 
   if (!map.setPaintProperty) return;

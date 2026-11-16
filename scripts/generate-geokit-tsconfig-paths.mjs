@@ -77,7 +77,7 @@ for (const [exportKey, entry] of Object.entries(packageJson.exports ?? {})) {
   const rel = target.replace(/^\.\//, '');
   if (rel.includes('src/providers/') && !rel.includes('/dist/')) continue;
   if (isCrossPackageDistOnly(exportKey) && !rel.includes('/dist/')) continue;
-  paths[`@twinfile/geokit${exportKey.slice(1)}`] = [rel];
+  paths[`@local-hosting/geokit${exportKey.slice(1)}`] = [rel];
 }
 
 const providerRoots = [
@@ -97,7 +97,7 @@ const providerRoots = [
 
 for (const row of providerRoots) {
   const [subpath, preferred, fallback = preferred] = row;
-  const specifier = `@twinfile/geokit/${subpath}`;
+  const specifier = `@local-hosting/geokit/${subpath}`;
   if (paths[specifier]) continue;
   const rel = existsSync(join(repoRoot, preferred)) ? preferred : fallback;
   if (!rel || !existsSync(join(repoRoot, rel))) continue;

@@ -1,6 +1,9 @@
 import type { MapInstance } from '../../providers/types';
 import { SHARED_POINT_BADGE_ICON_PROPERTY } from '../paint/shared-point-badge-constants';
-import { sharedPointBadgeIconSizeExpression } from '../paint/shared-point-badge-icon-sizing';
+import {
+  sharedPointBadgeIconSizeExpression,
+  sharedPointBadgeIconSizeForGlyphDiskExpression,
+} from '../paint/shared-point-badge-icon-sizing';
 import type { ApplySharedPointPaintOptions, SharedPointLayerIds } from '../paint/shared-point-paint';
 import {
   resolveSharedPointFloatingBadgeTokens,
@@ -11,6 +14,7 @@ import {
   sharedPointFloatingBadgeOuterStrokeWidthExpression,
   sharedPointFloatingBadgeRingWidthExpression,
   sharedPointFloatingBadgeSelectedRadiusExpression,
+  hideFloatingBadgeCircleSelectionLayers,
   sharedPointSelectionBadgeLayerId,
   sharedPointSelectionBadgeOuterLayerId,
   sharedPointSelectionSourceHasFeature,
@@ -195,15 +199,8 @@ function applyRoundedFloatingBadgeSelectionChrome(
   iconTranslate: unknown,
   iconSize: unknown
 ): void {
-  const badgeId = sharedPointSelectionBadgeLayerId(pointLayerId);
-  const badgeOuterId = sharedPointSelectionBadgeOuterLayerId(pointLayerId);
   const iconLayerId = `${pointLayerId}-selection-badge-icon`;
-  setMapProps(map, [
-    [badgeId, 'circle-opacity', 0],
-    [badgeId, 'circle-stroke-opacity', 0],
-    [badgeOuterId, 'circle-opacity', 0],
-    [badgeOuterId, 'circle-stroke-opacity', 0],
-  ]);
+  hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
   applySharedPointRoundedRectSelectionChrome(map, pointLayerId, {
     accentColor: spec.accentColor,
     outerAccentColor: spec.outerAccentColor,
@@ -240,7 +237,10 @@ export function applyFloatingBadgeSelectionChrome(
     options.accentColor,
     options.outerAccentColor ?? options.accentColor
   );
-  const iconSize = sharedPointBadgeIconSizeExpression();
+  const iconSize =
+    options.shape === 'rounded-rect'
+      ? sharedPointBadgeIconSizeForGlyphDiskExpression()
+      : sharedPointBadgeIconSizeExpression();
 
   if (options.shape === 'rounded-rect') {
     const iconTranslate =

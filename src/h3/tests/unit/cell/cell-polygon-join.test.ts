@@ -4,7 +4,7 @@ import {
   joinCellMapToPolygon,
   lookupValuesForH3Cells,
   polygonGeometryToH3Cells,
-} from '@twinfile/geokit/h3';
+} from '@local-hosting/geokit/h3';
 import type { Polygon } from 'geojson';
 
 const RES = 5;

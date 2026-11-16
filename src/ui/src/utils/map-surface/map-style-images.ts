@@ -39,7 +39,18 @@ export function clearReservedMapStyleImageIdsForTests(): void {
   reservedStyleImageIds.clear();
 }
 
-export const DEFAULT_STYLE_IMAGE_RASTER_SIZE = 64;
+/** Hi-DPI raster pixels before `addImage` (use with {@link STYLE_IMAGE_PIXEL_RATIO}). */
+export const DEFAULT_STYLE_IMAGE_RASTER_SIZE = 128;
+
+/** MapLibre `pixelRatio` — keeps layout `icon-size` math on a 64px logical sprite. */
+export const STYLE_IMAGE_PIXEL_RATIO = 2;
+
+export function styleImageLayoutPixels(
+  rasterSize = DEFAULT_STYLE_IMAGE_RASTER_SIZE,
+  pixelRatio = STYLE_IMAGE_PIXEL_RATIO
+): number {
+  return Math.max(1, rasterSize / Math.max(1, pixelRatio));
+}
 
 export type StyleImageRaster = {
   width: number;

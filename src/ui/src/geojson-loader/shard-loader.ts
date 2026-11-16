@@ -1,11 +1,11 @@
-import type { ViewportBounds } from '@twinfile/geokit/h3/lite';
+import type { ViewportBounds } from '@local-hosting/geokit/h3/lite';
 import { gridDisk } from 'h3-js';
 import {
   compactH3CellId,
   expandH3CellId,
   h3CellsForViewportBounds,
   prioritizeH3CellsNearCenter,
-} from '@twinfile/geokit/h3';
+} from '@local-hosting/geokit/h3';
 
 export type ViewportH3LoadOptions = {
   bounds: ViewportBounds;

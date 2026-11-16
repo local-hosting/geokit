@@ -14,9 +14,9 @@
     "test": "yarn run -T vitest run --config ../../config/vitest.plugin.config.ts"
   },
   "peerDependencies": {
-    "@twinfile/geokit-core": ">=0.2.33",
-    "@twinfile/geokit-service": ">=0.1.0"
+    "@local-hosting/geokit-core": ">=0.2.33",
+    "@local-hosting/geokit-service": ">=0.1.0"
   },
-  "name": "@twinfile/geokit-maptiler",
+  "name": "@local-hosting/geokit-maptiler",
   "description": "MapTiler geocoding plugin for geokit"
 }

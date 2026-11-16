@@ -36,7 +36,7 @@ describe('api-utils', () => {
       .fn()
       .mockResolvedValueOnce(new Response('', { status: 429 }))
       .mockResolvedValueOnce(new Response('ok', { status: 200 }));
-    const delaySpy = vi.spyOn(await import('@twinfile/geokit/core/utils/retry'), 'delay').mockResolvedValue();
+    const delaySpy = vi.spyOn(await import('@local-hosting/geokit/core/utils/retry'), 'delay').mockResolvedValue();
 
     const response = await retryOn429(fn, { maxRetries: 2, baseDelayMs: 1, providerName: 'Test' });
     expect(response.status).toBe(200);
@@ -46,7 +46,7 @@ describe('api-utils', () => {
 
   it('retryOn429 throws after max retries', async () => {
     const fn = vi.fn().mockResolvedValue(new Response('', { status: 429 }));
-    vi.spyOn(await import('@twinfile/geokit/core/utils/retry'), 'delay').mockResolvedValue();
+    vi.spyOn(await import('@local-hosting/geokit/core/utils/retry'), 'delay').mockResolvedValue();
     await expect(retryOn429(fn, { maxRetries: 1, baseDelayMs: 1, providerName: 'Test' })).rejects.toThrow(
       'max retries exceeded'
     );

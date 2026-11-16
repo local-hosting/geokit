@@ -6,10 +6,10 @@
       "geokit/*": [
         "../../src/core/src/*"
       ],
-      "@twinfile/geokit/service": [
+      "@local-hosting/geokit/service": [
         "../../src/service/src/index.ts"
       ],
-      "@twinfile/geokit/service/*": [
+      "@local-hosting/geokit/service/*": [
         "../../src/service/src/*"
       ]
     }

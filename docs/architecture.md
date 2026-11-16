@@ -4,12 +4,12 @@ Geokit uses **provider** in three layers. Each has its own registry — they are
 
 | Layer | Location | Role |
 |-------|----------|------|
-| **Service** | `@twinfile/geokit/service` + `src/providers/*` | HTTP: place search, geocoding, isochrones, directions |
+| **Service** | `@local-hosting/geokit/service` + `src/providers/*` | HTTP: place search, geocoding, isochrones, directions |
 | **Plugin** | `GeokitServicePlugin` in each `src/providers/*` package | npm install boundary + `registerGeokitPlugin()` |
-| **UI provider** | `@twinfile/geokit/ui` (`src/providers/`) | Map rendering (MapTiler SDK, Mapbox GL JS) |
+| **UI provider** | `@local-hosting/geokit/ui` (`src/providers/`) | Map rendering (MapTiler SDK, Mapbox GL JS) |
 
 ```text
-@twinfile/geokit/foursquare          ← service package
+@local-hosting/geokit/foursquare          ← service package
   └── GeokitServicePlugin
         └── FoursquareService
               └── registerService('foursquare', …)
@@ -23,26 +23,26 @@ Say **service**, **plugin**, or **UI provider** — not bare "provider".
 
 | Package | Path |
 |---------|------|
-| `@twinfile/geokit/env` | `src/env/` |
-| `@twinfile/geokit/h3` | `src/h3/` |
-| `@twinfile/geokit/core` | `src/core/` |
-| `@twinfile/geokit/ui` | `src/ui/` |
-| `@twinfile/geokit/service` | `src/service/` |
-| `@twinfile/geokit/crosswalk` | `src/crosswalk/` |
-| `@twinfile/geokit/foursquare`, `@twinfile/geokit/google`, `@twinfile/geokit/mapbox`, `@twinfile/geokit/maptiler`, `@twinfile/geokit/here`, `@twinfile/geokit/osm`, `@twinfile/geokit/esri` | `src/providers/*/` |
+| `@local-hosting/geokit/env` | `src/env/` |
+| `@local-hosting/geokit/h3` | `src/h3/` |
+| `@local-hosting/geokit/core` | `src/core/` |
+| `@local-hosting/geokit/ui` | `src/ui/` |
+| `@local-hosting/geokit/service` | `src/service/` |
+| `@local-hosting/geokit/crosswalk` | `src/crosswalk/` |
+| `@local-hosting/geokit/foursquare`, `@local-hosting/geokit/google`, `@local-hosting/geokit/mapbox`, `@local-hosting/geokit/maptiler`, `@local-hosting/geokit/here`, `@local-hosting/geokit/osm`, `@local-hosting/geokit/esri` | `src/providers/*/` |
 
 ## Install
 
 | Need | Packages |
 |------|----------|
-| Geo utils only | `@twinfile/geokit/core` |
-| Map UI | `@twinfile/geokit/ui` |
-| Place search / geocoding / isochrones | + `@twinfile/geokit/service` |
+| Geo utils only | `@local-hosting/geokit/core` |
+| Map UI | `@local-hosting/geokit/ui` |
+| Place search / geocoding / isochrones | + `@local-hosting/geokit/service` |
 | Vendor APIs | + one or more `src/providers/*` packages |
 
 ## Bootstrap
 
-**`ensureCapabilityRoutersReady()`** (`@twinfile/geokit/service/builtins`): registers MapTiler + Mapbox routing plugins when env keys are present (geocoding, isochrone, directions).
+**`ensureCapabilityRoutersReady()`** (`@local-hosting/geokit/service/builtins`): registers MapTiler + Mapbox routing plugins when env keys are present (geocoding, isochrone, directions).
 
 **`ensurePlaceSearchRouterReady()`**: loads Foursquare + Google place-search plugins on demand, then rebuilds routers.
 
@@ -54,8 +54,8 @@ Say **service**, **plugin**, or **UI provider** — not bare "provider".
 import {
   ensureCapabilityRoutersReady,
   ensurePlaceSearchRouterReady,
-} from '@twinfile/geokit/service/builtins';
-import { registerOsmPlugin } from '@twinfile/geokit-osm';
+} from '@local-hosting/geokit/service/builtins';
+import { registerOsmPlugin } from '@local-hosting/geokit-osm';
 
 await ensureCapabilityRoutersReady();
 await registerOsmPlugin();
@@ -67,17 +67,17 @@ await ensurePlaceSearchRouterReady();
 
 | Concern | Import | Example |
 |---------|--------|---------|
-| Draw map | `@twinfile/geokit/ui` | `MapboxUIProvider`, `<gk-map provider="mapbox">` |
-| HTTP APIs | `@twinfile/geokit/mapbox` | `MapboxService` (geocode, isochrone, directions) |
+| Draw map | `@local-hosting/geokit/ui` | `MapboxUIProvider`, `<gk-map provider="mapbox">` |
+| HTTP APIs | `@local-hosting/geokit/mapbox` | `MapboxService` (geocode, isochrone, directions) |
 
 `<gk-isochrone>` uses the **service** registry (`getServiceForCapability('isochrone')`), not the UI provider registry.
 
 ## Authoring a service plugin
 
 ```typescript
-import type { GeokitServicePlugin } from '@twinfile/geokit/service/plugin';
-import { Service } from '@twinfile/geokit/service/types';
-import { registerGeokitPlugin } from '@twinfile/geokit/service/plugin';
+import type { GeokitServicePlugin } from '@local-hosting/geokit/service/plugin';
+import { Service } from '@local-hosting/geokit/service/types';
+import { registerGeokitPlugin } from '@local-hosting/geokit/service/plugin';
 
 class HerePlacesProvider extends Service {
   getName() { return 'here-places'; }
@@ -100,25 +100,25 @@ await registerGeokitPlugin(herePlacesPlugin, { apiKey: process.env.HERE_API_KEY 
 
 Thin lifecycle glue over Web Components — optional peer deps per framework:
 
-- `@twinfile/geokit/ui/vue`
-- `@twinfile/geokit/ui/react`
-- `@twinfile/geokit/ui/svelte`
-- `@twinfile/geokit/ui/adapters/shared`
+- `@local-hosting/geokit/ui/vue`
+- `@local-hosting/geokit/ui/react`
+- `@local-hosting/geokit/ui/svelte`
+- `@local-hosting/geokit/ui/adapters/shared`
 
-Import vendor service classes from `src/providers/*` packages, not from `@twinfile/geokit/service`.
+Import vendor service classes from `src/providers/*` packages, not from `@local-hosting/geokit/service`.
 
 ## Import tiers (tree-shaking)
 
 | Tier | Package / subpath | Pulls `h3-js`? |
 |------|-------------------|----------------|
-| Distance / bounds | `@twinfile/geokit/core/distance`, `@twinfile/geokit/core/bounds` | No |
-| Spatial H3 decode | `@twinfile/geokit/core/spatial/decode` | Yes (via `@twinfile/geokit/h3`) |
-| Env keys | `@twinfile/geokit/env`, `@twinfile/geokit/env/service-keys` | No |
-| H3 lite | `@twinfile/geokit/h3/lite` | No |
-| H3 full | `@twinfile/geokit/h3` | Yes (peer) |
-| H3 (legacy) | `@twinfile/geokit/core/h3` | Yes — deprecated re-export of `@twinfile/geokit/h3` |
-| UI map | `@twinfile/geokit/ui`, `@twinfile/geokit/ui/elements-lite` | Via optional chunks |
-| Service builtins | `@twinfile/geokit/service/builtins` | No (explicit import) |
-| Crosswalk | `@twinfile/geokit/crosswalk`, `@twinfile/geokit/crosswalk/us` | Via `@twinfile/geokit/h3` when H3 lookups used |
+| Distance / bounds | `@local-hosting/geokit/core/distance`, `@local-hosting/geokit/core/bounds` | No |
+| Spatial H3 decode | `@local-hosting/geokit/core/spatial/decode` | Yes (via `@local-hosting/geokit/h3`) |
+| Env keys | `@local-hosting/geokit/env`, `@local-hosting/geokit/env/service-keys` | No |
+| H3 lite | `@local-hosting/geokit/h3/lite` | No |
+| H3 full | `@local-hosting/geokit/h3` | Yes (peer) |
+| H3 (legacy) | `@local-hosting/geokit/core/h3` | Yes — deprecated re-export of `@local-hosting/geokit/h3` |
+| UI map | `@local-hosting/geokit/ui`, `@local-hosting/geokit/ui/elements-lite` | Via optional chunks |
+| Service builtins | `@local-hosting/geokit/service/builtins` | No (explicit import) |
+| Crosswalk | `@local-hosting/geokit/crosswalk`, `@local-hosting/geokit/crosswalk/us` | Via `@local-hosting/geokit/h3` when H3 lookups used |
 
-Run `yarn workspace @twinfile/geokit/core bundle-smoke` (included in `test:all`) to guard distance-only bundles.
+Run `yarn workspace @local-hosting/geokit/core bundle-smoke` (included in `test:all`) to guard distance-only bundles.

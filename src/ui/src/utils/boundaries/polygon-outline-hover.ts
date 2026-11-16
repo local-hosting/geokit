@@ -1,7 +1,7 @@
 /**
  * Polygon outline layers with optional feature-state hover.
  */
-import { getFeatureId } from '@twinfile/geokit/core/geojson';
+import { getFeatureId } from '@local-hosting/geokit/core/geojson';
 import { BOUNDARY_LINE_GEOJSON_SOURCE_OPTIONS } from '../map-surface/geojson-source-options';
 import {
   buildOpacityWithHoverExpression,

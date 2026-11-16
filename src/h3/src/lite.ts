@@ -1,8 +1,8 @@
 /**
  * H3 helpers with no h3-js dependency — string ids, map inversion, zoom math, viewport bounds.
  *
- * Import from `@twinfile/geokit/h3/lite` when you do not need lat/lng ↔ cell projection.
- * For full H3 geometry use `@twinfile/geokit/h3`.
+ * Import from `@local-hosting/geokit/h3/lite` when you do not need lat/lng ↔ cell projection.
+ * For full H3 geometry use `@local-hosting/geokit/h3`.
  */
 
 export { compactH3CellId, expandH3CellId } from './cell/cell-id';

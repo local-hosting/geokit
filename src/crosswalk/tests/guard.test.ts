@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadUsCrosswalk, loadUsCrosswalkSync } from '../src/load/load';
 import { convert, GKZip } from '../src/index.ts';
-import { canonicalDmaSlug } from '@twinfile/geokit/core';
+import { canonicalDmaSlug } from '@local-hosting/geokit/core';
 import { GeoKind } from '../src/geo-kind.js';
 import {
   COUNTY_TO_DMA,
@@ -12,7 +12,7 @@ import {
   GEOHASH_P8_TO_ZIPS,
   ZIP_TO_H3_R5,
 } from '../generated/us/index.ts';
-import { compactH3CellId } from '@twinfile/geokit/core/h3';
+import { compactH3CellId } from '@local-hosting/geokit/core/h3';
 
 describe('crosswalk guard (generated tables)', () => {
   it('countyToDma entries appear in dmaToCounties inverse', () => {

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Symlink this package as node_modules/@twinfile/geokit so dist imports resolve
+ * Symlink this package as node_modules/@local-hosting/geokit so dist imports resolve
  * when running export-parity-fixtures or other core scripts from source.
  */
 import fs from 'node:fs';
@@ -25,4 +25,4 @@ try {
 }
 
 fs.symlinkSync(geokitRoot, linkPath, 'dir');
-console.log(`@twinfile/geokit → ${geokitRoot}`);
+console.log(`@local-hosting/geokit → ${geokitRoot}`);

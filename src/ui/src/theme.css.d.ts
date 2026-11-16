@@ -1,2 +1,2 @@
-/** Side-effect import: `@twinfile/geokit/ui/theme.css` */
+/** Side-effect import: `@local-hosting/geokit/ui/theme.css` */
 export {};

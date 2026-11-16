@@ -38,7 +38,7 @@ function resolveSourceTarget(repoRoot, entry) {
 }
 
 /**
- * Resolve @twinfile/geokit/* Vitest aliases from package.json exports at runtime.
+ * Resolve @local-hosting/geokit/* Vitest aliases from package.json exports at runtime.
  * Avoids committing generated JSON with machine-specific absolute paths.
  */
 export function buildGeokitVitestAliases(repoRoot) {
@@ -49,7 +49,7 @@ export function buildGeokitVitestAliases(repoRoot) {
     if (!exportKey.startsWith('./')) continue;
     const target = resolveSourceTarget(repoRoot, entry);
     if (!target || !existsSync(join(repoRoot, target))) continue;
-    aliases[`@twinfile/geokit${exportKey.slice(1)}`] = join(repoRoot, target);
+    aliases[`@local-hosting/geokit${exportKey.slice(1)}`] = join(repoRoot, target);
   }
 
   const providers = [
@@ -65,12 +65,12 @@ export function buildGeokitVitestAliases(repoRoot) {
   for (const item of providers) {
     if (Array.isArray(item)) {
       const [sub, rel] = item;
-      aliases[`@twinfile/geokit/${sub}`] = join(repoRoot, rel);
+      aliases[`@local-hosting/geokit/${sub}`] = join(repoRoot, rel);
       continue;
     }
     const rel = `src/providers/${item}/src/index.ts`;
     if (existsSync(join(repoRoot, rel))) {
-      aliases[`@twinfile/geokit/${item}`] = join(repoRoot, rel);
+      aliases[`@local-hosting/geokit/${item}`] = join(repoRoot, rel);
     }
   }
 

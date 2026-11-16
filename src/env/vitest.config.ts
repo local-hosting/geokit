@@ -6,16 +6,16 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
-    name: '@twinfile/geokit/env',
+    name: '@local-hosting/geokit/env',
     environment: 'node',
     include: ['tests/**/*.test.ts'],
   },
   resolve: {
     alias: {
-      '@twinfile/geokit/env': path.join(root, 'src/index.ts'),
-      '@twinfile/geokit/env/service-keys': path.join(root, 'src/service-keys.ts'),
-      '@twinfile/geokit/env/map-credentials': path.join(root, 'src/map-credentials.ts'),
-      '@twinfile/geokit/env/primitives': path.join(root, 'src/primitives.ts'),
+      '@local-hosting/geokit/env': path.join(root, 'src/index.ts'),
+      '@local-hosting/geokit/env/service-keys': path.join(root, 'src/service-keys.ts'),
+      '@local-hosting/geokit/env/map-credentials': path.join(root, 'src/map-credentials.ts'),
+      '@local-hosting/geokit/env/primitives': path.join(root, 'src/primitives.ts'),
     },
   },
 });

@@ -20,9 +20,9 @@
     "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json"
   },
   "peerDependencies": {
-    "@twinfile/geokit-core": ">=0.2.33",
-    "@twinfile/geokit-service": ">=0.1.0"
+    "@local-hosting/geokit-core": ">=0.2.33",
+    "@local-hosting/geokit-service": ">=0.1.0"
   },
-  "name": "@twinfile/geokit-foursquare",
+  "name": "@local-hosting/geokit-foursquare",
   "description": "Foursquare Places search plugin for geokit"
 }

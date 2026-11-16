@@ -1,5 +1,5 @@
 {
-  "name": "@twinfile/geokit-service",
+  "name": "@local-hosting/geokit-service",
   "version": "0.1.0",
   "description": "Geokit service registry, routing, and shared HTTP utilities",
   "license": "MPL-2.0",
@@ -57,30 +57,30 @@
     "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json"
   },
   "peerDependencies": {
-    "@twinfile/geokit-core": ">=0.2.33",
-    "@twinfile/geokit-foursquare": ">=0.1.0",
-    "@twinfile/geokit-google": ">=0.1.0",
-    "@twinfile/geokit-mapbox": ">=0.1.0",
-    "@twinfile/geokit-maptiler": ">=0.1.0",
-    "@twinfile/geokit-osm": ">=0.1.0"
+    "@local-hosting/geokit-core": ">=0.2.33",
+    "@local-hosting/geokit-foursquare": ">=0.1.0",
+    "@local-hosting/geokit-google": ">=0.1.0",
+    "@local-hosting/geokit-mapbox": ">=0.1.0",
+    "@local-hosting/geokit-maptiler": ">=0.1.0",
+    "@local-hosting/geokit-osm": ">=0.1.0"
   },
   "peerDependenciesMeta": {
-    "@twinfile/geokit-core": {
+    "@local-hosting/geokit-core": {
       "optional": false
     },
-    "@twinfile/geokit-foursquare": {
+    "@local-hosting/geokit-foursquare": {
       "optional": true
     },
-    "@twinfile/geokit-google": {
+    "@local-hosting/geokit-google": {
       "optional": true
     },
-    "@twinfile/geokit-mapbox": {
+    "@local-hosting/geokit-mapbox": {
       "optional": true
     },
-    "@twinfile/geokit-maptiler": {
+    "@local-hosting/geokit-maptiler": {
       "optional": true
     },
-    "@twinfile/geokit-osm": {
+    "@local-hosting/geokit-osm": {
       "optional": true
     }
   },

@@ -164,6 +164,25 @@ export function buildOpacityWithHoverExpression(
 }
 
 /**
+ * Grounded badge selection: hide the resting stack on the main source while
+ * `feature-state.selected` is set (selection source draws the lifted badge).
+ */
+export function buildOpacityHideRestingWhenSelectedExpression(
+  defaultOpacity: number | unknown[] | string,
+  hoverOpacity: number | string = HOVER_CONFIG.pointOpacity,
+  selectedOpacity = 0
+): unknown[] {
+  return [
+    'case',
+    ['boolean', ['feature-state', 'selected'], false],
+    selectedOpacity,
+    ['boolean', ['feature-state', 'hover'], false],
+    hoverOpacity,
+    defaultOpacity,
+  ];
+}
+
+/**
  * Build MapLibre circle-opacity expression that handles both focus and hover states.
  * Priority: focus > hover > default
  * Use with a source that has promoteId and layers that receive feature-state.

@@ -1,10 +1,10 @@
 import type { MultiPolygon, Polygon } from 'geojson';
-import { pointInGeometry } from '@twinfile/geokit/core';
+import { pointInGeometry } from '@local-hosting/geokit/core';
 import {
   joinCellMapToPolygon,
   type JoinCellMapToPolygonOptions,
-} from '@twinfile/geokit/h3';
-import { GKH3, GKPoint } from '@twinfile/geokit/core';
+} from '@local-hosting/geokit/h3';
+import { GKH3, GKPoint } from '@local-hosting/geokit/core';
 import { GeoKind } from '../geo-kind.js';
 import { getUsCrosswalkTables, requireUsCrosswalkLookups } from '../load/registry';
 import { crosswalk } from './crosswalk';

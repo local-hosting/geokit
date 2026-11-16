@@ -10,11 +10,11 @@
  * - Automatic cache eviction
  */
 
-import { Service } from '@twinfile/geokit/service';
-import { type ServiceConfig, type ServiceCapability, type IsochroneOptions, type DirectionsOptions, type GeocodeOptions, type ReverseGeocodeOptions, type ReverseGeocodeResult } from '@twinfile/geokit/service/types';
-import { ProviderCache, coordinateCacheKey } from '@twinfile/geokit/service';
-import { RequestQueue } from '@twinfile/geokit/service';
-import { fetchWithRetry } from '@twinfile/geokit/service';
+import { Service } from '@local-hosting/geokit/service';
+import { type ServiceConfig, type ServiceCapability, type IsochroneOptions, type DirectionsOptions, type GeocodeOptions, type ReverseGeocodeOptions, type ReverseGeocodeResult } from '@local-hosting/geokit/service/types';
+import { ProviderCache, coordinateCacheKey } from '@local-hosting/geokit/service';
+import { RequestQueue } from '@local-hosting/geokit/service';
+import { fetchWithRetry } from '@local-hosting/geokit/service';
 import type { FeatureCollection } from 'geojson';
 
 const PROVIDER_NAME = 'Mapbox';

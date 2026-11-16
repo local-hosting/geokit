@@ -1,5 +1,5 @@
 import { basename } from 'path'
-import type { FeatureCollection } from '@twinfile/geokit/core'
+import type { FeatureCollection } from '@local-hosting/geokit/core'
 import { extractShapefileFromZip, extractCSVFromZip, analyzeZip } from './zip/index.js'
 import { shapefileToGeoJSON, shapefileToGeoJSONStream } from './shapefile/index.js'
 import { csvH3ToGeoJSON, csvH3ToGeoJSONStream } from './csv/index.js'

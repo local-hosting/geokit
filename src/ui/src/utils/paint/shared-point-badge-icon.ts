@@ -1,5 +1,5 @@
 import type { MapInstance } from '../../providers/types';
-import { replaceMapStyleImage } from '../map-surface/map-style-images';
+import { replaceMapStyleImage, STYLE_IMAGE_PIXEL_RATIO } from '../map-surface/map-style-images';
 import { SHARED_POINT_BADGE_ICON_PROPERTY } from './shared-point-badge-constants';
 import { sharedPointBadgeIconSizeExpression } from './shared-point-badge-icon-sizing';
 import {
@@ -20,6 +20,7 @@ export type BadgeIconImageLike = {
 
 export type RegisterBadgeIconImageOptions = {
   sdf?: boolean;
+  pixelRatio?: number;
 };
 
 export function sharedPointPointBadgeIconLayerId(pointLayerId: string): string {
@@ -136,7 +137,11 @@ export function registerBadgeIconImage(
 ): void {
   const key = id.trim();
   if (!key) return;
-  const addOpts = options?.sdf === true ? { sdf: true as const } : undefined;
+  const pixelRatio = options?.pixelRatio ?? STYLE_IMAGE_PIXEL_RATIO;
+  const addOpts =
+    options?.sdf === true
+      ? { sdf: true as const, pixelRatio }
+      : { pixelRatio };
   replaceMapStyleImage(map, key, image, addOpts);
 }
 

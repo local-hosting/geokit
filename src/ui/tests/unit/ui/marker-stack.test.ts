@@ -2,9 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   buildFloatingBadgeStack,
   floatingBadgeRoundedRestingLayerIds,
+  syncFloatingBadgeStackFilters,
   syncFloatingBadgeStackShapeFilters,
 } from '../../../src/utils/markers/marker-stack';
 import { sharedPointCircleBodyFilter, sharedPointRoundedRectBodyFilter } from '../../../src/utils/markers/marker-shape';
+import { sharedPointExcludeFeatureIdFilter } from '../../../src/utils/paint/shared-point-paint';
+import { setSharedPointSelection } from '../../../src/utils/layers/styles/shared-point-layers';
 
 describe('buildFloatingBadgeStack', () => {
   const ids = {
@@ -51,5 +54,38 @@ describe('buildFloatingBadgeStack', () => {
       'canvas-places-glow',
       sharedPointCircleBodyFilter()
     );
+  });
+
+  it('re-applies selected feature exclude after shape filters (layer heal)', () => {
+    const setFilter = vi.fn();
+    const map = {
+      getLayer: (id: string) =>
+        id.startsWith('canvas-places') || id.includes('rounded') ? {} : undefined,
+      setFilter,
+      getSource: () => ({}),
+      setFeatureState: vi.fn(),
+    };
+
+    setSharedPointSelection(
+      map as never,
+      ids.sourceId,
+      { featureId: 'buffalo-harbor', lngLat: { lng: -78.87, lat: 42.88 } },
+      {
+        pointLayerId: ids.pointLayerId,
+        glowLayerId: ids.glowLayerId,
+        promoteId: 'mapPromoteId',
+        selectionGroundBadge: true,
+      }
+    );
+    setFilter.mockClear();
+
+    syncFloatingBadgeStackFilters(map as never, ids, 'mapPromoteId');
+
+    const exclude = sharedPointExcludeFeatureIdFilter('mapPromoteId', 'buffalo-harbor');
+    expect(setFilter).toHaveBeenCalledWith('canvas-places-point', [
+      'all',
+      sharedPointCircleBodyFilter(),
+      exclude,
+    ]);
   });
 });

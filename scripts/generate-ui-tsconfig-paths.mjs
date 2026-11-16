@@ -7,13 +7,13 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const imports = JSON.parse(readFileSync(join(repoRoot, 'config/tsconfig.geokit-imports.json'), 'utf8'));
 
 const uiSelfPaths = {
-  '@twinfile/geokit/ui': ['src/ui/src/index.ts'],
-  '@twinfile/geokit/ui/*': ['src/ui/src/*'],
+  '@local-hosting/geokit/ui': ['src/ui/src/index.ts'],
+  '@local-hosting/geokit/ui/*': ['src/ui/src/*'],
 };
 
 const importPaths = { ...(imports.compilerOptions?.paths ?? {}) };
 for (const key of Object.keys(importPaths)) {
-  if (key === '@twinfile/geokit/ui' || key.startsWith('@twinfile/geokit/ui/')) {
+  if (key === '@local-hosting/geokit/ui' || key.startsWith('@local-hosting/geokit/ui/')) {
     delete importPaths[key];
   }
 }

@@ -8,12 +8,12 @@
  */
 
 import { MapChildElement } from '../map-child-element';
-import { normalizeCoordinatesArray } from '@twinfile/geokit/core/coordinates';
-import { simplifyPolygonRingToMaxPoints } from '@twinfile/geokit/core/simplify';
-import { createGeokitLogger } from '@twinfile/geokit/core';
+import { normalizeCoordinatesArray } from '@local-hosting/geokit/core/coordinates';
+import { simplifyPolygonRingToMaxPoints } from '@local-hosting/geokit/core/simplify';
+import { createGeokitLogger } from '@local-hosting/geokit/core';
 import { getCSSVariable } from '../../utils/theme';
 import { buildChoroplethFillPaint, type FillAntialiasMap } from '../../utils/choropleth-fill-paint';
-import type { LatLon } from '@twinfile/geokit/core/types';
+import type { LatLon } from '@local-hosting/geokit/core/types';
 
 const { debug } = createGeokitLogger('polygon');
 

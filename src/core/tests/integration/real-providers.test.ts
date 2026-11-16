@@ -20,8 +20,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MapTilerUIProvider } from '../../src/ui/providers/maptiler-provider';
 import { MapboxUIProvider } from '../../src/ui/providers/mapbox-provider';
-import { MapboxService } from '@twinfile/geokit/mapbox';
-import type { IsochroneOptions } from '@twinfile/geokit/service/types';
+import { MapboxService } from '@local-hosting/geokit/mapbox';
+import type { IsochroneOptions } from '@local-hosting/geokit/service/types';
 
 // Load API keys from environment
 // In browser tests, use import.meta.env; in node/jsdom, use process.env

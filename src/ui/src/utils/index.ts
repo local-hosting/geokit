@@ -16,7 +16,7 @@ export * from './feature-state-hover';
 export * from './logger';
 export * from './theme';
 export * from './scroll-idle';
-export { getFeatureId } from '@twinfile/geokit/core/geojson';
+export { getFeatureId } from '@local-hosting/geokit/core/geojson';
 export * from './layer-stack';
 export * from './geojson-source-options';
 export * from './map-terrain-disable';

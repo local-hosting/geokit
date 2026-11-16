@@ -18,7 +18,7 @@ import type {
   StyledPopupOptions,
   PointPopupProperties,
   PopupContentOptions,
-} from '@twinfile/geokit/core/types';
+} from '@local-hosting/geokit/core/types';
 import { injectPopupStyles } from './popup-styles';
 import { buildPopupContent, buildPopupContentGeneric } from './popup-content';
 import {
@@ -43,7 +43,7 @@ export type {
   PopupTag,
   PopupAction,
   PopupContentOptions,
-} from '@twinfile/geokit/core/types';
+} from '@local-hosting/geokit/core/types';
 
 export class PopupElement extends MapChildElement {
   static observedAttributes = ['lat', 'lng', 'content', 'anchor', 'offset', 'close-button'];

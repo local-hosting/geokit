@@ -1,5 +1,5 @@
 {
-  "name": "@twinfile/geokit-here",
+  "name": "@local-hosting/geokit-here",
   "version": "0.1.0",
   "description": "HERE Places discover search plugin for geokit",
   "license": "MPL-2.0",
@@ -16,7 +16,7 @@
     "test": "yarn run -T vitest run --config ../../config/vitest.plugin.config.ts"
   },
   "peerDependencies": {
-    "@twinfile/geokit-core": ">=0.2.33",
-    "@twinfile/geokit-service": ">=0.1.0"
+    "@local-hosting/geokit-core": ">=0.2.33",
+    "@local-hosting/geokit-service": ">=0.1.0"
   }
 }

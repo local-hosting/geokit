@@ -1,2 +1,2 @@
-/** @deprecated Import from `@twinfile/geokit/env/bootstrap` instead. */
-export { applyLoadedEnvToProcess, bootstrapGeokitMcpEnv, loadGeokitProcessEnv } from '@twinfile/geokit/env/bootstrap';
+/** @deprecated Import from `@local-hosting/geokit/env/bootstrap` instead. */
+export { applyLoadedEnvToProcess, bootstrapGeokitMcpEnv, loadGeokitProcessEnv } from '@local-hosting/geokit/env/bootstrap';

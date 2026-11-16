@@ -26,7 +26,7 @@ import {
   applyFloatingBadgeMarkerStackPaint,
   buildFloatingBadgeStack,
   ensureFloatingBadgeMarkerStack,
-  syncFloatingBadgeStackShapeFilters,
+  syncFloatingBadgeStackFilters,
 } from '../markers/marker-stack';
 
 function geojsonWithFloatingBadgeHoverColors(
@@ -851,5 +851,5 @@ async function attachSharedPointHoverAfterMount(
     hoverTranslate: options.paint.hoverTranslate,
     selectedTranslate: options.paint.selectedTranslate,
   });
-  syncFloatingBadgeStackShapeFilters(map, ids);
+  syncFloatingBadgeStackFilters(map, ids, options.promoteId);
 }

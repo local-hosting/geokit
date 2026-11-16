@@ -10,9 +10,9 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const esbuildAliases = [
-  `--alias:@twinfile/geokit/core/distance=${join(repoRoot, 'src/core/src/utils/distance/index.ts')}`,
-  `--alias:@twinfile/geokit/h3=${join(repoRoot, 'src/h3/src/index.ts')}`,
-  `--alias:@twinfile/geokit/h3/lite=${join(repoRoot, 'src/h3/src/lite.ts')}`,
+  `--alias:@local-hosting/geokit/core/distance=${join(repoRoot, 'src/core/src/utils/distance/index.ts')}`,
+  `--alias:@local-hosting/geokit/h3=${join(repoRoot, 'src/h3/src/index.ts')}`,
+  `--alias:@local-hosting/geokit/h3/lite=${join(repoRoot, 'src/h3/src/lite.ts')}`,
   `--alias:h3-js=${join(repoRoot, 'node_modules/h3-js/dist/h3-js.es.js')}`,
 ].join(' ');
 
@@ -49,13 +49,13 @@ function assertIncludes(label, code, pattern) {
   console.log(`PASS ${label}`);
 }
 
-const distanceOnly = bundleEntry("import { haversine } from '@twinfile/geokit/core/distance'");
+const distanceOnly = bundleEntry("import { haversine } from '@local-hosting/geokit/core/distance'");
 assertExcludes('core/distance excludes h3-js', distanceOnly, /h3-js/);
 
-const h3Lite = bundleEntry("import { compactH3CellId } from '@twinfile/geokit/h3/lite'");
+const h3Lite = bundleEntry("import { compactH3CellId } from '@local-hosting/geokit/h3/lite'");
 assertExcludes('h3/lite excludes h3-js', h3Lite, /h3-js/);
 
-const h3Full = bundleEntry("import { coordinatesToH3 } from '@twinfile/geokit/h3'");
+const h3Full = bundleEntry("import { coordinatesToH3 } from '@local-hosting/geokit/h3'");
 assertIncludes('h3 includes h3-js', h3Full, /h3-js/);
 
 console.log('bundle-smoke: all checks passed');

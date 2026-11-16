@@ -1,6 +1,6 @@
 import type { GeohashPoint, GeohashArea, H3Point, H3Area } from '../../types';
 import { decodeGeohash, encodeGeohash } from '../geohash';
-import { h3ToCoordinates, coordinatesToH3 } from '@twinfile/geokit/h3';
+import { h3ToCoordinates, coordinatesToH3 } from '@local-hosting/geokit/h3';
 
 /**
  * Convert a GeohashPoint to an H3Point

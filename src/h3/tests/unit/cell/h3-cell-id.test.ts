@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   compactH3CellId,
   expandH3CellId,
-} from '@twinfile/geokit/h3';
-import { normalizeH3CellToResolution } from '@twinfile/geokit/h3';
+} from '@local-hosting/geokit/h3';
+import { normalizeH3CellToResolution } from '@local-hosting/geokit/h3';
 
 describe('h3 cell-id', () => {
   it('strips trailing f padding for catalog URL paths', () => {

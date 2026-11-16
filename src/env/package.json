@@ -1,5 +1,5 @@
 {
-  "name": "@twinfile/geokit-env",
+  "name": "@local-hosting/geokit-env",
   "version": "0.1.0",
   "description": "Geokit environment key resolution and bootstrap (no geo dependencies)",
   "license": "MPL-2.0",

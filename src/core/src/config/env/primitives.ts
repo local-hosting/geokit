@@ -1,2 +1,2 @@
-/** @deprecated Import from `@twinfile/geokit/env/primitives` instead. */
-export * from '@twinfile/geokit/env/primitives';
+/** @deprecated Import from `@local-hosting/geokit/env/primitives` instead. */
+export * from '@local-hosting/geokit/env/primitives';

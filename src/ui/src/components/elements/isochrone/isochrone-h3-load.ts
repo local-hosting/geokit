@@ -1,5 +1,5 @@
 /**
- * Lazy loader for isochrone → H3 conversion (pulls @twinfile/geokit/h3 / h3-js only when render="h3").
+ * Lazy loader for isochrone → H3 conversion (pulls @local-hosting/geokit/h3 / h3-js only when render="h3").
  */
 
 import type { ConvertToH3Options } from './isochrone-h3';

@@ -1,5 +1,5 @@
 import type { Polygon } from '../../types';
-import { unwrapPolygonRingLongitudes } from '@twinfile/geokit/h3/lite';
+import { unwrapPolygonRingLongitudes } from '@local-hosting/geokit/h3/lite';
 import { geohashBounds } from './bounds';
 import { validateGeohash } from './validation';
 

@@ -1,6 +1,6 @@
 /**
  * GeoKit contract — offline policy and provider ids.
- * Map storage and bootstrap live in `@twinfile/geokit/ui`.
+ * Map storage and bootstrap live in `@local-hosting/geokit/ui`.
  */
 
 export type { MapStaticProviderId } from '../types/map-provider';

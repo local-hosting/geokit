@@ -1,5 +1,5 @@
 {
-  "name": "@twinfile/geokit-formats",
+  "name": "@local-hosting/geokit-formats",
   "version": "0.1.0",
   "description": "Convert shapefiles, CSV, and ZIP archives to GeoJSON",
   "license": "MPL-2.0",
@@ -18,7 +18,7 @@
     "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json"
   },
   "peerDependencies": {
-    "@twinfile/geokit": ">=0.3.6",
+    "@local-hosting/geokit": ">=0.3.6",
     "h3-js": "^4.3.0"
   },
   "peerDependenciesMeta": {
