@@ -738,6 +738,9 @@ async function ensureFloatingBadgeChrome(
         styles.setupSharedPointGlassLayer(mapInstance, layerIds.sourceId, layerIds.pointLayerId, {
           glassRadius: paintConfig.glassRadiusExpression,
           glassColor: paintConfig.glassColorExpression,
+          glowColor: paintConfig.strokeColorExpression,
+          pointRadius: paintConfig.pointRadiusExpression,
+          ringWidth: paintConfig.strokeWidthExpression,
           glassOpacity: paintConfig.glassOpacity,
           glassBlur: paintConfig.glassBlur,
           pointTranslate: paintConfig.pointTranslate,

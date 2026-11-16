@@ -7,6 +7,8 @@ import {
 import {
   SHARED_POINT_FLOATING_BADGE_FILL,
   sharedPointFloatingBadgeSelectedColor,
+  sharedPointSelectedMiddleRingColor,
+  sharedPointZoomedOutStep,
 } from '../../../src/utils/paint/shared-point-paint';
 
 describe('marker-selection-chrome', () => {
@@ -41,7 +43,7 @@ describe('marker-selection-chrome', () => {
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge`,
       'circle-stroke-color',
-      SHARED_POINT_FLOATING_BADGE_FILL
+      sharedPointSelectedMiddleRingColor(fill, SHARED_POINT_FLOATING_BADGE_FILL)
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-outer`,
@@ -68,22 +70,22 @@ describe('marker-selection-chrome', () => {
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-rounded-body`,
       'icon-color',
-      SHARED_POINT_FLOATING_BADGE_FILL
+      sharedPointZoomedOutStep(fill, SHARED_POINT_FLOATING_BADGE_FILL)
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-rounded-ring`,
       'icon-color',
-      SHARED_POINT_FLOATING_BADGE_FILL
+      sharedPointSelectedMiddleRingColor(fill, SHARED_POINT_FLOATING_BADGE_FILL)
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-rounded-outer`,
       'icon-color',
-      fill
+      sharedPointZoomedOutStep('rgba(0,0,0,0)', fill)
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-icon`,
       'icon-color',
-      fill
+      sharedPointZoomedOutStep('rgba(0,0,0,0)', fill)
     );
   });
 

@@ -138,7 +138,11 @@ describe('rounded-rect map chrome', () => {
           call[1] === 'icon-color'
       )
       .map((call) => call[2]);
-    expect(selectionBodyColors).toEqual([SHARED_POINT_FLOATING_BADGE_FILL]);
+    // White body zoomed in (step's last value); solid key zoomed out.
+    expect(selectionBodyColors).toHaveLength(1);
+    expect(selectionBodyColors[0]).toEqual(
+      expect.arrayContaining(['step', SHARED_POINT_FLOATING_BADGE_FILL])
+    );
 
     expect(setPaintProperty).toHaveBeenCalledWith(
       sharedPointSelectionBadgeLayerId(pointLayerId),
@@ -148,7 +152,7 @@ describe('rounded-rect map chrome', () => {
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-icon`,
       'icon-color',
-      sharedPointFloatingBadgeSelectedColor('#9acd32')
+      expect.arrayContaining(['step', sharedPointFloatingBadgeSelectedColor('#9acd32')])
     );
   });
 });

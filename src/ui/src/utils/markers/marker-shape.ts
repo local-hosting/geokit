@@ -44,12 +44,11 @@ export function sharedPointCombineLayerFilters(
   return ['all', ...parts];
 }
 
-/** Circle badge body layers only — glow/shadow stays shape-agnostic. */
+/** Circle badge body layers only — glass (zoomed-out glow) and shadow stay shape-agnostic. */
 export function sharedPointCircleBodyLayerIds(pointLayerId: string): string[] {
   const suffixes = [
     '',
     '-outer-stroke',
-    '-glass',
     '-hover',
     '-hover-badge',
     '-hover-badge-outer',

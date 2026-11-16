@@ -22,8 +22,6 @@ import {
   SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE,
   sharedPointFloatingBadgeOuterStrokeWidthExpression,
   SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY,
-  SHARED_POINT_FLOATING_BADGE_GLASS_BLUR,
-  SHARED_POINT_FLOATING_BADGE_GLASS_OPACITY,
   SHARED_POINT_FLOATING_BADGE_GLASS_PAD,
   SHARED_POINT_FLOATING_BADGE_SOFT_COLOR_PROPERTY,
   lightenHexTowardWhite,
@@ -44,6 +42,10 @@ import {
   sharedPointFloatingBadgeOuterStrokeRadius,
   sharedPointOuterStrokeLayerId,
   sharedPointRadiusPlusStrokeWidth,
+  sharedPointGlassPaint,
+  sharedPointRestingOuterStrokeWidth,
+  sharedPointSelectedMiddleRingColor,
+  sharedPointZoomedOutStep,
   sharedPointFloatingBadgeSelectionFillExpression,
   resolveFloatingBadgeSelectionKeyColor,
   resolveFloatingBadgeSelectionAccentColor,
@@ -881,6 +883,10 @@ export function setupSharedPointGlassLayer(
   options: {
     glassRadius: unknown;
     glassColor: string | unknown[];
+    /** Zoomed-out glow color (key color); defaults to `glassColor`. */
+    glowColor?: unknown;
+    pointRadius?: unknown;
+    ringWidth?: number | unknown[];
     glassOpacity?: number;
     glassBlur?: number;
     filter?: unknown[];
@@ -891,10 +897,15 @@ export function setupSharedPointGlassLayer(
   if (map.getLayer?.(glassLayerId)) return;
 
   const paint: Record<string, unknown> = {
-    'circle-radius': options.glassRadius,
-    'circle-color': options.glassColor,
-    'circle-opacity': options.glassOpacity ?? SHARED_POINT_FLOATING_BADGE_GLASS_OPACITY,
-    'circle-blur': options.glassBlur ?? SHARED_POINT_FLOATING_BADGE_GLASS_BLUR,
+    ...sharedPointGlassPaint({
+      glassRadius: options.glassRadius,
+      glassColor: options.glassColor,
+      glowColor: options.glowColor ?? options.glassColor,
+      pointRadius: options.pointRadius ?? sharedPointFloatingBadgeRadiusExpression(),
+      ringWidth: options.ringWidth ?? 0,
+      glassOpacity: options.glassOpacity,
+      glassBlur: options.glassBlur,
+    }),
     'circle-stroke-width': 0,
   };
   if (options.pointTranslate != null) {
@@ -968,10 +979,10 @@ export function setupSharedPointOuterStrokeLayer(
   const opacity = options.outerStrokeOpacity ?? 1;
   const paint: Record<string, unknown> = {
     'circle-radius': radius,
-    'circle-color': options.outerStrokeColor,
+    'circle-color': sharedPointZoomedOutStep('rgba(0,0,0,0)', options.outerStrokeColor),
     'circle-opacity': opacity,
     'circle-blur': 0,
-    'circle-stroke-width': options.outerStrokeWidth,
+    'circle-stroke-width': sharedPointRestingOuterStrokeWidth(options.outerStrokeWidth),
     'circle-stroke-color': options.outerStrokeColor,
     'circle-stroke-opacity': opacity,
   };
@@ -1196,7 +1207,7 @@ export function setupSelectionGroundBadgeLayers(
   // Selected: darkened key core + white middle ring + darkened key outer.
   const fillColor = sharedPointFloatingBadgeSelectionFillExpression(fallbackColor);
   const outerColor = fillColor;
-  const middleRingColor = tokens.fill;
+  const middleRingColor = sharedPointSelectedMiddleRingColor(fillColor, tokens.fill);
 
   if (!map.getSource?.(selectionSourceId)) return;
 
@@ -1478,10 +1489,22 @@ export function ensureSharedPointSelectionRingLayer(
 
   const ringLayerId = `${pointLayerId}-selection-ring`;
   if (options?.hideHalo) {
+    // Floating badge: halo only when zoomed out (white ring with a gap around the dot).
     if (map.getLayer?.(ringLayerId) && map.setPaintProperty) {
+      const tokens = resolveSharedPointFloatingBadgeTokens();
+      const selectedDot = sharedPointRadiusPlusStrokeWidth(
+        sharedPointFloatingBadgeSelectedRadiusExpression(),
+        sharedPointFloatingBadgeRingWidthExpression(tokens.selectedRingWidth)
+      );
+      map.setPaintProperty(ringLayerId, 'circle-radius', getSelectionRingRadiusFromPointRadius(selectedDot) as never);
       map.setPaintProperty(ringLayerId, 'circle-opacity', 0);
-      map.setPaintProperty(ringLayerId, 'circle-stroke-opacity', 0);
-      map.setPaintProperty(ringLayerId, 'circle-stroke-width', 0);
+      map.setPaintProperty(ringLayerId, 'circle-stroke-color', selectionRingColor);
+      map.setPaintProperty(ringLayerId, 'circle-stroke-opacity', sharedPointZoomedOutStep(1, 0));
+      map.setPaintProperty(
+        ringLayerId,
+        'circle-stroke-width',
+        sharedPointZoomedOutStep(SELECTION_RING_STROKE_WIDTH, 0)
+      );
     }
     return;
   }
