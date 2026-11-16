@@ -23,20 +23,24 @@ import {
   type SharedPointLayerIds,
 } from '../paint/shared-point-paint';
 import {
-  ensureSharedPointBadgeIconLayers,
-  raiseSharedPointBadgeIconLayersOnTop,
-} from '../paint/shared-point-badge-icon';
+  applyFloatingBadgeMarkerStackPaint,
+  buildFloatingBadgeStack,
+  ensureFloatingBadgeMarkerStack,
+  syncFloatingBadgeStackShapeFilters,
+} from '../markers/marker-stack';
 
 function geojsonWithFloatingBadgeHoverColors(
   geojson: FeatureCollection,
   paint: {
     selectionGroundBadge?: boolean;
     selectionGroundBadgeFallbackColor?: string;
+    selectedDarken?: number;
   }
 ): FeatureCollection {
   if (!paint.selectionGroundBadge) return geojson;
   return annotatePointFeaturesFloatingBadgeHover(geojson as FeatureCollection<Point>, {
     fallbackColor: paint.selectionGroundBadgeFallbackColor?.trim() || '#888888',
+    selectedAmount: paint.selectedDarken,
   });
 }
 
@@ -154,20 +158,7 @@ export function removeMapSourcesWithPrefix(
 }
 
 export function getSharedPointRelatedLayerIds(ids: SharedPointLayerIds): string[] {
-  const { glowLayerId, pointLayerId } = ids;
-  return [
-    glowLayerId,
-    pointLayerId,
-    `${pointLayerId}-outer-stroke`,
-    `${pointLayerId}-selection-shadow`,
-    `${pointLayerId}-selection-badge-outer`,
-    `${pointLayerId}-selection-badge`,
-    `${pointLayerId}-selection-badge-icon`,
-    `${pointLayerId}-badge-icon`,
-    `${pointLayerId}-selection-ring`,
-    `${glowLayerId}-hover`,
-    `${pointLayerId}-hover`,
-  ];
+  return [...buildFloatingBadgeStack(ids).all];
 }
 
 export function getSharedPointRelatedSourceIds(sourceId: string): string[] {
@@ -472,7 +463,7 @@ export async function syncExistingSharedPointLayers(
       glowHitAreaScale: scaled.glowHitAreaScale,
     });
 
-    applySharedPointLayerPaint(map, { ...scaled.paint, featureStateHover });
+    applyFloatingBadgeMarkerStackPaint(map, ids, scaled.paint, applySharedPointLayerPaint);
     // Prefer paint zoom-scaled blur; only fall back to compact numeric blur when paint omits it.
     if (scaled.paint.glowBlur == null && resolvedGlowBlur != null) {
       applySharedPointGlowBlur(map, ids.glowLayerId, resolvedGlowBlur);
@@ -684,17 +675,22 @@ export async function createSharedPointLayersFromPaint(
     glowHitAreaScale: scaled.glowHitAreaScale,
   });
 
-  applySharedPointLayerPaint(map, {
-    ...scaled.paint,
-    featureStateHover: applyHoverGlow
-      ? buildFeatureStateHoverOptions(
-          glowRadius,
-          scaled.paint.glowOpacity ?? SHARED_POINT_UNIFORM_GLOW_OPACITY,
-          resolvedPointOpacity,
-          glowHoverOpacity
-        )
-      : undefined,
-  });
+  applyFloatingBadgeMarkerStackPaint(
+    map,
+    ids,
+    {
+      ...scaled.paint,
+      featureStateHover: applyHoverGlow
+        ? buildFeatureStateHoverOptions(
+            glowRadius,
+            scaled.paint.glowOpacity ?? SHARED_POINT_UNIFORM_GLOW_OPACITY,
+            resolvedPointOpacity,
+            glowHoverOpacity
+          )
+        : undefined,
+    },
+    applySharedPointLayerPaint
+  );
 
   await ensureFloatingBadgeChrome(map, ids, scaled.paint);
 
@@ -707,127 +703,123 @@ export async function createSharedPointLayersFromPaint(
   });
 }
 
-/** Ensure white outer stroke + selection badge layers exist for floating-badge paint. */
+/** Ensure circle + rounded stacks via the floating-badge marker factory. */
 async function ensureFloatingBadgeChrome(
   map: MapInstance,
   ids: SharedPointLayerIds,
   paint: ApplySharedPointPaintOptions
 ): Promise<void> {
-  if (!paint.selectionGroundBadge) return;
-  const styles = await getLayerStylesModule();
-  if (
-    paint.outerStrokeWidthExpression != null &&
-    paint.outerStrokeColorExpression != null &&
-    typeof styles.setupSharedPointOuterStrokeLayer === 'function'
-  ) {
-    styles.setupSharedPointOuterStrokeLayer(map, ids.sourceId, ids.pointLayerId, {
-      pointRadius: paint.pointRadiusExpression ?? 4,
-      coloredStrokeWidth: paint.strokeWidthExpression ?? 0,
-      outerStrokeWidth: paint.outerStrokeWidthExpression,
-      outerStrokeColor: paint.outerStrokeColorExpression,
-      outerStrokeOpacity: paint.outerStrokeOpacity,
-      pointTranslate: paint.pointTranslate,
-    });
-  }
-  if (
-    paint.glassRadiusExpression != null &&
-    paint.glassColorExpression != null &&
-    typeof styles.setupSharedPointGlassLayer === 'function'
-  ) {
-    styles.setupSharedPointGlassLayer(map, ids.sourceId, ids.pointLayerId, {
-      glassRadius: paint.glassRadiusExpression,
-      glassColor: paint.glassColorExpression,
-      glassOpacity: paint.glassOpacity,
-      glassBlur: paint.glassBlur,
-      pointTranslate: paint.pointTranslate,
-    });
-  }
-  if (typeof styles.setupSelectionGroundBadgeLayers === 'function') {
-    styles.setupSelectionGroundBadgeLayers(map, ids.sourceId, ids.pointLayerId, {
-      fallbackColor: paint.selectionGroundBadgeFallbackColor,
-    });
-  }
-  ensureSharedPointBadgeIconLayers(map, {
-    sourceId: ids.sourceId,
-    pointLayerId: ids.pointLayerId,
-    pointIconTranslate: paint.pointTranslate,
-    selectionIconTranslate: paint.selectedTranslate,
-  });
-  raiseSharedPointBadgeIconLayersOnTop(map, ids.pointLayerId);
-  if (map.setPaintProperty) {
-    for (const layerId of [
-      ids.pointLayerId,
-      `${ids.pointLayerId}-outer-stroke`,
-      `${ids.pointLayerId}-glass`,
-      `${ids.pointLayerId}-selection-badge`,
-      `${ids.pointLayerId}-selection-badge-outer`,
-    ]) {
-      if (!map.getLayer?.(layerId)) continue;
+  await ensureFloatingBadgeMarkerStack({
+    map,
+    ids,
+    paint,
+    setupCircleChrome: async (mapInstance, layerIds, paintConfig) => {
+      const styles = await getLayerStylesModule();
+      if (
+        paintConfig.outerStrokeWidthExpression != null &&
+        paintConfig.outerStrokeColorExpression != null &&
+        typeof styles.setupSharedPointOuterStrokeLayer === 'function'
+      ) {
+        styles.setupSharedPointOuterStrokeLayer(mapInstance, layerIds.sourceId, layerIds.pointLayerId, {
+          pointRadius: paintConfig.pointRadiusExpression ?? 4,
+          coloredStrokeWidth: paintConfig.strokeWidthExpression ?? 0,
+          outerStrokeWidth: paintConfig.outerStrokeWidthExpression,
+          outerStrokeColor: paintConfig.outerStrokeColorExpression,
+          outerStrokeOpacity: paintConfig.outerStrokeOpacity,
+          pointTranslate: paintConfig.pointTranslate,
+        });
+      }
+      if (
+        paintConfig.glassRadiusExpression != null &&
+        paintConfig.glassColorExpression != null &&
+        typeof styles.setupSharedPointGlassLayer === 'function'
+      ) {
+        styles.setupSharedPointGlassLayer(mapInstance, layerIds.sourceId, layerIds.pointLayerId, {
+          glassRadius: paintConfig.glassRadiusExpression,
+          glassColor: paintConfig.glassColorExpression,
+          glassOpacity: paintConfig.glassOpacity,
+          glassBlur: paintConfig.glassBlur,
+          pointTranslate: paintConfig.pointTranslate,
+        });
+      }
+      if (typeof styles.setupSelectionGroundBadgeLayers === 'function') {
+        styles.setupSelectionGroundBadgeLayers(mapInstance, layerIds.sourceId, layerIds.pointLayerId, {
+          fallbackColor: paintConfig.selectionGroundBadgeFallbackColor,
+        });
+      }
+      if (!mapInstance.setPaintProperty) return;
+      for (const layerId of [
+        layerIds.pointLayerId,
+        `${layerIds.pointLayerId}-outer-stroke`,
+        `${layerIds.pointLayerId}-glass`,
+        `${layerIds.pointLayerId}-selection-badge`,
+        `${layerIds.pointLayerId}-selection-badge-outer`,
+      ]) {
+        if (!mapInstance.getLayer?.(layerId)) continue;
+        try {
+          if (paintConfig.pointTranslateAnchor) {
+            mapInstance.setPaintProperty(layerId, 'circle-translate-anchor', paintConfig.pointTranslateAnchor);
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      for (const layerId of [
+        layerIds.pointLayerId,
+        `${layerIds.pointLayerId}-outer-stroke`,
+        `${layerIds.pointLayerId}-glass`,
+      ]) {
+        if (!mapInstance.getLayer?.(layerId) || paintConfig.pointTranslate == null) continue;
+        try {
+          mapInstance.setPaintProperty(layerId, 'circle-translate', paintConfig.pointTranslate);
+        } catch {
+          /* ignore */
+        }
+      }
+      const sel = `${layerIds.pointLayerId}-selection-badge`;
+      const selOuter = `${layerIds.pointLayerId}-selection-badge-outer`;
       try {
-        if (paint.pointTranslateAnchor) {
-          map.setPaintProperty(layerId, 'circle-translate-anchor', paint.pointTranslateAnchor);
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-    // Resting float height — selection badge translate is owned by select/hover animation.
-    for (const layerId of [
-      ids.pointLayerId,
-      `${ids.pointLayerId}-outer-stroke`,
-      `${ids.pointLayerId}-glass`,
-    ]) {
-      if (!map.getLayer?.(layerId) || paint.pointTranslate == null) continue;
-      try {
-        map.setPaintProperty(layerId, 'circle-translate', paint.pointTranslate);
-      } catch {
-        /* ignore */
-      }
-    }
-    // Force zoom-scaled radius/stroke + key-core selection chrome.
-    const sel = `${ids.pointLayerId}-selection-badge`;
-    const selOuter = `${ids.pointLayerId}-selection-badge-outer`;
-    try {
-      if (map.getLayer?.(sel) && paint.pointRadiusExpression != null) {
-        const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression(
-          paint.pointRadiusExpression as unknown[]
-        );
-        map.setPaintProperty(sel, 'circle-radius', selectedRadius);
-        if (paint.strokeWidthExpression != null) {
-          map.setPaintProperty(sel, 'circle-stroke-width', paint.strokeWidthExpression);
-        }
-        if (paint.selectionFillExpression != null) {
-          map.setPaintProperty(sel, 'circle-color', paint.selectionFillExpression);
-        }
-        if (paint.selectionStrokeColorExpression != null) {
-          map.setPaintProperty(sel, 'circle-stroke-color', paint.selectionStrokeColorExpression);
-        }
-      }
-      if (map.getLayer?.(selOuter) && paint.pointRadiusExpression != null) {
-        const ring = paint.strokeWidthExpression ?? 0;
-        const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression(
-          paint.pointRadiusExpression as unknown[]
-        );
-        map.setPaintProperty(
-          selOuter,
-          'circle-radius',
-          sharedPointRadiusPlusStrokeWidth(selectedRadius, ring as number | unknown[])
-        );
-        if (paint.outerStrokeWidthExpression != null) {
-          map.setPaintProperty(selOuter, 'circle-stroke-width', paint.outerStrokeWidthExpression);
-        }
-        if (paint.selectionOuterStrokeColorExpression != null) {
-          map.setPaintProperty(
-            selOuter,
-            'circle-stroke-color',
-            paint.selectionOuterStrokeColorExpression
+        if (mapInstance.getLayer?.(sel) && paintConfig.pointRadiusExpression != null) {
+          const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression(
+            paintConfig.pointRadiusExpression as unknown[]
           );
+          mapInstance.setPaintProperty(sel, 'circle-radius', selectedRadius);
+          if (paintConfig.strokeWidthExpression != null) {
+            mapInstance.setPaintProperty(sel, 'circle-stroke-width', paintConfig.strokeWidthExpression);
+          }
+          if (paintConfig.selectionFillExpression != null) {
+            mapInstance.setPaintProperty(sel, 'circle-color', paintConfig.selectionFillExpression);
+          }
+          if (paintConfig.selectionStrokeColorExpression != null) {
+            mapInstance.setPaintProperty(sel, 'circle-stroke-color', paintConfig.selectionStrokeColorExpression);
+          }
         }
+        if (mapInstance.getLayer?.(selOuter) && paintConfig.pointRadiusExpression != null) {
+          const ring = paintConfig.strokeWidthExpression ?? 0;
+          const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression(
+            paintConfig.pointRadiusExpression as unknown[]
+          );
+          mapInstance.setPaintProperty(
+            selOuter,
+            'circle-radius',
+            sharedPointRadiusPlusStrokeWidth(selectedRadius, ring as number | unknown[])
+          );
+          if (paintConfig.outerStrokeWidthExpression != null) {
+            mapInstance.setPaintProperty(selOuter, 'circle-stroke-width', paintConfig.outerStrokeWidthExpression);
+          }
+          if (paintConfig.selectionOuterStrokeColorExpression != null) {
+            mapInstance.setPaintProperty(
+              selOuter,
+              'circle-stroke-color',
+              paintConfig.selectionOuterStrokeColorExpression
+            );
+          }
+        }
+      } catch {
+        /* style swap */
       }
-    } catch {
-      /* style swap */
-    }
-  }
+    },
+  });
 }
 
 async function attachSharedPointHoverAfterMount(
@@ -859,4 +851,5 @@ async function attachSharedPointHoverAfterMount(
     hoverTranslate: options.paint.hoverTranslate,
     selectedTranslate: options.paint.selectedTranslate,
   });
+  syncFloatingBadgeStackShapeFilters(map, ids);
 }

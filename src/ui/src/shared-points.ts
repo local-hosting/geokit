@@ -73,9 +73,13 @@ export {
   SHARED_POINT_FLOATING_BADGE_RING_STROKE_WIDTH,
   resolveSharedPointFloatingBadgeTokens,
   lightenHexTowardWhite,
+  darkenHexTowardBlack,
   mixHexColors,
   sharedPointFloatingBadgeHoverRingColorAt,
   sharedPointFloatingBadgeSoftColor,
+  sharedPointFloatingBadgeSelectedColor,
+  SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY,
+  SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN,
   annotatePointFeaturesFloatingBadgeHover,
   SHARED_POINT_FLOATING_BADGE_SOFT_LIGHTEN,
   SHARED_POINT_FLOATING_BADGE_SOFT_COLOR_PROPERTY,
@@ -199,8 +203,21 @@ export {
   badgePreset,
   createBadgeMarker,
   syncBadgeChrome,
+  sharedPointBadgeShapeFromProperties,
+  sharedPointBadgeVariantFromProperties,
   type BadgeKind,
+  type SyncBadgeChromeOptions,
 } from './utils/markers/badge';
+
+export {
+  applyFloatingBadgeSelectionChrome,
+  buildFloatingBadgeRoundedChromeOptions,
+  buildFloatingBadgeSelectedChromeSpec,
+  ensureFloatingBadgeSelectionChrome,
+  floatingBadgeBodyShapeFromProperties,
+  reapplyFloatingBadgeSelectionChromeIfActive,
+  type FloatingBadgeSelectedChromeSpec,
+} from './utils/markers/marker-selection-chrome';
 
 export {
   SHARED_POINT_BADGE_ICON_PROPERTY,
@@ -225,3 +242,32 @@ export type {
   MarkerInteractionPhase,
   MarkerInteractionState,
 } from './utils/markers/factory';
+
+export {
+  MARKER_BODY_SHAPES,
+  SHARED_POINT_MARKER_SHAPE_PROPERTY,
+  markerBodyShapeFromProperties,
+  type MarkerBodyShape,
+} from './utils/markers/marker-shape';
+
+export {
+  GK_ROUNDED_RECT_MARKER_IMAGE_ID,
+  ensureSharedPointRoundedBodyLayers,
+  ensureSharedPointRoundedRectChromeLayers,
+  ensureSharedPointSelectionRoundedRectChromeLayers,
+  registerRoundedRectMarkerImage,
+  sharedPointRoundedBodyLayerId,
+  sharedPointRoundedOuterLayerId,
+  sharedPointRoundedRingLayerId,
+  sharedPointSelectionRoundedRingLayerId,
+  sharedPointSelectionRoundedBodyLayerId,
+  sharedPointSelectionRoundedOuterLayerId,
+} from './utils/paint/shared-point-rounded-body';
+export {
+  applyFloatingBadgeMarkerStackPaint,
+  buildFloatingBadgeStack,
+  ensureFloatingBadgeMarkerStack,
+  floatingBadgeRoundedRestingLayerIds,
+  syncFloatingBadgeStackShapeFilters,
+  type FloatingBadgeStack,
+} from './utils/markers/marker-stack';

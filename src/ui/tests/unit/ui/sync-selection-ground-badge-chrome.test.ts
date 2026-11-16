@@ -1,11 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   SHARED_POINT_FLOATING_BADGE_FILL,
-  sharedPointFloatingBadgeOuterStrokeRadius,
-  sharedPointFloatingBadgeRingWidthExpression,
-  sharedPointFloatingBadgeSelectedRadiusExpression,
+  sharedPointFloatingBadgeSelectedColor,
 } from '../../../src/utils/paint/shared-point-paint';
-import { sharedPointBadgeIconSizeForGlyphDiskExpression } from '../../../src/utils/paint/shared-point-badge-icon-sizing';
+import { sharedPointBadgeIconSizeExpression } from '../../../src/utils/paint/shared-point-badge-icon-sizing';
 import { syncBadgeChrome } from '../../../src/utils/markers/badge';
 
 describe('syncBadgeChrome', () => {
@@ -37,38 +35,81 @@ describe('syncBadgeChrome', () => {
     );
   });
 
-  it('collapses to one key disk for glyph selections', () => {
+  it('hides circle selection badges and paints rounded-rect selection chrome', () => {
     const pointLayerId = 'canvas-places-point';
     const setPaintProperty = vi.fn();
     const setLayoutProperty = vi.fn();
-    const tokens = { coloredRingWidth: 7 } as const;
-    const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression();
-    const ringWidth = sharedPointFloatingBadgeRingWidthExpression(tokens.coloredRingWidth);
-    const glyphDiskRadius = sharedPointFloatingBadgeOuterStrokeRadius(selectedRadius, ringWidth);
     syncBadgeChrome(
       {
         getLayer: (id: string) =>
           id === `${pointLayerId}-selection-badge` ||
           id === `${pointLayerId}-selection-badge-outer` ||
-          id === `${pointLayerId}-selection-badge-icon`
+          id === `${pointLayerId}-selection-badge-icon` ||
+          id === `${pointLayerId}-selection-rounded-body` ||
+          id === `${pointLayerId}-selection-rounded-outer`
             ? {}
             : undefined,
         setPaintProperty,
         setLayoutProperty,
       } as never,
       pointLayerId,
-      { keyColor: '#9acd32', badgeGlyph: true }
+      {
+        keyColor: '#9acd32',
+        properties: { _badgeIcon: 'cube', _color: '#9acd32', _markerShape: 'rounded-rect' },
+      }
     );
 
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge`,
-      'circle-radius',
-      glyphDiskRadius
+      'circle-opacity',
+      0
+    );
+    const fill = sharedPointFloatingBadgeSelectedColor('#9acd32');
+    expect(setPaintProperty).toHaveBeenCalledWith(
+      `${pointLayerId}-selection-rounded-body`,
+      'icon-color',
+      fill
+    );
+    expect(setPaintProperty).toHaveBeenCalledWith(
+      `${pointLayerId}-selection-badge-icon`,
+      'icon-color',
+      fill
     );
     expect(setLayoutProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-icon`,
       'icon-size',
-      sharedPointBadgeIconSizeForGlyphDiskExpression()
+      sharedPointBadgeIconSizeExpression()
     );
+  });
+
+  it('does not query rounded selection layers before they exist on the map', () => {
+    const pointLayerId = 'canvas-places-point';
+    const roundedBodyId = `${pointLayerId}-selection-rounded-body`;
+    const getPaintProperty = vi.fn((layerId: string) => {
+      if (layerId === roundedBodyId) {
+        throw new TypeError("Cannot read properties of undefined (reading 'style')");
+      }
+      return [0, -8];
+    });
+    expect(() =>
+      syncBadgeChrome(
+        {
+          getLayer: (id: string) =>
+            id === `${pointLayerId}-selection-badge` ||
+            id === `${pointLayerId}-selection-badge-outer` ||
+            id === `${pointLayerId}-selection-badge-icon`
+              ? {}
+              : undefined,
+          setPaintProperty: vi.fn(),
+          getPaintProperty,
+        } as never,
+        pointLayerId,
+        {
+        keyColor: '#9acd32',
+        properties: { _badgeIcon: 'cube', _color: '#9acd32', _markerShape: 'rounded-rect' },
+      }
+      )
+    ).not.toThrow();
+    expect(getPaintProperty).not.toHaveBeenCalledWith(roundedBodyId, 'icon-translate');
   });
 });

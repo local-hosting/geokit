@@ -1,118 +1,46 @@
 import type { MapInstance } from '../../providers/types';
-import { SHARED_POINT_BADGE_ICON_PROPERTY } from '../paint/shared-point-badge-constants';
-import {
-  sharedPointBadgeIconSizeExpression,
-  sharedPointBadgeIconSizeForGlyphDiskExpression,
-} from '../paint/shared-point-badge-icon-sizing';
 import type { ApplySharedPointPaintOptions, SharedPointLayerIds } from '../paint/shared-point-paint';
 import {
-  resolveSharedPointFloatingBadgeTokens,
-  sharedPointFloatingBadgeOuterStrokeRadius,
-  sharedPointFloatingBadgeRingWidthExpression,
-  sharedPointFloatingBadgeSelectedRadiusExpression,
+  resolveFloatingBadgeSelectionAccentColor,
   sharedPointFloatingBadgePaintExpressions,
-  sharedPointGlassLayerId,
-  sharedPointSelectionBadgeLayerId,
-  sharedPointSelectionBadgeOuterLayerId,
 } from '../paint/shared-point-paint';
-import {
-  getSharedPointRelatedLayerIds,
-  getSharedPointRelatedSourceIds,
-} from '../shared-points/shared-point-sync';
+import { floatingBadgeSelectionAccentFromProperties } from './marker-selection-chrome';
+import { getSharedPointRelatedSourceIds } from '../shared-points/shared-point-sync';
+import type { MarkerBodyShape } from './marker-shape';
 import { createMarker, type MarkerPreset } from './factory';
+import { buildFloatingBadgeStack } from './marker-stack';
+import {
+  applyFloatingBadgeSelectionChrome,
+  floatingBadgeBodyShapeFromProperties,
+  type FloatingBadgeSelectionChromeOptions,
+} from './marker-selection-chrome';
+import { SHARED_POINT_BADGE_ICON_PROPERTY } from '../paint/shared-point-badge-constants';
 
 export type BadgeKind = 'place' | 'resource';
 
-function badgeLayers(ids: SharedPointLayerIds): string[] {
-  const glassId = sharedPointGlassLayerId(ids.pointLayerId);
-  const stack = [...getSharedPointRelatedLayerIds(ids)];
-  if (stack.includes(glassId)) return stack;
-  const i = stack.indexOf(`${ids.pointLayerId}-outer-stroke`);
-  stack.splice(i >= 0 ? i + 1 : 1, 0, glassId);
-  return stack;
+export function sharedPointBadgeVariantFromProperties(
+  properties: Record<string, unknown> | null | undefined
+): BadgeKind {
+  return floatingBadgeBodyShapeFromProperties(properties) === 'rounded-rect' ? 'resource' : 'place';
 }
 
-function setProps(
-  map: MapInstance,
-  paint: ReadonlyArray<readonly [layerId: string, prop: string, value: unknown]>,
-  layout: ReadonlyArray<readonly [layerId: string, prop: string, value: unknown]> = []
-): void {
-  for (const [layerId, prop, value] of paint) {
-    if (!map.getLayer?.(layerId) || !map.setPaintProperty) continue;
-    try {
-      map.setPaintProperty(layerId, prop, value);
-    } catch {
-      /* style swap */
-    }
-  }
-  for (const [layerId, prop, value] of layout) {
-    if (!map.getLayer?.(layerId) || !map.setLayoutProperty) continue;
-    try {
-      map.setLayoutProperty(layerId, prop, value);
-    } catch {
-      /* style swap */
-    }
-  }
+export function sharedPointBadgeShapeFromProperties(
+  properties: Record<string, unknown> | null | undefined
+): MarkerBodyShape {
+  return floatingBadgeBodyShapeFromProperties(properties);
 }
 
-function applyChrome(
-  map: MapInstance,
-  pointLayerId: string,
-  accentColor: string,
+function selectionChromeForVariant(
   variant: BadgeKind
-): void {
-  const badgeId = sharedPointSelectionBadgeLayerId(pointLayerId);
-  if (!map.getLayer?.(badgeId)) return;
-
-  const tokens = resolveSharedPointFloatingBadgeTokens();
-  const badgeOuterId = sharedPointSelectionBadgeOuterLayerId(pointLayerId);
-  const iconLayerId = `${pointLayerId}-selection-badge-icon`;
-  const ringWidth = sharedPointFloatingBadgeRingWidthExpression(tokens.coloredRingWidth);
-  const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression();
-  const shared: (readonly [string, string, unknown])[] = [
-    [badgeId, 'circle-color', accentColor],
-  ];
-
-  if (variant === 'resource') {
-    const r = sharedPointFloatingBadgeOuterStrokeRadius(selectedRadius, ringWidth);
-    setProps(
-      map,
-      [
-        ...shared,
-        [badgeId, 'circle-radius', r],
-        [badgeId, 'circle-stroke-width', 0],
-        [badgeId, 'circle-stroke-opacity', 0],
-        [badgeId, 'circle-stroke-color', accentColor],
-        [badgeOuterId, 'circle-opacity', 0],
-        [badgeOuterId, 'circle-stroke-opacity', 0],
-      ],
-      [[iconLayerId, 'icon-size', sharedPointBadgeIconSizeForGlyphDiskExpression()]]
-    );
-    return;
-  }
-
-  setProps(
-    map,
-    [
-      ...shared,
-      [badgeId, 'circle-radius', selectedRadius],
-      [badgeId, 'circle-stroke-width', ringWidth],
-      [badgeId, 'circle-stroke-opacity', 1],
-      [badgeId, 'circle-stroke-color', tokens.fill],
-      [badgeOuterId, 'circle-color', accentColor],
-      [badgeOuterId, 'circle-stroke-color', accentColor],
-      [badgeOuterId, 'circle-opacity', 1],
-      [badgeOuterId, 'circle-stroke-opacity', 1],
-    ],
-    [[iconLayerId, 'icon-size', sharedPointBadgeIconSizeExpression()]]
-  );
+): Pick<FloatingBadgeSelectionChromeOptions, 'shape'> {
+  return { shape: variant === 'resource' ? 'rounded-rect' : 'circle' };
 }
 
 export const badgePreset: MarkerPreset<BadgeKind, SharedPointLayerIds, ApplySharedPointPaintOptions> =
   {
     presetId: 'floating-badge',
     inventory: {
-      layerStack: badgeLayers,
+      layerStack: (ids) => [...buildFloatingBadgeStack(ids).all],
       sourceStack: (ids) => getSharedPointRelatedSourceIds(ids.sourceId),
     },
     paint: {
@@ -129,10 +57,8 @@ export const badgePreset: MarkerPreset<BadgeKind, SharedPointLayerIds, ApplyShar
         }) as ApplySharedPointPaintOptions,
     },
     features: {
-      variantFrom: (properties) => {
-        const icon = properties?.[SHARED_POINT_BADGE_ICON_PROPERTY];
-        return typeof icon === 'string' && icon.trim() ? 'resource' : 'place';
-      },
+      variantFrom: (properties) => sharedPointBadgeVariantFromProperties(properties),
+      shapeFrom: (properties) => floatingBadgeBodyShapeFromProperties(properties),
       accentFrom: (properties, fallbackAccent) => {
         const resting =
           typeof properties?._colorResting === 'string' ? properties._colorResting.trim() : '';
@@ -143,7 +69,10 @@ export const badgePreset: MarkerPreset<BadgeKind, SharedPointLayerIds, ApplyShar
     states: {
       apply(map, ids, state) {
         if (state.phase !== 'selected') return;
-        applyChrome(map, ids.pointLayerId, state.accentColor, state.variant);
+        applyFloatingBadgeSelectionChrome(map, ids.pointLayerId, {
+          accentColor: state.accentColor,
+          ...selectionChromeForVariant(state.variant),
+        });
       },
     },
   };
@@ -164,11 +93,34 @@ export function createBadgeMarker(options: {
   });
 }
 
+export type SyncBadgeChromeOptions = {
+  keyColor: string;
+  properties?: Record<string, unknown> | null;
+  /** @deprecated Pass `properties` — shape comes from the marker factory. */
+  badgeGlyph?: boolean;
+};
+
 export function syncBadgeChrome(
   map: MapInstance,
   pointLayerId: string,
-  options: { keyColor: string; badgeGlyph: boolean }
+  options: SyncBadgeChromeOptions
 ): void {
-  applyChrome(map, pointLayerId, options.keyColor, options.badgeGlyph ? 'resource' : 'place');
+  const shape =
+    options.properties != null
+      ? floatingBadgeBodyShapeFromProperties(options.properties)
+      : options.badgeGlyph
+        ? 'rounded-rect'
+        : 'circle';
+  const fallback = options.keyColor.trim() || '#888888';
+  const props = options.properties ?? null;
+  const accent =
+    props != null
+      ? floatingBadgeSelectionAccentFromProperties(props, fallback)
+      : resolveFloatingBadgeSelectionAccentColor(null, fallback);
+  applyFloatingBadgeSelectionChrome(map, pointLayerId, {
+    accentColor: accent,
+    shape,
+  });
 }
 
+export { SHARED_POINT_BADGE_ICON_PROPERTY };

@@ -20,6 +20,7 @@ import {
   SHARED_POINT_FLOATING_BADGE_HOVER_LIGHTEN,
   SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
   SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE,
+  sharedPointFloatingBadgeOuterStrokeWidthExpression,
   SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY,
   SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE,
   SHARED_POINT_FLOATING_BADGE_GLASS_BLUR,
@@ -29,7 +30,6 @@ import {
   lightenHexTowardWhite,
   sharedPointFloatingBadgeGlassRadiusExpression,
   sharedPointFloatingBadgeHoverRingColorAt,
-  sharedPointFloatingBadgeOuterStrokeWidthExpression,
   sharedPointFloatingBadgeRingWidthExpression,
   sharedPointFloatingBadgeSelectedRadiusExpression,
   sharedPointFloatingBadgeNormalizeViewportTranslate,
@@ -47,9 +47,18 @@ import {
   sharedPointRadiusPlusStrokeWidth,
   sharedPointSelectionBadgeLayerId,
   sharedPointSelectionBadgeOuterLayerId,
+  sharedPointFloatingBadgeSelectionFillExpression,
+  resolveFloatingBadgeSelectionKeyColor,
+  resolveFloatingBadgeSelectionAccentColor,
+  SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY,
   syncSharedPointSelectedLayerFilter,
 } from '../../paint/shared-point-paint';
-import { syncBadgeChrome } from '../../markers/badge';
+import {
+  sharedPointBadgeVariantFromProperties,
+  syncBadgeChrome,
+} from '../../markers/badge';
+import { sharedPointCircleBodyFilter } from '../../markers/marker-shape';
+import { ensureFloatingBadgeSelectionChrome } from '../../markers/marker-selection-chrome';
 import {
   ensureSharedPointBadgeIconLayers,
   syncBadgeIconTranslate,
@@ -59,6 +68,11 @@ import {
   sharedPointSelectionBadgeIconLayerId,
 } from '../../paint/shared-point-badge-icon';
 import { resolveSharedPointLayerIdForSource } from '../../shared-points/shared-point-heal';
+import {
+  sharedPointSelectionRoundedBodyLayerId,
+  sharedPointSelectionRoundedOuterLayerId,
+  sharedPointSelectionRoundedRingLayerId,
+} from '../../paint/shared-point-rounded-body';
 
 // ============================================================================
 // Types
@@ -1265,15 +1279,9 @@ export function setupSelectionGroundBadgeLayers(
   const fallbackColor = options?.fallbackColor?.trim() || '#888888';
   const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression();
   const tokens = resolveSharedPointFloatingBadgeTokens();
-  // Selected: key-color core + white middle ring + key-color outer.
-  const ringColor = [
-    'coalesce',
-    ['get', colorProperty],
-    ['get', 'color'],
-    ['get', 'marker-color'],
-    fallbackColor,
-  ];
-  const fillColor = ringColor;
+  // Selected: darkened key core + white middle ring + darkened key outer.
+  const fillColor = sharedPointFloatingBadgeSelectionFillExpression(fallbackColor);
+  const outerColor = fillColor;
   const middleRingColor = tokens.fill;
 
   if (!map.getSource?.(selectionSourceId)) return;
@@ -1338,14 +1346,15 @@ export function setupSelectionGroundBadgeLayers(
           id: badgeOuterLayerId,
           type: 'circle',
           source: selectionSourceId,
+          filter: sharedPointCircleBodyFilter(),
           minzoom: 0,
           paint: {
             'circle-radius': outerStrokeRadius,
-            'circle-color': ringColor,
+            'circle-color': outerColor,
             'circle-opacity': 1,
             'circle-blur': 0,
             'circle-stroke-width': outerWidth,
-            'circle-stroke-color': ringColor,
+            'circle-stroke-color': outerColor,
             'circle-stroke-opacity': 1,
             'circle-translate': tokens.floatTranslate,
             'circle-translate-anchor': 'viewport',
@@ -1365,6 +1374,7 @@ export function setupSelectionGroundBadgeLayers(
           id: badgeLayerId,
           type: 'circle',
           source: selectionSourceId,
+          filter: sharedPointCircleBodyFilter(),
           minzoom: 0,
           paint: {
             'circle-radius': selectedRadius,
@@ -1384,6 +1394,16 @@ export function setupSelectionGroundBadgeLayers(
     }
   }
 
+  const circleOnlyFilter = sharedPointCircleBodyFilter();
+  for (const layerId of [badgeLayerId, badgeOuterLayerId, shadowLayerId]) {
+    if (!map.getLayer?.(layerId) || !map.setFilter) continue;
+    try {
+      map.setFilter(layerId, circleOnlyFilter);
+    } catch {
+      /* style swap */
+    }
+  }
+
   // Re-apply key-core chrome when layers already exist (paint revision / theme refresh).
   if (map.setPaintProperty) {
     try {
@@ -1394,8 +1414,8 @@ export function setupSelectionGroundBadgeLayers(
         map.setPaintProperty(badgeLayerId, 'circle-radius', selectedRadius);
       }
       if (map.getLayer?.(badgeOuterLayerId)) {
-        map.setPaintProperty(badgeOuterLayerId, 'circle-color', ringColor);
-        map.setPaintProperty(badgeOuterLayerId, 'circle-stroke-color', ringColor);
+        map.setPaintProperty(badgeOuterLayerId, 'circle-color', outerColor);
+        map.setPaintProperty(badgeOuterLayerId, 'circle-stroke-color', outerColor);
         map.setPaintProperty(badgeOuterLayerId, 'circle-opacity', 1);
         map.setPaintProperty(badgeOuterLayerId, 'circle-stroke-opacity', 1);
         map.setPaintProperty(badgeOuterLayerId, 'circle-stroke-width', outerWidth);
@@ -1578,6 +1598,18 @@ function setSelectionBadgeTranslate(
   translate: [number, number] | unknown[]
 ): void {
   setBadgeLayersTranslate(map, selectionBadgeLayerIds(pointLayerId), translate);
+  for (const layerId of [
+    sharedPointSelectionRoundedOuterLayerId(pointLayerId),
+    sharedPointSelectionRoundedRingLayerId(pointLayerId),
+    sharedPointSelectionRoundedBodyLayerId(pointLayerId),
+  ]) {
+    if (!map.getLayer?.(layerId) || !map.setPaintProperty) continue;
+    try {
+      map.setPaintProperty(layerId, 'icon-translate', translate);
+    } catch {
+      /* style swap */
+    }
+  }
   syncSelectionBadgeIconTranslate(map, pointLayerId, translate);
 }
 
@@ -1757,6 +1789,7 @@ function setupSelectionShadowLayer(
           id: shadowLayerId,
           type: 'circle',
           source: selectionSourceId,
+          filter: sharedPointCircleBodyFilter(),
           minzoom: 0,
           paint: {
             'circle-radius': getSelectionShadowRadiusFromPointRadius(
@@ -1970,26 +2003,6 @@ function resolveSharedPointHoverRingColor(
       ? lightenAmount
       : SHARED_POINT_FLOATING_BADGE_HOVER_LIGHTEN;
   return lightenHexTowardWhite(resolveSharedPointRingColor(properties, fallbackColor), amount);
-}
-
-/**
- * Resting locker/key color for the selected badge fill.
- * Hover may have overwritten `_color` with the lit tint — prefer `_colorResting`.
- */
-export function resolveFloatingBadgeSelectionKeyColor(
-  properties: Record<string, unknown> | null | undefined,
-  fallbackColor: string
-): string {
-  const resting = properties?._colorResting;
-  if (typeof resting === 'string' && resting.trim()) return resting.trim();
-  const color = typeof properties?._color === 'string' ? properties._color.trim() : '';
-  const hover = typeof properties?._colorHover === 'string' ? properties._colorHover.trim() : '';
-  // Hover patch left `_color` equal to the lit tint — do not use it as the identity fill.
-  if (color && hover && color.toLowerCase() === hover.toLowerCase()) {
-    return fallbackColor.trim() || color;
-  }
-  if (color) return color;
-  return resolveSharedPointRingColor(properties, fallbackColor);
 }
 
 export function lookupSharedPointCoords(
@@ -2283,18 +2296,19 @@ export function setSharedPointSelection(
       options?.selectionGroundBadgeFallbackColor?.trim() || '#888888';
     // Hover may have washed `_color` — keep resting locker key for the ring.
     const keyColor = resolveFloatingBadgeSelectionKeyColor(resolvedProperties, fallback);
+    const accentColor = resolveFloatingBadgeSelectionAccentColor(resolvedProperties, fallback);
     resolvedProperties._color = keyColor;
-    if (!resolvedProperties._colorResting) resolvedProperties._colorResting = keyColor;
+    resolvedProperties._colorResting ??= keyColor;
+    resolvedProperties[SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY] = accentColor;
     syncSharedPointSelectedFeatureState(map, sourceId, previousFeatureId, featureId);
     getSharedPointSelectionMap(map).set(sourceId, { featureId, lngLat: resolvedLngLat });
     ensureSelectionRingReady(map, sourceId, options);
     const selectionChanged = featureId !== previousFeatureId;
-    const badgeIconId = resolvedProperties[SHARED_POINT_BADGE_ICON_PROPERTY];
-    const hasBadgeIcon =
-      typeof badgeIconId === 'string' && badgeIconId.trim().length > 0;
+    const isResourceSelection =
+      sharedPointBadgeVariantFromProperties(resolvedProperties) === 'resource';
     const tokens = resolveSharedPointFloatingBadgeTokens();
     if (options?.selectionGroundBadge && pointLayerId) {
-      if (hasBadgeIcon) {
+      if (isResourceSelection) {
         ensureSharedPointBadgeIconLayers(map, {
           sourceId,
           pointLayerId,
@@ -2324,11 +2338,31 @@ export function setSharedPointSelection(
         promoteId,
         featureId,
       });
+      if (options?.selectionGroundBadge && isResourceSelection) {
+        const glowLayerId =
+          options?.glowLayerId ??
+          (pointLayerId.endsWith('-point')
+            ? `${pointLayerId.slice(0, -'-point'.length)}-glow`
+            : `${sourceId}-glow`);
+        ensureFloatingBadgeSelectionChrome(
+          map,
+          { sourceId, pointLayerId, glowLayerId },
+          {
+            selectionGroundBadgeFallbackColor: fallback,
+            pointRadiusExpression: SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+            strokeWidthExpression: sharedPointFloatingBadgeRingWidthExpression(tokens.coloredRingWidth),
+            outerStrokeWidthExpression: sharedPointFloatingBadgeOuterStrokeWidthExpression(
+              tokens.outerStrokeWidth
+            ),
+            selectedTranslate: tokens.selectedTranslate,
+          }
+        );
+      }
       syncBadgeChrome(map, pointLayerId, {
         keyColor,
-        badgeGlyph: hasBadgeIcon,
+        properties: resolvedProperties,
       });
-      if (hasBadgeIcon) {
+      if (isResourceSelection) {
         syncBadgeIconTranslate(map, pointLayerId);
         raiseSharedPointBadgeIconLayersOnTop(map, pointLayerId);
       }
@@ -2605,6 +2639,7 @@ function setupHoverLayers(
     const badgeOuterId = sharedPointSelectionBadgeOuterLayerId(pointLayerId);
     const fallback = options.selectionGroundBadgeFallbackColor?.trim() || '#888888';
     if (!map.getLayer?.(badgeId) || !map.setPaintProperty) return;
+    const fillColor = sharedPointFloatingBadgeSelectionFillExpression(fallback);
     const keyColorExpr = [
       'coalesce',
       ['get', '_color'],
@@ -2613,15 +2648,16 @@ function setupHoverLayers(
       fallback,
     ];
     try {
-      // Restore key-color core + white middle + key outer after hover lighten.
-      map.setPaintProperty(badgeId, 'circle-color', keyColorExpr);
+      // Restore darkened core + white middle + resting key outer after hover lighten.
+      map.setPaintProperty(badgeId, 'circle-color', fillColor);
       map.setPaintProperty(
         badgeId,
         'circle-stroke-color',
         resolveSharedPointFloatingBadgeTokens().fill
       );
       if (map.getLayer?.(badgeOuterId)) {
-        map.setPaintProperty(badgeOuterId, 'circle-color', keyColorExpr);
+        map.setPaintProperty(badgeOuterId, 'circle-color', fillColor);
+        map.setPaintProperty(badgeOuterId, 'circle-stroke-color', fillColor);
       }
     } catch {
       /* style swap */

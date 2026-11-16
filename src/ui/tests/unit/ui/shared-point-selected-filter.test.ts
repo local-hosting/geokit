@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { sharedPointCircleBodyFilter } from '../../../src/utils/markers/marker-shape';
 import {
   sharedPointExcludeFeatureIdFilter,
   syncSharedPointSelectedLayerFilter,
@@ -21,10 +22,11 @@ describe('syncSharedPointSelectedLayerFilter', () => {
       featureId: 'v1',
     });
 
-    const expected = sharedPointExcludeFeatureIdFilter('venueId', 'v1');
-    expect(setFilter).toHaveBeenCalledWith('pts', expected);
-    expect(setFilter).toHaveBeenCalledWith('pts-outer-stroke', expected);
-    expect(setFilter).toHaveBeenCalledWith('pts-glow', expected);
+    const exclude = sharedPointExcludeFeatureIdFilter('venueId', 'v1');
+    const circleShape = sharedPointCircleBodyFilter();
+    expect(setFilter).toHaveBeenCalledWith('pts', ['all', circleShape, exclude]);
+    expect(setFilter).toHaveBeenCalledWith('pts-outer-stroke', ['all', circleShape, exclude]);
+    expect(setFilter).toHaveBeenCalledWith('pts-glow', exclude);
   });
 
   it('clears filters when selection is empty', () => {
@@ -40,6 +42,6 @@ describe('syncSharedPointSelectedLayerFilter', () => {
       featureId: null,
     });
 
-    expect(setFilter).toHaveBeenCalledWith('pts', null);
+    expect(setFilter).toHaveBeenCalledWith('pts', sharedPointCircleBodyFilter());
   });
 });
