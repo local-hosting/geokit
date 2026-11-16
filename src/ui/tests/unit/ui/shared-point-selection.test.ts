@@ -10,7 +10,9 @@ import {
 import {
   SHARED_POINT_FLOATING_BADGE_FLOAT_TRANSLATE,
   SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE,
+  sharedPointZoomedOutStep,
 } from '../../../src/utils/shared-point-paint';
+import { SELECTION_RING_STROKE_WIDTH } from '../../../src/utils/layers/styles/circle-glow';
 function createMockMap() {
   const sources = new Map<string, { data: unknown; _data?: unknown }>();
   const featureState = new Map<string, Record<string, unknown>>();
@@ -281,9 +283,17 @@ describe('shared point selection', () => {
     const strokeCalls = (map.setPaintProperty as ReturnType<typeof vi.fn>).mock.calls.filter(
       (call) => call[0] === ringLayerId && call[1] === 'circle-stroke-width'
     );
+    // Halo only zoomed out (white ring with a gap around the dot); none zoomed in.
     expect(strokeCalls.length).toBeGreaterThan(0);
-    expect(strokeCalls.every((call) => call[2] === 0)).toBe(true);
-    expect(map.setPaintProperty).toHaveBeenCalledWith(ringLayerId, 'circle-stroke-opacity', 0);
+    expect(strokeCalls.every((call) => JSON.stringify(call[2]) === JSON.stringify(
+      sharedPointZoomedOutStep(SELECTION_RING_STROKE_WIDTH, 0)
+    ))).toBe(true);
+    expect(map.setPaintProperty).toHaveBeenCalledWith(
+      ringLayerId,
+      'circle-stroke-opacity',
+      sharedPointZoomedOutStep(1, 0)
+    );
+    expect(map.setPaintProperty).toHaveBeenCalledWith(ringLayerId, 'circle-stroke-color', '#ffffff');
     expect(map.moveLayer).not.toHaveBeenCalled();
   });
 
@@ -421,7 +431,11 @@ describe('shared point selection', () => {
       'circle-color',
       expect.arrayContaining(['coalesce', ['get', '_colorSelected']])
     );
-    expect(map.setPaintProperty).toHaveBeenCalledWith(badgeLayerId, 'circle-stroke-color', '#ffffff');
+    expect(map.setPaintProperty).toHaveBeenCalledWith(
+      badgeLayerId,
+      'circle-stroke-color',
+      expect.arrayContaining(['step', '#ffffff'])
+    );
     expect(map.setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-outer`,
       'circle-color',

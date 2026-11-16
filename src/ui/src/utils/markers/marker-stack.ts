@@ -19,6 +19,7 @@ import {
   sharedPointRoundedBodyLayerId,
   sharedPointRoundedOuterLayerId,
   sharedPointRoundedRingLayerId,
+  sharedPointRestingRoundedOuterColor,
   sharedPointSelectionRoundedBodyLayerId,
   sharedPointSelectionRoundedOuterLayerId,
   sharedPointSelectionRoundedRingLayerId,
@@ -135,7 +136,7 @@ export function buildFloatingBadgeStack(ids: SharedPointLayerIds): FloatingBadge
   ];
   return {
     shadow,
-    circleBody: circleBody.includes(glassId) ? circleBody : [...circleBody, glassId],
+    circleBody,
     roundedResting,
     selectionCircle,
     selectionRounded,
@@ -204,7 +205,7 @@ export async function ensureFloatingBadgeMarkerStack(
     ...buildFloatingBadgeRoundedChromeOptions(ids, paint),
     pointIconTranslate: paint.pointTranslate,
     ringColorExpression: paint.strokeColorExpression,
-    outerColorExpression: paint.outerStrokeColorExpression,
+    outerColorExpression: sharedPointRestingRoundedOuterColor(paint),
     shadowRadius: paint.glowRadiusExpression,
     shadowOpacity: paint.glowOpacity,
     shadowTranslate: paint.glowTranslate,

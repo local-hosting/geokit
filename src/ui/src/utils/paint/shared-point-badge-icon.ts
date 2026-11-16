@@ -10,6 +10,7 @@ import {
   sharedPointGlassLayerId,
   sharedPointHoverBadgeLayerId,
   sharedPointHoverBadgeOuterLayerId,
+  sharedPointRestingGlyphColor,
 } from './shared-point-paint';
 
 export { SHARED_POINT_BADGE_ICON_PROPERTY };
@@ -123,7 +124,7 @@ function buildBadgeIconLayerSpec(input: {
   id: string;
   source: string;
   iconTranslate?: [number, number] | unknown[];
-  iconColor?: string;
+  iconColor?: string | unknown[];
 }): Record<string, unknown> {
   const iconTranslate =
     input.iconTranslate ?? sharedPointFloatingBadgeTranslateExpression(0);
@@ -196,7 +197,7 @@ export function ensureSharedPointBadgeIconLayers(
           id: pointIconId,
           source: sourceId,
           iconTranslate: pointTranslate,
-          iconColor: resolveSharedPointFloatingBadgeTokens().glyphColor,
+          iconColor: sharedPointRestingGlyphColor(resolveSharedPointFloatingBadgeTokens().glyphColor),
         }) as never
       );
     } catch {

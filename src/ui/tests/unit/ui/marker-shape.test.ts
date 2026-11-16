@@ -42,8 +42,10 @@ describe('shared point shape filters', () => {
 
   it('lists circle stack layers including hover mounts', () => {
     expect(sharedPointCircleStackLayerIds('demo-points')).toEqual(
-      expect.arrayContaining(['demo-points-hover', 'demo-points-glass'])
+      expect.arrayContaining(['demo-points-hover', 'demo-points-outer-stroke'])
     );
+    // Glass draws the zoomed-out glow behind every shape.
+    expect(sharedPointCircleStackLayerIds('demo-points')).not.toContain('demo-points-glass');
     expect(sharedPointCircleStackLayerIds('demo-points', 'demo-glow')).toEqual(
       sharedPointCircleBodyLayerIds('demo-points')
     );

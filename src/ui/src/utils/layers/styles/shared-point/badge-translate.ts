@@ -25,6 +25,8 @@ import {
   sharedPointFloatingBadgeHoverRingColorAt,
   sharedPointFloatingBadgeRingWidthExpression,
   sharedPointFloatingBadgeSelectedRadiusExpression,
+  sharedPointSelectedMiddleRingColor,
+  sharedPointSelectionRingLayerId,
   sharedPointFloatingBadgeNormalizeViewportTranslate,
   sharedPointFloatingBadgeSelectionTranslateAt,
   sharedPointFloatingBadgeShadowRadiusExpression,
@@ -113,7 +115,7 @@ function setHoverBadgeRingColor(
       map.setPaintProperty(
         layerId,
         'circle-stroke-color',
-        resolveSharedPointFloatingBadgeTokens().fill
+        sharedPointSelectedMiddleRingColor(color, resolveSharedPointFloatingBadgeTokens().fill)
       );
       const outerId = sharedPointSelectionBadgeOuterLayerId(pointLayerId);
       if (map.getLayer?.(outerId)) {
@@ -196,10 +198,11 @@ export function animateSharedPointHoverBadgeRingColor(
   anims.set(pointLayerId, requestAnimationFrame(tick));
 }
 
-function selectionBadgeLayerIds(pointLayerId: string): [string, string] {
+function selectionBadgeLayerIds(pointLayerId: string): string[] {
   return [
     sharedPointSelectionBadgeLayerId(pointLayerId),
     sharedPointSelectionBadgeOuterLayerId(pointLayerId),
+    sharedPointSelectionRingLayerId(pointLayerId),
   ];
 }
 

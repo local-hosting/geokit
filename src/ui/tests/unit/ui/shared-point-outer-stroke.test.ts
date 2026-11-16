@@ -2,9 +2,40 @@
 import { describe, expect, it, vi } from 'vitest';
 import { setupSharedPointOuterStrokeLayer } from '../../../src/utils/layers/styles/shared-point-layers';
 import {
+  SHARED_POINT_DEFAULT_GLOW_BLUR,
+  SHARED_POINT_DEFAULT_GLOW_OPACITY,
+  SHARED_POINT_FLOATING_BADGE_GLASS_BLUR,
+  sharedPointGlassPaint,
+  sharedPointZoomedOutStep,
+  sampleZoomInterpolateValue,
   sharedPointFloatingBadgeOuterStrokeWidthExpression,
   sharedPointRadiusPlusStrokeWidth,
+  sharedPointRestingOuterStrokeWidth,
 } from '../../../src/utils/shared-point-paint';
+
+describe('sharedPointGlassPaint', () => {
+  it('is the shining-dot glow (key color, 2.5× dot) zoomed out, frosted glass zoomed in', () => {
+    const pointRadius = ['interpolate', ['linear'], ['zoom'], 0, 2, 12, 9];
+    const glassRadius = ['interpolate', ['linear'], ['zoom'], 0, 4, 12, 20];
+    const paint = sharedPointGlassPaint({
+      glassRadius,
+      glassColor: '#soft',
+      glowColor: '#key',
+      pointRadius,
+      ringWidth: 1,
+    });
+    expect(paint['circle-color']).toEqual(sharedPointZoomedOutStep('#key', '#soft'));
+    expect(paint['circle-blur']).toEqual(
+      sharedPointZoomedOutStep(SHARED_POINT_DEFAULT_GLOW_BLUR, SHARED_POINT_FLOATING_BADGE_GLASS_BLUR)
+    );
+    // Zoomed-out branch: resting glow opacity, brighter when hovered/selected.
+    const zoomedOutOpacity = (paint['circle-opacity'] as unknown[])[2] as unknown[];
+    expect(zoomedOutOpacity[zoomedOutOpacity.length - 1]).toBe(SHARED_POINT_DEFAULT_GLOW_OPACITY);
+    const radius = paint['circle-radius'] as unknown[];
+    expect(sampleZoomInterpolateValue(radius, 0)).toBeCloseTo((2 + 1) * 2.5);
+    expect(sampleZoomInterpolateValue(radius, 12)).toBe(20);
+  });
+});
 
 describe('setupSharedPointOuterStrokeLayer', () => {
   it('creates the white outer stroke with a MapLibre-safe merged radius (not + of two interpolates)', () => {
@@ -31,9 +62,13 @@ describe('setupSharedPointOuterStrokeLayer', () => {
     };
     expect(spec.id).toBe('venues-point-outer-stroke');
     expect(spec.paint['circle-stroke-color']).toBe('#ffffff');
-    expect(spec.paint['circle-stroke-width']).toEqual(
-      sharedPointFloatingBadgeOuterStrokeWidthExpression(2.5)
+    // No white rim when zoomed out: width is 0 through z9, full curve from z10.
+    const strokeWidth = spec.paint['circle-stroke-width'] as unknown[];
+    expect(strokeWidth).toEqual(
+      sharedPointRestingOuterStrokeWidth(sharedPointFloatingBadgeOuterStrokeWidthExpression(2.5))
     );
+    expect(sampleZoomInterpolateValue(strokeWidth, 6)).toBe(0);
+    expect(sampleZoomInterpolateValue(strokeWidth, 12)).toBeGreaterThan(0);
     // MapLibre rejects `['+', interpolate, interpolate]` for circle-radius — merge stops.
     const radius = spec.paint['circle-radius'] as unknown[];
     expect(radius[0]).toBe('interpolate');

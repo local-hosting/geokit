@@ -45,6 +45,7 @@
   --gk-badge-size-scale: 1;
   --gk-badge-resting-brighten: 0.3;
   --gk-badge-resting-saturate: 0.45;
+  --gk-badge-dot-lighten: 0;
   --gk-badge-glyph-color: #ffffff;
   --gk-badge-fallback-color: #888888;
   --gk-badge-shadow-y: 10;
@@ -127,6 +128,7 @@
     --gk-isochrone-color: #3FB1CE;
     --gk-isochrone-stroke-color: #1B8AA8;
     --gk-marker-color: #3FB1CE;
+    --gk-badge-dot-lighten: 0.45;
   }
 }
 
@@ -174,6 +176,7 @@ gk-map.gk-theme-light {
   --gk-isochrone-color: #0891b2;
   --gk-isochrone-stroke-color: #0e7490;
   --gk-marker-color: #0891b2;
+  --gk-badge-dot-lighten: 0;
 }
 
 gk-map.gk-theme-dark {
@@ -219,6 +222,7 @@ gk-map.gk-theme-dark {
   --gk-isochrone-color: #3FB1CE;
   --gk-isochrone-stroke-color: #1B8AA8;
   --gk-marker-color: #3FB1CE;
+  --gk-badge-dot-lighten: 0.45;
 }
 
 /* Control rules – use var(--gk-*) from above */

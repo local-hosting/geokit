@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SHARED_POINT_FLOATING_BADGE_FILL } from '../../../src/utils/paint/shared-point-paint';
+import {
+  SHARED_POINT_FLOATING_BADGE_FILL,
+  sharedPointSelectedMiddleRingColor,
+} from '../../../src/utils/paint/shared-point-paint';
 import { badgePreset, createBadgeMarker } from '../../../src/utils/markers/badge';
 
 describe('badge marker', () => {
@@ -64,7 +67,7 @@ describe('badge marker', () => {
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge`,
       'circle-stroke-color',
-      SHARED_POINT_FLOATING_BADGE_FILL
+      sharedPointSelectedMiddleRingColor('#9acd32', SHARED_POINT_FLOATING_BADGE_FILL)
     );
   });
 });

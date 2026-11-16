@@ -32,6 +32,23 @@ import { getCSSVariable, getCSSVariableNumber } from '../map-surface/theme';
 /** Min point radius (px). Safari needs ≥2px or circles can vanish when zoomed out. */
 export const SHARED_POINT_MIN_RADIUS_PX = 2.8;
 
+/**
+ * At or below this zoom, floating badges render as shining dots (solid key color on a
+ * glow) — the white core and rims swamp tiny dots on regional/continental views.
+ */
+export const SHARED_POINT_ZOOMED_OUT_MAX_ZOOM = 9;
+
+/** Selected dot is slightly larger than resting dots when zoomed out. */
+export const SHARED_POINT_ZOOMED_OUT_SELECTED_RADIUS_SCALE = 1.35;
+
+/** Zoomed-out dot core color (key lightened by `--gk-badge-dot-lighten`). */
+export const SHARED_POINT_DOT_COLOR_PROPERTY = '_colorDot';
+
+/** Zoomed-out core: annotated bright dot color, else the key ring color. */
+export function sharedPointDotColorExpression(keyColor: unknown): unknown[] {
+  return ['coalesce', ['get', SHARED_POINT_DOT_COLOR_PROPERTY], keyColor];
+}
+
 /** Default glow opacity for shared point layers. */
 export const SHARED_POINT_UNIFORM_GLOW_OPACITY = 0.24;
 
@@ -95,7 +112,7 @@ export const SHARED_POINT_HOVER_GLOW_RADIUS_EXPRESSION: unknown[] = [
  * Radius tracks map zoom — readable at city scale, larger when zoomed in.
  */
 /** Bump when floating-badge size/look constants change so apps re-apply paint. */
-export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 43;
+export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 46;
 
 export const SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION: unknown[] = [
   'interpolate',
@@ -149,8 +166,8 @@ export function sharedPointFloatingBadgeRingWidthExpression(
 }
 
 /**
- * Outer stroke width — keeps a readable rim when zoomed out (old curve fell under ~2px
- * and vanished on city/continental views).
+ * Outer stroke width — none when zoomed out (resting and selected dots read as solid key
+ * color on a glow there), a readable rim from city scale in.
  */
 export function sharedPointFloatingBadgeOuterStrokeWidthExpression(
   maxWidth = SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_WIDTH
@@ -160,11 +177,9 @@ export function sharedPointFloatingBadgeOuterStrokeWidthExpression(
     ['exponential', 1.75],
     ['zoom'],
     0,
-    Math.max(1.5, maxWidth * 0.25),
-    6,
-    Math.max(1.75, maxWidth * 0.3),
-    8,
-    maxWidth * 0.38,
+    0,
+    SHARED_POINT_ZOOMED_OUT_MAX_ZOOM,
+    0,
     10,
     maxWidth * 0.5,
     12,
@@ -176,6 +191,110 @@ export function sharedPointFloatingBadgeOuterStrokeWidthExpression(
     18,
     maxWidth * 2,
   ];
+}
+
+/** Zoom step: `zoomedOut` at/below {@link SHARED_POINT_ZOOMED_OUT_MAX_ZOOM}, else `zoomedIn`. */
+export function sharedPointZoomedOutStep(zoomedOut: unknown, zoomedIn: unknown): unknown[] {
+  return ['step', ['zoom'], zoomedOut, SHARED_POINT_ZOOMED_OUT_MAX_ZOOM + 1, zoomedIn];
+}
+
+/**
+ * Glass layer paint: frosted soft disc behind circle badges zoomed in; zoomed out it is
+ * the shining-dot glow (key color, {@link SHARED_POINT_DEFAULT_GLOW_OPACITY}) behind every
+ * shape, matching the standard filled-dot + glow maps.
+ */
+export function sharedPointGlassPaint(options: {
+  glassRadius: unknown;
+  glassColor: unknown;
+  glowColor: unknown;
+  pointRadius: unknown;
+  ringWidth: number | unknown[];
+  glassOpacity?: number;
+  glassBlur?: number;
+}): Record<string, unknown> {
+  const glassOpacity = options.glassOpacity ?? SHARED_POINT_FLOATING_BADGE_GLASS_OPACITY;
+  const isSelected = ['boolean', ['feature-state', 'selected'], false];
+  const isHovered = ['boolean', ['feature-state', 'hover'], false];
+  // Zoomed out the glow stays behind the selected dot (brighter, like hover).
+  const glowOpacity = [
+    'case',
+    ['any', isSelected, isHovered],
+    SHARED_POINT_DEFAULT_GLOW_HOVER_OPACITY,
+    SHARED_POINT_DEFAULT_GLOW_OPACITY,
+  ];
+  const frostedOpacity = [
+    'case',
+    ['any', isSelected, sharedPointRoundedRectBodyFilter()],
+    0,
+    glassOpacity,
+  ];
+  return {
+    'circle-radius': sharedPointZoomedOutGlowRadius(
+      options.glassRadius,
+      sharedPointRadiusPlusStrokeWidth(options.pointRadius, options.ringWidth)
+    ),
+    'circle-color': sharedPointZoomedOutStep(options.glowColor, options.glassColor),
+    'circle-opacity': sharedPointZoomedOutStep(glowOpacity, frostedOpacity),
+    'circle-blur': sharedPointZoomedOutStep(
+      SHARED_POINT_DEFAULT_GLOW_BLUR,
+      options.glassBlur ?? SHARED_POINT_FLOATING_BADGE_GLASS_BLUR
+    ),
+  };
+}
+
+/** Glass radius with zoomed-out stops replaced by the glow halo (dot × hit-area scale). */
+function sharedPointZoomedOutGlowRadius(glassRadius: unknown, dotRadius: unknown): unknown {
+  if (!isZoomInterpolateExpression(glassRadius) || !isZoomInterpolateExpression(dotRadius)) {
+    return glassRadius;
+  }
+  const [op, curve, input, ...stops] = glassRadius;
+  const glowAt = (zoom: number) =>
+    sampleZoomInterpolateValue(dotRadius, zoom) * SHARED_POINT_GLOW_HIT_AREA_SCALE;
+  const merged: unknown[] = [];
+  for (let i = 0; i < stops.length; i += 2) {
+    const zoom = stops[i] as number;
+    if (zoom < SHARED_POINT_ZOOMED_OUT_MAX_ZOOM) merged.push(zoom, glowAt(zoom));
+  }
+  merged.push(SHARED_POINT_ZOOMED_OUT_MAX_ZOOM, glowAt(SHARED_POINT_ZOOMED_OUT_MAX_ZOOM));
+  for (let i = 0; i < stops.length; i += 2) {
+    if ((stops[i] as number) > SHARED_POINT_ZOOMED_OUT_MAX_ZOOM) merged.push(stops[i], stops[i + 1]);
+  }
+  return [op, curve, input, ...merged];
+}
+
+/**
+ * Selected badge middle ring: white zoomed in; key color zoomed out so the dot stays solid
+ * and the separate selection ring (white, with a gap) marks it.
+ */
+export function sharedPointSelectedMiddleRingColor(
+  accentColor: unknown,
+  white: unknown = SHARED_POINT_FLOATING_BADGE_FILL
+): unknown[] {
+  return sharedPointZoomedOutStep(accentColor, white);
+}
+
+/** Resting glyph tint — hidden when zoomed out, where it reads as a white speck. */
+export function sharedPointRestingGlyphColor(glyphColor: string): unknown[] {
+  return sharedPointZoomedOutStep('rgba(0,0,0,0)', glyphColor);
+}
+
+/** Resting outer-stroke width with the white rim removed when zoomed out. */
+export function sharedPointRestingOuterStrokeWidth(
+  width: number | unknown[],
+  minZoom = SHARED_POINT_ZOOMED_OUT_MAX_ZOOM
+): unknown[] {
+  if (!Array.isArray(width)) {
+    return ['step', ['zoom'], 0, minZoom + 1, width];
+  }
+  const [op, curve, input, ...stops] = width;
+  const isZoomInterpolate =
+    op === 'interpolate' && Array.isArray(input) && input[0] === 'zoom';
+  if (!isZoomInterpolate) return width;
+  const kept: unknown[] = [];
+  for (let i = 0; i < stops.length; i += 2) {
+    if ((stops[i] as number) > minZoom) kept.push(stops[i], stops[i + 1]);
+  }
+  return [op, curve, input, minZoom, 0, ...kept];
 }
 
 export const SHARED_POINT_FLOATING_BADGE_FILL = '#ffffff';
@@ -359,13 +478,21 @@ export function syncSharedPointSelectedLayerFilter(
   const circleBodyLayerIds = [
     options.pointLayerId,
     sharedPointOuterStrokeLayerId(options.pointLayerId),
-    sharedPointGlassLayerId(options.pointLayerId),
   ];
 
   for (const layerId of circleBodyLayerIds) {
     if (!map.getLayer?.(layerId)) continue;
     try {
       map.setFilter(layerId, circleFilter);
+    } catch {
+      /* layer may reject filter briefly during style swap */
+    }
+  }
+  // Glass glows behind every shape, selected included; frosted opacity hides it zoomed in.
+  const glassLayerId = sharedPointGlassLayerId(options.pointLayerId);
+  if (map.getLayer?.(glassLayerId)) {
+    try {
+      map.setFilter(glassLayerId, null);
     } catch {
       /* layer may reject filter briefly during style swap */
     }
@@ -934,8 +1061,15 @@ export function sharedPointFloatingBadgeSelectedRadiusExpression(
   pointRadius: unknown[] = sharedPointFloatingBadgeRadiusExpression(),
   scale = SHARED_POINT_FLOATING_BADGE_SELECTED_RADIUS_SCALE
 ): unknown[] {
-  if (scale === 1) return pointRadius;
-  return scaleInterpolateRadiusStops(pointRadius, scale);
+  const scaled = scale === 1 ? pointRadius : scaleInterpolateRadiusStops(pointRadius, scale);
+  if (!isZoomInterpolateExpression(scaled)) return scaled;
+  const [op, curve, input, ...stops] = scaled;
+  const zoomedOutScaled = stops.map((value, i) =>
+    i % 2 === 1 && (stops[i - 1] as number) <= SHARED_POINT_ZOOMED_OUT_MAX_ZOOM
+      ? (value as number) * SHARED_POINT_ZOOMED_OUT_SELECTED_RADIUS_SCALE
+      : value
+  );
+  return [op, curve, input, ...zoomedOutScaled];
 }
 
 export function sharedPointFloatingBadgeSelectionTranslateAt(
@@ -1144,6 +1278,7 @@ export function annotatePointFeaturesFloatingBadgeHover(
           [SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY]: fill,
           [softProperty]: sharedPointFloatingBadgeSoftColor(resting, softAmount),
           [hoverProperty]: lightenHexTowardWhite(resting, amount),
+          [SHARED_POINT_DOT_COLOR_PROPERTY]: lightenHexTowardWhite(resting, tokens.dotLighten),
           [selectedProperty]: sharedPointFloatingBadgeSelectedColor(resting, selectedAmount),
         },
       };
@@ -1192,6 +1327,8 @@ export type SharedPointFloatingBadgeTokens = {
   restingBrighten: number;
   /** Unselected key color — HSV saturation boost (0–1). */
   restingSaturate: number;
+  /** Zoomed-out dot core mix toward white (0–1) — bright shining dots on dark basemaps. */
+  dotLighten: number;
   /** Resting ground-shadow offset (px, deep zoom max). */
   shadowTranslate: [number, number];
   /** Resource glyph tint on the key-colored body. */
@@ -1247,6 +1384,7 @@ export function resolveSharedPointFloatingBadgeTokens(
       '--gk-badge-resting-saturate',
       SHARED_POINT_FLOATING_BADGE_RESTING_SATURATE
     ),
+    dotLighten: getCSSVariableNumber(element, '--gk-badge-dot-lighten', 0),
     shadowTranslate: [0, shadowY],
     glyphColor: getCSSVariable(
       element,
@@ -1446,8 +1584,11 @@ export function sharedPointFloatingBadgePaintExpressions(
   // MapLibre rejects `case` branches that are interpolate arrays for circle-radius —
   // keep resting shadow as a plain interpolate; selected uses selection-source shadow.
   return {
-    // Unselected: white core + key ring + white outer + drop shadow.
-    pointColorExpression: tokens.fill,
+    // Unselected: white core + key ring + white outer + drop shadow (solid key when zoomed out).
+    pointColorExpression: sharedPointZoomedOutStep(
+      sharedPointDotColorExpression(ringColor),
+      tokens.fill
+    ),
     pointRadiusExpression: badgeRadius,
     // Plain string — some providers mishandle `['literal', '#000']` for circle-color.
     glowColorExpression: tokens.shadowColor,
@@ -1471,7 +1612,12 @@ export function sharedPointFloatingBadgePaintExpressions(
       fallbackColor,
       { selectedDarken: tokens.selectedDarken }
     ),
-    selectionStrokeColorExpression: tokens.fill,
+    selectionStrokeColorExpression: sharedPointSelectedMiddleRingColor(
+      sharedPointFloatingBadgeSelectionFillExpression(fallbackColor, {
+        selectedDarken: tokens.selectedDarken,
+      }),
+      tokens.fill
+    ),
     selectionOuterStrokeColorExpression: sharedPointFloatingBadgeSelectionFillExpression(
       fallbackColor,
       { selectedDarken: tokens.selectedDarken }
@@ -1822,9 +1968,17 @@ export function applySharedPointLayerPaint(
       'circle-radius',
       sharedPointFloatingBadgeOuterStrokeRadius(pointRadiusExpression, ringForRadius)
     );
-    map.setPaintProperty?.(outerStrokeLayerId, 'circle-stroke-width', outerStrokeWidthExpression);
+    map.setPaintProperty?.(
+      outerStrokeLayerId,
+      'circle-stroke-width',
+      sharedPointRestingOuterStrokeWidth(outerStrokeWidthExpression)
+    );
     if (outerStrokeColorExpression != null) {
-      map.setPaintProperty?.(outerStrokeLayerId, 'circle-color', outerStrokeColorExpression);
+      map.setPaintProperty?.(
+        outerStrokeLayerId,
+        'circle-color',
+        sharedPointZoomedOutStep('rgba(0,0,0,0)', outerStrokeColorExpression)
+      );
       map.setPaintProperty?.(
         outerStrokeLayerId,
         'circle-stroke-color',
@@ -1853,19 +2007,17 @@ export function applySharedPointLayerPaint(
 
   const glassLayerId = sharedPointGlassLayerId(pointLayerId);
   if (map.getLayer?.(glassLayerId) && glassRadiusExpression != null) {
-    map.setPaintProperty?.(glassLayerId, 'circle-radius', glassRadiusExpression);
-    if (glassColorExpression != null) {
-      map.setPaintProperty?.(glassLayerId, 'circle-color', glassColorExpression);
-    }
-    if (glassOpacity != null) {
-      const glassOpacityPaint =
-        pointOpacityExpression != null
-          ? buildOpacityHideRestingWhenSelectedExpression(glassOpacity)
-          : glassOpacity;
-      map.setPaintProperty?.(glassLayerId, 'circle-opacity', glassOpacityPaint);
-    }
-    if (glassBlur != null) {
-      map.setPaintProperty?.(glassLayerId, 'circle-blur', glassBlur);
+    const glassPaint = sharedPointGlassPaint({
+      glassRadius: glassRadiusExpression,
+      glassColor: glassColorExpression ?? strokeColorExpression,
+      glowColor: strokeColorExpression,
+      pointRadius: pointRadiusExpression,
+      ringWidth: strokeWidthExpression,
+      glassOpacity,
+      glassBlur,
+    });
+    for (const [prop, value] of Object.entries(glassPaint)) {
+      map.setPaintProperty?.(glassLayerId, prop, value);
     }
     if (pointTranslate != null) {
       map.setPaintProperty?.(glassLayerId, 'circle-translate', pointTranslate);
@@ -1924,7 +2076,7 @@ export function applySharedPointLayerPaint(
     ] as unknown[];
     const selectedFill = options.selectionFillExpression ?? keyColorExpr;
     const selectedStroke =
-      options.selectionStrokeColorExpression ?? SHARED_POINT_FLOATING_BADGE_FILL;
+      options.selectionStrokeColorExpression ?? sharedPointSelectedMiddleRingColor(selectedFill);
     map.setPaintProperty?.(selectionBadgeLayerId, 'circle-color', selectedFill);
     map.setPaintProperty?.(selectionBadgeLayerId, 'circle-stroke-color', selectedStroke);
     // Smaller selected core — white middle ring stays full width.

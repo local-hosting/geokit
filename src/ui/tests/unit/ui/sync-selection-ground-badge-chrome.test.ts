@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   SHARED_POINT_FLOATING_BADGE_FILL,
+  sampleZoomInterpolateValue,
   sharedPointFloatingBadgeSelectedColor,
 } from '../../../src/utils/paint/shared-point-paint';
 import { sharedPointBadgeIconSizeExpression } from '../../../src/utils/paint/shared-point-badge-icon-sizing';
@@ -23,10 +24,11 @@ describe('syncBadgeChrome', () => {
       { keyColor: '#9acd32', badgeGlyph: false }
     );
 
+    // White middle ring zoomed in (step's last value); key color zoomed out.
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge`,
       'circle-stroke-color',
-      SHARED_POINT_FLOATING_BADGE_FILL
+      expect.arrayContaining(['step', SHARED_POINT_FLOATING_BADGE_FILL])
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-outer`,
@@ -68,17 +70,19 @@ describe('syncBadgeChrome', () => {
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-rounded-body`,
       'icon-color',
-      SHARED_POINT_FLOATING_BADGE_FILL
+      expect.arrayContaining(['step', SHARED_POINT_FLOATING_BADGE_FILL])
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-icon`,
       'icon-color',
-      fill
+      expect.arrayContaining(['step', fill])
     );
-    expect(setLayoutProperty).toHaveBeenCalledWith(
-      `${pointLayerId}-selection-badge-icon`,
-      'icon-size',
-      sharedPointBadgeIconSizeExpression()
+    // Same glyph size zoomed in (the selected dot only grows zoomed out, where the glyph hides).
+    const iconSizeCall = setLayoutProperty.mock.calls.find(
+      (call) => call[0] === `${pointLayerId}-selection-badge-icon` && call[1] === 'icon-size'
+    );
+    expect(sampleZoomInterpolateValue(iconSizeCall?.[2] as unknown[], 12)).toBeCloseTo(
+      sampleZoomInterpolateValue(sharedPointBadgeIconSizeExpression(), 12)
     );
   });
 
