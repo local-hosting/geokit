@@ -8,11 +8,13 @@
 
 import type { FeatureCollection, Point } from 'geojson';
 import {
+  brightenHex,
   darkenHexTowardBlack,
+  easeOutCubic,
+  intensifyHex,
   lightenHexTowardWhite,
   mixHexColors,
-} from '../../../../core/src/utils/color';
-import { easeOutCubic } from '../../../../core/src/utils/easing';
+} from '@doppler-group/geokit/core';
 import type { MapInstance } from '../../providers/types';
 import {
   sharedPointCircleBodyFilter,
@@ -93,7 +95,7 @@ export const SHARED_POINT_HOVER_GLOW_RADIUS_EXPRESSION: unknown[] = [
  * Radius tracks map zoom — readable at city scale, larger when zoomed in.
  */
 /** Bump when floating-badge size/look constants change so apps re-apply paint. */
-export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 34;
+export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 40;
 
 export const SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION: unknown[] = [
   'interpolate',
@@ -128,15 +130,15 @@ export function sharedPointFloatingBadgeRingWidthExpression(
     ['exponential', 1.75],
     ['zoom'],
     0,
-    Math.max(1.25, maxWidth * 0.2),
+    Math.max(1, maxWidth * 0.14),
     6,
-    Math.max(1.75, maxWidth * 0.28),
+    Math.max(1.25, maxWidth * 0.18),
     8,
-    maxWidth * 0.4,
+    maxWidth * 0.25,
     10,
-    maxWidth * 0.55,
+    maxWidth * 0.35,
     12,
-    maxWidth * 0.75,
+    maxWidth * 0.6,
     14,
     maxWidth * 1.35,
     16,
@@ -158,15 +160,15 @@ export function sharedPointFloatingBadgeOuterStrokeWidthExpression(
     ['exponential', 1.75],
     ['zoom'],
     0,
-    Math.max(2.25, maxWidth * 0.55),
+    Math.max(1.5, maxWidth * 0.25),
     6,
-    Math.max(2.75, maxWidth * 0.65),
+    Math.max(1.75, maxWidth * 0.3),
     8,
-    maxWidth * 0.8,
+    maxWidth * 0.38,
     10,
-    maxWidth * 0.95,
+    maxWidth * 0.5,
     12,
-    maxWidth * 1.1,
+    maxWidth * 0.85,
     14,
     maxWidth * 1.45,
     16,
@@ -177,9 +179,15 @@ export function sharedPointFloatingBadgeOuterStrokeWidthExpression(
 }
 
 export const SHARED_POINT_FLOATING_BADGE_FILL = '#ffffff';
-/** Soft tint of the key color — frosted glass / hover helpers (core fill is white when unselected). */
-export const SHARED_POINT_FLOATING_BADGE_SOFT_LIGHTEN = 0.55;
+/** HSV brighten (0–1) of the key color for the frosted glass disc. */
+export const SHARED_POINT_FLOATING_BADGE_SOFT_BRIGHTEN = 0.55;
 export const SHARED_POINT_FLOATING_BADGE_SOFT_COLOR_PROPERTY = '_colorSoft';
+/** Unselected key color — HSV brighten (0–1) so the hue stays saturated, not washed white. */
+export const SHARED_POINT_FLOATING_BADGE_RESTING_BRIGHTEN = 0.3;
+/** Unselected key color — HSV saturation boost (0–1) for a more intense hue. */
+export const SHARED_POINT_FLOATING_BADGE_RESTING_SATURATE = 0.45;
+/** Raw locker/brand key before resting brighten — re-annotation reads this first. */
+export const SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY = '_colorKey';
 /** Frosted disc behind unselected badges (MapLibre blur stand-in for glass). */
 export const SHARED_POINT_FLOATING_BADGE_GLASS_OPACITY = 0.38;
 export const SHARED_POINT_FLOATING_BADGE_GLASS_BLUR = 0.65;
@@ -189,8 +197,8 @@ export const SHARED_POINT_FLOATING_BADGE_COLORED_RING_WIDTH = 7;
 /** Outer band peeks from under core+ring — wider than the middle ring reads as a rim. */
 export const SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_WIDTH = 7;
 export const SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_COLOR = '#ffffff';
-/** Unselected key ring — slight see-through for a glassier edge. */
-export const SHARED_POINT_FLOATING_BADGE_STROKE_OPACITY = 0.82;
+/** Unselected key ring — opaque so the basemap doesn't wash out the brightened key. */
+export const SHARED_POINT_FLOATING_BADGE_STROKE_OPACITY = 1;
 /** Outer white stroke — nearly opaque so badges read on green/light basemaps. */
 export const SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_OPACITY = 0.95;
 export const SHARED_POINT_FLOATING_BADGE_SHADOW_COLOR = '#000000';
@@ -214,8 +222,8 @@ export const SHARED_POINT_FLOATING_BADGE_SELECT_ANIMATION_MS = 180;
 export const SHARED_POINT_FLOATING_BADGE_HOVER_ANIMATION_MS = 120;
 /** Mix toward white on hover (0–1) — lighter tint of the key ring color. */
 export const SHARED_POINT_FLOATING_BADGE_HOVER_LIGHTEN = 0.5;
-/** Mix toward black on select (0–1) — subtle darker tint of the key color (not a heavy shade). */
-export const SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN = 0.26;
+/** Mix toward black on select (0–1) — 0 keeps the intensified resting hue when selected. */
+export const SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN = 0;
 export const SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY = '_colorSelected';
 /** Outer white stroke width on hover — unused (stroke stays put). */
 export const SHARED_POINT_FLOATING_BADGE_HOVER_OUTER_STROKE_WIDTH = 9;
@@ -968,9 +976,18 @@ export type AnnotateFloatingBadgeHoverOptions = {
 /** Soft fill/outer tint from key color (unselected badges). */
 export function sharedPointFloatingBadgeSoftColor(
   keyColor: string,
-  amount = SHARED_POINT_FLOATING_BADGE_SOFT_LIGHTEN
+  amount = SHARED_POINT_FLOATING_BADGE_SOFT_BRIGHTEN
 ): string {
-  return lightenHexTowardWhite(keyColor, amount);
+  return brightenHex(keyColor, amount);
+}
+
+/** Unselected ring / rounded body color from the raw key. */
+export function sharedPointFloatingBadgeRestingColor(
+  keyColor: string,
+  brighten = SHARED_POINT_FLOATING_BADGE_RESTING_BRIGHTEN,
+  saturate = SHARED_POINT_FLOATING_BADGE_RESTING_SATURATE
+): string {
+  return intensifyHex(keyColor, saturate, brighten);
 }
 
 /** Dark fill tint from key color (selected badge core). */
@@ -1035,7 +1052,10 @@ export function sharedPointFloatingBadgeSelectionFillExpression(
   const selectedProperty =
     options.selectedProperty ?? SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY;
   const amount = options.selectedDarken ?? SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN;
-  const darkFallback = sharedPointFloatingBadgeSelectedColor(fallbackColor, amount);
+  const darkFallback = sharedPointFloatingBadgeSelectedColor(
+    sharedPointFloatingBadgeRestingColor(fallbackColor),
+    amount
+  );
   return [
     'coalesce',
     ['get', selectedProperty],
@@ -1057,6 +1077,8 @@ export function resolveFloatingBadgeAnnotateKeyColor(
   colorProperty = '_color'
 ): string {
   const fallback = fallbackColor.trim() || '#888888';
+  const key = properties[SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY];
+  if (typeof key === 'string' && key.trim()) return key.trim();
   const resting = properties._colorResting;
   if (typeof resting === 'string' && resting.trim()) return resting.trim();
 
@@ -1084,7 +1106,7 @@ export function annotatePointFeaturesFloatingBadgeHover(
     hoverProperty = '_colorHover',
     softProperty = SHARED_POINT_FLOATING_BADGE_SOFT_COLOR_PROPERTY,
     amount = SHARED_POINT_FLOATING_BADGE_HOVER_LIGHTEN,
-    softAmount = SHARED_POINT_FLOATING_BADGE_SOFT_LIGHTEN,
+    softAmount = SHARED_POINT_FLOATING_BADGE_SOFT_BRIGHTEN,
     selectedProperty = SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY,
     selectedAmount = SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN,
   } = options;
@@ -1097,16 +1119,18 @@ export function annotatePointFeaturesFloatingBadgeHover(
         fallbackColor,
         colorProperty as string
       );
+      const resting = sharedPointFloatingBadgeRestingColor(fill);
       return {
         ...feature,
         properties: {
           ...props,
           // Bake fallback into `_color` so selection/hover lookups never lose the ring hue.
-          [colorProperty]: fill,
-          _colorResting: fill,
-          [softProperty]: sharedPointFloatingBadgeSoftColor(fill, softAmount),
-          [hoverProperty]: lightenHexTowardWhite(fill, amount),
-          [selectedProperty]: sharedPointFloatingBadgeSelectedColor(fill, selectedAmount),
+          [colorProperty]: resting,
+          _colorResting: resting,
+          [SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY]: fill,
+          [softProperty]: sharedPointFloatingBadgeSoftColor(resting, softAmount),
+          [hoverProperty]: lightenHexTowardWhite(resting, amount),
+          [selectedProperty]: sharedPointFloatingBadgeSelectedColor(resting, selectedAmount),
         },
       };
     }),
@@ -1137,6 +1161,8 @@ export type SharedPointFloatingBadgeTokens = {
   hoverShadowScale: number;
   selectedShadowScale: number;
   selectedShadowOpacity: number;
+  /** Selected ground-shadow `circle-blur` (defaults to `shadowBlur`); lower = tighter edge. */
+  selectedShadowBlur: number;
   floatTranslate: [number, number];
   hoverTranslate: [number, number];
   selectedTranslate: [number, number];
@@ -1162,6 +1188,11 @@ export function resolveSharedPointFloatingBadgeTokens(
     '--gk-badge-outer-stroke-width',
     SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_WIDTH
   );
+  const shadowBlur = getCSSVariableNumber(
+    element,
+    '--gk-badge-shadow-blur',
+    SHARED_POINT_FLOATING_BADGE_SHADOW_BLUR
+  );
   return {
     fill: getCSSVariable(element, '--gk-badge-fill', SHARED_POINT_FLOATING_BADGE_FILL),
     outerStrokeColor: getCSSVariable(
@@ -1179,11 +1210,7 @@ export function resolveSharedPointFloatingBadgeTokens(
       '--gk-badge-shadow-opacity',
       SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY
     ),
-    shadowBlur: getCSSVariableNumber(
-      element,
-      '--gk-badge-shadow-blur',
-      SHARED_POINT_FLOATING_BADGE_SHADOW_BLUR
-    ),
+    shadowBlur,
     shadowRadiusPad: getCSSVariableNumber(
       element,
       '--gk-badge-shadow-pad',
@@ -1256,6 +1283,11 @@ export function resolveSharedPointFloatingBadgeTokens(
       '--gk-badge-selected-shadow-opacity',
       SHARED_POINT_FLOATING_BADGE_SELECTED_SHADOW_OPACITY
     ),
+    selectedShadowBlur: getCSSVariableNumber(
+      element,
+      '--gk-badge-selected-shadow-blur',
+      shadowBlur
+    ),
     floatTranslate: [
       0,
       getCSSVariableNumber(
@@ -1311,7 +1343,11 @@ export function sharedPointFloatingBadgePaintExpressions(
 ) {
   const colorProperty = options.colorProperty ?? '_color';
   const softProperty = SHARED_POINT_FLOATING_BADGE_SOFT_COLOR_PROPERTY;
-  const ringColor = ['coalesce', ['get', colorProperty], options.fallbackColor];
+  const ringColor = [
+    'coalesce',
+    ['get', colorProperty],
+    sharedPointFloatingBadgeRestingColor(options.fallbackColor),
+  ];
   const softFallback = sharedPointFloatingBadgeSoftColor(options.fallbackColor);
   const softFill = ['coalesce', ['get', softProperty], softFallback];
   const tokens = resolveSharedPointFloatingBadgeTokens(
@@ -1898,5 +1934,5 @@ export {
   darkenHexTowardBlack,
   lightenHexTowardWhite,
   mixHexColors,
-} from '../../../../core/src/utils/color';
+} from '@doppler-group/geokit/core';
 export { SHARED_POINT_BADGE_ICON_PROPERTY } from './shared-point-badge-constants';

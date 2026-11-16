@@ -114,6 +114,45 @@ export function lightenHexTowardWhite(hex: string, amount: number): string {
   return mixHexColors(hex, '#ffffff', amount);
 }
 
+/**
+ * Raise HSV value toward full by `amount` (0–1) — keeps hue and saturation, unlike
+ * mixing toward white. Accepts `#rgb` / `#rrggbb`.
+ */
+export function brightenHex(hex: string, amount: number): string {
+  const rgb = tryHexToRgb(hex);
+  if (!rgb) return hex;
+  const max = Math.max(...rgb);
+  if (max === 0) return lightenHexTowardWhite(hex, amount);
+  const t = Math.min(1, Math.max(0, amount));
+  const scale = (max + (255 - max) * t) / max;
+  const toHex = (n: number) => Math.round(Math.min(255, n * scale)).toString(16).padStart(2, '0');
+  return `#${toHex(rgb[0])}${toHex(rgb[1])}${toHex(rgb[2])}`;
+}
+
+/**
+ * Push HSV saturation and value toward full (each 0–1) — same hue, more intense.
+ * Accepts `#rgb` / `#rrggbb`.
+ */
+export function intensifyHex(hex: string, saturate: number, brighten: number): string {
+  const rgb = tryHexToRgb(hex);
+  if (!rgb) return hex;
+  const max = Math.max(...rgb);
+  const min = Math.min(...rgb);
+  if (max === min) return brightenHex(hex, brighten);
+  const clamp = (n: number) => Math.min(1, Math.max(0, n));
+  const s0 = (max - min) / max;
+  const v0 = max / 255;
+  const s = s0 + (1 - s0) * clamp(saturate);
+  const v = v0 + (1 - v0) * clamp(brighten);
+  // Each channel's position between min and max fixes the hue.
+  const toHex = (channel: number) => {
+    const t = (channel - min) / (max - min);
+    const value = v * (1 - s + s * t) * 255;
+    return Math.round(value).toString(16).padStart(2, '0');
+  };
+  return `#${toHex(rgb[0])}${toHex(rgb[1])}${toHex(rgb[2])}`;
+}
+
 /** Mix `hex` toward black by `amount` (0–1). Accepts `#rgb` / `#rrggbb`. */
 export function darkenHexTowardBlack(hex: string, amount: number): string {
   return mixHexColors(hex, '#000000', amount);
