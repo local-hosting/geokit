@@ -194,3 +194,34 @@ export {
 } from './utils/shared-point-map-orchestrator';
 
 export { bindGkVenueLayerStacking, restackVenueLayersForMarket } from './utils/venue-layer-stack-bind';
+
+export {
+  badgePreset,
+  createBadgeMarker,
+  syncBadgeChrome,
+  type BadgeKind,
+} from './utils/markers/badge';
+
+export {
+  SHARED_POINT_BADGE_ICON_PROPERTY,
+  ensureSharedPointBadgeIconLayers,
+  raiseSharedPointBadgeIconLayersOnTop,
+  registerBadgeIconImage,
+  sharedPointPointBadgeIconLayerId,
+  sharedPointSelectionBadgeIconLayerId,
+  syncBadgeIconTranslate,
+  syncSelectionBadgeIconTranslate,
+  healSharedPointBadgeIconTranslate,
+} from './utils/paint/shared-point-badge-icon';
+
+export { createMarker, createMarkerFactory } from './utils/markers/factory';
+export type {
+  Marker,
+  MarkerFactory,
+  MarkerPhase,
+  MarkerPreset,
+  MarkerState,
+  MarkerFactoryAspects,
+  MarkerInteractionPhase,
+  MarkerInteractionState,
+} from './utils/markers/factory';

@@ -11,7 +11,6 @@ import {
   SHARED_POINT_FLOATING_BADGE_FLOAT_TRANSLATE,
   SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE,
 } from '../../../src/utils/shared-point-paint';
-
 function createMockMap() {
   const sources = new Map<string, { data: unknown; _data?: unknown }>();
   const featureState = new Map<string, Record<string, unknown>>();
@@ -288,6 +287,46 @@ describe('shared point selection', () => {
     expect(map.moveLayer).not.toHaveBeenCalled();
   });
 
+  it('keeps incoming _badgeIcon when source feature has no badge glyph property', () => {
+    const map = createMockMap();
+    const sourceId = 'canvas-places';
+    map._sources.set(`${sourceId}-selection`, { data: null });
+    map._sources.set(sourceId, {
+      data: null,
+      _data: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: { placeId: 'dock-a', _color: '#335577' },
+            geometry: { type: 'Point', coordinates: [-79.33, 42.48] },
+          },
+        ],
+      },
+    });
+
+    setSharedPointSelection(
+      map as never,
+      sourceId,
+      {
+        featureId: 'dock-a',
+        lngLat: { lng: -79.33, lat: 42.48 },
+        properties: {
+          placeId: 'dock-a',
+          _badgeIcon: 'canvas-badge-cube',
+          _color: '#ee5533',
+        },
+      },
+      { promoteId: 'placeId', pointLayerId: 'canvas-places-point', selectionGroundBadge: true }
+    );
+
+    const ringData = map._sources.get(`${sourceId}-selection`)?.data as {
+      features: Array<{ properties?: Record<string, unknown> }>;
+    };
+    expect(ringData.features[0]?.properties?._badgeIcon).toBe('canvas-badge-cube');
+    expect(ringData.features[0]?.properties?._color).toBe('#ee5533');
+  });
+
   it('merges source _color into selection props when click props omit it', () => {
     const map = createMockMap();
     const sourceId = 'canvas-venues';
@@ -486,6 +525,30 @@ describe('shared point selection', () => {
 
     expect(order.indexOf('setData')).toBeGreaterThanOrEqual(0);
     expect(order.indexOf('filter')).toBeGreaterThan(order.indexOf('setData'));
+  });
+
+  it('inserts new selection badge disks below the badge icon layer when present', () => {
+    const pointLayerId = 'canvas-venues-point';
+    const sourceId = 'canvas-venues';
+    const iconLayerId = `${pointLayerId}-selection-badge-icon`;
+    const badgeLayerId = `${pointLayerId}-selection-badge`;
+    const layers = new Set([pointLayerId, iconLayerId]);
+    const addLayer = vi.fn();
+    setupSelectionGroundBadgeLayers(
+      {
+        getSource: (id: string) => (id === `${sourceId}-selection` ? {} : undefined),
+        getLayer: (id: string) => (layers.has(id) ? {} : undefined),
+        addLayer,
+        setPaintProperty: vi.fn(),
+        moveLayer: vi.fn(),
+      } as never,
+      sourceId,
+      pointLayerId,
+      { fallbackColor: '#9acd32' }
+    );
+
+    const badgeCall = addLayer.mock.calls.find((c) => c[0]?.id === badgeLayerId);
+    expect(badgeCall?.[1]).toBe(iconLayerId);
   });
 
   it('paints selected outer as seam-plug fill plus stroked rim under the white ring', () => {

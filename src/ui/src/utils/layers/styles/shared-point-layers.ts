@@ -49,6 +49,15 @@ import {
   sharedPointSelectionBadgeOuterLayerId,
   syncSharedPointSelectedLayerFilter,
 } from '../../paint/shared-point-paint';
+import { syncBadgeChrome } from '../../markers/badge';
+import {
+  ensureSharedPointBadgeIconLayers,
+  syncBadgeIconTranslate,
+  raiseSharedPointBadgeIconLayersOnTop,
+  SHARED_POINT_BADGE_ICON_PROPERTY,
+  syncSelectionBadgeIconTranslate,
+  sharedPointSelectionBadgeIconLayerId,
+} from '../../paint/shared-point-badge-icon';
 import { resolveSharedPointLayerIdForSource } from '../../shared-points/shared-point-heal';
 
 // ============================================================================
@@ -1314,6 +1323,10 @@ export function setupSelectionGroundBadgeLayers(
   const selectionBadgeBeforeId = map.getLayer?.(`${pointLayerId}-selection-ring`)
     ? `${pointLayerId}-selection-ring`
     : pointLayerId;
+  const selectionIconLayerId = sharedPointSelectionBadgeIconLayerId(pointLayerId);
+  const insertBelowId = map.getLayer?.(selectionIconLayerId)
+    ? selectionIconLayerId
+    : selectionBadgeBeforeId;
   const outerStrokeRadius = sharedPointFloatingBadgeOuterStrokeRadius(
     selectedRadius,
     ringWidth
@@ -1338,7 +1351,7 @@ export function setupSelectionGroundBadgeLayers(
             'circle-translate-anchor': 'viewport',
           },
         } as any,
-        selectionBadgeBeforeId
+        insertBelowId
       );
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add selection badge outer ${badgeOuterLayerId}:`, err);
@@ -1364,7 +1377,7 @@ export function setupSelectionGroundBadgeLayers(
             'circle-translate-anchor': 'viewport',
           },
         } as any,
-        selectionBadgeBeforeId
+        insertBelowId
       );
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add selection badge ${badgeLayerId}:`, err);
@@ -1400,6 +1413,8 @@ export function setupSelectionGroundBadgeLayers(
       /* style swap */
     }
   }
+
+  raiseSharedPointBadgeIconLayersOnTop(map, pointLayerId);
 }
 
 const selectionBadgeAnimByMap = new WeakMap<MapInstance, Map<string, number>>();
@@ -1563,6 +1578,7 @@ function setSelectionBadgeTranslate(
   translate: [number, number] | unknown[]
 ): void {
   setBadgeLayersTranslate(map, selectionBadgeLayerIds(pointLayerId), translate);
+  syncSelectionBadgeIconTranslate(map, pointLayerId, translate);
 }
 
 /** Numeric circle-translate already written by JS animation, if any. */
@@ -1715,7 +1731,10 @@ export function animateSharedPointSelectionBadgeTranslate(
     to,
     durationMs: options?.durationMs ?? tokens.selectAnimationMs,
     apply: (translate) => setSelectionBadgeTranslate(map, pointLayerId, translate),
-    onDone: options?.onDone,
+    onDone: () => {
+      raiseSharedPointBadgeIconLayersOnTop(map, pointLayerId);
+      options?.onDone?.();
+    },
   });
 }
 
@@ -2257,8 +2276,8 @@ export function setSharedPointSelection(
     // Click/query props often omit `_color` — always merge the full source feature.
     const fromSource = lookupSharedPointProperties(map, sourceId, String(featureId), idProperties);
     const resolvedProperties: Record<string, unknown> = {
-      ...(properties ?? {}),
       ...(fromSource ?? {}),
+      ...(properties ?? {}),
     };
     const fallback =
       options?.selectionGroundBadgeFallbackColor?.trim() || '#888888';
@@ -2270,17 +2289,26 @@ export function setSharedPointSelection(
     getSharedPointSelectionMap(map).set(sourceId, { featureId, lngLat: resolvedLngLat });
     ensureSelectionRingReady(map, sourceId, options);
     const selectionChanged = featureId !== previousFeatureId;
+    const badgeIconId = resolvedProperties[SHARED_POINT_BADGE_ICON_PROPERTY];
+    const hasBadgeIcon =
+      typeof badgeIconId === 'string' && badgeIconId.trim().length > 0;
+    const tokens = resolveSharedPointFloatingBadgeTokens();
     if (options?.selectionGroundBadge && pointLayerId) {
+      if (hasBadgeIcon) {
+        ensureSharedPointBadgeIconLayers(map, {
+          sourceId,
+          pointLayerId,
+          selectionIconTranslate: tokens.selectedTranslate,
+        });
+        syncBadgeIconTranslate(map, pointLayerId);
+        raiseSharedPointBadgeIconLayersOnTop(map, pointLayerId);
+      }
       if (selectionChanged) {
         // Lift from current height — re-apply must not restart from rest (up→down→up).
         animateSharedPointSelectionBadgeTranslate(map, pointLayerId);
       } else if (!selectionBadgeAnimByMap.get(map)?.has(pointLayerId)) {
         // Same selection after layer rebuild: hold full selected screen lift (not zoom-scaled).
-        setSelectionBadgeTranslate(
-          map,
-          pointLayerId,
-          resolveSharedPointFloatingBadgeTokens().selectedTranslate
-        );
+        setSelectionBadgeTranslate(map, pointLayerId, tokens.selectedTranslate);
       }
     }
     updateSharedPointSelection(map, sourceId, {
@@ -2296,20 +2324,13 @@ export function setSharedPointSelection(
         promoteId,
         featureId,
       });
-      // Key-color core + white middle ring + key-color outer.
-      const badgeId = sharedPointSelectionBadgeLayerId(pointLayerId);
-      const badgeOuterId = sharedPointSelectionBadgeOuterLayerId(pointLayerId);
-      const whiteChrome = resolveSharedPointFloatingBadgeTokens().fill;
-      if (map.getLayer?.(badgeId) && map.setPaintProperty) {
-        try {
-          map.setPaintProperty(badgeId, 'circle-color', keyColor);
-          map.setPaintProperty(badgeId, 'circle-stroke-color', whiteChrome);
-          if (map.getLayer?.(badgeOuterId)) {
-            map.setPaintProperty(badgeOuterId, 'circle-color', keyColor);
-          }
-        } catch {
-          /* style swap */
-        }
+      syncBadgeChrome(map, pointLayerId, {
+        keyColor,
+        badgeGlyph: hasBadgeIcon,
+      });
+      if (hasBadgeIcon) {
+        syncBadgeIconTranslate(map, pointLayerId);
+        raiseSharedPointBadgeIconLayersOnTop(map, pointLayerId);
       }
     }
     clearSharedPointHoverOverlay(map, sourceId);
