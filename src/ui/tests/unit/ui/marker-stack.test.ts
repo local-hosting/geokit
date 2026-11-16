@@ -50,9 +50,10 @@ describe('buildFloatingBadgeStack', () => {
       'canvas-places-point-rounded-body',
       sharedPointRoundedRectBodyFilter()
     );
-    expect(setFilter).not.toHaveBeenCalledWith(
-      'canvas-places-glow',
-      sharedPointCircleBodyFilter()
+    expect(setFilter).toHaveBeenCalledWith('canvas-places-glow', sharedPointCircleBodyFilter());
+    expect(setFilter).toHaveBeenCalledWith(
+      'canvas-places-point-rounded-shadow',
+      sharedPointRoundedRectBodyFilter()
     );
   });
 

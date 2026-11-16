@@ -7,6 +7,12 @@
  */
 
 import type { FeatureCollection, Point } from 'geojson';
+import {
+  darkenHexTowardBlack,
+  lightenHexTowardWhite,
+  mixHexColors,
+} from '../../../../core/src/utils/color';
+import { easeOutCubic } from '../../../../core/src/utils/easing';
 import type { MapInstance } from '../../providers/types';
 import {
   sharedPointCircleBodyFilter,
@@ -87,7 +93,7 @@ export const SHARED_POINT_HOVER_GLOW_RADIUS_EXPRESSION: unknown[] = [
  * Radius tracks map zoom — readable at city scale, larger when zoomed in.
  */
 /** Bump when floating-badge size/look constants change so apps re-apply paint. */
-export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 32;
+export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 34;
 
 export const SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION: unknown[] = [
   'interpolate',
@@ -104,13 +110,13 @@ export const SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION: unknown[] = [
   10,
   5,
   12,
-  10,
+  9,
   14,
-  17,
+  12.5,
   16,
-  26,
   18,
-  34,
+  18,
+  25,
 ];
 
 /** Colored ring width — thin when zoomed out, full token width when close in. */
@@ -193,12 +199,12 @@ export const SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY = 0.28;
 /** Soft edge so the shadow reads as diffuse contact, not a sharp ellipse. */
 export const SHARED_POINT_FLOATING_BADGE_SHADOW_BLUR = 0.55;
 /**
- * Pad past the fill so the ellipse peeks under ring + outer + glass after float.
+ * Pad past the full badge (fill + ring + outer band) — the cast offset does the peeking.
  * Zoom stops keep continental pads tiny (no fat black disks).
  */
-export const SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD = 15;
-/** South-biased cast — light from above; peeks under the badge’s south edge. */
-export const SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE: [number, number] = [1, 5];
+export const SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD = 2;
+/** Screen-space drop: straight down so the shadow peeks under the badge's bottom edge. */
+export const SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE: [number, number] = [0, 10];
 /** Resting viewport lift — unselected badges stay grounded (deep zoom max). */
 export const SHARED_POINT_FLOATING_BADGE_FLOAT_TRANSLATE: [number, number] = [0, 0];
 /** Active/selected badge — lifts above the map; shadow stays put (deep zoom max). */
@@ -255,7 +261,9 @@ export const SHARED_POINT_FLOATING_BADGE_SHADOW_STRENGTH_ZOOM_STOPS: [number, nu
   [16, 1],
   [18, 1],
 ];
-export const SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_ALIGNMENT = 'map' as const;
+/** Viewport-aligned so pitch does not squash the shadow under the upright badge. */
+export const SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_ALIGNMENT = 'viewport' as const;
+export const SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE_ANCHOR = 'viewport' as const;
 export const SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_SCALE = 'map' as const;
 export const SHARED_POINT_FLOATING_BADGE_SELECTION_SHADOW_COLOR = 'rgba(0, 0, 0, 0.32)';
 /** Floating-badge select = lifted badge only — no halo (transparent if anything restores stroke). */
@@ -354,11 +362,10 @@ export function syncSharedPointSelectedLayerFilter(
   }
 
   if (glowLayerId) {
-    const shadowFilter = exclude;
     for (const layerId of [glowLayerId, `${glowLayerId}-hover`]) {
       if (!map.getLayer?.(layerId)) continue;
       try {
-        map.setFilter(layerId, shadowFilter);
+        map.setFilter(layerId, circleFilter);
       } catch {
         /* layer may reject filter briefly during style swap */
       }
@@ -366,6 +373,7 @@ export function syncSharedPointSelectedLayerFilter(
   }
 
   for (const layerId of [
+    `${options.pointLayerId}-rounded-shadow`,
     `${options.pointLayerId}-rounded-outer`,
     `${options.pointLayerId}-rounded-ring`,
     `${options.pointLayerId}-rounded-body`,
@@ -607,78 +615,13 @@ export function annotatePointFeaturesStrokeFromFill(
   };
 }
 
-export interface SharedPointLayerIds {
-  sourceId: string;
-  glowLayerId: string;
-  pointLayerId: string;
-}
-
-/** Outer white (or custom) stroke drawn outside the colored ring. */
-export function sharedPointOuterStrokeLayerId(pointLayerId: string): string {
-  return `${pointLayerId}-outer-stroke`;
-}
-
-export function sharedPointGlassLayerId(pointLayerId: string): string {
-  return `${pointLayerId}-glass`;
-}
-
-export function sharedPointSelectionBadgeLayerId(pointLayerId: string): string {
-  return `${pointLayerId}-selection-badge`;
-}
-
-export function sharedPointSelectionBadgeOuterLayerId(pointLayerId: string): string {
-  return `${pointLayerId}-selection-badge-outer`;
-}
-
-/** Resources use the rounded stack on the selection source — hide circle duplicates. */
-export function hideFloatingBadgeCircleSelectionLayers(
-  map: MapInstance,
-  pointLayerId: string
-): void {
-  if (!map.setPaintProperty) return;
-  for (const [layerId, prop, value] of [
-    [sharedPointSelectionBadgeLayerId(pointLayerId), 'circle-opacity', 0],
-    [sharedPointSelectionBadgeLayerId(pointLayerId), 'circle-stroke-opacity', 0],
-    [sharedPointSelectionBadgeOuterLayerId(pointLayerId), 'circle-opacity', 0],
-    [sharedPointSelectionBadgeOuterLayerId(pointLayerId), 'circle-stroke-opacity', 0],
-  ] as const) {
-    if (!map.getLayer?.(layerId)) continue;
-    try {
-      map.setPaintProperty(layerId, prop, value);
-    } catch {
-      /* style swap */
-    }
-  }
-}
-
-export function sharedPointHoverBadgeLayerId(pointLayerId: string): string {
-  return `${pointLayerId}-hover-badge`;
-}
-
-export function sharedPointHoverBadgeOuterLayerId(pointLayerId: string): string {
-  return `${pointLayerId}-hover-badge-outer`;
-}
-
-export function sharedPointSelectionRingLayerId(pointLayerId: string): string {
-  return `${pointLayerId}-selection-ring`;
-}
-
-/**
- * Layers that should receive pointer events for floating-badge / shared points.
- * Omit the opacity-0 selection ring — empty ring hits steal click dedup from real badges.
- */
-export function sharedPointHitLayerIds(pointLayerId: string, glowLayerId: string): string[] {
-  return [
-    glowLayerId,
-    pointLayerId,
-    sharedPointOuterStrokeLayerId(pointLayerId),
-    sharedPointGlassLayerId(pointLayerId),
-    sharedPointSelectionBadgeLayerId(pointLayerId),
-    sharedPointSelectionBadgeOuterLayerId(pointLayerId),
-    sharedPointHoverBadgeLayerId(pointLayerId),
-    sharedPointHoverBadgeOuterLayerId(pointLayerId),
-  ];
-}
+import {
+  sharedPointGlassLayerId,
+  sharedPointHoverBadgeLayerId,
+  sharedPointHoverBadgeOuterLayerId,
+  sharedPointOuterStrokeLayerId,
+  type SharedPointLayerIds,
+} from './shared-point/layer-ids';
 
 /** Read a numeric paint width from a number or `['literal', n]` expression. */
 export function literalNumberFromPaintExpression(expr: unknown, fallback = 0): number {
@@ -952,7 +895,11 @@ export function sharedPointFloatingBadgeShadowBlurExpression(
  * Far out the pad collapses so the shadow stays a tiny contact under the dot.
  */
 export function sharedPointFloatingBadgeShadowRadiusExpression(
-  pointRadius: unknown[] = SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+  pointRadius: unknown[] = sharedPointFloatingBadgeOuterDiscRadius(
+    SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+    sharedPointFloatingBadgeRingWidthExpression(),
+    sharedPointFloatingBadgeOuterStrokeWidthExpression()
+  ) as unknown[],
   maxPad = SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD
 ): unknown[] {
   if (!Array.isArray(pointRadius) || pointRadius[0] !== 'interpolate') {
@@ -981,11 +928,6 @@ export function sharedPointFloatingBadgeSelectedRadiusExpression(
   return scaleInterpolateRadiusStops(pointRadius, scale);
 }
 
-function easeOutCubic(t: number): number {
-  const x = Math.min(1, Math.max(0, t));
-  return 1 - (1 - x) ** 3;
-}
-
 export function sharedPointFloatingBadgeSelectionTranslateAt(
   from: [number, number],
   to: [number, number],
@@ -998,45 +940,6 @@ export function sharedPointFloatingBadgeSelectionTranslateAt(
     to,
     easeOutCubic(elapsedMs / durationMs)
   );
-}
-
-function parseHexRgb(hex: string): [number, number, number] | null {
-  const raw = hex.trim().replace(/^#/, '');
-  const full =
-    raw.length === 3
-      ? raw
-          .split('')
-          .map((c) => `${c}${c}`)
-          .join('')
-      : raw;
-  if (!/^[0-9a-fA-F]{6}$/.test(full)) return null;
-  return [
-    parseInt(full.slice(0, 2), 16),
-    parseInt(full.slice(2, 4), 16),
-    parseInt(full.slice(4, 6), 16),
-  ];
-}
-
-/** Mix `from` → `to` by `amount` (0–1). Accepts `#rgb` / `#rrggbb`. */
-export function mixHexColors(from: string, to: string, amount: number): string {
-  const a = parseHexRgb(from);
-  const b = parseHexRgb(to);
-  if (!a || !b) return amount < 0.5 ? from : to;
-  const t = Math.min(1, Math.max(0, amount));
-  const toHex = (n: number) => Math.round(n).toString(16).padStart(2, '0');
-  return `#${toHex(a[0] + (b[0] - a[0]) * t)}${toHex(a[1] + (b[1] - a[1]) * t)}${toHex(
-    a[2] + (b[2] - a[2]) * t
-  )}`;
-}
-
-/** Mix `hex` toward white by `amount` (0–1). Accepts `#rgb` / `#rrggbb`. */
-export function lightenHexTowardWhite(hex: string, amount: number): string {
-  return mixHexColors(hex, '#ffffff', amount);
-}
-
-/** Mix `hex` toward black by `amount` (0–1). Accepts `#rgb` / `#rrggbb`. */
-export function darkenHexTowardBlack(hex: string, amount: number): string {
-  return mixHexColors(hex, '#000000', amount);
 }
 
 /** Lerp hover ring color between resting and lit over `durationMs` (linear). */
@@ -1220,6 +1123,9 @@ export type SharedPointFloatingBadgeTokens = {
   shadowRadiusPad: number;
   coloredRingWidth: number;
   outerStrokeWidth: number;
+  /** Selected badge bands — default to the resting widths. */
+  selectedRingWidth: number;
+  selectedOuterStrokeWidth: number;
   glassOpacity: number;
   glassBlur: number;
   glassPad: number;
@@ -1246,6 +1152,16 @@ function defaultThemeElement(): Element | null {
 export function resolveSharedPointFloatingBadgeTokens(
   element: Element | null = defaultThemeElement()
 ): SharedPointFloatingBadgeTokens {
+  const coloredRingWidth = getCSSVariableNumber(
+    element,
+    '--gk-badge-ring-width',
+    SHARED_POINT_FLOATING_BADGE_COLORED_RING_WIDTH
+  );
+  const outerStrokeWidth = getCSSVariableNumber(
+    element,
+    '--gk-badge-outer-stroke-width',
+    SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_WIDTH
+  );
   return {
     fill: getCSSVariable(element, '--gk-badge-fill', SHARED_POINT_FLOATING_BADGE_FILL),
     outerStrokeColor: getCSSVariable(
@@ -1273,15 +1189,17 @@ export function resolveSharedPointFloatingBadgeTokens(
       '--gk-badge-shadow-pad',
       SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD
     ),
-    coloredRingWidth: getCSSVariableNumber(
+    coloredRingWidth,
+    outerStrokeWidth,
+    selectedRingWidth: getCSSVariableNumber(
       element,
-      '--gk-badge-ring-width',
-      SHARED_POINT_FLOATING_BADGE_COLORED_RING_WIDTH
+      '--gk-badge-selected-ring-width',
+      coloredRingWidth
     ),
-    outerStrokeWidth: getCSSVariableNumber(
+    selectedOuterStrokeWidth: getCSSVariableNumber(
       element,
-      '--gk-badge-outer-stroke-width',
-      SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_WIDTH
+      '--gk-badge-selected-outer-stroke-width',
+      outerStrokeWidth
     ),
     glassOpacity: getCSSVariableNumber(
       element,
@@ -1400,7 +1318,11 @@ export function sharedPointFloatingBadgePaintExpressions(
     options.themeElement === undefined ? defaultThemeElement() : options.themeElement
   );
   const restingShadow = sharedPointFloatingBadgeShadowRadiusExpression(
-    SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+    sharedPointFloatingBadgeOuterDiscRadius(
+      SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+      sharedPointFloatingBadgeRingWidthExpression(tokens.coloredRingWidth),
+      sharedPointFloatingBadgeOuterStrokeWidthExpression(tokens.outerStrokeWidth)
+    ) as unknown[],
     tokens.shadowRadiusPad
   );
   const floatTranslate = sharedPointFloatingBadgeTranslateExpression(tokens.floatTranslate[1]);
@@ -1424,6 +1346,7 @@ export function sharedPointFloatingBadgePaintExpressions(
     glowTranslate: shadowTranslate,
     glowPitchAlignment: SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_ALIGNMENT,
     glowPitchScale: SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_SCALE,
+    glowTranslateAnchor: SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE_ANCHOR,
     pointTranslate: floatTranslate,
     // Hover keeps resting height (lighten only); select lifts above the shadow.
     hoverTranslate: floatTranslate,
@@ -1548,7 +1471,7 @@ export function buildSharedPointFeatureStateHoverPaint(
 
 export interface ApplySharedPointPaintOptions {
   ids: SharedPointLayerIds;
-  pointColorExpression: unknown[];
+  pointColorExpression: string | unknown[];
   pointRadiusExpression: unknown[];
   glowColorExpression?: string | unknown[];
   glowOpacity?: number | unknown[];
@@ -1558,7 +1481,7 @@ export interface ApplySharedPointPaintOptions {
   strokeColorExpression?: unknown[];
   /** Outer stroke outside the colored ring (e.g. white halo). */
   outerStrokeWidthExpression?: unknown[];
-  outerStrokeColorExpression?: unknown[];
+  outerStrokeColorExpression?: string | unknown[];
   /** Unselected key-ring / outer-stroke opacity (selected stays fully opaque). */
   strokeOpacity?: number;
   outerStrokeOpacity?: number;
@@ -1586,6 +1509,8 @@ export interface ApplySharedPointPaintOptions {
    * Ground-shadow pitch scale. `'map'` scales with perspective distance.
    */
   glowPitchScale?: 'map' | 'viewport';
+  /** `circle-translate-anchor` for the shadow (`viewport` = cast straight down the screen). */
+  glowTranslateAnchor?: 'map' | 'viewport';
   /**
    * Point/badge offset in px `[x, y]` (MapLibre: negatives = left/up).
    * e.g. `[0, -5]` floats the badge above a ground shadow at the map spot.
@@ -1682,6 +1607,7 @@ export function applySharedPointLayerPaint(
     glowTranslate,
     glowPitchAlignment,
     glowPitchScale,
+    glowTranslateAnchor,
     pointTranslate,
     pointTranslateAnchor,
     pointOpacityExpression,
@@ -1734,6 +1660,9 @@ export function applySharedPointLayerPaint(
     }
     if (glowPitchScale != null) {
       map.setPaintProperty?.(glowLayerId, 'circle-pitch-scale', glowPitchScale);
+    }
+    if (glowTranslateAnchor != null) {
+      map.setPaintProperty?.(glowLayerId, 'circle-translate-anchor', glowTranslateAnchor);
     }
   }
 
@@ -1964,4 +1893,10 @@ export function attachSharedPointHoverGlowRadiusSync(
   };
 }
 
+export * from './shared-point/layer-ids';
+export {
+  darkenHexTowardBlack,
+  lightenHexTowardWhite,
+  mixHexColors,
+} from '../../../../core/src/utils/color';
 export { SHARED_POINT_BADGE_ICON_PROPERTY } from './shared-point-badge-constants';

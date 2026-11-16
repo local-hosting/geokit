@@ -82,7 +82,7 @@ describe('rounded-rect map chrome', () => {
     const z14Idx = body.indexOf(14);
     expect(z14Idx).toBeGreaterThan(0);
     const iconSizeAt14 = body[z14Idx + 1];
-    expect(iconSizeAt14).toBeCloseTo((17 * 2) / 64, 5);
+    expect(iconSizeAt14).toBeCloseTo((12.5 * 2) / 64, 5);
   });
 
   it('keeps resource selection chrome when stack paint runs with an active selection', () => {

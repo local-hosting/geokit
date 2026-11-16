@@ -26,7 +26,7 @@ describe('syncSharedPointSelectedLayerFilter', () => {
     const circleShape = sharedPointCircleBodyFilter();
     expect(setFilter).toHaveBeenCalledWith('pts', ['all', circleShape, exclude]);
     expect(setFilter).toHaveBeenCalledWith('pts-outer-stroke', ['all', circleShape, exclude]);
-    expect(setFilter).toHaveBeenCalledWith('pts-glow', exclude);
+    expect(setFilter).toHaveBeenCalledWith('pts-glow', ['all', circleShape, exclude]);
   });
 
   it('clears filters when selection is empty', () => {

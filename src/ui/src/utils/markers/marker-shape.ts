@@ -1,3 +1,5 @@
+import type { MapInstance } from '../../providers/types';
+
 /** GeoJSON property for per-feature marker body shape (shared point layers). */
 export const SHARED_POINT_MARKER_SHAPE_PROPERTY = '_markerShape' as const;
 
@@ -55,6 +57,28 @@ export function sharedPointCircleBodyLayerIds(pointLayerId: string): string[] {
   return suffixes.map((suffix) => `${pointLayerId}${suffix}`);
 }
 
+/** Selected badge layers that lift together — both shapes, then the glyph. */
+export function sharedPointSelectionLiftLayerIds(pointLayerId: string): string[] {
+  const suffixes = [
+    '-selection-badge-outer',
+    '-selection-badge',
+    '-selection-rounded-outer',
+    '-selection-rounded-ring',
+    '-selection-rounded-body',
+    '-selection-badge-icon',
+  ] as const;
+  return suffixes.map((suffix) => `${pointLayerId}${suffix}`);
+}
+
+/** Selected marker draw order, bottom to top — always above every resting marker. */
+export function sharedPointSelectionFrontLayerIds(pointLayerId: string): string[] {
+  return [
+    `${pointLayerId}-selection-shadow`,
+    `${pointLayerId}-selection-rounded-shadow`,
+    ...sharedPointSelectionLiftLayerIds(pointLayerId),
+  ];
+}
+
 /** @deprecated Use {@link sharedPointCircleBodyLayerIds} — glow is not circle-scoped. */
 export function sharedPointCircleStackLayerIds(
   pointLayerId: string,
@@ -65,4 +89,18 @@ export function sharedPointCircleStackLayerIds(
 
 export function sharedPointGroundShadowLayerIds(glowLayerId: string): string[] {
   return [glowLayerId, `${glowLayerId}-hover`];
+}
+
+/** Best-effort layer filter update when the layer exists (style swaps may fail). */
+export function trySetLayerFilter(
+  map: MapInstance,
+  layerId: string,
+  filter: unknown[] | null
+): void {
+  if (!map.getLayer?.(layerId) || !map.setFilter) return;
+  try {
+    map.setFilter(layerId, filter);
+  } catch {
+    /* style swap */
+  }
 }

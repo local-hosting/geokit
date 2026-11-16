@@ -19,7 +19,7 @@ export function hexToHsl(hex: string): Hsl {
     return [0, 0, 0];
   }
 
-  let normalized = hex.startsWith('#') ? hex.slice(1) : hex;
+  const normalized = hex.startsWith('#') ? hex.slice(1) : hex;
   let r = 0;
   let g = 0;
   let b = 0;
@@ -66,26 +66,57 @@ export function hexToHsl(hex: string): Hsl {
   return [h * 360, s * 100, lightness * 100];
 }
 
+/** Parse `#rgb` / `#rrggbb` to RGB channels; null when invalid. */
+export function tryHexToRgb(hex: string): [number, number, number] | null {
+  const raw = hex.trim().replace(/^#/, '');
+  const full =
+    raw.length === 3
+      ? raw
+          .split('')
+          .map((c) => `${c}${c}`)
+          .join('')
+      : raw;
+  if (!/^[0-9a-fA-F]{6}$/.test(full)) return null;
+  return [
+    Number.parseInt(full.slice(0, 2), 16),
+    Number.parseInt(full.slice(2, 4), 16),
+    Number.parseInt(full.slice(4, 6), 16),
+  ];
+}
+
 export function hexToRgb(hex: string, fallback: Rgb = { r: 136, g: 136, b: 136 }): Rgb {
   if (!hex || typeof hex !== 'string') {
     return fallback;
   }
 
-  let normalized = hex.replace(
-    /^#?([a-f\d])([a-f\d])([a-f\d])$/i,
-    (_match, red: string, green: string, blue: string) => red + red + green + green + blue + blue
-  );
-
-  const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalized);
-  if (!match) {
+  const channels = tryHexToRgb(hex.startsWith('#') ? hex : `#${hex}`);
+  if (!channels) {
     return fallback;
   }
 
-  return {
-    r: Number.parseInt(match[1], 16),
-    g: Number.parseInt(match[2], 16),
-    b: Number.parseInt(match[3], 16),
-  };
+  return { r: channels[0], g: channels[1], b: channels[2] };
+}
+
+/** Mix `from` → `to` by `amount` (0–1). Accepts `#rgb` / `#rrggbb`. */
+export function mixHexColors(from: string, to: string, amount: number): string {
+  const a = tryHexToRgb(from);
+  const b = tryHexToRgb(to);
+  if (!a || !b) return amount < 0.5 ? from : to;
+  const t = Math.min(1, Math.max(0, amount));
+  const toHex = (n: number) => Math.round(n).toString(16).padStart(2, '0');
+  return `#${toHex(a[0] + (b[0] - a[0]) * t)}${toHex(a[1] + (b[1] - a[1]) * t)}${toHex(
+    a[2] + (b[2] - a[2]) * t
+  )}`;
+}
+
+/** Mix `hex` toward white by `amount` (0–1). Accepts `#rgb` / `#rrggbb`. */
+export function lightenHexTowardWhite(hex: string, amount: number): string {
+  return mixHexColors(hex, '#ffffff', amount);
+}
+
+/** Mix `hex` toward black by `amount` (0–1). Accepts `#rgb` / `#rrggbb`. */
+export function darkenHexTowardBlack(hex: string, amount: number): string {
+  return mixHexColors(hex, '#000000', amount);
 }
 
 export interface PaletteCycler {

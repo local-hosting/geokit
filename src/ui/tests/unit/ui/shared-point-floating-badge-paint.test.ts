@@ -148,10 +148,10 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       )
     ).toBeGreaterThanOrEqual(Math.abs(SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE[1]) * 0.9);
     expect(paint.glowTranslate[0]).toBe('interpolate');
-    // Map plane alignment → at pitch > 0 the ground shadow foreshortens (wider than tall).
+    // Screen-aligned drop shadow — pitch does not squash it under the upright badge.
     expect(paint.glowPitchAlignment).toBe(SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_ALIGNMENT);
     expect(paint.glowPitchScale).toBe(SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_SCALE);
-    expect(paint.glowPitchAlignment).toBe('map');
+    expect(paint.glowPitchAlignment).toBe('viewport');
     expect(paint.glowPitchScale).toBe('map');
     expect(paint.glowBlur[0]).toBe('interpolate');
     expect(paint.glowColorExpression).toBe('#000000');
@@ -162,10 +162,9 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     expect(SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY).toBeLessThanOrEqual(0.36);
     expect(SHARED_POINT_FLOATING_BADGE_SHADOW_BLUR).toBeGreaterThanOrEqual(0.48);
     expect(SHARED_POINT_FLOATING_BADGE_SHADOW_BLUR).toBeLessThanOrEqual(0.62);
-    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD).toBeGreaterThanOrEqual(
-      SHARED_POINT_FLOATING_BADGE_RING_STROKE_WIDTH
-    );
-    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD).toBeLessThanOrEqual(16);
+    // Pad is past the full badge; the cast offset does the peeking.
+    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD).toBeGreaterThan(0);
+    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD).toBeLessThanOrEqual(4);
     expect(paint.pointOpacityExpression?.[0]).toBe('case');
     expect(paint.pointOpacityExpression).toEqual(
       expect.arrayContaining([['boolean', ['feature-state', 'selected'], false], 0])
@@ -184,12 +183,9 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       throw new Error(`missing zoom stop ${zoom}`);
     };
     const shadow = paint.glowRadiusExpression as unknown[];
-    const point = paint.pointRadiusExpression as unknown[];
-    // Continental: shadow barely larger than the dot (no fat black disks).
-    expect(radiusAt(shadow, 6) - radiusAt(point, 6)).toBeLessThanOrEqual(1.25);
-    expect(radiusAt(shadow, 8) - radiusAt(point, 8)).toBeLessThanOrEqual(3.5);
-    // Deep zoom still gets the full pad under the ring stack.
-    expect(radiusAt(shadow, 16) - radiusAt(point, 16)).toBeGreaterThanOrEqual(5);
+    const glass = paint.glassRadiusExpression as unknown[];
+    // Continental: shadow hugs the badge stack (no fat black disks).
+    expect(radiusAt(shadow, 6) - radiusAt(glass, 6)).toBeLessThanOrEqual(1.25);
     const opacityAt = (zoom: number) => {
       const expr = paint.glowOpacity as unknown[];
       for (let i = 3; i < expr.length; i += 2) {
@@ -471,6 +467,8 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       'canvas-venues-point-selection-badge-outer',
       'canvas-venues-point-hover-badge',
       'canvas-venues-point-hover-badge-outer',
+      'canvas-venues-point-rounded-outer',
+      'canvas-venues-point-selection-rounded-outer',
     ]);
   });
 

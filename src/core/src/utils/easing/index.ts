@@ -13,3 +13,8 @@ export function easeInOutCubic(t: number): number {
 export function easeLinear(t: number): number {
   return Math.max(0, Math.min(1, t));
 }
+
+export function easeOutCubic(t: number): number {
+  const x = Math.min(1, Math.max(0, t));
+  return 1 - (1 - x) ** 3;
+}

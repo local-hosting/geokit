@@ -4,8 +4,8 @@
  * Default: light. Dark: @media (prefers-color-scheme: dark) or gk-map[theme="dark"].
  */
 
-/* Light (default) */
-:root {
+/* Light (default). `:where` keeps defaults at zero specificity: bootstrap may inject this file after app tokens. */
+:where(:root) {
   --gk-control-background: rgba(255, 255, 255, 0.72);
   --gk-control-border: rgba(0, 0, 0, 0.08);
   --gk-control-text: rgba(0, 0, 0, 0.85);
@@ -46,7 +46,7 @@
   --gk-badge-shadow: #000000;
   --gk-badge-shadow-opacity: 0.28;
   --gk-badge-shadow-blur: 0.55;
-  --gk-badge-shadow-pad: 6;
+  --gk-badge-shadow-pad: 2;
   --gk-badge-ring-width: 7;
   --gk-badge-outer-stroke-width: 2.5;
   --gk-badge-stroke-opacity: 0.82;
@@ -76,7 +76,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :where(:root) {
     --gk-control-background: rgba(18, 18, 22, 0.52);
     --gk-control-border: rgba(255, 255, 255, 0.08);
     --gk-control-text: rgba(255, 255, 255, 0.9);
@@ -116,7 +116,7 @@
     --gk-badge-shadow: #000000;
     --gk-badge-shadow-opacity: 0.28;
     --gk-badge-shadow-blur: 0.55;
-    --gk-badge-shadow-pad: 6;
+    --gk-badge-shadow-pad: 2;
     --gk-badge-ring-width: 7;
     --gk-badge-outer-stroke-width: 2.5;
     --gk-badge-stroke-opacity: 0.82;
@@ -187,7 +187,7 @@ gk-map.gk-theme-light {
   --gk-badge-shadow: #000000;
   --gk-badge-shadow-opacity: 0.28;
   --gk-badge-shadow-blur: 0.55;
-  --gk-badge-shadow-pad: 6;
+  --gk-badge-shadow-pad: 2;
   --gk-badge-ring-width: 7;
   --gk-badge-outer-stroke-width: 2.5;
   --gk-badge-stroke-opacity: 0.82;
@@ -256,7 +256,7 @@ gk-map.gk-theme-dark {
   --gk-badge-shadow: #000000;
   --gk-badge-shadow-opacity: 0.28;
   --gk-badge-shadow-blur: 0.55;
-  --gk-badge-shadow-pad: 6;
+  --gk-badge-shadow-pad: 2;
   --gk-badge-ring-width: 7;
   --gk-badge-outer-stroke-width: 2.5;
   --gk-badge-stroke-opacity: 0.82;

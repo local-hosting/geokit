@@ -3,7 +3,7 @@
  */
 
 import type * as MapTilerSdkNamespace from '@maptiler/sdk';
-import type { MapTilerTransformRequest } from '@local-hosting/geokit/core/config/maptiler-dev-proxy';
+import type { MapTilerTransformRequest } from '../config/maptiler-dev-proxy';
 
 export type MapReadyPhaseHandler = (phase: string, elapsedMs?: number) => void;
 

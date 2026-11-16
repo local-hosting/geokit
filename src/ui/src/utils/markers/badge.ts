@@ -54,7 +54,7 @@ export const badgePreset: MarkerPreset<BadgeKind, SharedPointLayerIds, ApplyShar
             themeElement:
               options.themeElement instanceof Element ? options.themeElement : undefined,
           }),
-        }) as ApplySharedPointPaintOptions,
+        }),
     },
     features: {
       variantFrom: (properties) => sharedPointBadgeVariantFromProperties(properties),

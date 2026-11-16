@@ -7,7 +7,7 @@ import {
   asPlaceKey,
   asZipCode,
 } from './constructors';
-import { expandH3CellId } from '../h3/cell-id';
+import { expandH3CellId } from '@local-hosting/geokit/h3/lite';
 import { placeKeyFromStateAndSlug } from './normalize';
 
 /** WGS84 coordinate → {@link GeoRef} point. */

@@ -4,7 +4,7 @@
 
 import { cellToBoundary, cellToLatLng } from 'h3-js';
 import { encodeGeohash } from '@local-hosting/geokit/core/geohash';
-import { expandH3CellId } from './cell-id.js';
+import { expandH3CellId } from '@local-hosting/geokit/h3/lite';
 
 export type H3ToZips = Record<string, string[]>;
 export type GeohashToZips = Record<string, string[]>;

@@ -157,11 +157,11 @@ describe('crosswalk guard', () => {
   it('only imports allowed @local-hosting/geokit/core subpaths in src', () => {
     const srcDir = join(ROOT, '../src');
     const files = walk(srcDir);
-    const allowedCoreImports = /^@twinfile\/geokit\/core(?:\/(?:containment|geohash))?$/;
+    const allowedCoreImports = /^@local-hosting\/geokit\/core(?:\/(?:containment|geohash))?$/;
     for (const file of files) {
       if (!file.endsWith('.ts')) continue;
       const text = readFileSync(file, 'utf8');
-      const imports = [...text.matchAll(/from ['"](@twinfile\/geokit\/core(?:\/[^'"]+)?)['"]/g)].map((m) => m[1]);
+      const imports = [...text.matchAll(/from ['"](@local-hosting\/geokit\/core(?:\/[^'"]+)?)['"]/g)].map((m) => m[1]);
       for (const specifier of imports) {
         expect(specifier).toMatch(allowedCoreImports);
       }

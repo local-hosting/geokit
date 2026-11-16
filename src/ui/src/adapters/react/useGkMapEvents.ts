@@ -24,6 +24,7 @@ export function useGkMapEvents(
       mapElement,
       {
         onClick: (detail) => handlersRef.current.onClick?.(detail),
+        onBackgroundClick: (detail) => handlersRef.current.onBackgroundClick?.(detail),
         onHover: (detail) => handlersRef.current.onHover?.(detail),
         onHoverEnd: (detail) => handlersRef.current.onHoverEnd?.(detail),
         onFocus: (event) => handlersRef.current.onFocus?.(event),
