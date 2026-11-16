@@ -108,7 +108,7 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     expect(radiusAt(6)).toBeLessThanOrEqual(3);
     expect(radiusAt(10)).toBeGreaterThan(radiusAt(6));
     expect(radiusAt(14)).toBeGreaterThanOrEqual(8);
-    expect(radiusAt(18)).toBeGreaterThanOrEqual(24);
+    expect(radiusAt(18)).toBeGreaterThanOrEqual(16);
     expect(radiusAt(18)).toBeLessThan(42);
     expect(radiusAt(18)).toBeGreaterThan(radiusAt(14));
     // Soft tint remains for frosted glass (not the unselected core).

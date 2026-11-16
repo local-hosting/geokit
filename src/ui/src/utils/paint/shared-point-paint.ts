@@ -95,7 +95,7 @@ export const SHARED_POINT_HOVER_GLOW_RADIUS_EXPRESSION: unknown[] = [
  * Radius tracks map zoom — readable at city scale, larger when zoomed in.
  */
 /** Bump when floating-badge size/look constants change so apps re-apply paint. */
-export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 42;
+export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 43;
 
 export const SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION: unknown[] = [
   'interpolate',
@@ -116,9 +116,9 @@ export const SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION: unknown[] = [
   14,
   12.5,
   16,
+  14,
   18,
-  18,
-  25,
+  17,
 ];
 
 /** Colored ring width — thin when zoomed out, full token width when close in. */
@@ -1173,6 +1173,8 @@ export type SharedPointFloatingBadgeTokens = {
   selectedDarken: number;
   hoverOuterStrokeWidth: number;
   hoverShadowScale: number;
+  /** Resting shadow radius multiplier — below 1 tightens it into a contact dot. */
+  shadowScale: number;
   selectedShadowScale: number;
   selectedShadowOpacity: number;
   /** Selected ground-shadow `circle-blur` (defaults to `shadowBlur`); lower = tighter edge. */
@@ -1335,6 +1337,7 @@ export function resolveSharedPointFloatingBadgeTokens(
       '--gk-badge-hover-shadow-scale',
       SHARED_POINT_FLOATING_BADGE_HOVER_SHADOW_SCALE
     ),
+    shadowScale: getCSSVariableNumber(element, '--gk-badge-shadow-scale', 1),
     selectedShadowScale: getCSSVariableNumber(
       element,
       '--gk-badge-selected-shadow-scale',
@@ -1422,13 +1425,16 @@ export function sharedPointFloatingBadgePaintExpressions(
   const softFallback = sharedPointFloatingBadgeSoftColor(restingFallback);
   const softFill = ['coalesce', ['get', softProperty], softFallback];
   const badgeRadius = sharedPointFloatingBadgeRadiusExpression(tokens.sizeScale);
-  const restingShadow = sharedPointFloatingBadgeShadowRadiusExpression(
-    sharedPointFloatingBadgeOuterDiscRadius(
-      badgeRadius,
-      sharedPointFloatingBadgeRingWidthExpression(tokens.coloredRingWidth),
-      sharedPointFloatingBadgeOuterStrokeWidthExpression(tokens.outerStrokeWidth)
-    ) as unknown[],
-    tokens.shadowRadiusPad
+  const restingShadow = scaleInterpolateRadiusStops(
+    sharedPointFloatingBadgeShadowRadiusExpression(
+      sharedPointFloatingBadgeOuterDiscRadius(
+        badgeRadius,
+        sharedPointFloatingBadgeRingWidthExpression(tokens.coloredRingWidth),
+        sharedPointFloatingBadgeOuterStrokeWidthExpression(tokens.outerStrokeWidth)
+      ) as unknown[],
+      tokens.shadowRadiusPad
+    ),
+    tokens.shadowScale
   );
   const floatTranslate = sharedPointFloatingBadgeTranslateExpression(tokens.floatTranslate[1]);
   const selectedTranslate = sharedPointFloatingBadgeTranslateExpression(
