@@ -95,7 +95,7 @@ export const SHARED_POINT_HOVER_GLOW_RADIUS_EXPRESSION: unknown[] = [
  * Radius tracks map zoom — readable at city scale, larger when zoomed in.
  */
 /** Bump when floating-badge size/look constants change so apps re-apply paint. */
-export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 40;
+export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 42;
 
 export const SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION: unknown[] = [
   'interpolate',
@@ -179,6 +179,8 @@ export function sharedPointFloatingBadgeOuterStrokeWidthExpression(
 }
 
 export const SHARED_POINT_FLOATING_BADGE_FILL = '#ffffff';
+/** Neutral key when neither the feature nor the app supplies a color. */
+export const SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR = '#888888';
 /** HSV brighten (0–1) of the key color for the frosted glass disc. */
 export const SHARED_POINT_FLOATING_BADGE_SOFT_BRIGHTEN = 0.55;
 export const SHARED_POINT_FLOATING_BADGE_SOFT_COLOR_PROPERTY = '_colorSoft';
@@ -493,7 +495,7 @@ export function sharedPointGlowRadiusFromPointExpression(
   return ['*', pointRadiusExpression, hitAreaScale];
 }
 
-export function paintColorFromProperty(property = '_color', fallback = '#888888'): unknown[] {
+export function paintColorFromProperty(property = '_color', fallback = SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR): unknown[] {
   return ['coalesce', ['get', property], fallback];
 }
 
@@ -522,7 +524,7 @@ export function sharedPointColorExpression(options: {
 }): unknown[] {
   const {
     colorProperty = '_color',
-    colorFallback = '#888888',
+    colorFallback = SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
     primaryProperty = 'brand',
     primaryValue = '',
     primaryFillColor = '#ffffff',
@@ -904,7 +906,7 @@ export function sharedPointFloatingBadgeShadowBlurExpression(
  */
 export function sharedPointFloatingBadgeShadowRadiusExpression(
   pointRadius: unknown[] = sharedPointFloatingBadgeOuterDiscRadius(
-    SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+    sharedPointFloatingBadgeRadiusExpression(),
     sharedPointFloatingBadgeRingWidthExpression(),
     sharedPointFloatingBadgeOuterStrokeWidthExpression()
   ) as unknown[],
@@ -929,7 +931,7 @@ export function sharedPointFloatingBadgeShadowRadiusExpression(
 
 /** Radius for the active selection badge (same size as idle by default). */
 export function sharedPointFloatingBadgeSelectedRadiusExpression(
-  pointRadius: unknown[] = SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+  pointRadius: unknown[] = sharedPointFloatingBadgeRadiusExpression(),
   scale = SHARED_POINT_FLOATING_BADGE_SELECTED_RADIUS_SCALE
 ): unknown[] {
   if (scale === 1) return pointRadius;
@@ -971,6 +973,10 @@ export type AnnotateFloatingBadgeHoverOptions = {
   softAmount?: number;
   selectedProperty?: string;
   selectedAmount?: number;
+  /** Defaults to `--gk-badge-resting-brighten`. */
+  restingBrighten?: number;
+  /** Defaults to `--gk-badge-resting-saturate`. */
+  restingSaturate?: number;
 };
 
 /** Soft fill/outer tint from key color (unselected badges). */
@@ -1010,7 +1016,7 @@ export function resolveFloatingBadgeSelectionKeyColor(
   if (typeof resting === 'string' && resting.trim()) return resting.trim();
   const color = typeof properties?._color === 'string' ? properties._color.trim() : '';
   const hover = typeof properties?._colorHover === 'string' ? properties._colorHover.trim() : '';
-  const fallback = fallbackColor.trim() || '#888888';
+  const fallback = fallbackColor.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
   if (color && hover && color.toLowerCase() === hover.toLowerCase()) {
     return fallback;
   }
@@ -1052,8 +1058,13 @@ export function sharedPointFloatingBadgeSelectionFillExpression(
   const selectedProperty =
     options.selectedProperty ?? SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY;
   const amount = options.selectedDarken ?? SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN;
+  const tokens = resolveSharedPointFloatingBadgeTokens();
   const darkFallback = sharedPointFloatingBadgeSelectedColor(
-    sharedPointFloatingBadgeRestingColor(fallbackColor),
+    sharedPointFloatingBadgeRestingColor(
+      fallbackColor,
+      tokens.restingBrighten,
+      tokens.restingSaturate
+    ),
     amount
   );
   return [
@@ -1076,7 +1087,7 @@ export function resolveFloatingBadgeAnnotateKeyColor(
   fallbackColor: string,
   colorProperty = '_color'
 ): string {
-  const fallback = fallbackColor.trim() || '#888888';
+  const fallback = fallbackColor.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
   const key = properties[SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY];
   if (typeof key === 'string' && key.trim()) return key.trim();
   const resting = properties._colorResting;
@@ -1110,6 +1121,9 @@ export function annotatePointFeaturesFloatingBadgeHover(
     selectedProperty = SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY,
     selectedAmount = SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN,
   } = options;
+  const tokens = resolveSharedPointFloatingBadgeTokens();
+  const restingBrighten = options.restingBrighten ?? tokens.restingBrighten;
+  const restingSaturate = options.restingSaturate ?? tokens.restingSaturate;
   return {
     type: 'FeatureCollection',
     features: collection.features.map((feature) => {
@@ -1119,7 +1133,7 @@ export function annotatePointFeaturesFloatingBadgeHover(
         fallbackColor,
         colorProperty as string
       );
-      const resting = sharedPointFloatingBadgeRestingColor(fill);
+      const resting = sharedPointFloatingBadgeRestingColor(fill, restingBrighten, restingSaturate);
       return {
         ...feature,
         properties: {
@@ -1163,15 +1177,36 @@ export type SharedPointFloatingBadgeTokens = {
   selectedShadowOpacity: number;
   /** Selected ground-shadow `circle-blur` (defaults to `shadowBlur`); lower = tighter edge. */
   selectedShadowBlur: number;
+  /** Selected ground-shadow offset (px) — larger y peeks the contact spot out below the badge. */
+  selectedShadowTranslate: [number, number];
   floatTranslate: [number, number];
   hoverTranslate: [number, number];
   selectedTranslate: [number, number];
   selectAnimationMs: number;
   hoverAnimationMs: number;
+  /** Multiplies every badge radius stop (1 = default size). */
+  sizeScale: number;
+  /** Unselected key color — HSV value boost (0–1). */
+  restingBrighten: number;
+  /** Unselected key color — HSV saturation boost (0–1). */
+  restingSaturate: number;
+  /** Resting ground-shadow offset (px, deep zoom max). */
+  shadowTranslate: [number, number];
+  /** Resource glyph tint on the key-colored body. */
+  glyphColor: string;
+  /** Marker key when a feature has no color and the app passes none. */
+  fallbackColor: string;
 };
 
 function defaultThemeElement(): Element | null {
   return typeof document !== 'undefined' ? document.documentElement : null;
+}
+
+/** Badge radius by zoom, scaled by `--gk-badge-size-scale`. */
+export function sharedPointFloatingBadgeRadiusExpression(
+  scale = getCSSVariableNumber(defaultThemeElement(), '--gk-badge-size-scale', 1)
+): unknown[] {
+  return scaleInterpolateRadiusStops(SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION, scale);
 }
 
 /** Read `--gk-badge-*` design tokens (fallback to shared-point constants). */
@@ -1193,7 +1228,34 @@ export function resolveSharedPointFloatingBadgeTokens(
     '--gk-badge-shadow-blur',
     SHARED_POINT_FLOATING_BADGE_SHADOW_BLUR
   );
+  const shadowY = getCSSVariableNumber(
+    element,
+    '--gk-badge-shadow-y',
+    SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE[1]
+  );
   return {
+    sizeScale: getCSSVariableNumber(element, '--gk-badge-size-scale', 1),
+    restingBrighten: getCSSVariableNumber(
+      element,
+      '--gk-badge-resting-brighten',
+      SHARED_POINT_FLOATING_BADGE_RESTING_BRIGHTEN
+    ),
+    restingSaturate: getCSSVariableNumber(
+      element,
+      '--gk-badge-resting-saturate',
+      SHARED_POINT_FLOATING_BADGE_RESTING_SATURATE
+    ),
+    shadowTranslate: [0, shadowY],
+    glyphColor: getCSSVariable(
+      element,
+      '--gk-badge-glyph-color',
+      SHARED_POINT_FLOATING_BADGE_FILL
+    ),
+    fallbackColor: getCSSVariable(
+      element,
+      '--gk-badge-fallback-color',
+      SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR
+    ),
     fill: getCSSVariable(element, '--gk-badge-fill', SHARED_POINT_FLOATING_BADGE_FILL),
     outerStrokeColor: getCSSVariable(
       element,
@@ -1288,6 +1350,10 @@ export function resolveSharedPointFloatingBadgeTokens(
       '--gk-badge-selected-shadow-blur',
       shadowBlur
     ),
+    selectedShadowTranslate: [
+      0,
+      getCSSVariableNumber(element, '--gk-badge-selected-shadow-y', shadowY),
+    ],
     floatTranslate: [
       0,
       getCSSVariableNumber(
@@ -1343,19 +1409,22 @@ export function sharedPointFloatingBadgePaintExpressions(
 ) {
   const colorProperty = options.colorProperty ?? '_color';
   const softProperty = SHARED_POINT_FLOATING_BADGE_SOFT_COLOR_PROPERTY;
-  const ringColor = [
-    'coalesce',
-    ['get', colorProperty],
-    sharedPointFloatingBadgeRestingColor(options.fallbackColor),
-  ];
-  const softFallback = sharedPointFloatingBadgeSoftColor(options.fallbackColor);
-  const softFill = ['coalesce', ['get', softProperty], softFallback];
   const tokens = resolveSharedPointFloatingBadgeTokens(
     options.themeElement === undefined ? defaultThemeElement() : options.themeElement
   );
+  const fallbackColor = options.fallbackColor.trim() || tokens.fallbackColor;
+  const restingFallback = sharedPointFloatingBadgeRestingColor(
+    fallbackColor,
+    tokens.restingBrighten,
+    tokens.restingSaturate
+  );
+  const ringColor = ['coalesce', ['get', colorProperty], restingFallback];
+  const softFallback = sharedPointFloatingBadgeSoftColor(restingFallback);
+  const softFill = ['coalesce', ['get', softProperty], softFallback];
+  const badgeRadius = sharedPointFloatingBadgeRadiusExpression(tokens.sizeScale);
   const restingShadow = sharedPointFloatingBadgeShadowRadiusExpression(
     sharedPointFloatingBadgeOuterDiscRadius(
-      SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+      badgeRadius,
       sharedPointFloatingBadgeRingWidthExpression(tokens.coloredRingWidth),
       sharedPointFloatingBadgeOuterStrokeWidthExpression(tokens.outerStrokeWidth)
     ) as unknown[],
@@ -1366,14 +1435,14 @@ export function sharedPointFloatingBadgePaintExpressions(
     tokens.selectedTranslate[1]
   );
   const shadowTranslate = sharedPointFloatingBadgeShadowTranslateExpression(
-    SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE
+    tokens.shadowTranslate
   );
   // MapLibre rejects `case` branches that are interpolate arrays for circle-radius —
   // keep resting shadow as a plain interpolate; selected uses selection-source shadow.
   return {
     // Unselected: white core + key ring + white outer + drop shadow.
     pointColorExpression: tokens.fill,
-    pointRadiusExpression: SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+    pointRadiusExpression: badgeRadius,
     // Plain string — some providers mishandle `['literal', '#000']` for circle-color.
     glowColorExpression: tokens.shadowColor,
     glowOpacity: sharedPointFloatingBadgeShadowOpacityExpression(tokens.shadowOpacity),
@@ -1390,15 +1459,15 @@ export function sharedPointFloatingBadgePaintExpressions(
     pointTranslateAnchor: 'viewport' as const,
     selectionShadowTranslate: shadowTranslate,
     selectionGroundBadge: true as const,
-    selectionGroundBadgeFallbackColor: options.fallbackColor,
+    selectionGroundBadgeFallbackColor: fallbackColor,
     /** Selected: darker key core + white middle ring + darker key outer ring. */
     selectionFillExpression: sharedPointFloatingBadgeSelectionFillExpression(
-      options.fallbackColor,
+      fallbackColor,
       { selectedDarken: tokens.selectedDarken }
     ),
     selectionStrokeColorExpression: tokens.fill,
     selectionOuterStrokeColorExpression: sharedPointFloatingBadgeSelectionFillExpression(
-      options.fallbackColor,
+      fallbackColor,
       { selectedDarken: tokens.selectedDarken }
     ),
     selectedDarken: tokens.selectedDarken,
@@ -1421,7 +1490,7 @@ export function sharedPointFloatingBadgePaintExpressions(
     glassOpacity: tokens.glassOpacity,
     glassBlur: tokens.glassBlur,
     glassRadiusExpression: sharedPointFloatingBadgeGlassRadiusExpression(
-      SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+      badgeRadius,
       sharedPointFloatingBadgeRingWidthExpression(tokens.coloredRingWidth),
       sharedPointFloatingBadgeOuterStrokeWidthExpression(tokens.outerStrokeWidth),
       sharedPointFloatingBadgeGlassPadExpression(tokens.glassPad)
@@ -1457,7 +1526,7 @@ export function sharedPointFloatingBadgeGlassPadExpression(
 
 /** Soft blurred disc behind the unselected badge (past outer stroke). */
 export function sharedPointFloatingBadgeGlassRadiusExpression(
-  pointRadius: unknown[] = SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+  pointRadius: unknown[] = sharedPointFloatingBadgeRadiusExpression(),
   coloredRingWidth:
     | number
     | unknown[] = SHARED_POINT_FLOATING_BADGE_COLORED_RING_WIDTH,
@@ -1838,7 +1907,7 @@ export function applySharedPointLayerPaint(
       strokeColorExpression[0] === 'coalesce' &&
       typeof strokeColorExpression[strokeColorExpression.length - 1] === 'string'
         ? (strokeColorExpression[strokeColorExpression.length - 1] as string)
-        : '#888888');
+        : SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR);
     // Key-color core + white middle ring (outer stroke is key color below).
     const keyColorExpr = [
       'coalesce',
@@ -1856,7 +1925,7 @@ export function applySharedPointLayerPaint(
     const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression(
       Array.isArray(pointRadiusExpression)
         ? pointRadiusExpression
-        : SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION
+        : sharedPointFloatingBadgeRadiusExpression()
     );
     map.setPaintProperty?.(selectionBadgeLayerId, 'circle-radius', selectedRadius);
     map.setPaintProperty?.(selectionBadgeLayerId, 'circle-stroke-width', strokeWidthExpression);

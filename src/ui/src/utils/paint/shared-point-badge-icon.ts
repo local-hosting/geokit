@@ -4,7 +4,7 @@ import { SHARED_POINT_BADGE_ICON_PROPERTY } from './shared-point-badge-constants
 import { sharedPointBadgeIconSizeExpression } from './shared-point-badge-icon-sizing';
 import { sharedPointSelectionFrontLayerIds } from '../markers/marker-shape';
 import {
-  SHARED_POINT_FLOATING_BADGE_FILL,
+  resolveSharedPointFloatingBadgeTokens,
   sharedPointFloatingBadgeNormalizeViewportTranslate,
   sharedPointFloatingBadgeTranslateExpression,
   sharedPointGlassLayerId,
@@ -196,7 +196,7 @@ export function ensureSharedPointBadgeIconLayers(
           id: pointIconId,
           source: sourceId,
           iconTranslate: pointTranslate,
-          iconColor: SHARED_POINT_FLOATING_BADGE_FILL,
+          iconColor: resolveSharedPointFloatingBadgeTokens().glyphColor,
         }) as never
       );
     } catch {

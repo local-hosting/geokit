@@ -21,6 +21,7 @@ import {
   type ApplySharedPointPaintOptions,
   type SharedPointFeatureStateHoverOptions,
   type SharedPointLayerIds,
+  SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
 } from '../paint/shared-point-paint';
 import {
   applyFloatingBadgeMarkerStackPaint,
@@ -39,7 +40,7 @@ function geojsonWithFloatingBadgeHoverColors(
 ): FeatureCollection {
   if (!paint.selectionGroundBadge) return geojson;
   return annotatePointFeaturesFloatingBadgeHover(geojson as FeatureCollection<Point>, {
-    fallbackColor: paint.selectionGroundBadgeFallbackColor?.trim() || '#888888',
+    fallbackColor: paint.selectionGroundBadgeFallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
     selectedAmount: paint.selectedDarken,
   });
 }
@@ -456,7 +457,7 @@ export async function syncExistingSharedPointLayers(
       paint: scaled.paint,
       selectionRingColor: options.selectionRingColor,
       selectionPointStrokeWidth: options.selectionPointStrokeWidth,
-      glowColorFallback: '#888888',
+      glowColorFallback: SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
       glowHoverOpacity,
       useFeatureStateHover: applyHoverGlow,
       pointOpacity,
@@ -668,7 +669,7 @@ export async function createSharedPointLayersFromPaint(
     paint: scaled.paint,
     selectionRingColor,
     selectionPointStrokeWidth,
-    glowColorFallback: '#888888',
+    glowColorFallback: SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
     glowHoverOpacity,
     useFeatureStateHover: applyHoverGlow,
     pointOpacity: resolvedPointOpacity,

@@ -4,6 +4,7 @@
 
 import type { FeatureCollection } from 'geojson';
 import type { ApplySharedPointPaintOptions, SharedPointLayerIds } from '../paint/shared-point-paint';
+import { SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR } from '../paint/shared-point-paint';
 import {
   ensureSharedPointLayerSetHealed,
   isSharedPointLayerSetFullyComplete,
@@ -147,7 +148,7 @@ export function createSharedPointLayerController(
         paint: paintConfig,
         selectionRingColor,
         selectionPointStrokeWidth,
-        glowColorFallback: '#888888',
+        glowColorFallback: SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
       });
     }
 

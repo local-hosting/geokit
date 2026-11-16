@@ -1,6 +1,6 @@
 import { styleImageLayoutPixels } from '../map-surface/map-style-images';
 import {
-  SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+  sharedPointFloatingBadgeRadiusExpression,
   sharedPointFloatingBadgeSelectedRadiusExpression,
 } from './shared-point-paint';
 
@@ -43,7 +43,7 @@ export function sharedPointBadgeIconSizeForRadiusExpression(radius: unknown[]): 
 
 /** Zoom-scaled `icon-size` that keeps a raster-size badge image centered on the core disk. */
 export function sharedPointBadgeIconSizeExpression(): unknown[] {
-  return sharedPointBadgeIconSizeForRadiusExpression(SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION);
+  return sharedPointBadgeIconSizeForRadiusExpression(sharedPointFloatingBadgeRadiusExpression());
 }
 
 /**

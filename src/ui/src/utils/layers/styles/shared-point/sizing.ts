@@ -12,7 +12,6 @@ import {
   resolveSharedPointFloatingBadgeTokens,
   scaleInterpolateRadiusStops,
   SHARED_POINT_FLOATING_BADGE_HOVER_LIGHTEN,
-  SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
   SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE,
   sharedPointFloatingBadgeOuterStrokeWidthExpression,
   SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY,
