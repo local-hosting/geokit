@@ -8,6 +8,7 @@ import {
   sharedPointPointBadgeIconLayerId,
 } from '../paint/shared-point-badge-icon';
 import {
+  sharedPointFloatingBadgeNormalizeViewportTranslate,
   sharedPointGlassLayerId,
   sharedPointSelectionBadgeLayerId,
   sharedPointSelectionBadgeOuterLayerId,
@@ -23,6 +24,10 @@ import {
   sharedPointSelectionRoundedRingLayerId,
 } from '../paint/shared-point-rounded-body';
 import {
+  sharedPointRoundedShadowLayerId,
+  sharedPointSelectionRoundedShadowLayerId,
+} from '../paint/shared-point-rounded-shadow';
+import {
   buildFloatingBadgeRoundedChromeOptions,
   ensureFloatingBadgeSelectionChrome,
   reapplyFloatingBadgeSelectionChromeIfActive,
@@ -32,10 +37,12 @@ import {
   sharedPointCircleBodyLayerIds,
   sharedPointGroundShadowLayerIds,
   sharedPointRoundedRectBodyFilter,
+  sharedPointSelectionLiftLayerIds,
+  trySetLayerFilter,
 } from './marker-shape';
 
 export type FloatingBadgeStack = {
-  /** Ground shadow — all marker shapes. */
+  /** Circle ground shadow (rounded-rect markers cast their own in `roundedResting`). */
   shadow: readonly string[];
   /** Circle floating badge (places). */
   circleBody: readonly string[];
@@ -45,6 +52,8 @@ export type FloatingBadgeStack = {
   selectionCircle: readonly string[];
   /** Rounded-rect selection chrome (resources). */
   selectionRounded: readonly string[];
+  /** Selected badge layers (both shapes + glyph) that lift together; shadows stay grounded. */
+  selectionLift: readonly string[];
   /** Hover + ring helpers shared by both shapes. */
   interaction: readonly string[];
   /** Full stack for inventory / teardown. */
@@ -53,6 +62,7 @@ export type FloatingBadgeStack = {
 
 export function floatingBadgeRoundedRestingLayerIds(pointLayerId: string): string[] {
   return [
+    sharedPointRoundedShadowLayerId(pointLayerId),
     sharedPointRoundedOuterLayerId(pointLayerId),
     sharedPointRoundedRingLayerId(pointLayerId),
     sharedPointRoundedBodyLayerId(pointLayerId),
@@ -62,11 +72,35 @@ export function floatingBadgeRoundedRestingLayerIds(pointLayerId: string): strin
 
 export function floatingBadgeSelectionRoundedLayerIds(pointLayerId: string): string[] {
   return [
+    sharedPointSelectionRoundedShadowLayerId(pointLayerId),
     sharedPointSelectionRoundedOuterLayerId(pointLayerId),
     sharedPointSelectionRoundedRingLayerId(pointLayerId),
     sharedPointSelectionRoundedBodyLayerId(pointLayerId),
     `${pointLayerId}-selection-badge-icon`,
   ];
+}
+
+export const floatingBadgeSelectionLiftLayerIds = sharedPointSelectionLiftLayerIds;
+
+/** Set the selected badge's screen offset on every lift layer, circle or symbol alike. */
+export function setFloatingBadgeSelectionLift(
+  map: MapInstance,
+  ids: Pick<SharedPointLayerIds, 'pointLayerId'>,
+  translate: [number, number] | unknown[]
+): void {
+  if (!map.setPaintProperty) return;
+  const screenTranslate = sharedPointFloatingBadgeNormalizeViewportTranslate(translate);
+  for (const layerId of floatingBadgeSelectionLiftLayerIds(ids.pointLayerId)) {
+    const layer = map.getLayer?.(layerId) as { type?: string } | undefined;
+    if (!layer) continue;
+    const prefix = layer.type === 'circle' ? 'circle' : 'icon';
+    try {
+      map.setPaintProperty(layerId, `${prefix}-translate-anchor`, 'viewport');
+      map.setPaintProperty(layerId, `${prefix}-translate`, screenTranslate);
+    } catch {
+      /* style swap */
+    }
+  }
 }
 
 export function buildFloatingBadgeStack(ids: SharedPointLayerIds): FloatingBadgeStack {
@@ -105,12 +139,13 @@ export function buildFloatingBadgeStack(ids: SharedPointLayerIds): FloatingBadge
     roundedResting,
     selectionCircle,
     selectionRounded,
+    selectionLift: floatingBadgeSelectionLiftLayerIds(pointLayerId),
     interaction,
     all,
   };
 }
 
-/** Shape split — shadow layers are never circle-scoped. */
+/** Shape split — each shape casts its own matching shadow. */
 export function syncFloatingBadgeStackShapeFilters(
   map: MapInstance,
   ids: SharedPointLayerIds
@@ -120,21 +155,11 @@ export function syncFloatingBadgeStackShapeFilters(
   const circleFilter = sharedPointCircleBodyFilter();
   const roundedFilter = sharedPointRoundedRectBodyFilter();
 
-  for (const layerId of stack.circleBody) {
-    if (!map.getLayer?.(layerId)) continue;
-    try {
-      map.setFilter(layerId, circleFilter as never);
-    } catch {
-      /* provider */
-    }
+  for (const layerId of [...stack.shadow, ...stack.circleBody]) {
+    trySetLayerFilter(map, layerId, circleFilter);
   }
   for (const layerId of stack.roundedResting) {
-    if (!map.getLayer?.(layerId)) continue;
-    try {
-      map.setFilter(layerId, roundedFilter as never);
-    } catch {
-      /* provider */
-    }
+    trySetLayerFilter(map, layerId, roundedFilter);
   }
 }
 
@@ -181,6 +206,9 @@ export async function ensureFloatingBadgeMarkerStack(
     coreColorExpression: paint.pointColorExpression,
     ringColorExpression: paint.strokeColorExpression,
     outerColorExpression: paint.outerStrokeColorExpression,
+    shadowRadius: paint.glowRadiusExpression,
+    shadowOpacity: paint.glowOpacity,
+    shadowTranslate: paint.glowTranslate,
   };
 
   ensureSharedPointRoundedRectChromeLayers(map, roundedChrome);

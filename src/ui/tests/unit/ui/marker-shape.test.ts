@@ -4,6 +4,7 @@ import {
   SHARED_POINT_MARKER_SHAPE_PROPERTY,
   markerBodyShapeFromProperties,
   sharedPointCircleBodyFilter,
+  sharedPointCircleBodyLayerIds,
   sharedPointCircleStackLayerIds,
   sharedPointRoundedRectBodyFilter,
 } from '../../../src/utils/markers/marker-shape';
@@ -44,7 +45,7 @@ describe('shared point shape filters', () => {
       expect.arrayContaining(['demo-points-hover', 'demo-points-glass'])
     );
     expect(sharedPointCircleStackLayerIds('demo-points', 'demo-glow')).toEqual(
-      expect.arrayContaining(['demo-glow-hover'])
+      sharedPointCircleBodyLayerIds('demo-points')
     );
   });
 });

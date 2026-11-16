@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const geokitRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const linkDir = path.join(geokitRoot, 'node_modules', '@twinfile');
+const linkDir = path.join(geokitRoot, 'node_modules', '@doppler-group');
 const linkPath = path.join(linkDir, 'geokit');
 
 fs.mkdirSync(linkDir, { recursive: true });

@@ -54,7 +54,7 @@ export function createLabeledActionsControl(
 ): LabeledActionsControl {
   const groupLabel = options.groupLabel ?? 'Map actions';
   let container: HTMLDivElement | null = null;
-  const clickHandlers = new Map<HTMLButtonElement, () => void>();
+  const clickHandlers = new Map<HTMLButtonElement, (event: Event) => void>();
 
   function clearButtons(): void {
     if (!container) return;

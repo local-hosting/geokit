@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import {
   clearReservedMapStyleImageIdsForTests,
+  DEFAULT_STYLE_IMAGE_RASTER_SIZE,
   isReservedMapStyleImageId,
   loadMapStyleImageAndAdd,
   replaceMapStyleImage,
@@ -47,8 +48,8 @@ describe('map style images', () => {
     expect(addImage).toHaveBeenCalledWith(
       'canvas-badge-cube',
       expect.objectContaining({
-        width: 64,
-        height: 64,
+        width: DEFAULT_STYLE_IMAGE_RASTER_SIZE,
+        height: DEFAULT_STYLE_IMAGE_RASTER_SIZE,
         data: expect.any(Uint8ClampedArray),
       }),
       expect.objectContaining({ pixelRatio: 1 })

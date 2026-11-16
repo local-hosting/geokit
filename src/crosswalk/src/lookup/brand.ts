@@ -14,7 +14,7 @@ import {
   asStateCodeOrUndefined,
   asZipCodeOrUndefined,
 } from '@doppler-group/geokit/core';
-import { compactH3CellId, expandH3CellId } from '../h3/cell-id';
+import { compactH3CellId, expandH3CellId } from '@doppler-group/geokit/h3/lite';
 import { geohashCellIdForLookup } from '../geohash/cell-id';
 
 function uniqSortedBranded<T extends string>(values: readonly T[]): readonly T[] {

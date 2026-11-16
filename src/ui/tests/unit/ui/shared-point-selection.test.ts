@@ -627,7 +627,7 @@ describe('shared point selection', () => {
     const badgeLayerId = `${pointLayerId}-selection-badge`;
     const badgeOuterLayerId = `${pointLayerId}-selection-badge-outer`;
     map.getLayer = vi.fn((id: string) =>
-      id === badgeLayerId || id === badgeOuterLayerId ? {} : undefined
+      id === badgeLayerId || id === badgeOuterLayerId ? { type: 'circle' } : undefined
     );
     map.setPaintProperty = vi.fn();
     // Deep zoom → full float/selected heights from the zoom curve.
@@ -669,7 +669,7 @@ describe('shared point selection', () => {
     const map = createMockMap();
     const pointLayerId = 'canvas-venues-point';
     const badgeLayerId = `${pointLayerId}-selection-badge`;
-    map.getLayer = vi.fn((id: string) => (id === badgeLayerId ? {} : undefined));
+    map.getLayer = vi.fn((id: string) => (id === badgeLayerId ? { type: 'circle' } : undefined));
     let currentTranslate: [number, number] = [0, -12];
     map.getPaintProperty = vi.fn((id: string, prop: string) =>
       id === badgeLayerId && prop === 'circle-translate' ? currentTranslate : undefined
@@ -706,7 +706,7 @@ describe('shared point selection', () => {
     const map = createMockMap();
     const pointLayerId = 'canvas-venues-point';
     const badgeLayerId = `${pointLayerId}-selection-badge`;
-    map.getLayer = vi.fn((id: string) => (id === badgeLayerId ? {} : undefined));
+    map.getLayer = vi.fn((id: string) => (id === badgeLayerId ? { type: 'circle' } : undefined));
     map.setPaintProperty = vi.fn();
     // Places focus lands near z10 — zoom-scaled select height would be ~-10 and look like settle.
     map.getZoom = vi.fn(() => 10);

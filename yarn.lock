@@ -2057,9 +2057,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@twinfile/geokit@workspace:.":
+"@doppler-group/geokit@workspace:.":
   version: 0.0.0-use.local
-  resolution: "@twinfile/geokit@workspace:."
+  resolution: "@doppler-group/geokit@workspace:."
   dependencies:
     "@maptiler/sdk": "npm:3.10.2"
     "@modelcontextprotocol/sdk": "npm:^1.29.0"

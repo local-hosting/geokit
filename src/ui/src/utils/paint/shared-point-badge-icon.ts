@@ -2,6 +2,7 @@ import type { MapInstance } from '../../providers/types';
 import { replaceMapStyleImage, STYLE_IMAGE_PIXEL_RATIO } from '../map-surface/map-style-images';
 import { SHARED_POINT_BADGE_ICON_PROPERTY } from './shared-point-badge-constants';
 import { sharedPointBadgeIconSizeExpression } from './shared-point-badge-icon-sizing';
+import { sharedPointSelectionFrontLayerIds } from '../markers/marker-shape';
 import {
   sharedPointFloatingBadgeNormalizeViewportTranslate,
   sharedPointFloatingBadgeTranslateExpression,
@@ -51,14 +52,14 @@ export function sharedPointBadgeDiskLayerIds(pointLayerId: string): string[] {
   ];
 }
 
-/** Paint selection glyph above lifted badge disks (not under circle layers). */
+/** Glyphs above their badge disks; the selected marker above every resting marker. */
 export function raiseSharedPointBadgeIconLayersOnTop(
   map: MapInstance,
   pointLayerId: string
 ): void {
-  const moveLayer = (map as { moveLayer?: (id: string, beforeId?: string) => void })
-    .moveLayer;
-  if (typeof moveLayer !== 'function') return;
+  const target = map as { moveLayer?: MoveLayer };
+  if (typeof target.moveLayer !== 'function') return;
+  const moveLayer = target.moveLayer.bind(map);
 
   const pointIconId = sharedPointPointBadgeIconLayerId(pointLayerId);
   const selectionIconId = sharedPointSelectionBadgeIconLayerId(pointLayerId);
@@ -67,7 +68,19 @@ export function raiseSharedPointBadgeIconLayersOnTop(
     : map.getLayer?.(pointIconId)
       ? pointIconId
       : null;
-  if (!anchor) return;
+  if (anchor) raiseBadgeIconsAboveDisks(map, moveLayer, pointLayerId, anchor);
+  raiseSelectionToFront(map, moveLayer, pointLayerId);
+}
+
+type MoveLayer = (id: string, beforeId?: string) => void;
+
+function raiseBadgeIconsAboveDisks(
+  map: MapInstance,
+  moveLayer: MoveLayer,
+  pointLayerId: string,
+  anchor: string
+): void {
+  const pointIconId = sharedPointPointBadgeIconLayerId(pointLayerId);
 
   for (const diskId of sharedPointBadgeDiskLayerIds(pointLayerId)) {
     if (diskId === anchor || !map.getLayer?.(diskId)) continue;
@@ -85,9 +98,14 @@ export function raiseSharedPointBadgeIconLayersOnTop(
       /* style swap */
     }
   }
-  if (map.getLayer?.(selectionIconId)) {
+}
+
+/** Selected marker always draws above every resting marker. */
+function raiseSelectionToFront(map: MapInstance, moveLayer: MoveLayer, pointLayerId: string): void {
+  for (const layerId of sharedPointSelectionFrontLayerIds(pointLayerId)) {
+    if (!map.getLayer?.(layerId)) continue;
     try {
-      moveLayer(selectionIconId);
+      moveLayer(layerId);
     } catch {
       /* style swap */
     }

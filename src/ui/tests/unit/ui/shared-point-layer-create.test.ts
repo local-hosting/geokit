@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 const layerStylesMock = vi.hoisted(() => ({
   createSharedPointLayers: vi.fn(),
   ensureSharedPointSelectionRingLayer: vi.fn(),
+  ensureSharedPointHoverLayers: vi.fn(),
   getGlowRadiusInterpolation: () => ['literal', 12],
   multiplyRadiusExpression: (base: unknown, scale: number) => ['*', base, scale],
 }));

@@ -15,8 +15,18 @@ export interface GkPointEventDetail {
   element?: HTMLElement;
 }
 
+/** `gk-map-click` that hit no shared-point marker. */
+export interface GkBackgroundClickDetail {
+  lngLat?: { lng: number; lat: number };
+  map?: unknown;
+  element?: HTMLElement;
+  originalEvent?: Event;
+}
+
 export interface GkPointEventHandlers {
   onClick?: (detail: GkPointEventDetail) => void | Promise<void>;
+  /** Map clicked off every marker — e.g. clear the selection. */
+  onBackgroundClick?: (detail: GkBackgroundClickDetail) => void;
   onHover?: (detail: GkPointEventDetail) => void;
   onHoverEnd?: (detail: GkPointEventDetail) => void;
   onFocus?: (event: Event) => void;
@@ -57,10 +67,28 @@ export function bindGkPointLayerEvents(
     return matchesMap(detail, mapInstance);
   }
 
+  // MapLibre fires the map click and the marker-layer click in either order — wait a
+  // macrotask, then treat the map click as background only if no marker claimed it.
+  const pointClickEvents = new WeakSet<Event>();
+  const pendingBackground = new Set<ReturnType<typeof setTimeout>>();
+
   const onClick = (e: Event) => {
     const detail = detailFromEvent(e);
     if (!shouldHandle(detail)) return;
+    const originalEvent = (detail as GkBackgroundClickDetail).originalEvent;
+    if (originalEvent) pointClickEvents.add(originalEvent);
     void handlers.onClick?.(detail);
+  };
+  const onMapClick = (e: Event) => {
+    if (!handlers.onBackgroundClick) return;
+    const detail = ((e as CustomEvent).detail ?? {}) as GkBackgroundClickDetail;
+    if (!shouldHandle(detail)) return;
+    const timer = setTimeout(() => {
+      pendingBackground.delete(timer);
+      if (detail.originalEvent && pointClickEvents.has(detail.originalEvent)) return;
+      handlers.onBackgroundClick?.(detail);
+    }, 0);
+    pendingBackground.add(timer);
   };
   const onHover = (e: Event) => {
     const detail = detailFromEvent(e);
@@ -76,6 +104,7 @@ export function bindGkPointLayerEvents(
   const onBlur = (e: Event) => handlers.onBlur?.(e);
 
   gkMap.addEventListener('gk-point-click', onClick);
+  gkMap.addEventListener('gk-map-click', onMapClick);
   gkMap.addEventListener('gk-point-hover', onHover);
   gkMap.addEventListener('gk-point-hover-end', onHoverEnd);
   gkMap.addEventListener('gk-point-focus', onFocus);
@@ -83,6 +112,9 @@ export function bindGkPointLayerEvents(
 
   return () => {
     gkMap.removeEventListener('gk-point-click', onClick);
+    gkMap.removeEventListener('gk-map-click', onMapClick);
+    for (const timer of pendingBackground) clearTimeout(timer);
+    pendingBackground.clear();
     gkMap.removeEventListener('gk-point-hover', onHover);
     gkMap.removeEventListener('gk-point-hover-end', onHoverEnd);
     gkMap.removeEventListener('gk-point-focus', onFocus);

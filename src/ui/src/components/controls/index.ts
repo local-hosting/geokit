@@ -10,6 +10,9 @@ export { FullscreenControlElement } from './fullscreen-control';
 export { GeolocateControlElement } from './geolocate-control';
 export { TerrainControlElement } from './terrain-control';
 export { createTerrainToggleControl } from './create-terrain-toggle-control';
+export { BuildingsControlElement } from './buildings-control';
+export { createBuildingsToggleControl } from './create-buildings-toggle-control';
+export { createMapAttributeToggleControl } from './create-map-attribute-toggle-control';
 export { ActionsControlElement } from './actions-control';
 export {
   createLabeledActionsControl,

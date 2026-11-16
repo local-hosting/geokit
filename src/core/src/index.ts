@@ -167,6 +167,10 @@ export {
   hslToHex,
   hexToHsl,
   hexToRgb,
+  tryHexToRgb,
+  mixHexColors,
+  lightenHexTowardWhite,
+  darkenHexTowardBlack,
   createPaletteCycler,
   type Rgb,
   type Hsl,
@@ -174,7 +178,7 @@ export {
 } from './utils/color';
 
 // Easing utilities
-export { easeInOutCubic, easeLinear } from './utils/easing';
+export { easeInOutCubic, easeLinear, easeOutCubic } from './utils/easing';
 
 // Bounds utilities
 export {

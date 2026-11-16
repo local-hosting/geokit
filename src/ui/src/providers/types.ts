@@ -169,6 +169,7 @@ export interface MapInstance {
   removeLayer(id: string): void;
   moveLayer?(id: string, beforeId?: string): void;
   getLayer?(id: string): MapLayer | undefined;
+  setFilter?(layerId: string, filter: unknown[] | null): void;
 
   // Style properties
   setPaintProperty?(layerId: string, property: string, value: unknown): void;

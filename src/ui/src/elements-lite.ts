@@ -38,9 +38,10 @@ if (typeof globalThis.requestIdleCallback === 'undefined') {
 // Re-export UI providers (types, registry, implementations)
 export * from './providers';
 
-// Re-export map chrome controls used at startup (nav + terrain)
+// Re-export map chrome controls used at startup (nav + terrain + buildings)
 export { NavigationControlElement } from './components/controls/navigation-control';
 export { TerrainControlElement } from './components/controls/terrain-control';
+export { BuildingsControlElement } from './components/controls/buildings-control';
 
 // Re-export element classes needed at startup (map only)
 export { MapElement } from './components/elements/map/map';

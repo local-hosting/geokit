@@ -217,41 +217,6 @@
       "require": "./src/core/dist/cjs/types/map-provider.cjs",
       "default": "./src/core/dist/esm/types/map-provider.js"
     },
-    "./core/ui": {
-      "source": "./src/ui/src/index.ts",
-      "types": "./src/ui/dist/esm/index.d.ts",
-      "import": "./src/ui/dist/esm/index.js",
-      "require": "./src/ui/dist/cjs/index.cjs",
-      "default": "./src/ui/dist/esm/index.js"
-    },
-    "./core/adapters/shared": {
-      "source": "./src/ui/src/adapters/shared/index.ts",
-      "types": "./src/ui/dist/esm/adapters/shared/index.d.ts",
-      "import": "./src/ui/dist/esm/adapters/shared/index.js",
-      "require": "./src/ui/dist/cjs/adapters/shared/index.cjs",
-      "default": "./src/ui/dist/esm/adapters/shared/index.js"
-    },
-    "./core/vue": {
-      "source": "./src/ui/src/adapters/vue/index.ts",
-      "types": "./src/ui/dist/esm/adapters/vue/index.d.ts",
-      "import": "./src/ui/dist/esm/adapters/vue/index.js",
-      "require": "./src/ui/dist/cjs/adapters/vue/index.cjs",
-      "default": "./src/ui/dist/esm/adapters/vue/index.js"
-    },
-    "./core/react": {
-      "source": "./src/ui/src/adapters/react/index.ts",
-      "types": "./src/ui/dist/esm/adapters/react/index.d.ts",
-      "import": "./src/ui/dist/esm/adapters/react/index.js",
-      "require": "./src/ui/dist/cjs/adapters/react/index.cjs",
-      "default": "./src/ui/dist/esm/adapters/react/index.js"
-    },
-    "./core/svelte": {
-      "source": "./src/ui/src/adapters/svelte/index.ts",
-      "types": "./src/ui/dist/esm/adapters/svelte/index.d.ts",
-      "import": "./src/ui/dist/esm/adapters/svelte/index.js",
-      "require": "./src/ui/dist/cjs/adapters/svelte/index.cjs",
-      "default": "./src/ui/dist/esm/adapters/svelte/index.js"
-    },
     "./core/h3/cell-to-region-index": {
       "source": "./src/core/src/utils/h3/cell-to-region-index.ts",
       "types": "./src/core/dist/esm/utils/h3/cell-to-region-index.d.ts",
@@ -304,12 +269,6 @@
       "require": "./src/core/dist/cjs/utils/buffer/buffer-turf.cjs",
       "default": "./src/core/dist/esm/utils/buffer/buffer-turf.js"
     },
-    "./core/config/maptiler-dev-proxy": {
-      "source": "./src/core/src/config/maptiler-dev-proxy.ts",
-      "types": "./src/core/dist/esm/config/maptiler-dev-proxy.d.ts",
-      "import": "./src/core/dist/esm/config/maptiler-dev-proxy.js",
-      "default": "./src/core/dist/esm/config/maptiler-dev-proxy.js"
-    },
     "./core/config/geo-proxy": {
       "source": "./src/core/src/config/geo-proxy.ts",
       "types": "./src/core/dist/esm/config/geo-proxy.d.ts",
@@ -321,20 +280,6 @@
       "types": "./src/core/dist/esm/types/layer-datasets.d.ts",
       "import": "./src/core/dist/esm/types/layer-datasets.js",
       "default": "./src/core/dist/esm/types/layer-datasets.js"
-    },
-    "./core/contract/bootstrap": {
-      "source": "./src/ui/src/bootstrap/ensure-map-ready.ts",
-      "types": "./src/ui/dist/esm/bootstrap/ensure-map-ready.d.ts",
-      "import": "./src/ui/dist/esm/bootstrap/ensure-map-ready.js",
-      "require": "./src/ui/dist/cjs/bootstrap/ensure-map-ready.cjs",
-      "default": "./src/ui/dist/esm/bootstrap/ensure-map-ready.js"
-    },
-    "./core/contract/lifecycle": {
-      "source": "./src/ui/src/lifecycle.ts",
-      "types": "./src/ui/dist/esm/lifecycle.d.ts",
-      "import": "./src/ui/dist/esm/lifecycle.js",
-      "require": "./src/ui/dist/cjs/lifecycle.cjs",
-      "default": "./src/ui/dist/esm/lifecycle.js"
     },
     "./core/types/cell-layers.types": {
       "source": "./src/core/src/types/cell-layers.types.ts",
@@ -757,6 +702,12 @@
       "types": "./src/ui/dist/esm/components/controls/terrain-control.d.ts",
       "import": "./src/ui/dist/esm/components/controls/terrain-control.js",
       "default": "./src/ui/dist/esm/components/controls/terrain-control.js"
+    },
+    "./ui/controls/buildings": {
+      "source": "./src/ui/src/components/controls/buildings-control.ts",
+      "types": "./src/ui/dist/esm/components/controls/buildings-control.d.ts",
+      "import": "./src/ui/dist/esm/components/controls/buildings-control.js",
+      "default": "./src/ui/dist/esm/components/controls/buildings-control.js"
     },
     "./ui/controls/actions": {
       "source": "./src/ui/src/components/controls/actions-control.ts",

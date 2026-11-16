@@ -10,7 +10,7 @@ import { GeoKind } from '../geo-kind.js';
 import type { CrosswalkCountry, CrosswalkResult, CrosswalkSpine } from '../types';
 import { geohashCellIdForLookup } from '../geohash/cell-id';
 import { geohashCellToLatLon, geohashForLatLon, geohashForPoint } from './geohash';
-import { compactH3CellId } from '../h3/cell-id';
+import { compactH3CellId } from '@doppler-group/geokit/h3/lite';
 import { normalizeTractGeoid, stateAbbrForTract, tractCountyFips } from '../us/tract-geoid.js';
 import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from '../h3/project';
 import { requireUsCrosswalkLookups, getCrosswalkSpine } from '../load/registry';

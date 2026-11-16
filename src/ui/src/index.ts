@@ -37,6 +37,7 @@ import './components/controls/scale-control';
 import './components/controls/fullscreen-control';
 import './components/controls/geolocate-control';
 import './components/controls/terrain-control';
+import './components/controls/buildings-control';
 import './components/controls/actions-control';
 import './components/elements/map/map';
 import './components/elements/marker';

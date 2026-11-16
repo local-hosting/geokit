@@ -11,7 +11,7 @@ import { buildMaptilerStyleUrl } from '@doppler-group/geokit/ui/config/tile-cdn'
 import {
   inlineMapTilerTileJsonSources,
   rewriteMapTilerStyleResourceUrls,
-} from '../dev-proxy/maptiler-dev-proxy';
+} from '../config/maptiler-dev-proxy';
 import { BaseUIProvider } from './types';
 import { getProviderConfig } from './registry';
 import { wrapMapResize } from '../utils/map-utils';

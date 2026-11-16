@@ -133,7 +133,7 @@ export type FloatingBadgeSelectedChromeSpec = {
   outerAccentColor: string;
   white: string;
   selectedRadius: unknown;
-  ringWidth: unknown;
+  ringWidth: number | unknown[];
   outerStrokeWidth: number;
   outerStrokeWidthExpression: unknown;
   outerDiscRadius: unknown;
@@ -146,9 +146,9 @@ export function buildFloatingBadgeSelectedChromeSpec(
   const tokens = resolveSharedPointFloatingBadgeTokens();
   const white = SHARED_POINT_FLOATING_BADGE_FILL;
   const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression();
-  const ringWidth = sharedPointFloatingBadgeRingWidthExpression(tokens.coloredRingWidth);
+  const ringWidth = sharedPointFloatingBadgeRingWidthExpression(tokens.selectedRingWidth);
   const outerStrokeWidthExpression = sharedPointFloatingBadgeOuterStrokeWidthExpression(
-    tokens.outerStrokeWidth
+    tokens.selectedOuterStrokeWidth
   );
   return {
     accentColor,
@@ -156,7 +156,7 @@ export function buildFloatingBadgeSelectedChromeSpec(
     white,
     selectedRadius,
     ringWidth,
-    outerStrokeWidth: tokens.outerStrokeWidth,
+    outerStrokeWidth: tokens.selectedOuterStrokeWidth,
     outerStrokeWidthExpression,
     outerDiscRadius: sharedPointFloatingBadgeOuterStrokeRadius(selectedRadius, ringWidth),
   };
