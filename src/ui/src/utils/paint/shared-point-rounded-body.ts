@@ -16,7 +16,7 @@ import type { ApplySharedPointPaintOptions } from './shared-point-paint';
 import {
   literalNumberFromPaintExpression,
   scaleInterpolateRadiusStops,
-  SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+  sharedPointFloatingBadgeRadiusExpression,
   sharedPointFloatingBadgeOuterDiscRadius,
   sharedPointFloatingBadgeOuterStrokeRadius,
   sharedPointFloatingBadgeOuterStrokeWidthExpression,
@@ -26,7 +26,6 @@ import {
   SHARED_POINT_FLOATING_BADGE_FILL,
   sharedPointFloatingBadgeSelectedRadiusExpression,
   sharedPointFloatingBadgeSelectionFillExpression,
-  SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE,
   sharedPointFloatingBadgeShadowOpacityExpression,
   sharedPointFloatingBadgeShadowRadiusExpression,
   sharedPointFloatingBadgeShadowTranslateExpression,
@@ -34,6 +33,7 @@ import {
   hideFloatingBadgeCircleSelectionLayers,
   sharedPointSelectionSourceHasFeature,
   sharedPointSelectionSourcePrimaryProperties,
+  SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
 } from './shared-point-paint';
 import { SHARED_POINT_BADGE_ICON_PROPERTY } from './shared-point-badge-constants';
 import { markerBodyShapeFromProperties } from '../markers/marker-shape';
@@ -108,11 +108,11 @@ const ICON_DIAMETER_PER_RADIUS = 2 / styleImageLayoutPixels();
 
 function coerceZoomRadiusInterpolation(radiusExpr: unknown): unknown[] {
   if (Array.isArray(radiusExpr) && radiusExpr[0] === 'interpolate') return radiusExpr;
-  return SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION;
+  return sharedPointFloatingBadgeRadiusExpression();
 }
 
 export function sharedPointRoundedBodyIconSizeExpression(
-  pointRadius: unknown = SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION
+  pointRadius: unknown = sharedPointFloatingBadgeRadiusExpression()
 ): unknown[] {
   return scaleInterpolateRadiusStops(
     coerceZoomRadiusInterpolation(pointRadius),
@@ -122,7 +122,7 @@ export function sharedPointRoundedBodyIconSizeExpression(
 
 /** Colored ring band — matches circle `circle-stroke` outer edge. */
 export function sharedPointRoundedRingIconSizeExpression(
-  pointRadius: unknown = SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+  pointRadius: unknown = sharedPointFloatingBadgeRadiusExpression(),
   coloredRingWidth: number | unknown[] = 0
 ): unknown[] {
   const core = coerceZoomRadiusInterpolation(pointRadius);
@@ -140,7 +140,7 @@ export function sharedPointRoundedRingIconSizeExpression(
 
 /** Full badge disc radius — matches circle outer-stroke + white band sizing. */
 export function sharedPointRoundedOuterIconSizeExpression(
-  pointRadius: unknown = SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+  pointRadius: unknown = sharedPointFloatingBadgeRadiusExpression(),
   coloredRingWidth: number | unknown[] = 0,
   outerStrokeWidth: number | unknown[] = 0
 ): unknown[] {
@@ -192,7 +192,7 @@ function restingRoundedChromeFromPaint(
   >,
   fallback: string
 ) {
-  const pointRadius = paint.pointRadiusExpression ?? SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION;
+  const pointRadius = paint.pointRadiusExpression ?? sharedPointFloatingBadgeRadiusExpression();
   const ringColor = sharedPointRoundedBodyIconColorExpression(fallback, paint.strokeColorExpression);
   const outerColor = paint.outerStrokeColorExpression ?? ['literal', '#ffffff'];
   return {
@@ -207,7 +207,7 @@ function restingRoundedChromeFromPaint(
       paint.strokeWidthExpression,
       paint.outerStrokeWidthExpression
     ),
-    glyphColor: SHARED_POINT_FLOATING_BADGE_FILL,
+    glyphColor: resolveSharedPointFloatingBadgeTokens().glyphColor,
   };
 }
 
@@ -231,7 +231,7 @@ export function applySharedPointRoundedRectChromePaint(
     | 'selectedDarken'
   >
 ): void {
-  const fallback = paint.selectionGroundBadgeFallbackColor?.trim() || '#888888';
+  const fallback = paint.selectionGroundBadgeFallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
   const resting = restingRoundedChromeFromPaint(paint, fallback);
   const iconTranslate =
     paint.pointTranslate ?? sharedPointFloatingBadgeTranslateExpression(0);
@@ -250,7 +250,7 @@ export function applySharedPointRoundedRectChromePaint(
       ? 'rounded-rect'
       : 'circle';
     if (shape === 'rounded-rect') {
-      const fallback = paint.selectionGroundBadgeFallbackColor?.trim() || '#888888';
+      const fallback = paint.selectionGroundBadgeFallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
       const accent = resolveFloatingBadgeSelectionAccentColor(
         props,
         fallback,
@@ -475,7 +475,7 @@ export function ensureSharedPointRoundedRectChromeLayers(
   if (!sharedPointMapHasDrawableCanvas(map)) return;
   if (!registerRoundedRectMarkerImage(map)) return;
 
-  const pointRadius = options.pointRadius ?? SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION;
+  const pointRadius = options.pointRadius ?? sharedPointFloatingBadgeRadiusExpression();
   const ringWidth = options.coloredRingWidth ?? 0;
   const outerWidth = options.outerStrokeWidth ?? 0;
   const ringColor = sharedPointRoundedBodyIconColorExpression(
@@ -538,7 +538,7 @@ export function ensureSharedPointSelectionRoundedRectChromeLayers(
   const tokens = resolveSharedPointFloatingBadgeTokens();
   const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression(
     coerceZoomRadiusInterpolation(
-      options.pointRadius ?? SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION
+      options.pointRadius ?? sharedPointFloatingBadgeRadiusExpression()
     )
   );
   const ringWidth = sharedPointFloatingBadgeRingWidthExpression(tokens.selectedRingWidth);
@@ -568,7 +568,7 @@ export function ensureSharedPointSelectionRoundedRectChromeLayers(
       tokens.selectedShadowScale
     ),
     opacity: tokens.selectedShadowOpacity,
-    translate: SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE,
+    translate: tokens.selectedShadowTranslate,
   });
 
   for (const [layerId, size, color] of [

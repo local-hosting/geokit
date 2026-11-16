@@ -71,7 +71,7 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       themeElement: null,
     });
 
-    const soft = sharedPointFloatingBadgeSoftColor('#2dbad2');
+    const soft = sharedPointFloatingBadgeSoftColor(sharedPointFloatingBadgeRestingColor('#2dbad2'));
     // Unselected: white core + key ring + white outer stroke.
     expect(paint.pointColorExpression).toBe(SHARED_POINT_FLOATING_BADGE_FILL);
     expect(paint.outerStrokeColorExpression).toBe(SHARED_POINT_FLOATING_BADGE_FILL);

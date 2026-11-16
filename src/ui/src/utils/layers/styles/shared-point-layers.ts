@@ -18,11 +18,10 @@ import {
   resolveSharedPointFloatingBadgeTokens,
   scaleInterpolateRadiusStops,
   SHARED_POINT_FLOATING_BADGE_HOVER_LIGHTEN,
-  SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+  sharedPointFloatingBadgeRadiusExpression,
   SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE,
   sharedPointFloatingBadgeOuterStrokeWidthExpression,
   SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY,
-  SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE,
   SHARED_POINT_FLOATING_BADGE_GLASS_BLUR,
   SHARED_POINT_FLOATING_BADGE_GLASS_OPACITY,
   SHARED_POINT_FLOATING_BADGE_GLASS_PAD,
@@ -45,13 +44,12 @@ import {
   sharedPointFloatingBadgeOuterStrokeRadius,
   sharedPointOuterStrokeLayerId,
   sharedPointRadiusPlusStrokeWidth,
-  sharedPointSelectionBadgeLayerId,
-  sharedPointSelectionBadgeOuterLayerId,
   sharedPointFloatingBadgeSelectionFillExpression,
   resolveFloatingBadgeSelectionKeyColor,
   resolveFloatingBadgeSelectionAccentColor,
   SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY,
   syncSharedPointSelectedLayerFilter,
+  SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
 } from '../../paint/shared-point-paint';
 import {
   sharedPointBadgeVariantFromProperties,
@@ -96,7 +94,6 @@ import {
   MAPTILER_POINT_RADIUS_ZOOM,
 } from './shared-point/sizing';
 import {
-  animateSharedPointHoverBadgeRingColor,
   animateSharedPointHoverBadgeTranslate,
   animateSharedPointSelectionBadgeTranslate,
   cancelHoverBadgeAnimation,
@@ -464,7 +461,7 @@ function setupSharedPointSelectionChrome(
       selectionShadowColor ?? tokens.shadowColor,
       pointRadius,
       pointStrokeWidth,
-      SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE
+      tokens.selectedShadowTranslate
     );
     const shadowLayerId = `${pointLayerId}-selection-shadow`;
     if (map.getLayer?.(shadowLayerId) && map.setPaintProperty) {
@@ -473,7 +470,7 @@ function setupSharedPointSelectionChrome(
         map.setPaintProperty(shadowLayerId, 'circle-opacity', tokens.selectedShadowOpacity);
         map.setPaintProperty(shadowLayerId, 'circle-blur', tokens.selectedShadowBlur);
         map.setPaintProperty(shadowLayerId, 'circle-color', tokens.shadowColor);
-        map.setPaintProperty(shadowLayerId, 'circle-translate', SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE);
+        map.setPaintProperty(shadowLayerId, 'circle-translate', tokens.selectedShadowTranslate);
         map.setPaintProperty(shadowLayerId, 'circle-pitch-alignment', 'map');
         map.setPaintProperty(shadowLayerId, 'circle-pitch-scale', 'map');
       } catch {
@@ -1052,7 +1049,7 @@ export function setupFloatingBadgeHoverBadgeLayers(
   const badgeLayerId = sharedPointHoverBadgeLayerId(pointLayerId);
   const badgeOuterLayerId = sharedPointHoverBadgeOuterLayerId(pointLayerId);
   const colorProperty = options?.colorProperty ?? '_color';
-  const fallbackColor = options?.fallbackColor?.trim() || '#888888';
+  const fallbackColor = options?.fallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
   const tokens = resolveSharedPointFloatingBadgeTokens();
   const ringColor = [
     'coalesce',
@@ -1066,7 +1063,7 @@ export function setupFloatingBadgeHoverBadgeLayers(
     ['get', SHARED_POINT_FLOATING_BADGE_SOFT_COLOR_PROPERTY],
     sharedPointFloatingBadgeSoftColor(fallbackColor),
   ];
-  const badgeRadius = SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION;
+  const badgeRadius = sharedPointFloatingBadgeRadiusExpression();
   const ringWidth = sharedPointFloatingBadgeRingWidthExpression(tokens.coloredRingWidth);
   const outerWidth = sharedPointFloatingBadgeOuterStrokeWidthExpression(
     tokens.outerStrokeWidth
@@ -1193,8 +1190,7 @@ export function setupSelectionGroundBadgeLayers(
   const selectionSourceId = `${sourceId}-selection`;
   const badgeLayerId = `${pointLayerId}-selection-badge`;
   const badgeOuterLayerId = `${pointLayerId}-selection-badge-outer`;
-  const colorProperty = options?.colorProperty ?? '_color';
-  const fallbackColor = options?.fallbackColor?.trim() || '#888888';
+  const fallbackColor = options?.fallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
   const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression();
   const tokens = resolveSharedPointFloatingBadgeTokens();
   // Selected: darkened key core + white middle ring + darkened key outer.
@@ -1224,7 +1220,7 @@ export function setupSelectionGroundBadgeLayers(
     tokens.shadowColor,
     selectedRadius,
     tokens.coloredRingWidth,
-    SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE
+    tokens.selectedShadowTranslate
   );
   const shadowLayerId = `${pointLayerId}-selection-shadow`;
   if (map.getLayer?.(shadowLayerId) && map.setPaintProperty) {
@@ -1236,7 +1232,7 @@ export function setupSelectionGroundBadgeLayers(
       map.setPaintProperty(
         shadowLayerId,
         'circle-translate',
-        SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE
+        tokens.selectedShadowTranslate
       );
       map.setPaintProperty(shadowLayerId, 'circle-pitch-alignment', 'map');
       map.setPaintProperty(shadowLayerId, 'circle-pitch-scale', 'map');
@@ -1647,7 +1643,7 @@ function setupHoverLayers(
   }
 
   /** Active hover render path — lighten only on the existing badge (no clone). */
-  let hoverLiftMode: 'none' | 'overlay' | 'selection' = 'none';
+  let hoverLiftMode: 'none' | 'overlay' = 'none';
   /** Feature id whose `_color` is temporarily lit (main source). */
   let hoverPatchedFeatureId: string | null = null;
   /** Invalidates in-flight fade-out clears when hover resumes. */
@@ -1663,40 +1659,9 @@ function setupHoverLayers(
     hoverRingLeaveRaf = null;
   }
 
-  function restoreSelectionBadgeRingColor(): void {
-    const badgeId = sharedPointSelectionBadgeLayerId(pointLayerId);
-    const badgeOuterId = sharedPointSelectionBadgeOuterLayerId(pointLayerId);
-    const fallback = options.selectionGroundBadgeFallbackColor?.trim() || '#888888';
-    if (!map.getLayer?.(badgeId) || !map.setPaintProperty) return;
-    const fillColor = sharedPointFloatingBadgeSelectionFillExpression(fallback);
-    const keyColorExpr = [
-      'coalesce',
-      ['get', '_color'],
-      ['get', 'color'],
-      ['get', 'marker-color'],
-      fallback,
-    ];
-    try {
-      // Restore darkened core + white middle + resting key outer after hover lighten.
-      map.setPaintProperty(badgeId, 'circle-color', fillColor);
-      map.setPaintProperty(
-        badgeId,
-        'circle-stroke-color',
-        resolveSharedPointFloatingBadgeTokens().fill
-      );
-      if (map.getLayer?.(badgeOuterId)) {
-        map.setPaintProperty(badgeOuterId, 'circle-color', fillColor);
-        map.setPaintProperty(badgeOuterId, 'circle-stroke-color', fillColor);
-      }
-    } catch {
-      /* style swap */
-    }
-  }
-
   function clearHoverOverlayNow(): void {
     if (hoverLiftMode === 'none') return;
-    const mode = hoverLiftMode;
-    const resting = hoverRingResting || '#888888';
+    const resting = hoverRingResting || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
     const from = hoverRingCurrent || hoverRingLit || resting;
     const patchedId = hoverPatchedFeatureId;
     const gen = ++hoverRingFadeGen;
@@ -1704,23 +1669,6 @@ function setupHoverLayers(
     hoverPatchedFeatureId = null;
     cancelHoverRingLeaveLerp();
     clearSharedPointHoverOverlay(map, sourceId);
-
-    if (mode === 'selection') {
-      animateSharedPointHoverBadgeRingColor(map, pointLayerId, {
-        from,
-        to: resting,
-        target: 'selection',
-        onFrame: (color) => {
-          hoverRingCurrent = color;
-        },
-        onDone: () => {
-          if (gen !== hoverRingFadeGen) return;
-          restoreSelectionBadgeRingColor();
-          hoverRingCurrent = resting;
-        },
-      });
-      return;
-    }
 
     // Unselected: lerp `_color` on the same feature, then restore resting.
     if (patchedId == null) {
@@ -1774,7 +1722,7 @@ function setupHoverLayers(
       ...(fromSource ?? {}),
       [promoteId]: featureId,
     };
-    const fallback = options.selectionGroundBadgeFallbackColor?.trim() || '#888888';
+    const fallback = options.selectionGroundBadgeFallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
     // If we already lit this feature, prefer the stored resting color (not the lit `_color`).
     const restingColor =
       hoverPatchedFeatureId === featureId && hoverRingResting
@@ -1825,28 +1773,9 @@ function setupHoverLayers(
         );
         hoverPatchedFeatureId = null;
       }
-      const fromSource = lookupSharedPointProperties(map, sourceId, featureId, idProperties);
-      const fallback = options.selectionGroundBadgeFallbackColor?.trim() || '#888888';
-      const merged = { ...(feature.properties ?? {}), ...(fromSource ?? {}) };
-      const restingColor = resolveSharedPointRingColor(merged, fallback);
-      const litColor = resolveSharedPointHoverRingColor(
-        merged,
-        fallback,
-        resolveSharedPointFloatingBadgeTokens().hoverLighten
-      );
+      // Selected keeps its intensified key color — hover never washes it toward white.
       hoverRingFadeGen += 1;
-      hoverRingResting = restingColor;
-      hoverRingLit = litColor;
-      hoverLiftMode = 'selection';
-      animateSharedPointHoverBadgeRingColor(map, pointLayerId, {
-        from: litColor,
-        to: litColor,
-        target: 'selection',
-        durationMs: 0,
-        onFrame: (color) => {
-          hoverRingCurrent = color;
-        },
-      });
+      hoverLiftMode = 'none';
       return;
     }
 

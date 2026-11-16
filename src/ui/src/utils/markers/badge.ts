@@ -3,6 +3,7 @@ import type { ApplySharedPointPaintOptions, SharedPointLayerIds } from '../paint
 import {
   resolveFloatingBadgeSelectionAccentColor,
   sharedPointFloatingBadgePaintExpressions,
+  SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
 } from '../paint/shared-point-paint';
 import { floatingBadgeSelectionAccentFromProperties } from './marker-selection-chrome';
 import { getSharedPointRelatedSourceIds } from '../shared-points/shared-point-sync';
@@ -48,7 +49,7 @@ export const badgePreset: MarkerPreset<BadgeKind, SharedPointLayerIds, ApplyShar
         ({
           ids,
           ...sharedPointFloatingBadgePaintExpressions({
-            fallbackColor: String(options.fallbackAccent ?? '#888888'),
+            fallbackColor: String(options.fallbackAccent ?? SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR),
             colorProperty:
               typeof options.colorProperty === 'string' ? options.colorProperty : undefined,
             themeElement:
@@ -63,7 +64,7 @@ export const badgePreset: MarkerPreset<BadgeKind, SharedPointLayerIds, ApplyShar
         const resting =
           typeof properties?._colorResting === 'string' ? properties._colorResting.trim() : '';
         const color = typeof properties?._color === 'string' ? properties._color.trim() : '';
-        return resting || color || fallbackAccent.trim() || '#888888';
+        return resting || color || fallbackAccent.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
       },
     },
     states: {
@@ -111,7 +112,7 @@ export function syncBadgeChrome(
       : options.badgeGlyph
         ? 'rounded-rect'
         : 'circle';
-  const fallback = options.keyColor.trim() || '#888888';
+  const fallback = options.keyColor.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
   const props = options.properties ?? null;
   const accent =
     props != null

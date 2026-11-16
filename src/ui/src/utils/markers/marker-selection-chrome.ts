@@ -9,7 +9,7 @@ import {
   resolveSharedPointFloatingBadgeTokens,
   resolveFloatingBadgeSelectionAccentColor,
   SHARED_POINT_FLOATING_BADGE_FILL,
-  SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+  sharedPointFloatingBadgeRadiusExpression,
   sharedPointFloatingBadgeOuterStrokeRadius,
   sharedPointFloatingBadgeOuterStrokeWidthExpression,
   sharedPointFloatingBadgeRingWidthExpression,
@@ -19,6 +19,7 @@ import {
   sharedPointSelectionBadgeOuterLayerId,
   sharedPointSelectionSourceHasFeature,
   sharedPointSelectionSourcePrimaryProperties,
+  SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
 } from '../paint/shared-point-paint';
 import {
   applySharedPointRoundedRectSelectionChrome,
@@ -90,14 +91,14 @@ export function buildFloatingBadgeRoundedChromeOptions(
     | 'selectedTranslate'
   >
 ) {
-  const shapeFallback = paint.selectionGroundBadgeFallbackColor?.trim() || '#888888';
+  const shapeFallback = paint.selectionGroundBadgeFallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
   const tokens = resolveSharedPointFloatingBadgeTokens();
   return {
     sourceId: ids.sourceId,
     pointLayerId: ids.pointLayerId,
     fallbackColor: shapeFallback,
     pointIconTranslate: paint.selectedTranslate ?? paint.pointTranslate ?? tokens.selectedTranslate,
-    pointRadius: paint.pointRadiusExpression ?? SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+    pointRadius: paint.pointRadiusExpression ?? sharedPointFloatingBadgeRadiusExpression(),
     coloredRingWidth: paint.strokeWidthExpression,
     outerStrokeWidth: paint.outerStrokeWidthExpression,
   };
@@ -262,7 +263,7 @@ export function reapplyFloatingBadgeSelectionChromeIfActive(
   const sourceId = paint.ids?.sourceId ?? ids.sourceId;
   if (!sharedPointSelectionSourceHasFeature(map, sourceId)) return;
   const properties = sharedPointSelectionSourcePrimaryProperties(map, sourceId);
-  const fallback = paint.selectionGroundBadgeFallbackColor?.trim() || '#888888';
+  const fallback = paint.selectionGroundBadgeFallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
   applyFloatingBadgeSelectionChrome(map, ids.pointLayerId, {
     accentColor: floatingBadgeSelectionAccentFromProperties(properties, fallback),
     shape: floatingBadgeBodyShapeFromProperties(properties),

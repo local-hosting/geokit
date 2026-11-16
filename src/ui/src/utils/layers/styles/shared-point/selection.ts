@@ -12,7 +12,7 @@ import {
   resolveSharedPointFloatingBadgeTokens,
   scaleInterpolateRadiusStops,
   SHARED_POINT_FLOATING_BADGE_HOVER_LIGHTEN,
-  SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+  sharedPointFloatingBadgeRadiusExpression,
   SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE,
   sharedPointFloatingBadgeOuterStrokeWidthExpression,
   SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY,
@@ -46,6 +46,7 @@ import {
   resolveFloatingBadgeSelectionAccentColor,
   SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY,
   syncSharedPointSelectedLayerFilter,
+  SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
 } from '../../../paint/shared-point-paint';
 import {
   sharedPointBadgeVariantFromProperties,
@@ -469,7 +470,7 @@ export function setSharedPointSelection(
       ...(properties ?? {}),
     };
     const fallback =
-      options?.selectionGroundBadgeFallbackColor?.trim() || '#888888';
+      options?.selectionGroundBadgeFallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
     // Hover may have washed `_color` — keep resting locker key for the ring.
     const keyColor = resolveFloatingBadgeSelectionKeyColor(resolvedProperties, fallback);
     const accentColor = resolveFloatingBadgeSelectionAccentColor(resolvedProperties, fallback);
@@ -527,7 +528,7 @@ export function setSharedPointSelection(
           { sourceId, pointLayerId, glowLayerId },
           {
             selectionGroundBadgeFallbackColor: fallback,
-            pointRadiusExpression: SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+            pointRadiusExpression: sharedPointFloatingBadgeRadiusExpression(),
             strokeWidthExpression: sharedPointFloatingBadgeRingWidthExpression(tokens.coloredRingWidth),
             outerStrokeWidthExpression: sharedPointFloatingBadgeOuterStrokeWidthExpression(
               tokens.outerStrokeWidth

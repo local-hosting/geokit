@@ -13,6 +13,7 @@ import {
   SHARED_POINT_GLOW_HIT_AREA_SCALE,
   SHARED_POINT_RADIUS_EXPRESSION,
   type SharedPointFeatureStateHoverOptions,
+  SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
 } from '../paint/shared-point-paint';
 import { applyFloatingBadgeMarkerStackPaint } from '../markers/marker-stack';
 
@@ -134,7 +135,7 @@ export async function syncSharedPointGlowPaint(
     return true;
   }
 
-  const glowColor = paintColorFromProperty('_color', options.glowColorFallback ?? '#888888');
+  const glowColor = paintColorFromProperty('_color', options.glowColorFallback ?? SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR);
   const healGlowRadius = styles.getGlowRadiusInterpolation({ scale: SHARED_POINT_GLOW_RADIUS_SCALE });
   const glowOpacity = SHARED_POINT_DEFAULT_GLOW_OPACITY;
 
@@ -163,7 +164,7 @@ function tryMountGlowLayer(
 
   const glowColor =
     options.paint?.glowColorExpression ??
-    paintColorFromProperty('_color', options.glowColorFallback ?? '#888888');
+    paintColorFromProperty('_color', options.glowColorFallback ?? SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR);
 
   try {
     map.addLayer(
