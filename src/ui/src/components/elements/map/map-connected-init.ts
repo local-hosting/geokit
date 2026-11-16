@@ -98,8 +98,16 @@ import {
 import { MapBase } from './map-base';
 import { mapEl } from './map-el';
 
+/** How long a detached gk-map keeps its map before releasing WebGL. */
+const DETACHED_FREEZE_GRACE_MS = 300;
+
+const detachedMaps = new Set<MapConnectedInit>();
+
 export class MapConnectedInit extends MapBase {
   async connectedCallback(): Promise<void> {
+    this.cancelDetachedFreeze();
+    this.releaseReplacedMaps();
+
     // Apply default layout style once when connected (spec forbids this in constructor)
     if (!this.style.display || this.style.display === 'inline') {
       this.style.display = 'block';
@@ -165,24 +173,9 @@ export class MapConnectedInit extends MapBase {
    * The map will only be cleaned up if explicitly removed via remove() or similar.
    */
   disconnectedCallback(): void {
-    // Clean up auto-hide listeners
-    mapEl(this).cleanupAutoHideControls();
-
-    // Clean up URL sync listeners
-    mapEl(this).cleanupUrlSync();
-
-    // Clean up system theme listener
-    mapEl(this).cleanupSystemThemeListener();
-
     mapEl(this)._cleanupChildTracking();
     mapEl(this)._clearStuckCheck();
-
-    // Release WebGL when permanently removed from the document (skip brief disconnect during moves)
-    queueMicrotask(() => {
-      if (!this.isConnected && this.map && !this._isFrozen) {
-        void mapEl(this).freeze().catch(() => {});
-      }
-    });
+    this.scheduleDetachedFreeze();
 
     // Don't call super.disconnectedCallback() because it resets this.map = null
     // We want to preserve the map instance for reuse in the map pool
@@ -190,6 +183,44 @@ export class MapConnectedInit extends MapBase {
     // For now, we preserve the map instance - it will be cleaned up
     // when the element is actually removed from the DOM permanently
     // (which doesn't happen in map pool reuse scenarios)
+  }
+
+  /**
+   * Release listeners and WebGL only if the element stays detached past the grace window.
+   * Framework re-renders and Vite HMR re-attach the same element well within it, keeping the map.
+   */
+  protected scheduleDetachedFreeze(): void {
+    this.cancelDetachedFreeze();
+    detachedMaps.add(this);
+    this._detachedFreezeTimer = setTimeout(() => this.releaseDetached(), DETACHED_FREEZE_GRACE_MS);
+  }
+
+  protected cancelDetachedFreeze(): void {
+    detachedMaps.delete(this);
+    if (this._detachedFreezeTimer === null) return;
+    clearTimeout(this._detachedFreezeTimer);
+    this._detachedFreezeTimer = null;
+  }
+
+  /** Free WebGL from a detached map this element replaces (framework remount with the same id). */
+  protected releaseReplacedMaps(): void {
+    if (!this.id) return;
+    for (const detached of detachedMaps) {
+      if (detached !== this && detached.id === this.id) {
+        detached.releaseDetached();
+      }
+    }
+  }
+
+  private releaseDetached(): void {
+    this.cancelDetachedFreeze();
+    if (this.isConnected) return;
+    mapEl(this).cleanupAutoHideControls();
+    mapEl(this).cleanupUrlSync();
+    mapEl(this).cleanupSystemThemeListener();
+    if (this.map && !this._isFrozen) {
+      void mapEl(this).freeze().catch(() => {});
+    }
   }
 
   protected protomapsConfigFromAttributes(): {

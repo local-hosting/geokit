@@ -127,6 +127,8 @@ export class MapBase extends BaseElement {
   protected _mouseLeaveHandler: (() => void) | null = null;
   protected _isFrozen: boolean = false;
   protected _isUnfreezing: boolean = false; // Prevent race conditions
+  protected _freezeInFlight: Promise<void> | null = null;
+  protected _detachedFreezeTimer: ReturnType<typeof setTimeout> | null = null;
   protected _isInitializing: boolean = false; // Prevent concurrent initialization
   protected _frozenContainerStyle: { display?: string; visibility?: string } | null = null;
   protected _mapCanvas: HTMLCanvasElement | null = null;
