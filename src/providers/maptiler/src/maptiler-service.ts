@@ -238,6 +238,7 @@ export class MapTilerService extends Service {
       address: feature.place_name,
       streetAddress: findContext('street') || findContext('address'),
       city: findContext('municipality') || findContext('place') || findContext('locality'),
+      county: findContext('county') || findContext('subregion'),
       state: findContext('region'),
       postcode,
       country: findContext('country'),
