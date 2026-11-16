@@ -67,16 +67,20 @@ describe('shared point badge icon', () => {
     expect(layers.get(selectionIconId)?.paint?.['icon-opacity']).toBe(1);
   });
 
-  it('sizes the glyph to sit inside the key-colored core disk at every zoom stop', () => {
+  it('fits the glyph inside the core when close in and enlarges it when zoomed out', () => {
     const size = sharedPointBadgeIconSizeExpression();
     const radius = SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION;
     expect(size.slice(0, 3)).toEqual(radius.slice(0, 3));
     for (let i = 3; i < radius.length; i += 2) {
       expect(size[i]).toBe(radius[i]);
+      const zoom = radius[i] as number;
       const glyphPx = (size[i + 1] as number) * styleImageLayoutPixels();
       const diskPx = (radius[i + 1] as number) * 2;
-      expect(glyphPx).toBeCloseTo(diskPx * SHARED_POINT_BADGE_ICON_DISK_FILL);
-      expect(glyphPx).toBeLessThanOrEqual(diskPx);
+      if (zoom >= 14) {
+        expect(glyphPx).toBeCloseTo(diskPx * SHARED_POINT_BADGE_ICON_DISK_FILL);
+      } else {
+        expect(glyphPx).toBeGreaterThan(diskPx * SHARED_POINT_BADGE_ICON_DISK_FILL);
+      }
     }
   });
 
