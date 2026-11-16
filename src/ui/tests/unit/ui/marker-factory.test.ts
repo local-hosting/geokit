@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createMarker, type MarkerPreset } from '../../../src/utils/markers/factory';
+import { SHARED_POINT_MARKER_SHAPE_PROPERTY } from '../../../src/utils/markers/marker-shape';
 
 type DemoIds = { sourceId: string; rootLayerId: string };
 type DemoVariant = 'disk' | 'pin';
@@ -22,6 +23,8 @@ describe('createMarker', () => {
     },
     features: {
       variantFrom: (props) => (props?.shape === 'pin' ? 'pin' : 'disk'),
+      shapeFrom: (props) =>
+        props?.[SHARED_POINT_MARKER_SHAPE_PROPERTY] === 'rounded-rect' ? 'rounded-rect' : 'circle',
       accentFrom: (props, fb) => (typeof props?.color === 'string' ? props.color : fb) || '#000',
     },
     states: {
@@ -39,6 +42,10 @@ describe('createMarker', () => {
   it('composes a preset into a marker', () => {
     const marker = createMarker(preset, { ids, fallbackAccent: '#111' });
     expect(marker.layerStack()).toEqual(['demo-root', 'demo-root-hover']);
+    expect(marker.shapeFrom({ [SHARED_POINT_MARKER_SHAPE_PROPERTY]: 'rounded-rect' })).toBe(
+      'rounded-rect'
+    );
+    expect(marker.shapeFrom(null)).toBe('circle');
     const setPaintProperty = vi.fn();
     marker.applyState({ setPaintProperty } as never, {
       phase: 'selected',

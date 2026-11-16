@@ -14,6 +14,7 @@ import {
   SHARED_POINT_RADIUS_EXPRESSION,
   type SharedPointFeatureStateHoverOptions,
 } from '../paint/shared-point-paint';
+import { applyFloatingBadgeMarkerStackPaint } from '../markers/marker-stack';
 
 const SHARED_POINT_GLOW_RADIUS_SCALE = 4;
 
@@ -119,12 +120,17 @@ export async function syncSharedPointGlowPaint(
 
   // Always prefer app paint (floating-badge shadow/stroke). Never clobber with default glow radius.
   if (options.paint) {
-    applySharedPointLayerPaint(map, {
-      ...options.paint,
+    applyFloatingBadgeMarkerStackPaint(
+      map,
       ids,
-      ...(featureStateHover ? { featureStateHover } : {}),
-      glowBlur,
-    });
+      {
+        ...options.paint,
+        ids,
+        ...(featureStateHover ? { featureStateHover } : {}),
+        glowBlur,
+      },
+      applySharedPointLayerPaint
+    );
     return true;
   }
 

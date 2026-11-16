@@ -26,6 +26,7 @@ import {
   sharedPointExcludeFeatureIdFilter,
   sharedPointFloatingBadgeHoverRingColorAt,
   sharedPointFloatingBadgePaintExpressions,
+  sharedPointFloatingBadgeSelectedColor,
   sharedPointFloatingBadgeSelectedRadiusExpression,
   sharedPointFloatingBadgeLerpTranslate,
   sharedPointFloatingBadgeNormalizeViewportTranslate,
@@ -73,11 +74,7 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     // Unselected: white core + key ring + white outer stroke.
     expect(paint.pointColorExpression).toBe(SHARED_POINT_FLOATING_BADGE_FILL);
     expect(paint.outerStrokeColorExpression).toBe(SHARED_POINT_FLOATING_BADGE_FILL);
-    expect(paint.selectionOuterStrokeColorExpression).toEqual([
-      'coalesce',
-      ['get', '_color'],
-      '#2dbad2',
-    ]);
+    expect(paint.selectionOuterStrokeColorExpression).toEqual(paint.selectionFillExpression);
     // Radius + ring + outer stroke all zoom-interpolate so the badge scales with the map.
     expect(paint.pointRadiusExpression[0]).toBe('interpolate');
     expect(paint.pointRadiusExpression[2]).toEqual(['zoom']);
@@ -227,23 +224,20 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     );
   });
 
-  it('inverts selected badges — key core + white ring + key outer', () => {
+  it('inverts selected badges — darker key core + white ring + key outer', () => {
     const paint = sharedPointFloatingBadgePaintExpressions({
       fallbackColor: '#2dbad2',
       themeElement: null,
     });
-    // Selected: colored core, white middle ring, colored outer ring.
+    // Selected: darkened key core, white middle ring, darkened key outer ring.
     expect(paint.selectionFillExpression).toEqual([
       'coalesce',
+      ['get', '_colorSelected'],
       ['get', '_color'],
-      '#2dbad2',
+      sharedPointFloatingBadgeSelectedColor('#2dbad2'),
     ]);
     expect(paint.selectionStrokeColorExpression).toBe(SHARED_POINT_FLOATING_BADGE_FILL);
-    expect(paint.selectionOuterStrokeColorExpression).toEqual([
-      'coalesce',
-      ['get', '_color'],
-      '#2dbad2',
-    ]);
+    expect(paint.selectionOuterStrokeColorExpression).toEqual(paint.selectionFillExpression);
     expect(paint.paintRevision).toBeGreaterThanOrEqual(20);
   });
 
@@ -525,12 +519,13 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       fallbackColor: '#2dbad2',
       themeElement: document.documentElement,
     });
-    // Unselected core uses token fill (white/paper); selected fill is key color.
+    // Unselected core uses token fill (white/paper); selected fill is a darker key tint.
     expect(paint.pointColorExpression).toBe('#fafafa');
     expect(paint.selectionFillExpression).toEqual([
       'coalesce',
+      ['get', '_colorSelected'],
       ['get', '_color'],
-      '#2dbad2',
+      sharedPointFloatingBadgeSelectedColor('#2dbad2'),
     ]);
     expect(paint.pointTranslate).toEqual(sharedPointFloatingBadgeTranslateExpression(-30));
     expect((paint.glowOpacity as unknown[])[0]).toBe('interpolate');
@@ -585,7 +580,13 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       sharedPointFloatingBadgeSoftColor('#2dbad2')
     );
     expect(out.features[0]?.properties?._colorHover).toEqual(expect.any(String));
+    expect(out.features[0]?.properties?._colorSelected).toBe(
+      sharedPointFloatingBadgeSelectedColor('#2dbad2')
+    );
     expect(out.features[1]?.properties?._color).toBe('#9acd32');
+    expect(out.features[1]?.properties?._colorSelected).toBe(
+      sharedPointFloatingBadgeSelectedColor('#9acd32')
+    );
     expect(out.features[1]?.properties?._colorSoft).toBe(
       sharedPointFloatingBadgeSoftColor('#9acd32')
     );

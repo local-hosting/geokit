@@ -9,6 +9,11 @@
 import type { FeatureCollection, Point } from 'geojson';
 import type { MapInstance } from '../../providers/types';
 import {
+  sharedPointCircleBodyFilter,
+  sharedPointCombineLayerFilters,
+  sharedPointRoundedRectBodyFilter,
+} from '../markers/marker-shape';
+import {
   buildOpacityWithHoverExpression,
   HOVER_CONFIG,
   scaleRadiusForHover,
@@ -81,7 +86,7 @@ export const SHARED_POINT_HOVER_GLOW_RADIUS_EXPRESSION: unknown[] = [
  * Radius tracks map zoom — readable at city scale, larger when zoomed in.
  */
 /** Bump when floating-badge size/look constants change so apps re-apply paint. */
-export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 29;
+export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 30;
 
 export const SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION: unknown[] = [
   'interpolate',
@@ -202,6 +207,9 @@ export const SHARED_POINT_FLOATING_BADGE_SELECT_ANIMATION_MS = 180;
 export const SHARED_POINT_FLOATING_BADGE_HOVER_ANIMATION_MS = 120;
 /** Mix toward white on hover (0–1) — lighter tint of the key ring color. */
 export const SHARED_POINT_FLOATING_BADGE_HOVER_LIGHTEN = 0.5;
+/** Mix toward black on select (0–1) — darker tint of the key color for the lifted badge core. */
+export const SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN = 0.22;
+export const SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY = '_colorSelected';
 /** Outer white stroke width on hover — unused (stroke stays put). */
 export const SHARED_POINT_FLOATING_BADGE_HOVER_OUTER_STROKE_WIDTH = 9;
 /** Hover keeps resting height — lighten only, no raise/lower (deep zoom max). */
@@ -316,24 +324,55 @@ export function syncSharedPointSelectedLayerFilter(
   options: SyncSharedPointSelectedLayerFilterOptions
 ): void {
   if (!map.setFilter) return;
-  const filter = sharedPointExcludeFeatureIdFilter(options.promoteId, options.featureId);
+  const exclude = sharedPointExcludeFeatureIdFilter(options.promoteId, options.featureId);
+  const circleShape = sharedPointCircleBodyFilter();
+  const roundedShape = sharedPointRoundedRectBodyFilter();
+  const circleFilter =
+    exclude != null ? sharedPointCombineLayerFilters(circleShape, exclude) : circleShape;
+  const roundedFilter =
+    exclude != null ? sharedPointCombineLayerFilters(roundedShape, exclude) : roundedShape;
   // Hide floating badge + resting glow; selection source draws the lifted badge + softer shadow.
   const glowLayerId =
     options.glowLayerId ??
     (options.pointLayerId.endsWith('-point')
       ? `${options.pointLayerId.slice(0, -'-point'.length)}-glow`
       : undefined);
-  const layerIds = [
+  const circleBodyLayerIds = [
     options.pointLayerId,
     sharedPointOuterStrokeLayerId(options.pointLayerId),
     sharedPointGlassLayerId(options.pointLayerId),
-    glowLayerId,
-  ].filter((id): id is string => typeof id === 'string' && id.length > 0);
+  ];
 
-  for (const layerId of layerIds) {
+  for (const layerId of circleBodyLayerIds) {
     if (!map.getLayer?.(layerId)) continue;
     try {
-      map.setFilter(layerId, filter);
+      map.setFilter(layerId, circleFilter);
+    } catch {
+      /* layer may reject filter briefly during style swap */
+    }
+  }
+
+  if (glowLayerId) {
+    const shadowFilter = exclude;
+    for (const layerId of [glowLayerId, `${glowLayerId}-hover`]) {
+      if (!map.getLayer?.(layerId)) continue;
+      try {
+        map.setFilter(layerId, shadowFilter);
+      } catch {
+        /* layer may reject filter briefly during style swap */
+      }
+    }
+  }
+
+  for (const layerId of [
+    `${options.pointLayerId}-rounded-outer`,
+    `${options.pointLayerId}-rounded-ring`,
+    `${options.pointLayerId}-rounded-body`,
+    `${options.pointLayerId}-badge-icon`,
+  ]) {
+    if (!map.getLayer?.(layerId)) continue;
+    try {
+      map.setFilter(layerId, roundedFilter);
     } catch {
       /* layer may reject filter briefly during style swap */
     }
@@ -970,6 +1009,11 @@ export function lightenHexTowardWhite(hex: string, amount: number): string {
   return mixHexColors(hex, '#ffffff', amount);
 }
 
+/** Mix `hex` toward black by `amount` (0–1). Accepts `#rgb` / `#rrggbb`. */
+export function darkenHexTowardBlack(hex: string, amount: number): string {
+  return mixHexColors(hex, '#000000', amount);
+}
+
 /** Lerp hover ring color between resting and lit over `durationMs` (linear). */
 export function sharedPointFloatingBadgeHoverRingColorAt(
   from: string,
@@ -989,6 +1033,8 @@ export type AnnotateFloatingBadgeHoverOptions = {
   softProperty?: string;
   amount?: number;
   softAmount?: number;
+  selectedProperty?: string;
+  selectedAmount?: number;
 };
 
 /** Soft fill/outer tint from key color (unselected badges). */
@@ -997,6 +1043,77 @@ export function sharedPointFloatingBadgeSoftColor(
   amount = SHARED_POINT_FLOATING_BADGE_SOFT_LIGHTEN
 ): string {
   return lightenHexTowardWhite(keyColor, amount);
+}
+
+/** Dark fill tint from key color (selected badge core). */
+export function sharedPointFloatingBadgeSelectedColor(
+  keyColor: string,
+  amount = SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN
+): string {
+  return darkenHexTowardBlack(keyColor, amount);
+}
+
+/**
+ * Resting locker/key color for selection (not hover-lit `_color`).
+ * Hover may have overwritten `_color` with the lit tint — prefer `_colorResting`.
+ */
+export function resolveFloatingBadgeSelectionKeyColor(
+  properties: Record<string, unknown> | null | undefined,
+  fallbackColor: string
+): string {
+  const resting = properties?._colorResting;
+  if (typeof resting === 'string' && resting.trim()) return resting.trim();
+  const color = typeof properties?._color === 'string' ? properties._color.trim() : '';
+  const hover = typeof properties?._colorHover === 'string' ? properties._colorHover.trim() : '';
+  const fallback = fallbackColor.trim() || '#888888';
+  if (color && hover && color.toLowerCase() === hover.toLowerCase()) {
+    return fallback;
+  }
+  if (color) return color;
+  const marker = typeof properties?.['marker-color'] === 'string'
+    ? properties['marker-color'].trim()
+    : '';
+  if (marker) return marker;
+  return fallback;
+}
+
+/** Darkened key for lifted selection fill / rounded body. */
+export function resolveFloatingBadgeSelectionAccentColor(
+  properties: Record<string, unknown> | null | undefined,
+  fallbackColor: string,
+  selectedDarken?: number
+): string {
+  const annotated = properties?.[SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY];
+  if (typeof annotated === 'string' && annotated.trim()) return annotated.trim();
+  const tokens = resolveSharedPointFloatingBadgeTokens();
+  const amount =
+    typeof selectedDarken === 'number' && Number.isFinite(selectedDarken)
+      ? selectedDarken
+      : tokens.selectedDarken;
+  const resting = resolveFloatingBadgeSelectionKeyColor(properties, fallbackColor);
+  return sharedPointFloatingBadgeSelectedColor(resting, amount);
+}
+
+/** MapLibre fill for the lifted selection badge — prefers annotated `_colorSelected`. */
+export function sharedPointFloatingBadgeSelectionFillExpression(
+  fallbackColor: string,
+  options: {
+    colorProperty?: string;
+    selectedProperty?: string;
+    selectedDarken?: number;
+  } = {}
+): unknown[] {
+  const colorProperty = options.colorProperty ?? '_color';
+  const selectedProperty =
+    options.selectedProperty ?? SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY;
+  const amount = options.selectedDarken ?? SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN;
+  const darkFallback = sharedPointFloatingBadgeSelectedColor(fallbackColor, amount);
+  return [
+    'coalesce',
+    ['get', selectedProperty],
+    ['get', colorProperty],
+    darkFallback,
+  ];
 }
 
 /** Adds `_colorHover` + `_colorSoft` for floating-badge hover / unselected fill paint. */
@@ -1011,6 +1128,8 @@ export function annotatePointFeaturesFloatingBadgeHover(
     softProperty = SHARED_POINT_FLOATING_BADGE_SOFT_COLOR_PROPERTY,
     amount = SHARED_POINT_FLOATING_BADGE_HOVER_LIGHTEN,
     softAmount = SHARED_POINT_FLOATING_BADGE_SOFT_LIGHTEN,
+    selectedProperty = SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY,
+    selectedAmount = SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN,
   } = options;
   return {
     type: 'FeatureCollection',
@@ -1027,6 +1146,7 @@ export function annotatePointFeaturesFloatingBadgeHover(
           [colorProperty]: fill,
           [softProperty]: sharedPointFloatingBadgeSoftColor(fill, softAmount),
           [hoverProperty]: lightenHexTowardWhite(fill, amount),
+          [selectedProperty]: sharedPointFloatingBadgeSelectedColor(fill, selectedAmount),
         },
       };
     }),
@@ -1049,6 +1169,7 @@ export type SharedPointFloatingBadgeTokens = {
   strokeOpacity: number;
   outerStrokeOpacity: number;
   hoverLighten: number;
+  selectedDarken: number;
   hoverOuterStrokeWidth: number;
   hoverShadowScale: number;
   selectedShadowScale: number;
@@ -1134,6 +1255,11 @@ export function resolveSharedPointFloatingBadgeTokens(
       element,
       '--gk-badge-hover-lighten',
       SHARED_POINT_FLOATING_BADGE_HOVER_LIGHTEN
+    ),
+    selectedDarken: getCSSVariableNumber(
+      element,
+      '--gk-badge-selected-darken',
+      SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN
     ),
     hoverOuterStrokeWidth: getCSSVariableNumber(
       element,
@@ -1249,10 +1375,17 @@ export function sharedPointFloatingBadgePaintExpressions(
     selectionShadowTranslate: shadowTranslate,
     selectionGroundBadge: true as const,
     selectionGroundBadgeFallbackColor: options.fallbackColor,
-    /** Selected: key-color core + white middle ring + key-color outer ring. */
-    selectionFillExpression: ringColor as unknown[],
+    /** Selected: darker key core + white middle ring + darker key outer ring. */
+    selectionFillExpression: sharedPointFloatingBadgeSelectionFillExpression(
+      options.fallbackColor,
+      { selectedDarken: tokens.selectedDarken }
+    ),
     selectionStrokeColorExpression: tokens.fill,
-    selectionOuterStrokeColorExpression: ringColor as unknown[],
+    selectionOuterStrokeColorExpression: sharedPointFloatingBadgeSelectionFillExpression(
+      options.fallbackColor,
+      { selectedDarken: tokens.selectedDarken }
+    ),
+    selectedDarken: tokens.selectedDarken,
     selectedShadowScale: tokens.selectedShadowScale,
     selectedShadowOpacity: tokens.selectedShadowOpacity,
     /** Skip default glow *expand* hover — floating badge lifts via JS; select uses selection shadow. */
@@ -1422,8 +1555,10 @@ export interface ApplySharedPointPaintOptions {
   selectionGroundBadge?: boolean;
   /** Fallback ring color for the grounded selection badge (locker / theme color). */
   selectionGroundBadgeFallbackColor?: string;
-  /** Selected badge fill (key-color core). */
+  /** Selected badge fill (darkened key-color core). */
   selectionFillExpression?: unknown[];
+  /** Mix toward black for annotated `_colorSelected` (see `--gk-badge-selected-darken`). */
+  selectedDarken?: number;
   /** Selected badge ring stroke (white chrome). */
   selectionStrokeColorExpression?: string | unknown[];
   /** Selected badge outer stroke (key-color chrome). */
@@ -1443,12 +1578,23 @@ export interface ApplySharedPointPaintOptions {
   hoverAnimationMs?: number;
 }
 
-function sharedPointSelectionSourceHasFeature(map: MapInstance, sourceId: string): boolean {
+export function sharedPointSelectionSourceHasFeature(map: MapInstance, sourceId: string): boolean {
   const src = map.getSource?.(`${sourceId}-selection`) as
     | { _data?: { features?: unknown[] } }
     | undefined;
   const features = src?._data?.features;
   return Array.isArray(features) && features.length > 0;
+}
+
+export function sharedPointSelectionSourcePrimaryProperties(
+  map: MapInstance,
+  sourceId: string
+): Record<string, unknown> | undefined {
+  const src = map.getSource?.(`${sourceId}-selection`) as
+    | { _data?: { features?: Array<{ properties?: Record<string, unknown> }> } }
+    | undefined;
+  const feature = src?._data?.features?.[0];
+  return feature?.properties;
 }
 
 /** Apply paint/layout overrides to an existing shared point layer set. */
@@ -1712,6 +1858,7 @@ export function applySharedPointLayerPaint(
       SHARED_POINT_HOVER_GLOW_RADIUS_EXPRESSION
     );
   }
+
 }
 
 /**

@@ -1,4 +1,6 @@
 import type { MapInstance } from '../../providers/types';
+import type { MarkerBodyShape } from './marker-shape';
+import { markerBodyShapeFromProperties } from './marker-shape';
 
 export type MarkerPhase = 'rest' | 'hover' | 'selected';
 
@@ -17,6 +19,8 @@ export type MarkerPreset<TVariant extends string, TIds, TPaint extends { ids: TI
   };
   features: {
     variantFrom(properties: Record<string, unknown> | null | undefined): TVariant;
+    /** Body geometry — defaults to circle when omitted. */
+    shapeFrom?(properties: Record<string, unknown> | null | undefined): MarkerBodyShape;
     accentFrom(
       properties: Record<string, unknown> | null | undefined,
       fallbackAccent: string
@@ -35,6 +39,7 @@ export type Marker<TVariant extends string, TIds, TPaint extends { ids: TIds }> 
   sourceStack(): readonly string[];
   buildPaintConfig(): TPaint;
   variantFrom(properties: Record<string, unknown> | null | undefined): TVariant;
+  shapeFrom(properties: Record<string, unknown> | null | undefined): MarkerBodyShape;
   accentFrom(properties: Record<string, unknown> | null | undefined, fallbackAccent?: string): string;
   applyState(map: MapInstance, state: MarkerState<TVariant>): void;
 };
@@ -53,6 +58,8 @@ export function createMarker<TVariant extends string, TIds extends { sourceId: s
     sourceStack: () => preset.inventory.sourceStack(ids),
     buildPaintConfig: () => preset.paint.build(ids, paintOpts),
     variantFrom: (p) => preset.features.variantFrom(p),
+    shapeFrom: (p) =>
+      preset.features.shapeFrom?.(p) ?? markerBodyShapeFromProperties(p),
     accentFrom: (p, fb = fallbackAccent) => preset.features.accentFrom(p, fb),
     applyState: (map, state) => preset.states.apply(map, ids, state),
   };

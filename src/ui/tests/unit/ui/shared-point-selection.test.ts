@@ -416,12 +416,16 @@ describe('shared point selection', () => {
       features: Array<{ properties?: Record<string, unknown> }>;
     };
     expect(ringData.features[0]?.properties?._color).toBe('#c3d361');
-    expect(map.setPaintProperty).toHaveBeenCalledWith(badgeLayerId, 'circle-color', '#c3d361');
+    expect(map.setPaintProperty).toHaveBeenCalledWith(
+      badgeLayerId,
+      'circle-color',
+      expect.arrayContaining(['coalesce', ['get', '_colorSelected']])
+    );
     expect(map.setPaintProperty).toHaveBeenCalledWith(badgeLayerId, 'circle-stroke-color', '#ffffff');
     expect(map.setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-outer`,
       'circle-color',
-      '#c3d361',
+      expect.arrayContaining(['coalesce', ['get', '_colorSelected']])
     );
   });
 
@@ -524,7 +528,7 @@ describe('shared point selection', () => {
     );
 
     expect(order.indexOf('setData')).toBeGreaterThanOrEqual(0);
-    expect(order.indexOf('filter')).toBeGreaterThan(order.indexOf('setData'));
+    expect(order.lastIndexOf('filter')).toBeGreaterThan(order.indexOf('setData'));
   });
 
   it('inserts new selection badge disks below the badge icon layer when present', () => {
@@ -582,6 +586,39 @@ describe('shared point selection', () => {
     expect(outerCall?.[0]?.paint?.['circle-color']).toBeTruthy();
     expect(outerCall?.[0]?.paint?.['circle-color']).not.toBe('rgba(0,0,0,0)');
     expect(outerCall?.[0]?.paint?.['circle-stroke-color']).toBeTruthy();
+  });
+
+  it('scopes place selection circles to circle-shaped features only', () => {
+    const pointLayerId = 'canvas-venues-point';
+    const sourceId = 'canvas-venues';
+    const layers = new Map<string, unknown>();
+    const addLayer = vi.fn((spec: { id: string; filter?: unknown[] }) => {
+      layers.set(spec.id, spec);
+    });
+    const map = {
+      getSource: (id: string) => (id === `${sourceId}-selection` ? {} : undefined),
+      getLayer: (id: string) => (layers.has(id) || id === pointLayerId ? {} : undefined),
+      addLayer,
+      setPaintProperty: vi.fn(),
+      moveLayer: vi.fn(),
+    };
+
+    setupSelectionGroundBadgeLayers(map as never, sourceId, pointLayerId, {
+      fallbackColor: '#9acd32',
+    });
+
+  const circleFilter = [
+      '!',
+      ['==', ['coalesce', ['get', '_markerShape'], 'circle'], 'rounded-rect'],
+    ];
+    for (const id of [
+      `${pointLayerId}-selection-badge`,
+      `${pointLayerId}-selection-badge-outer`,
+      `${pointLayerId}-selection-shadow`,
+    ]) {
+      const spec = layers.get(id) as { filter?: unknown[] } | undefined;
+      expect(spec?.filter).toEqual(circleFilter);
+    }
   });
 
   it('animates selection badge translate from resting up to selected', () => {
