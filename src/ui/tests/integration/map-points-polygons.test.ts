@@ -8,7 +8,10 @@
  * Uses real API keys from environment variables if available.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import '../../src/components/elements/map/map';
+import '../../src/components/elements/point/point';
+import '../../src/components/elements/polygon';
 
 // Load API keys from environment
 const MAPTILER_KEY = process.env.MAPTILER_KEY;
@@ -117,10 +120,10 @@ describe('Multiple Points Rendering', () => {
   let mockMap: MockMap;
 
   beforeEach(async () => {
-    // Import and register custom elements
-    await import('../../src/ui/components/elements/map/map');
-    await import('../../src/ui/components/elements/point/point');
-    await import('../../src/ui/components/elements/polygon');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ version: 8, sources: {}, layers: [] }))
+    );
 
     // Wait for custom elements to be defined
     await Promise.all([
@@ -152,6 +155,7 @@ describe('Multiple Points Rendering', () => {
     if (mapElement && mapElement.parentNode) {
       mapElement.parentNode.removeChild(mapElement);
     }
+    vi.unstubAllGlobals();
   });
 
   describe('addPointsFromGeoJSON - Multiple Points', () => {

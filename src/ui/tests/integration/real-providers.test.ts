@@ -18,8 +18,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { MapTilerUIProvider } from '../../src/ui/providers/maptiler-provider';
-import { MapboxUIProvider } from '../../src/ui/providers/mapbox-provider';
+import { MapTilerUIProvider } from '../../src/providers/maptiler-provider';
+import { MapboxUIProvider } from '../../src/providers/mapbox-provider';
 import { MapboxService } from '@doppler-group/geokit/mapbox';
 import type { IsochroneOptions } from '@doppler-group/geokit/service/types';
 
