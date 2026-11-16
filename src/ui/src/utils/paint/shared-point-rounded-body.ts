@@ -193,12 +193,11 @@ function restingRoundedChromeFromPaint(
   fallback: string
 ) {
   const pointRadius = paint.pointRadiusExpression ?? SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION;
-  const coreColor = paint.pointColorExpression ?? ['literal', '#ffffff'];
   const ringColor = sharedPointRoundedBodyIconColorExpression(fallback, paint.strokeColorExpression);
   const outerColor = paint.outerStrokeColorExpression ?? ['literal', '#ffffff'];
   return {
     pointRadius,
-    coreColor,
+    coreColor: ringColor,
     ringColor,
     outerColor,
     coreSize: sharedPointRoundedBodyIconSizeExpression(pointRadius),
@@ -208,7 +207,7 @@ function restingRoundedChromeFromPaint(
       paint.strokeWidthExpression,
       paint.outerStrokeWidthExpression
     ),
-    glyphColor: ringColor,
+    glyphColor: SHARED_POINT_FLOATING_BADGE_FILL,
   };
 }
 
@@ -433,7 +432,6 @@ export type EnsureSharedPointRoundedChromeOptions = {
   pointRadius?: unknown;
   coloredRingWidth?: number | unknown[];
   outerStrokeWidth?: number | unknown[];
-  coreColorExpression?: unknown;
   ringColorExpression?: unknown;
   outerColorExpression?: unknown | string;
   /** Resting drop shadow — pass the circle glow paint so both shapes cast the same shadow. */
@@ -480,10 +478,6 @@ export function ensureSharedPointRoundedRectChromeLayers(
   const pointRadius = options.pointRadius ?? SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION;
   const ringWidth = options.coloredRingWidth ?? 0;
   const outerWidth = options.outerStrokeWidth ?? 0;
-  const coreColor =
-    options.coreColorExpression != null
-      ? options.coreColorExpression
-      : ['literal', '#ffffff'];
   const ringColor = sharedPointRoundedBodyIconColorExpression(
     options.fallbackColor,
     options.ringColorExpression
@@ -528,7 +522,7 @@ export function ensureSharedPointRoundedRectChromeLayers(
     options,
     bodyLayerId,
     sharedPointRoundedBodyIconSizeExpression(pointRadius),
-    coreColor
+    ringColor
   );
 }
 

@@ -471,7 +471,7 @@ function setupSharedPointSelectionChrome(
       try {
         map.setPaintProperty(shadowLayerId, 'circle-radius', selectedShadowRadius);
         map.setPaintProperty(shadowLayerId, 'circle-opacity', tokens.selectedShadowOpacity);
-        map.setPaintProperty(shadowLayerId, 'circle-blur', tokens.shadowBlur);
+        map.setPaintProperty(shadowLayerId, 'circle-blur', tokens.selectedShadowBlur);
         map.setPaintProperty(shadowLayerId, 'circle-color', tokens.shadowColor);
         map.setPaintProperty(shadowLayerId, 'circle-translate', SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE);
         map.setPaintProperty(shadowLayerId, 'circle-pitch-alignment', 'map');
@@ -1231,7 +1231,7 @@ export function setupSelectionGroundBadgeLayers(
     try {
       map.setPaintProperty(shadowLayerId, 'circle-radius', selectedShadowRadius);
       map.setPaintProperty(shadowLayerId, 'circle-opacity', tokens.selectedShadowOpacity);
-      map.setPaintProperty(shadowLayerId, 'circle-blur', tokens.shadowBlur);
+      map.setPaintProperty(shadowLayerId, 'circle-blur', tokens.selectedShadowBlur);
       map.setPaintProperty(shadowLayerId, 'circle-color', tokens.shadowColor);
       map.setPaintProperty(
         shadowLayerId,

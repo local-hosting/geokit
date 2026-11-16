@@ -203,7 +203,6 @@ export async function ensureFloatingBadgeMarkerStack(
   const roundedChrome = {
     ...buildFloatingBadgeRoundedChromeOptions(ids, paint),
     pointIconTranslate: paint.pointTranslate,
-    coreColorExpression: paint.pointColorExpression,
     ringColorExpression: paint.strokeColorExpression,
     outerColorExpression: paint.outerStrokeColorExpression,
     shadowRadius: paint.glowRadiusExpression,

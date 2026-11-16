@@ -171,6 +171,8 @@ export {
   mixHexColors,
   lightenHexTowardWhite,
   darkenHexTowardBlack,
+  brightenHex,
+  intensifyHex,
   createPaletteCycler,
   type Rgb,
   type Hsl,
