@@ -105,6 +105,11 @@ export class MapFreezeRuntime extends MapChildrenTrack {
 
     this._isUnfreezing = true;
 
+    // A teardown still running (e.g. Vite dispose → accept) must finish before re-init.
+    if (this._freezeInFlight) {
+      await this._freezeInFlight;
+    }
+
     // Set pool state
     this.setPoolState(true, poolIndex);
 
@@ -220,7 +225,16 @@ export class MapFreezeRuntime extends MapChildrenTrack {
    * Destroys the WebGL context to free resources
    * Returns a Promise that resolves when the context is released
    */
-  public async freeze(): Promise<void> {
+  public freeze(): Promise<void> {
+    if (!this._freezeInFlight) {
+      this._freezeInFlight = this.runFreeze().finally(() => {
+        this._freezeInFlight = null;
+      });
+    }
+    return this._freezeInFlight;
+  }
+
+  private async runFreeze(): Promise<void> {
     // Wait if currently unfreezing to avoid race condition
     if (this._isUnfreezing) {
       debug.warn('[gk-map] Waiting for unfreeze to complete before freezing');
