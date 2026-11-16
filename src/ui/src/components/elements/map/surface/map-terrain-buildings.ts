@@ -15,6 +15,12 @@ const TERRAIN_SOURCE_ID = 'gk-terrain-dem';
 const BUILDINGS_LAYER_ID = 'gk-3d-buildings';
 const HILLSHADE_SOURCE_ID = 'gk-hillshade';
 const HILLSHADE_LAYER_ID = 'gk-hillshade-layer';
+/** Many vector-tile buildings omit `height`; `interpolate` rejects null input. */
+const BUILDING_HEIGHT_EXPRESSION = [
+  'to-number',
+  ['coalesce', ['get', 'height'], ['get', 'render_height'], 10],
+  10,
+];
 
 type RasterDemSourceSpec = {
   type: 'raster-dem';
@@ -262,7 +268,7 @@ export function createBuildingsZoomHandler(ctx: MapTerrainContext): (() => void)
                 'fill-extrusion-color': [
                   'interpolate',
                   ['linear'],
-                  ['get', 'height'],
+                  BUILDING_HEIGHT_EXPRESSION,
                   0,
                   '#d4d4d4',
                   50,
@@ -270,13 +276,8 @@ export function createBuildingsZoomHandler(ctx: MapTerrainContext): (() => void)
                   100,
                   '#737373',
                 ],
-                'fill-extrusion-height': [
-                  'coalesce',
-                  ['get', 'height'],
-                  ['get', 'render_height'],
-                  10,
-                ],
-                'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
+                'fill-extrusion-height': BUILDING_HEIGHT_EXPRESSION,
+                'fill-extrusion-base': ['to-number', ['coalesce', ['get', 'min_height'], 0], 0],
                 'fill-extrusion-opacity': 0.7,
               },
             };
