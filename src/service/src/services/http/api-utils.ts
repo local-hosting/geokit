@@ -7,7 +7,7 @@
  * - 429 rate-limit retry with exponential backoff
  */
 
-import { delay } from '@twinfile/geokit/core/utils/retry';
+import { delay } from '@doppler-group/geokit/core/utils/retry';
 
 // ---------------------------------------------------------------------------
 // API key validation

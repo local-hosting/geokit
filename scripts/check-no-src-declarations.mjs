@@ -45,7 +45,7 @@ const stray = SCAN_ROOTS.flatMap((rel) => {
 });
 
 if (stray.length > 0) {
-  console.error('[@twinfile/geokit] do not emit .d.ts under package src/. Remove artifacts and fix the build.');
+  console.error('[@doppler-group/geokit] do not emit .d.ts under package src/. Remove artifacts and fix the build.');
   for (const file of stray) console.error(`  ${file}`);
   process.exit(1);
 }

@@ -1,10 +1,10 @@
 /**
  * Snapshot URL defaults. Public style and tile CDN helpers live in
- * `@twinfile/geokit/ui/config/map-style` and `@twinfile/geokit/ui/config/tile-cdn`.
+ * `@doppler-group/geokit/ui/config/map-style` and `@doppler-group/geokit/ui/config/tile-cdn`.
  */
-import { firstEnv, readRuntimeEnv } from '@twinfile/geokit/env/primitives';
-import type { GeokitEnv } from '@twinfile/geokit/env';
-import { MAP_STYLE_URL_KEYS, TILE_API_URL_KEYS } from '@twinfile/geokit/env';
+import { firstEnv, readRuntimeEnv } from '@doppler-group/geokit/env/primitives';
+import type { GeokitEnv } from '@doppler-group/geokit/env';
+import { MAP_STYLE_URL_KEYS, TILE_API_URL_KEYS } from '@doppler-group/geokit/env';
 
 const DEFAULT_MAPBOX_STYLE_URI = 'mapbox://styles/mapbox/streets-v12';
 const DEFAULT_MAPTILER_API = 'https://api.maptiler.com/';

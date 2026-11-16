@@ -1,5 +1,5 @@
-/** @deprecated Import from `@twinfile/geokit/env` instead. */
-export type { GeokitEnv, EnvAliasGroup } from '@twinfile/geokit/env';
+/** @deprecated Import from `@doppler-group/geokit/env` instead. */
+export type { GeokitEnv, EnvAliasGroup } from '@doppler-group/geokit/env';
 export {
   FOURSQUARE_KEY_KEYS,
   GOOGLE_PLACES_KEY_KEYS,
@@ -16,4 +16,4 @@ export {
   ROUTING_TOKEN_KEYS,
   TILE_API_URL_KEYS,
   TILE_CDN_URL_KEYS,
-} from '@twinfile/geokit/env';
+} from '@doppler-group/geokit/env';

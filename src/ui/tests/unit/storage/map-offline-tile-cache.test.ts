@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MapOfflineTileCache, TILE_CACHE_NAME } from '@twinfile/geokit/ui/storage/map-offline-tile-cache';
-import { resetGeoKitOfflineDBForTesting } from '@twinfile/geokit/ui/storage/indexed-db';
+import { MapOfflineTileCache, TILE_CACHE_NAME } from '@doppler-group/geokit/ui/storage/map-offline-tile-cache';
+import { resetGeoKitOfflineDBForTesting } from '@doppler-group/geokit/ui/storage/indexed-db';
 import {
   buildOfflineTileUrl,
   enumerateOfflineTileCoordinates,
-} from '@twinfile/geokit/core/contract/offline';
+} from '@doppler-group/geokit/core/contract/offline';
 
 const bounds = { south: 40.7, west: -74.02, north: 40.72, east: -74.0 };
 const zoomRange = { minZoom: 10, maxZoom: 10 };

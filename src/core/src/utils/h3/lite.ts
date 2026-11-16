@@ -1,2 +1,2 @@
-/** @deprecated Import from `@twinfile/geokit/h3/lite` instead. */
-export * from '@twinfile/geokit/h3/lite';
+/** @deprecated Import from `@doppler-group/geokit/h3/lite` instead. */
+export * from '@doppler-group/geokit/h3/lite';

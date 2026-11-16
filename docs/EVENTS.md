@@ -84,7 +84,7 @@ Use `gkMap.on('moveend', handler)` / `gkMap.off(...)` or `addEventListener('gk-m
 
 ## Shared point layers
 
-Import from `@twinfile/geokit/ui/shared-points`:
+Import from `@doppler-group/geokit/ui/shared-points`:
 
 - `createSharedPointLayersFromPaint` — first paint
 - `syncExistingSharedPointLayers` — updates after source/layers exist

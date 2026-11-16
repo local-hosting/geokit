@@ -1,4 +1,4 @@
-import type { ViewportBounds } from '@twinfile/geokit/h3/lite';
+import type { ViewportBounds } from '@doppler-group/geokit/h3/lite';
 
 export type ViewportContext = {
   bounds: ViewportBounds;

@@ -7,7 +7,7 @@ import {
   h3CellsForViewport,
   h3CoveragePolygonCollection,
   viewportCoverageCells,
-} from '@twinfile/geokit/h3';
+} from '@doppler-group/geokit/h3';
 
 const bounds = { west: -74.1, south: 40.6, east: -73.9, north: 40.8 };
 

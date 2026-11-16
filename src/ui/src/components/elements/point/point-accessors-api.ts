@@ -15,7 +15,7 @@ import {
   extractPointLngLat,
   normalizeCoordinatesArray,
   isValidCoordinate,
-} from '@twinfile/geokit/core/coordinates';
+} from '@doppler-group/geokit/core/coordinates';
 import type { MapEvent, MapRenderedFeature } from '../../../providers/types';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
 import { createGeokitLogger } from '../../../utils/logger';
@@ -62,8 +62,8 @@ import {
   GKPoint,
   GeoKind,
   isUsCrosswalkLoaded,
-} from '@twinfile/geokit/crosswalk';
-import type { DMA } from '@twinfile/geokit/core';
+} from '@doppler-group/geokit/crosswalk';
+import type { DMA } from '@doppler-group/geokit/core';
 import {
   POINT_DMA_PROPERTY,
   POINT_DMA_REGION_PROPERTY,

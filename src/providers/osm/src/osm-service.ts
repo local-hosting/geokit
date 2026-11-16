@@ -1,12 +1,12 @@
 /**
  * OpenStreetMap place search via Overpass API.
  *
- * Reference implementation for @twinfile/geokit/osm.
+ * Reference implementation for @doppler-group/geokit/osm.
  */
 
-import { Service } from '@twinfile/geokit/service';
-import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@twinfile/geokit/service/types';
-import { fetchWithRetry } from '@twinfile/geokit/service';
+import { Service } from '@doppler-group/geokit/service';
+import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@doppler-group/geokit/service/types';
+import { fetchWithRetry } from '@doppler-group/geokit/service';
 
 const DEFAULT_OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 

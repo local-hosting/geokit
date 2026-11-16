@@ -4,7 +4,7 @@ export type {
   GeoJsonLoaderContext,
   GeoJsonLoaderResult,
   ViewportContext,
-} from '@twinfile/geokit/core/types/geojson-loader';
+} from '@doppler-group/geokit/core/types/geojson-loader';
 export { bindDebouncedMapMoveend, bindIncrementalViewportSync } from './viewport-sync';
 export { featuresMapToCollection, mergeFeaturesById } from './merge';
 export {

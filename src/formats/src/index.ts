@@ -14,7 +14,7 @@ export type {
   Geometry,
   Feature,
   FeatureCollection
-} from '@twinfile/geokit/core'
+} from '@doppler-group/geokit/core'
 
 // Export geodrop-specific types
 export type {

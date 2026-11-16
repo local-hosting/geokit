@@ -8,4 +8,4 @@ export {
   geoProxyPathWithSlash,
   isSameOriginGeoProxyPath,
   absolutizeSameOriginGeoProxyPath,
-} from '@twinfile/geokit/core/config/geo-proxy';
+} from '@doppler-group/geokit/core/config/geo-proxy';

@@ -10,7 +10,7 @@
  */
 
 import { MapChildElement } from '../../map-child-element';
-import { getServiceForCapability } from '@twinfile/geokit/service/registry';
+import { getServiceForCapability } from '@doppler-group/geokit/service/registry';
 import { debug } from '../../../utils/logger';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
 import { getIsochroneCacheKey } from './isochrone-fetch';

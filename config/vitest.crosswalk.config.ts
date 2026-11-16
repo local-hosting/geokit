@@ -10,12 +10,12 @@ const h3Root = path.join(repoRoot, 'src/h3');
 const aliases = {
   ...loadGeokitVitestAliases(),
   ...pluginVitestAliases(repoRoot),
-  '@twinfile/geokit/core/containment': path.join(coreRoot, 'src/utils/containment/index.ts'),
-  '@twinfile/geokit/core/h3': path.join(h3Root, 'src/index.ts'),
-  '@twinfile/geokit/core': path.join(coreRoot, 'src/index.ts'),
-  '@twinfile/geokit/h3/cell-to-region-index': path.join(h3Root, 'src/cell/cell-to-region-index.ts'),
-  '@twinfile/geokit/h3/lite': path.join(h3Root, 'src/lite.ts'),
-  '@twinfile/geokit/h3': path.join(h3Root, 'src/index.ts'),
+  '@doppler-group/geokit/core/containment': path.join(coreRoot, 'src/utils/containment/index.ts'),
+  '@doppler-group/geokit/core/h3': path.join(h3Root, 'src/index.ts'),
+  '@doppler-group/geokit/core': path.join(coreRoot, 'src/index.ts'),
+  '@doppler-group/geokit/h3/cell-to-region-index': path.join(h3Root, 'src/cell/cell-to-region-index.ts'),
+  '@doppler-group/geokit/h3/lite': path.join(h3Root, 'src/lite.ts'),
+  '@doppler-group/geokit/h3': path.join(h3Root, 'src/index.ts'),
 };
 
 export default defineConfig({

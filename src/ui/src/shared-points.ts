@@ -23,7 +23,7 @@ export {
   GKH3,
   GKDMA,
   GeoKind,
-} from '@twinfile/geokit/crosswalk';
+} from '@doppler-group/geokit/crosswalk';
 
 export {
   POINT_DMA_PROPERTY,
@@ -78,6 +78,7 @@ export {
   sharedPointFloatingBadgeHoverRingColorAt,
   sharedPointFloatingBadgeSoftColor,
   sharedPointFloatingBadgeSelectedColor,
+  resolveFloatingBadgeSelectionAccentColor,
   SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY,
   SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN,
   annotatePointFeaturesFloatingBadgeHover,
@@ -268,6 +269,7 @@ export {
   buildFloatingBadgeStack,
   ensureFloatingBadgeMarkerStack,
   floatingBadgeRoundedRestingLayerIds,
+  syncFloatingBadgeStackFilters,
   syncFloatingBadgeStackShapeFilters,
   type FloatingBadgeStack,
 } from './utils/markers/marker-stack';

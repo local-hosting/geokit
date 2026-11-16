@@ -1,5 +1,5 @@
 {
-  "name": "@twinfile/geokit-esri",
+  "name": "@doppler-group/geokit-esri",
   "version": "0.1.0",
   "description": "Esri ArcGIS Places near-point search plugin for geokit",
   "license": "MPL-2.0",
@@ -16,7 +16,7 @@
     "test": "yarn run -T vitest run --config ../../config/vitest.plugin.config.ts"
   },
   "peerDependencies": {
-    "@twinfile/geokit-core": ">=0.2.33",
-    "@twinfile/geokit-service": ">=0.1.0"
+    "@doppler-group/geokit-core": ">=0.2.33",
+    "@doppler-group/geokit-service": ">=0.1.0"
   }
 }

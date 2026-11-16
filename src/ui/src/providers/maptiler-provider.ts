@@ -7,7 +7,7 @@
  * the script must set window.maptilersdk.
  */
 
-import { buildMaptilerStyleUrl } from '@twinfile/geokit/ui/config/tile-cdn';
+import { buildMaptilerStyleUrl } from '@doppler-group/geokit/ui/config/tile-cdn';
 import {
   inlineMapTilerTileJsonSources,
   rewriteMapTilerStyleResourceUrls,

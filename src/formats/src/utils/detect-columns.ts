@@ -1,5 +1,5 @@
-import { validateH3 } from '@twinfile/geokit/h3';
-import { normalizeLatitude, normalizeLongitude } from '@twinfile/geokit/core'
+import { validateH3 } from '@doppler-group/geokit/h3';
+import { normalizeLatitude, normalizeLongitude } from '@doppler-group/geokit/core'
 import { parseCSVLine } from './parse-csv.js'
 
 export interface DetectedColumns {

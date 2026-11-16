@@ -10,8 +10,8 @@
  */
 
 import { MapChildElement } from '../../map-child-element';
-import { getServiceForCapability } from '@twinfile/geokit/service/registry';
-import { smoothFeatureCollection } from '@twinfile/geokit/core';
+import { getServiceForCapability } from '@doppler-group/geokit/service/registry';
+import { smoothFeatureCollection } from '@doppler-group/geokit/core';
 import { debug } from '../../../utils/logger';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
 import { convertIsochroneToH3 } from './isochrone-h3-load';

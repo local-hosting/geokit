@@ -166,6 +166,10 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       SHARED_POINT_FLOATING_BADGE_RING_STROKE_WIDTH
     );
     expect(SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD).toBeLessThanOrEqual(16);
+    expect(paint.pointOpacityExpression?.[0]).toBe('case');
+    expect(paint.pointOpacityExpression).toEqual(
+      expect.arrayContaining([['boolean', ['feature-state', 'selected'], false], 0])
+    );
   });
 
   it('keeps float height and shadow tiny when zoomed out', () => {

@@ -11,7 +11,7 @@ export type {
   PlaceKey,
   StateCode,
   ZipCode,
-} from '@twinfile/geokit/core';
+} from '@doppler-group/geokit/core';
 
 export {
   normalizeTractGeoid,
@@ -37,7 +37,7 @@ export {
   asDmaSlugOrUndefined,
   asZipCode,
   parseGeoRef,
-} from '@twinfile/geokit/core';
+} from '@doppler-group/geokit/core';
 
 export { GeoKind } from './geo-kind.js';
 

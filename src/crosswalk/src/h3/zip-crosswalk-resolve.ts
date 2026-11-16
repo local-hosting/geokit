@@ -2,8 +2,8 @@
  * Resolve H3 or geohash cell→ZIP indexes to any platform tier (rollup or refine).
  */
 
-import { h3ToChildren, validateH3, keyToParentCell, rollupCellMap } from '@twinfile/geokit/h3';
-import { rollupGeohashMap } from '@twinfile/geokit/core/geohash';
+import { h3ToChildren, validateH3, keyToParentCell, rollupCellMap } from '@doppler-group/geokit/h3';
+import { rollupGeohashMap } from '@doppler-group/geokit/core/geohash';
 import { buildGeohashNativeFromH3, type GeohashToZips, type H3ToZips } from './geohash-native.js';
 
 export type { GeohashToZips, H3ToZips };

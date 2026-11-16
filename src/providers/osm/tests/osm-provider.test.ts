@@ -6,7 +6,7 @@ import {
   parseOsmTag,
 } from '../src/osm-service';
 
-describe('@twinfile/geokit/osm', () => {
+describe('@doppler-group/geokit/osm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

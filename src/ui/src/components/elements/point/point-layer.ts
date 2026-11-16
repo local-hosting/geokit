@@ -12,7 +12,7 @@
 
 import { MapChildElement } from '../../map-child-element';
 import { debug } from '../../../utils/logger';
-import { convert, GKPoint, GeoKind, isUsCrosswalkLoaded } from '@twinfile/geokit/crosswalk';
+import { convert, GKPoint, GeoKind, isUsCrosswalkLoaded } from '@doppler-group/geokit/crosswalk';
 import { POINT_DMA_PROPERTY, POINT_DMA_REGION_PROPERTY } from '../../../utils/shared-points/point-dma';
 import type { MapEvent } from '../../../providers/types';
 import {

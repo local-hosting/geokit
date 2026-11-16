@@ -1,4 +1,4 @@
-import { smoothFeatureCollection } from '@twinfile/geokit/core';
+import { smoothFeatureCollection } from '@doppler-group/geokit/core';
 import { convertIsochroneToH3 } from './isochrone-h3-load';
 
 export type PrepareIsochroneDisplayDataInput = {

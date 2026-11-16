@@ -17,6 +17,7 @@ import {
   sharedPointSelectionRoundedOuterLayerId,
 } from '../../../src/utils/paint/shared-point-rounded-body';
 import {
+  sharedPointFloatingBadgeSelectedColor,
   SHARED_POINT_FLOATING_BADGE_FILL,
   sharedPointSelectionBadgeLayerId,
   syncSharedPointSelectedLayerFilter,
@@ -137,8 +138,7 @@ describe('rounded-rect map chrome', () => {
           call[1] === 'icon-color'
       )
       .map((call) => call[2]);
-    expect(selectionBodyColors).toEqual(['#78a027']);
-    expect(selectionBodyColors).not.toContain('#ffffff');
+    expect(selectionBodyColors).toEqual([SHARED_POINT_FLOATING_BADGE_FILL]);
 
     expect(setPaintProperty).toHaveBeenCalledWith(
       sharedPointSelectionBadgeLayerId(pointLayerId),
@@ -148,7 +148,7 @@ describe('rounded-rect map chrome', () => {
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-icon`,
       'icon-color',
-      '#78a027'
+      sharedPointFloatingBadgeSelectedColor('#9acd32')
     );
   });
 });

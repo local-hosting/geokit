@@ -1,3 +1,3 @@
-/** @deprecated Import from '@twinfile/geokit/core/utils/cache' directly for new code */
-export { ProviderCache, coordinateCacheKey, roundForCacheKey } from '@twinfile/geokit/core/utils/cache';
-export type { ProviderCacheOptions, CacheStats } from '@twinfile/geokit/core/utils/cache';
+/** @deprecated Import from '@doppler-group/geokit/core/utils/cache' directly for new code */
+export { ProviderCache, coordinateCacheKey, roundForCacheKey } from '@doppler-group/geokit/core/utils/cache';
+export type { ProviderCacheOptions, CacheStats } from '@doppler-group/geokit/core/utils/cache';

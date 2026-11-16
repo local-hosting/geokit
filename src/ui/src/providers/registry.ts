@@ -2,7 +2,7 @@
  * UI provider registry (map backends)
  *
  * MapTiler SDK, Mapbox GL JS, etc. — rendering only.
- * HTTP geocoding/isochrones use @twinfile/geokit/service/registry (API providers), not this registry.
+ * HTTP geocoding/isochrones use @doppler-group/geokit/service/registry (API providers), not this registry.
  */
 
 import type { BaseUIProvider, UIProviderConfig } from './types';
@@ -28,7 +28,7 @@ const providerConfigs = new Map<string, UIProviderConfig>();
  *
  * @example
  * ```typescript
- * import { configure } from '@twinfile/geokit/ui';
+ * import { configure } from '@doppler-group/geokit/ui';
  *
  * configure({
  *   maptiler: { apiKey: 'YOUR_API_KEY' },

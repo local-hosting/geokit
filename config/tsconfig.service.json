@@ -6,10 +6,10 @@
       "geokit/*": [
         "../../src/core/src/*"
       ],
-      "@twinfile/geokit/service": [
+      "@doppler-group/geokit/service": [
         "../../src/service/src/index.ts"
       ],
-      "@twinfile/geokit/service/*": [
+      "@doppler-group/geokit/service/*": [
         "../../src/service/src/*"
       ]
     }

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { MapLocalStore } from '@twinfile/geokit/ui/storage/map-local-store';
-import { resetGeoKitOfflineDBForTesting } from '@twinfile/geokit/ui/storage/indexed-db';
-import { MapOfflineDefaults } from '@twinfile/geokit/core/contract/offline';
+import { MapLocalStore } from '@doppler-group/geokit/ui/storage/map-local-store';
+import { resetGeoKitOfflineDBForTesting } from '@doppler-group/geokit/ui/storage/indexed-db';
+import { MapOfflineDefaults } from '@doppler-group/geokit/core/contract/offline';
 
 const camera = {
   center: { latitude: 40.75, longitude: -73.98 },

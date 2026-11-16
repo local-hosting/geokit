@@ -1,4 +1,4 @@
-import type { ConvertOutput } from '@twinfile/geokit/core';
+import type { ConvertOutput } from '@doppler-group/geokit/core';
 import { GeoKind } from '../geo-kind.js';
 import type { CrosswalkResult } from '../types';
 

@@ -19,9 +19,9 @@
  */
 
 import type { MapInstance } from '../../providers/types';
-import type { Feature } from '@twinfile/geokit/core/types';
-import type { IsochroneOptions } from '@twinfile/geokit/service/types';
-import { getServiceForCapability } from '@twinfile/geokit/service/registry';
+import type { Feature } from '@doppler-group/geokit/core/types';
+import type { IsochroneOptions } from '@doppler-group/geokit/service/types';
+import { getServiceForCapability } from '@doppler-group/geokit/service/registry';
 
 // ============================================================================
 // DOM Navigation Utilities

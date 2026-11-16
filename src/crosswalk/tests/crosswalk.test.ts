@@ -4,7 +4,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadUsCrosswalkSync } from '../src/load/load';
 import { convert, geohashForZip, h3ForZip, crosswalk, zipsInDma, GKPoint, GKZip, GKDMA, GKH3, GKGeohash, GKPlace } from '../src/index.ts';
-import { GeoKind, type DMA } from '@twinfile/geokit/core';
+import { GeoKind, type DMA } from '@doppler-group/geokit/core';
 import { ensureH3Projection } from '../src/h3/project';
 import { loadUsCrosswalk, resetCrosswalkForTest } from '../src/load/load';
 import {
@@ -16,7 +16,7 @@ import {
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 
-describe('@twinfile/geokit/crosswalk', () => {
+describe('@doppler-group/geokit/crosswalk', () => {
   it('loads US tables and crosswalks Indianapolis', async () => {
     loadUsCrosswalkSync();
     await ensureH3Projection();
@@ -154,7 +154,7 @@ describe('@twinfile/geokit/crosswalk', () => {
 });
 
 describe('crosswalk guard', () => {
-  it('only imports allowed @twinfile/geokit/core subpaths in src', () => {
+  it('only imports allowed @doppler-group/geokit/core subpaths in src', () => {
     const srcDir = join(ROOT, '../src');
     const files = walk(srcDir);
     const allowedCoreImports = /^@twinfile\/geokit\/core(?:\/(?:containment|geohash))?$/;

@@ -1,5 +1,5 @@
-import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@twinfile/geokit/service/plugin';
-import { resolveEsriApiKey } from '@twinfile/geokit/env/service-keys';
+import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@doppler-group/geokit/service/plugin';
+import { resolveEsriApiKey } from '@doppler-group/geokit/env/service-keys';
 import { EsriPlacesService } from './esri-places-service';
 
 export const esriPlacesPlugin: GeokitServicePlugin = {

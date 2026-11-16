@@ -1,5 +1,5 @@
 /**
- * Plugin registration — wraps API providers from @twinfile/geokit/* service packages packages.
+ * Plugin registration — wraps API providers from @doppler-group/geokit/* service packages packages.
  * A plugin is metadata + factory; registerGeokitPlugin() installs the Service.
  */
 

@@ -1,4 +1,4 @@
-import type { Feature, FeatureCollection } from '@twinfile/geokit/core'
+import type { Feature, FeatureCollection } from '@doppler-group/geokit/core'
 import type { ConversionOptions } from '../types/index.js'
 
 /**

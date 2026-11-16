@@ -1,5 +1,5 @@
 {
-  "name": "@twinfile/geokit-ui",
+  "name": "@doppler-group/geokit-ui",
   "version": "0.2.33",
   "description": "Geokit map UI - Web Components, layer controllers, and framework adapters",
   "type": "module",
@@ -390,14 +390,14 @@
     "pmtiles": "^4.5.0"
   },
   "peerDependencies": {
-    "@twinfile/geokit-service": ">=0.1.0",
+    "@doppler-group/geokit-service": ">=0.1.0",
     "h3-js": "^4.3.0",
     "react": ">=18.0.0",
     "svelte": ">=4.0.0",
     "vue": ">=3.3.0"
   },
   "peerDependenciesMeta": {
-    "@twinfile/geokit-service": {
+    "@doppler-group/geokit-service": {
       "optional": true
     },
     "react": {

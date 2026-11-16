@@ -2,8 +2,8 @@
  * Isochrone H3 conversion (Single Responsibility: polygon → H3 hexagons)
  */
 
-import { polygonToH3, h3SetToMultiPolygon } from '@twinfile/geokit/h3';
-import type { Polygon } from '@twinfile/geokit/core/types';
+import { polygonToH3, h3SetToMultiPolygon } from '@doppler-group/geokit/h3';
+import type { Polygon } from '@doppler-group/geokit/core/types';
 
 export interface ConvertToH3Options {
   /** Fill color for converted features */

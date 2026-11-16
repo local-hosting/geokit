@@ -5,7 +5,7 @@ import {
   normalizeEsriPlace,
 } from '../src/esri-places-service';
 
-describe('@twinfile/geokit/esri', () => {
+describe('@doppler-group/geokit/esri', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

@@ -3,7 +3,7 @@
  */
 
 import type * as MapTilerSdkNamespace from '@maptiler/sdk';
-import type { MapTilerTransformRequest } from '@twinfile/geokit/core/config/maptiler-dev-proxy';
+import type { MapTilerTransformRequest } from '@doppler-group/geokit/core/config/maptiler-dev-proxy';
 
 export type MapReadyPhaseHandler = (phase: string, elapsedMs?: number) => void;
 
@@ -79,7 +79,7 @@ export function prefetchMapTilerSdk(apiKey?: string): Promise<MapTilerSdkModule>
 async function initMapboxProvider(accessToken?: string, maptilerApiKey?: string): Promise<void> {
   try {
     const { ensureCapabilityRoutersReady } = await import(
-      '@twinfile/geokit/service/builtins'
+      '@doppler-group/geokit/service/builtins'
     );
     await ensureCapabilityRoutersReady({
       mapboxAccessToken: accessToken,

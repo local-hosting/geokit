@@ -1,7 +1,7 @@
 import { latLngToCell } from 'h3-js';
 import { describe, expect, it } from 'vitest';
-import { compactH3CellId } from '@twinfile/geokit/h3';
-import { h3CellIdsForViewportLoad } from '@twinfile/geokit/ui/geojson-loader/shard-loader';
+import { compactH3CellId } from '@doppler-group/geokit/h3';
+import { h3CellIdsForViewportLoad } from '@doppler-group/geokit/ui/geojson-loader/shard-loader';
 
 describe('h3CellIdsForViewportLoad', () => {
   it('includes a neighbor ring when neighborDiskK is set', () => {

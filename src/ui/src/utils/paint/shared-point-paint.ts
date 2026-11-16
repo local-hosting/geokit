@@ -14,6 +14,7 @@ import {
   sharedPointRoundedRectBodyFilter,
 } from '../markers/marker-shape';
 import {
+  buildOpacityHideRestingWhenSelectedExpression,
   buildOpacityWithHoverExpression,
   HOVER_CONFIG,
   scaleRadiusForHover,
@@ -86,7 +87,7 @@ export const SHARED_POINT_HOVER_GLOW_RADIUS_EXPRESSION: unknown[] = [
  * Radius tracks map zoom — readable at city scale, larger when zoomed in.
  */
 /** Bump when floating-badge size/look constants change so apps re-apply paint. */
-export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 30;
+export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 32;
 
 export const SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION: unknown[] = [
   'interpolate',
@@ -207,8 +208,8 @@ export const SHARED_POINT_FLOATING_BADGE_SELECT_ANIMATION_MS = 180;
 export const SHARED_POINT_FLOATING_BADGE_HOVER_ANIMATION_MS = 120;
 /** Mix toward white on hover (0–1) — lighter tint of the key ring color. */
 export const SHARED_POINT_FLOATING_BADGE_HOVER_LIGHTEN = 0.5;
-/** Mix toward black on select (0–1) — darker tint of the key color for the lifted badge core. */
-export const SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN = 0.22;
+/** Mix toward black on select (0–1) — subtle darker tint of the key color (not a heavy shade). */
+export const SHARED_POINT_FLOATING_BADGE_SELECTED_DARKEN = 0.26;
 export const SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY = '_colorSelected';
 /** Outer white stroke width on hover — unused (stroke stays put). */
 export const SHARED_POINT_FLOATING_BADGE_HOVER_OUTER_STROKE_WIDTH = 9;
@@ -369,6 +370,9 @@ export function syncSharedPointSelectedLayerFilter(
     `${options.pointLayerId}-rounded-ring`,
     `${options.pointLayerId}-rounded-body`,
     `${options.pointLayerId}-badge-icon`,
+    sharedPointHoverBadgeLayerId(options.pointLayerId),
+    sharedPointHoverBadgeOuterLayerId(options.pointLayerId),
+    `${options.pointLayerId}-hover`,
   ]) {
     if (!map.getLayer?.(layerId)) continue;
     try {
@@ -624,6 +628,27 @@ export function sharedPointSelectionBadgeLayerId(pointLayerId: string): string {
 
 export function sharedPointSelectionBadgeOuterLayerId(pointLayerId: string): string {
   return `${pointLayerId}-selection-badge-outer`;
+}
+
+/** Resources use the rounded stack on the selection source — hide circle duplicates. */
+export function hideFloatingBadgeCircleSelectionLayers(
+  map: MapInstance,
+  pointLayerId: string
+): void {
+  if (!map.setPaintProperty) return;
+  for (const [layerId, prop, value] of [
+    [sharedPointSelectionBadgeLayerId(pointLayerId), 'circle-opacity', 0],
+    [sharedPointSelectionBadgeLayerId(pointLayerId), 'circle-stroke-opacity', 0],
+    [sharedPointSelectionBadgeOuterLayerId(pointLayerId), 'circle-opacity', 0],
+    [sharedPointSelectionBadgeOuterLayerId(pointLayerId), 'circle-stroke-opacity', 0],
+  ] as const) {
+    if (!map.getLayer?.(layerId)) continue;
+    try {
+      map.setPaintProperty(layerId, prop, value);
+    } catch {
+      /* style swap */
+    }
+  }
 }
 
 export function sharedPointHoverBadgeLayerId(pointLayerId: string): string {
@@ -1414,6 +1439,7 @@ export function sharedPointFloatingBadgePaintExpressions(
     selectAnimationMs: tokens.selectAnimationMs,
     hoverAnimationMs: tokens.hoverAnimationMs,
     selectedTranslate,
+    pointOpacityExpression: buildOpacityHideRestingWhenSelectedExpression(1),
   };
 }
 
@@ -1653,7 +1679,13 @@ export function applySharedPointLayerPaint(
       );
     }
     if (Array.isArray(glowOpacity) || pointOpacityExpression != null) {
-      map.setPaintProperty?.(glowLayerId, 'circle-opacity', glowOpacity);
+      const glowOpacityPaint =
+        pointOpacityExpression != null
+          ? buildOpacityHideRestingWhenSelectedExpression(
+              glowOpacity ?? SHARED_POINT_UNIFORM_GLOW_OPACITY
+            )
+          : glowOpacity;
+      map.setPaintProperty?.(glowLayerId, 'circle-opacity', glowOpacityPaint);
     } else if (hoverPaint) {
       map.setPaintProperty?.(glowLayerId, 'circle-opacity', hoverPaint.glowOpacity);
     } else {
@@ -1754,7 +1786,11 @@ export function applySharedPointLayerPaint(
       map.setPaintProperty?.(glassLayerId, 'circle-color', glassColorExpression);
     }
     if (glassOpacity != null) {
-      map.setPaintProperty?.(glassLayerId, 'circle-opacity', glassOpacity);
+      const glassOpacityPaint =
+        pointOpacityExpression != null
+          ? buildOpacityHideRestingWhenSelectedExpression(glassOpacity)
+          : glassOpacity;
+      map.setPaintProperty?.(glassLayerId, 'circle-opacity', glassOpacityPaint);
     }
     if (glassBlur != null) {
       map.setPaintProperty?.(glassLayerId, 'circle-blur', glassBlur);

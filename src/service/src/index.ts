@@ -1,6 +1,6 @@
 /**
- * @twinfile/geokit/service — registry, composite routing, plugin hooks, shared HTTP utils.
- * Vendor service classes live in @twinfile/geokit/* service packages packages.
+ * @doppler-group/geokit/service — registry, composite routing, plugin hooks, shared HTTP utils.
+ * Vendor service classes live in @doppler-group/geokit/* service packages packages.
  */
 
 // Re-export API providers (types, registry, implementations)

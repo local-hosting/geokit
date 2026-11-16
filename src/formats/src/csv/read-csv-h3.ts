@@ -1,6 +1,6 @@
 import { createReadStream, readFileSync, statSync } from 'fs'
-import type { Feature, FeatureCollection, Polygon } from '@twinfile/geokit/core'
-import { h3ToPolygon, coordinatesToH3 } from '@twinfile/geokit/h3'
+import type { Feature, FeatureCollection, Polygon } from '@doppler-group/geokit/core'
+import { h3ToPolygon, coordinatesToH3 } from '@doppler-group/geokit/h3'
 import type { CSVConversionOptions } from '../types/index.js'
 import { parseCSVLine } from '../utils/parse-csv.js'
 import { detectColumns, readCSVSamples } from '../utils/detect-columns.js'

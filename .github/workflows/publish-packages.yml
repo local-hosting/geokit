@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   publish:
-    name: publish @twinfile/geokit
+    name: publish @doppler-group/geokit
     runs-on: ubuntu-latest
     env:
       NODE_OPTIONS: --max-old-space-size=4096

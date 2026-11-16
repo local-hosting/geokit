@@ -1,4 +1,4 @@
-import { createOptionalPluginRegistrar, type GeokitServicePlugin } from '@twinfile/geokit/service/plugin';
+import { createOptionalPluginRegistrar, type GeokitServicePlugin } from '@doppler-group/geokit/service/plugin';
 import { OsmService } from './osm-service';
 
 export const osmPlugin: GeokitServicePlugin = {

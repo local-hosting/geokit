@@ -1,5 +1,5 @@
 {
-  "name": "@twinfile/geokit-crosswalk",
+  "name": "@doppler-group/geokit-crosswalk",
   "version": "0.2.0",
   "description": "Geo identity crosswalk - many-to-many lookups between points, H3, ZIP, DMA, state, county",
   "license": "MPL-2.0",

@@ -31,13 +31,13 @@ Use **GeoKit wrappers** on both platforms for behavior locked by `parity-fixture
 
 | Concern | TypeScript | Swift |
 |---------|------------|--------|
-| Core geo (Tier 1) | `@twinfile/geokit/core/bounds`, `…/bearing`, `…/distance`, `…/coordinates`, `…/geohash`, `…/geojson` | `import GeoKitCore` → `BoundsCalculator`, `Bearing`, `Distance`, `Coordinates`, `Geohash`, `GeoJSON*` |
-| H3 | `@twinfile/geokit/h3` | `GeoKitCore` → `H3` |
-| Turf bucket (Tier 1.5) | `@twinfile/geokit/core/turf` | `GeoKitCore` → `Containment`, `Centroid`, `Area`, `Length`, `Buffer`, `Conversions`, `BoundsGeo`, `CoordinateExtraction` |
-| Map contract (Tier 2) | `@twinfile/geokit/core/contract` | `GeoKitContract` |
-| Map UI (Tier 2) | `@twinfile/geokit/ui` | `GeoKitUI`, `GeoKitUIMapbox` |
+| Core geo (Tier 1) | `@doppler-group/geokit/core/bounds`, `…/bearing`, `…/distance`, `…/coordinates`, `…/geohash`, `…/geojson` | `import GeoKitCore` → `BoundsCalculator`, `Bearing`, `Distance`, `Coordinates`, `Geohash`, `GeoJSON*` |
+| H3 | `@doppler-group/geokit/h3` | `GeoKitCore` → `H3` |
+| Turf bucket (Tier 1.5) | `@doppler-group/geokit/core/turf` | `GeoKitCore` → `Containment`, `Centroid`, `Area`, `Length`, `Buffer`, `Conversions`, `BoundsGeo`, `CoordinateExtraction` |
+| Map contract (Tier 2) | `@doppler-group/geokit/core/contract` | `GeoKitContract` |
+| Map UI (Tier 2) | `@doppler-group/geokit/ui` | `GeoKitUI`, `GeoKitUIMapbox` |
 
-**Import convention (TypeScript):** Tier 1 geo → `@twinfile/geokit/core/*` and `@twinfile/geokit/h3`. Turf-backed measure/contain/center-on-geometry → prefer **`@twinfile/geokit/core/turf`** (also re-exports `getCenter`, Node-only line/polygon buffers).
+**Import convention (TypeScript):** Tier 1 geo → `@doppler-group/geokit/core/*` and `@doppler-group/geokit/h3`. Turf-backed measure/contain/center-on-geometry → prefer **`@doppler-group/geokit/core/turf`** (also re-exports `getCenter`, Node-only line/polygon buffers).
 
 ### Call style
 
@@ -50,19 +50,19 @@ Use **GeoKit wrappers** on both platforms for behavior locked by `parity-fixture
 
 | TypeScript (typical import path) | Swift |
 |----------------------------------|--------|
-| `calculateCenterAndZoom`, `calculateZoomFromBounds`, `getBounds`, `getCenter` — `@twinfile/geokit/core/bounds` | `BoundsCalculator.*`, `BoundsGeo.getBounds(from:)`, **`BoundsGeo.getCenter(from:)`** (Turf bbox center, like `@turf/center`) |
+| `calculateCenterAndZoom`, `calculateZoomFromBounds`, `getBounds`, `getCenter` — `@doppler-group/geokit/core/bounds` | `BoundsCalculator.*`, `BoundsGeo.getBounds(from:)`, **`BoundsGeo.getCenter(from:)`** (Turf bbox center, like `@turf/center`) |
 | `haversineMeters`, `withinDistance` — `…/core/distance` | `Distance.haversineMeters(from:to:)`, `.withinDistance(_:from:to:)` |
 | `bearing`, `finalBearing`, `midpoint`, `destinationMeters` — `…/core/bearing` | `Bearing.initial(from:to:)`, `.final(from:to:)`, `.midpoint(from:to:)`, `.destinationMeters(from:distance:bearingDegrees:)` |
 | `isValidCoordinate`, `toLatLon`, `toLonLat` — `…/core/coordinates` | `Coordinates.isValid`, `.toLatLon`, `.toLonLat`, array helpers |
-| `coordinatesToH3`, `h3ToParent`, … — `@twinfile/geokit/h3` | `H3.coordinatesToCell`, `.parent(of:resolution:)`, `.children`, `.neighbors`, … |
+| `coordinatesToH3`, `h3ToParent`, … — `@doppler-group/geokit/h3` | `H3.coordinatesToCell`, `.parent(of:resolution:)`, `.children`, `.neighbors`, … |
 | `encodeGeohash`, `decodeGeohash`, … — `…/core/geohash` | `Geohash.encode`, `.decode`, `.bounds`, `.neighbors`, `.isValid` |
 | `getFeatureId`, `validateGeoJSON`, `repairGeometry` — `…/core/geojson` | `GeoJSONHelpers`, `GeoJSONValidation`, `GeoJSONRepair` |
 
 Example (center + distance):
 
 ```ts
-import { calculateCenterAndZoom } from '@twinfile/geokit/core/bounds';
-import { haversineMeters } from '@twinfile/geokit/core/distance';
+import { calculateCenterAndZoom } from '@doppler-group/geokit/core/bounds';
+import { haversineMeters } from '@doppler-group/geokit/core/distance';
 
 const { center, zoom } = calculateCenterAndZoom([-74.1, 40.6, -73.9, 40.8]);
 const meters = haversineMeters([40.7128, -74.006], [34.0522, -118.2437]);
@@ -78,7 +78,7 @@ let meters = Distance.haversineMeters(
 )
 ```
 
-### Tier 1.5 — `@twinfile/geokit/core/turf` ↔ GeoKitCore + turf-swift
+### Tier 1.5 — `@doppler-group/geokit/core/turf` ↔ GeoKitCore + turf-swift
 
 | TypeScript (`core/turf` barrel) | Swift |
 |-----------------------------------|--------|
@@ -89,13 +89,13 @@ let meters = Distance.haversineMeters(
 | `bufferPoint` | `Buffer.bufferPoint` |
 | `toDMS`, `fromDMS`, `coordinatesToDMS` | `Conversions.toDMS`, `.fromDMS`, `.coordinatesToDMS` |
 | `bboxToPolygon`, `getBounds(geometry)` | `BoundsGeo.bboxToPolygon`, `.getBounds(from:)`, `.getCenter(from:)` |
-| `bufferLine`, `bufferPolygon`, `buffer` — `@twinfile/geokit/core/turf` (Node) | Swift: unsupported — use Node or `Buffer.bufferPoint` only |
+| `bufferLine`, `bufferPolygon`, `buffer` — `@doppler-group/geokit/core/turf` (Node) | Swift: unsupported — use Node or `Buffer.bufferPoint` only |
 | `detectAndConvertCoordinateFormat`, `extractCoordinates` | `CoordinateExtraction.*` |
 
 Example (containment + point buffer):
 
 ```ts
-import { isPointInPolygon, bufferPoint } from '@twinfile/geokit/core/turf';
+import { isPointInPolygon, bufferPoint } from '@doppler-group/geokit/core/turf';
 
 const inside = isPointInPolygon([40.705, -74.008])(polygon);
 const circle = bufferPoint([40.7128, -74.006], 500);
@@ -110,7 +110,7 @@ let circle = try Buffer.bufferPoint(point, radiusMeters: 500)
 
 **Cross-platform Turf rules**
 
-- Import **`@twinfile/geokit/core/turf`** on Node for containment, measure, **`getCenter`**, **`getBounds(geometry)`**, and point buffers; line/polygon buffers are exported there too (**Node-only**).
+- Import **`@doppler-group/geokit/core/turf`** on Node for containment, measure, **`getCenter`**, **`getBounds(geometry)`**, and point buffers; line/polygon buffers are exported there too (**Node-only**).
 - Prefer **`bufferPoint` only** for shared geometry; Swift throws on line/polygon buffer.
 - Expect **small numeric drift** on area/length/point-buffer rings; fixtures use looser epsilons than Tier 1.
 - Do not rely on raw `@turf/*` or `import Turf` for parity claims — use the GeoKit modules above.
@@ -127,18 +127,18 @@ Detail: [`geokit-swift/docs/parity.md`](../../geokit-swift/docs/parity.md) (prov
 
 ### Node-only (do not expect on Swift)
 
-`@twinfile/geokit/service`, `@twinfile/geokit/crosswalk`, MCP map tools, extended Turf (union, difference, simplify, clustering), `bufferLine` / `bufferPolygon`.
+`@doppler-group/geokit/service`, `@doppler-group/geokit/crosswalk`, MCP map tools, extended Turf (union, difference, simplify, clustering), `bufferLine` / `bufferPolygon`.
 
 ## Tiers
 
 | Tier | Scope | Parity |
 |------|-------|--------|
 | 1 | Bounds, distance, bearing, coordinates, geohash, GeoJSON | Shared fixtures |
-| 1 | H3 (`@twinfile/geokit/h3`) | Shared fixtures where Swift implements H3 |
-| 1.5 | `@twinfile/geokit/core/turf` | Shared fixtures; Swift line/polygon buffers unsupported |
-| 2 | Offline policy numbers in `@twinfile/geokit/core/contract` | Shared fixtures (`offline` in `parity-fixtures.json`) |
-| 2 | `ensureMapReady` (`@twinfile/geokit/ui`), lifecycle timing | Conceptual mirror |
-| 3 | Service registry, MCP tools, extended Turf, `@twinfile/geokit/crosswalk` | Node-only |
+| 1 | H3 (`@doppler-group/geokit/h3`) | Shared fixtures where Swift implements H3 |
+| 1.5 | `@doppler-group/geokit/core/turf` | Shared fixtures; Swift line/polygon buffers unsupported |
+| 2 | Offline policy numbers in `@doppler-group/geokit/core/contract` | Shared fixtures (`offline` in `parity-fixtures.json`) |
+| 2 | `ensureMapReady` (`@doppler-group/geokit/ui`), lifecycle timing | Conceptual mirror |
+| 3 | Service registry, MCP tools, extended Turf, `@doppler-group/geokit/crosswalk` | Node-only |
 
 **Epsilon:** lat/lon ±0.0001; H3 and geohash ids exact match.
 

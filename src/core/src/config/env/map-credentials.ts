@@ -1,2 +1,2 @@
-/** @deprecated Import from `@twinfile/geokit/env/map-credentials` instead. */
-export * from '@twinfile/geokit/env/map-credentials';
+/** @deprecated Import from `@doppler-group/geokit/env/map-credentials` instead. */
+export * from '@doppler-group/geokit/env/map-credentials';

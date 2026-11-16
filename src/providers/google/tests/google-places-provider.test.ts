@@ -8,7 +8,7 @@ import {
   initService,
   getServiceForCapability,
   _resetRegistries,
-} from '@twinfile/geokit/service/registry';
+} from '@doppler-group/geokit/service/registry';
 import { GooglePlacesService } from '../src/google-places-service';
 
 describe('GooglePlacesService', () => {

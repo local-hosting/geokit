@@ -10,7 +10,7 @@
  */
 
 import { MapChildElement } from '../map-child-element';
-import { coordinatesToH3, h3DiskToFeatureCollection, h3GetResolution } from '@twinfile/geokit/h3';
+import { coordinatesToH3, h3DiskToFeatureCollection, h3GetResolution } from '@doppler-group/geokit/h3';
 import { getCSSVariable } from '../../utils/theme';
 
 /** Light fill when hovering a cell whose base opacity is 0 (outline-only grids). */

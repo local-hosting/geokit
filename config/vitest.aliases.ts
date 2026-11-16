@@ -10,26 +10,26 @@ export function pluginVitestAliases(repoRoot: string): Record<string, string> {
   const envRoot = path.join(repoRoot, 'src/env');
   const h3Root = path.join(repoRoot, 'src/h3');
   return {
-    '@twinfile/geokit/service/types': path.join(serviceRoot, 'src/src/providers/types.ts'),
-    '@twinfile/geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
-    '@twinfile/geokit/service/plugin': path.join(serviceRoot, 'src/plugin.ts'),
-    '@twinfile/geokit/service/registry': path.join(serviceRoot, 'src/src/providers/registry.ts'),
-    '@twinfile/geokit/service/setup-capability-routers': path.join(
+    '@doppler-group/geokit/service/types': path.join(serviceRoot, 'src/src/providers/types.ts'),
+    '@doppler-group/geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
+    '@doppler-group/geokit/service/plugin': path.join(serviceRoot, 'src/plugin.ts'),
+    '@doppler-group/geokit/service/registry': path.join(serviceRoot, 'src/src/providers/registry.ts'),
+    '@doppler-group/geokit/service/setup-capability-routers': path.join(
       serviceRoot,
       'src/setup-capability-routers.ts'
     ),
-    '@twinfile/geokit/service/builtins': path.join(serviceRoot, 'src/builtins.ts'),
-    '@twinfile/geokit/service': path.join(serviceRoot, 'src/index.ts'),
-    '@twinfile/geokit/env': path.join(envRoot, 'src/index.ts'),
-    '@twinfile/geokit/env/service-keys': path.join(envRoot, 'src/service-keys.ts'),
-    '@twinfile/geokit/env/map-credentials': path.join(envRoot, 'src/map-credentials.ts'),
-    '@twinfile/geokit/env/primitives': path.join(envRoot, 'src/primitives.ts'),
-    '@twinfile/geokit/core/config/env/service-keys': path.join(envRoot, 'src/service-keys.ts'),
-    '@twinfile/geokit/h3': path.join(h3Root, 'src/index.ts'),
-    '@twinfile/geokit/h3/lite': path.join(h3Root, 'src/lite.ts'),
-    '@twinfile/geokit/core/h3': path.join(h3Root, 'src/index.ts'),
-    '@twinfile/geokit/core/utils/retry': path.join(coreRoot, 'src/utils/retry.ts'),
-    '@twinfile/geokit/core/utils/cache': path.join(coreRoot, 'src/utils/cache.ts'),
+    '@doppler-group/geokit/service/builtins': path.join(serviceRoot, 'src/builtins.ts'),
+    '@doppler-group/geokit/service': path.join(serviceRoot, 'src/index.ts'),
+    '@doppler-group/geokit/env': path.join(envRoot, 'src/index.ts'),
+    '@doppler-group/geokit/env/service-keys': path.join(envRoot, 'src/service-keys.ts'),
+    '@doppler-group/geokit/env/map-credentials': path.join(envRoot, 'src/map-credentials.ts'),
+    '@doppler-group/geokit/env/primitives': path.join(envRoot, 'src/primitives.ts'),
+    '@doppler-group/geokit/core/config/env/service-keys': path.join(envRoot, 'src/service-keys.ts'),
+    '@doppler-group/geokit/h3': path.join(h3Root, 'src/index.ts'),
+    '@doppler-group/geokit/h3/lite': path.join(h3Root, 'src/lite.ts'),
+    '@doppler-group/geokit/core/h3': path.join(h3Root, 'src/index.ts'),
+    '@doppler-group/geokit/core/utils/retry': path.join(coreRoot, 'src/utils/retry.ts'),
+    '@doppler-group/geokit/core/utils/cache': path.join(coreRoot, 'src/utils/cache.ts'),
     '../../../core/tests/fixtures/geojson': path.join(coreRoot, 'tests/fixtures/geojson.ts'),
     '../../../core/tests/mocks/fetch': path.join(coreRoot, 'tests/mocks/fetch.ts'),
     '../../../core/tests/mocks/mock-api-provider': path.join(
@@ -47,26 +47,26 @@ export function serviceVitestAliases(repoRoot: string): Record<string, string> {
   const h3Root = path.join(repoRoot, 'src/h3');
 
   return {
-    '@twinfile/geokit/service': path.join(serviceRoot, 'src/index.ts'),
-    '@twinfile/geokit/service/builtins': path.join(serviceRoot, 'src/builtins.ts'),
-    '@twinfile/geokit/service/registry': path.join(serviceRoot, 'src/src/providers/registry.ts'),
-    '@twinfile/geokit/service/types': path.join(serviceRoot, 'src/src/providers/types.ts'),
-    '@twinfile/geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
-    '@twinfile/geokit/foursquare': path.join(repoRoot, 'src/providers/foursquare/src/index.ts'),
-    '@twinfile/geokit/foursquare/foursquare-places': path.join(
+    '@doppler-group/geokit/service': path.join(serviceRoot, 'src/index.ts'),
+    '@doppler-group/geokit/service/builtins': path.join(serviceRoot, 'src/builtins.ts'),
+    '@doppler-group/geokit/service/registry': path.join(serviceRoot, 'src/src/providers/registry.ts'),
+    '@doppler-group/geokit/service/types': path.join(serviceRoot, 'src/src/providers/types.ts'),
+    '@doppler-group/geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
+    '@doppler-group/geokit/foursquare': path.join(repoRoot, 'src/providers/foursquare/src/index.ts'),
+    '@doppler-group/geokit/foursquare/foursquare-places': path.join(
       repoRoot,
       'src/providers/foursquare/src/foursquare-places.ts'
     ),
-    '@twinfile/geokit/google': path.join(repoRoot, 'src/providers/google/src/index.ts'),
-    '@twinfile/geokit/mapbox': path.join(repoRoot, 'src/providers/mapbox/src/index.ts'),
-    '@twinfile/geokit/maptiler': path.join(repoRoot, 'src/providers/maptiler/src/index.ts'),
-    '@twinfile/geokit/core/utils/retry': path.join(coreRoot, 'src/utils/retry.ts'),
-    '@twinfile/geokit/core/utils/cache': path.join(coreRoot, 'src/utils/cache.ts'),
-    '@twinfile/geokit/env': path.join(envRoot, 'src/index.ts'),
-    '@twinfile/geokit/env/service-keys': path.join(envRoot, 'src/service-keys.ts'),
-    '@twinfile/geokit/h3': path.join(h3Root, 'src/index.ts'),
-    '@twinfile/geokit/core/h3': path.join(h3Root, 'src/index.ts'),
-    '@twinfile/geokit/core/config/env/service-keys': path.join(envRoot, 'src/service-keys.ts'),
+    '@doppler-group/geokit/google': path.join(repoRoot, 'src/providers/google/src/index.ts'),
+    '@doppler-group/geokit/mapbox': path.join(repoRoot, 'src/providers/mapbox/src/index.ts'),
+    '@doppler-group/geokit/maptiler': path.join(repoRoot, 'src/providers/maptiler/src/index.ts'),
+    '@doppler-group/geokit/core/utils/retry': path.join(coreRoot, 'src/utils/retry.ts'),
+    '@doppler-group/geokit/core/utils/cache': path.join(coreRoot, 'src/utils/cache.ts'),
+    '@doppler-group/geokit/env': path.join(envRoot, 'src/index.ts'),
+    '@doppler-group/geokit/env/service-keys': path.join(envRoot, 'src/service-keys.ts'),
+    '@doppler-group/geokit/h3': path.join(h3Root, 'src/index.ts'),
+    '@doppler-group/geokit/core/h3': path.join(h3Root, 'src/index.ts'),
+    '@doppler-group/geokit/core/config/env/service-keys': path.join(envRoot, 'src/service-keys.ts'),
   };
 }
 
@@ -78,22 +78,22 @@ export function coreVitestAliases(repoRoot: string): Record<string, string> {
   const h3Root = path.join(repoRoot, 'src/h3');
   const serviceRoot = path.join(repoRoot, 'src/service');
   return {
-    '@twinfile/geokit/core': path.join(coreRoot, 'src/index.ts'),
-    '@twinfile/geokit/service': path.join(serviceRoot, 'src/index.ts'),
-    '@twinfile/geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
-    '@twinfile/geokit/env': path.join(envRoot, 'src/index.ts'),
-    '@twinfile/geokit/env/bootstrap': path.join(envRoot, 'src/bootstrap.ts'),
-    '@twinfile/geokit/h3': path.join(h3Root, 'src/index.ts'),
-    '@twinfile/geokit/h3/lite': path.join(h3Root, 'src/lite.ts'),
-    '@twinfile/geokit/ui/config/map-style': path.join(uiRoot, 'src/config/map-style.ts'),
-    '@twinfile/geokit/ui/layer-styles': path.join(uiRoot, 'src/layer-styles.ts'),
-    '@twinfile/geokit/ui/elements/map-collection': path.join(uiRoot, 'src/elements/map-collection.ts'),
-    '@twinfile/geokit/ui/elements/popup': path.join(uiRoot, 'src/elements/popup.ts'),
-    '@twinfile/geokit/ui/elements/isochrone': path.join(uiRoot, 'src/elements/isochrone.ts'),
-    '@twinfile/geokit/mapbox': path.join(repoRoot, 'src/providers/mapbox/src/index.ts'),
-    '@twinfile/geokit/maptiler': path.join(repoRoot, 'src/providers/maptiler/src/index.ts'),
-    '@twinfile/geokit/foursquare': path.join(repoRoot, 'src/providers/foursquare/src/index.ts'),
-    '@twinfile/geokit/google': path.join(repoRoot, 'src/providers/google/src/index.ts'),
+    '@doppler-group/geokit/core': path.join(coreRoot, 'src/index.ts'),
+    '@doppler-group/geokit/service': path.join(serviceRoot, 'src/index.ts'),
+    '@doppler-group/geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
+    '@doppler-group/geokit/env': path.join(envRoot, 'src/index.ts'),
+    '@doppler-group/geokit/env/bootstrap': path.join(envRoot, 'src/bootstrap.ts'),
+    '@doppler-group/geokit/h3': path.join(h3Root, 'src/index.ts'),
+    '@doppler-group/geokit/h3/lite': path.join(h3Root, 'src/lite.ts'),
+    '@doppler-group/geokit/ui/config/map-style': path.join(uiRoot, 'src/config/map-style.ts'),
+    '@doppler-group/geokit/ui/layer-styles': path.join(uiRoot, 'src/layer-styles.ts'),
+    '@doppler-group/geokit/ui/elements/map-collection': path.join(uiRoot, 'src/elements/map-collection.ts'),
+    '@doppler-group/geokit/ui/elements/popup': path.join(uiRoot, 'src/elements/popup.ts'),
+    '@doppler-group/geokit/ui/elements/isochrone': path.join(uiRoot, 'src/elements/isochrone.ts'),
+    '@doppler-group/geokit/mapbox': path.join(repoRoot, 'src/providers/mapbox/src/index.ts'),
+    '@doppler-group/geokit/maptiler': path.join(repoRoot, 'src/providers/maptiler/src/index.ts'),
+    '@doppler-group/geokit/foursquare': path.join(repoRoot, 'src/providers/foursquare/src/index.ts'),
+    '@doppler-group/geokit/google': path.join(repoRoot, 'src/providers/google/src/index.ts'),
   };
 }
 

@@ -7,7 +7,7 @@ import {
   registerService,
   initService,
   getServiceForCapability,
-} from '@twinfile/geokit/service/registry';
+} from '@doppler-group/geokit/service/registry';
 import { MapboxService } from '../src/mapbox-service';
 import { useCleanAPIRegistry } from './setup/registries.ts';
 import { isochroneFeatureCollection } from '../../../core/tests/fixtures/geojson';

@@ -7,7 +7,7 @@ import {
   h3CellFadeOpacity,
   h3CellFadeProgress,
   h3CellFadeProperties,
-} from '@twinfile/geokit/h3';
+} from '@doppler-group/geokit/h3';
 
 describe('h3 cell fade', () => {
   it('starts at new opacity and eases toward base', () => {

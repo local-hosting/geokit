@@ -1,6 +1,6 @@
-import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@twinfile/geokit/service/plugin';
-import { resolveFoursquareApiKey } from '@twinfile/geokit/env/service-keys';
-import type { CapabilityRouterEnvOverrides } from '@twinfile/geokit/service/types/api-composite';
+import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@doppler-group/geokit/service/plugin';
+import { resolveFoursquareApiKey } from '@doppler-group/geokit/env/service-keys';
+import type { CapabilityRouterEnvOverrides } from '@doppler-group/geokit/service/types/api-composite';
 import { FoursquareService } from './foursquare-service';
 
 export const foursquarePlugin: GeokitServicePlugin = {

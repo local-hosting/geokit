@@ -59,7 +59,7 @@
   --gk-badge-select-ms: 180;
   --gk-badge-hover-ms: 120;
   --gk-badge-hover-lighten: 0.5;
-  --gk-badge-selected-darken: 0.22;
+  --gk-badge-selected-darken: 0.26;
   --gk-badge-hover-outer-stroke-width: 4.5;
   --gk-badge-hover-float-y: 0;
   --gk-badge-hover-shadow-scale: 0.78;
@@ -129,7 +129,7 @@
     --gk-badge-select-ms: 180;
     --gk-badge-hover-ms: 120;
     --gk-badge-hover-lighten: 0.5;
-    --gk-badge-selected-darken: 0.22;
+    --gk-badge-selected-darken: 0.26;
     --gk-badge-hover-outer-stroke-width: 4.5;
     --gk-badge-hover-float-y: 0;
     --gk-badge-hover-shadow-scale: 0.78;
@@ -200,7 +200,7 @@ gk-map.gk-theme-light {
   --gk-badge-select-ms: 180;
   --gk-badge-hover-ms: 120;
   --gk-badge-hover-lighten: 0.5;
-  --gk-badge-selected-darken: 0.22;
+  --gk-badge-selected-darken: 0.26;
   --gk-badge-hover-outer-stroke-width: 4.5;
   --gk-badge-hover-float-y: 0;
   --gk-badge-hover-shadow-scale: 0.78;
@@ -269,7 +269,7 @@ gk-map.gk-theme-dark {
   --gk-badge-select-ms: 180;
   --gk-badge-hover-ms: 120;
   --gk-badge-hover-lighten: 0.5;
-  --gk-badge-selected-darken: 0.22;
+  --gk-badge-selected-darken: 0.26;
   --gk-badge-hover-outer-stroke-width: 4.5;
   --gk-badge-hover-float-y: 0;
   --gk-badge-hover-shadow-scale: 0.78;

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DEFAULT_STYLE_IMAGE_RASTER_SIZE } from '../../../src/utils/map-surface/map-style-images';
+import { styleImageLayoutPixels } from '../../../src/utils/map-surface/map-style-images';
 import { SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION } from '../../../src/utils/paint/shared-point-paint';
 import {
   SHARED_POINT_BADGE_ICON_DISK_FILL,
@@ -28,7 +28,7 @@ describe('shared point badge icon', () => {
     expect(addImage).toHaveBeenCalledWith(
       'gk-badge-cube',
       { width: 24, height: 24, data: 'img' },
-      undefined
+      { pixelRatio: 2 }
     );
   });
 
@@ -67,13 +67,13 @@ describe('shared point badge icon', () => {
     expect(layers.get(selectionIconId)?.paint?.['icon-opacity']).toBe(1);
   });
 
-  it('sizes the 64px glyph to sit inside the key-colored core disk at every zoom stop', () => {
+  it('sizes the glyph to sit inside the key-colored core disk at every zoom stop', () => {
     const size = sharedPointBadgeIconSizeExpression();
     const radius = SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION;
     expect(size.slice(0, 3)).toEqual(radius.slice(0, 3));
     for (let i = 3; i < radius.length; i += 2) {
       expect(size[i]).toBe(radius[i]);
-      const glyphPx = (size[i + 1] as number) * DEFAULT_STYLE_IMAGE_RASTER_SIZE;
+      const glyphPx = (size[i + 1] as number) * styleImageLayoutPixels();
       const diskPx = (radius[i + 1] as number) * 2;
       expect(glyphPx).toBeCloseTo(diskPx * SHARED_POINT_BADGE_ICON_DISK_FILL);
       expect(glyphPx).toBeLessThanOrEqual(diskPx);

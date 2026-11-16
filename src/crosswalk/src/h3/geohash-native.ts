@@ -3,7 +3,7 @@
  */
 
 import { cellToBoundary, cellToLatLng } from 'h3-js';
-import { encodeGeohash } from '@twinfile/geokit/core/geohash';
+import { encodeGeohash } from '@doppler-group/geokit/core/geohash';
 import { expandH3CellId } from './cell-id.js';
 
 export type H3ToZips = Record<string, string[]>;

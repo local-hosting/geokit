@@ -6,14 +6,14 @@ import type {
   MapOfflineCoverage,
   MapOfflinePolicy,
   MapOfflinePrefetchRequest,
-} from '@twinfile/geokit/core/contract/offline';
+} from '@doppler-group/geokit/core/contract/offline';
 import {
   buildOfflineTileUrl,
   enumerateOfflineTileCoordinates,
   resolveOfflineCoverage,
   validateOfflinePrefetchRequest,
-} from '@twinfile/geokit/core/contract/offline';
-import { MapOfflineDefaults } from '@twinfile/geokit/core/contract/offline';
+} from '@doppler-group/geokit/core/contract/offline';
+import { MapOfflineDefaults } from '@doppler-group/geokit/core/contract/offline';
 import {
   OFFLINE_REGIONS_STORE,
   idbDelete,

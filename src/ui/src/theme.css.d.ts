@@ -1,2 +1,2 @@
-/** Side-effect import: `@twinfile/geokit/ui/theme.css` */
+/** Side-effect import: `@doppler-group/geokit/ui/theme.css` */
 export {};

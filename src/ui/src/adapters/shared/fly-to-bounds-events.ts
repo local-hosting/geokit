@@ -1,4 +1,4 @@
-import type { Bounds } from '@twinfile/geokit/core/types';
+import type { Bounds } from '@doppler-group/geokit/core/types';
 
 export const GK_FLY_TO_BOUNDS_EVENT = 'gk-fly-to-bounds';
 

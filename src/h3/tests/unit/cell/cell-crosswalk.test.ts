@@ -4,7 +4,7 @@ import {
   invertCellMap,
   keyToParentCell,
   rollupCellMap,
-} from '@twinfile/geokit/h3';
+} from '@doppler-group/geokit/h3';
 
 const RES = 5;
 

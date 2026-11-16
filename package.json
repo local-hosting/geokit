@@ -1,5 +1,5 @@
 {
-  "name": "@twinfile/geokit",
+  "name": "@doppler-group/geokit",
   "version": "0.4.3",
   "description": "Geospatial SDK for Twinfile map hosts and place search",
   "license": "MPL-2.0",
