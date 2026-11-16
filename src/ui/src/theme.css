@@ -48,6 +48,7 @@
   --gk-badge-glyph-color: #ffffff;
   --gk-badge-fallback-color: #888888;
   --gk-badge-shadow-y: 10;
+  --gk-badge-shadow-scale: 1;
   --gk-badge-fill: #ffffff;
   --gk-badge-outer-stroke: #ffffff;
   --gk-badge-shadow: #000000;

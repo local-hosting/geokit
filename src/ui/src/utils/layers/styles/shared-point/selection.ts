@@ -163,7 +163,8 @@ export function resolveSharedPointRingColor(
   properties: Record<string, unknown> | null | undefined,
   fallbackColor: string
 ): string {
-  for (const key of ['_color', 'color', 'marker-color'] as const) {
+  // `_colorResting` is the vivid key and never hover-patched; raw `color` is the pale locker key.
+  for (const key of ['_colorResting', '_color', 'color', 'marker-color'] as const) {
     const raw = properties?.[key];
     if (typeof raw === 'string' && raw.trim()) return raw.trim();
   }
