@@ -81,7 +81,7 @@ export const SHARED_POINT_HOVER_GLOW_RADIUS_EXPRESSION: unknown[] = [
  * Radius tracks map zoom — readable at city scale, larger when zoomed in.
  */
 /** Bump when floating-badge size/look constants change so apps re-apply paint. */
-export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 27;
+export const SHARED_POINT_FLOATING_BADGE_PAINT_REVISION = 29;
 
 export const SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION: unknown[] = [
   'interpolate',
@@ -1424,9 +1424,9 @@ export interface ApplySharedPointPaintOptions {
   selectionGroundBadgeFallbackColor?: string;
   /** Selected badge fill (key-color core). */
   selectionFillExpression?: unknown[];
-  /** Selected badge ring stroke (key / locker color). */
+  /** Selected badge ring stroke (white chrome). */
   selectionStrokeColorExpression?: string | unknown[];
-  /** Selected badge outer stroke (white chrome). */
+  /** Selected badge outer stroke (key-color chrome). */
   selectionOuterStrokeColorExpression?: string | unknown[];
   /**
    * When true, do not scale/boost glow on hover (floating-badge ground shadow stays put).
@@ -1443,13 +1443,21 @@ export interface ApplySharedPointPaintOptions {
   hoverAnimationMs?: number;
 }
 
+function sharedPointSelectionSourceHasFeature(map: MapInstance, sourceId: string): boolean {
+  const src = map.getSource?.(`${sourceId}-selection`) as
+    | { _data?: { features?: unknown[] } }
+    | undefined;
+  const features = src?._data?.features;
+  return Array.isArray(features) && features.length > 0;
+}
+
 /** Apply paint/layout overrides to an existing shared point layer set. */
 export function applySharedPointLayerPaint(
   map: MapInstance,
   options: ApplySharedPointPaintOptions
 ): void {
   const {
-    ids: { glowLayerId, pointLayerId },
+    ids: { sourceId, glowLayerId, pointLayerId },
     pointColorExpression,
     pointRadiusExpression,
     glowColorExpression,
@@ -1640,7 +1648,11 @@ export function applySharedPointLayerPaint(
       );
     }
   }
-  if (map.getLayer?.(selectionBadgeLayerId) && selectionGroundBadge) {
+  if (
+    map.getLayer?.(selectionBadgeLayerId) &&
+    selectionGroundBadge &&
+    !sharedPointSelectionSourceHasFeature(map, sourceId)
+  ) {
     const fallback =
       options.selectionGroundBadgeFallbackColor?.trim() ||
       (Array.isArray(strokeColorExpression) &&
@@ -1736,3 +1748,5 @@ export function attachSharedPointHoverGlowRadiusSync(
     map.off?.('styledata', onStyleData);
   };
 }
+
+export { SHARED_POINT_BADGE_ICON_PROPERTY } from './shared-point-badge-constants';

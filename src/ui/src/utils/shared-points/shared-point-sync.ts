@@ -22,6 +22,10 @@ import {
   type SharedPointFeatureStateHoverOptions,
   type SharedPointLayerIds,
 } from '../paint/shared-point-paint';
+import {
+  ensureSharedPointBadgeIconLayers,
+  raiseSharedPointBadgeIconLayersOnTop,
+} from '../paint/shared-point-badge-icon';
 
 function geojsonWithFloatingBadgeHoverColors(
   geojson: FeatureCollection,
@@ -158,6 +162,8 @@ export function getSharedPointRelatedLayerIds(ids: SharedPointLayerIds): string[
     `${pointLayerId}-selection-shadow`,
     `${pointLayerId}-selection-badge-outer`,
     `${pointLayerId}-selection-badge`,
+    `${pointLayerId}-selection-badge-icon`,
+    `${pointLayerId}-badge-icon`,
     `${pointLayerId}-selection-ring`,
     `${glowLayerId}-hover`,
     `${pointLayerId}-hover`,
@@ -741,6 +747,13 @@ async function ensureFloatingBadgeChrome(
       fallbackColor: paint.selectionGroundBadgeFallbackColor,
     });
   }
+  ensureSharedPointBadgeIconLayers(map, {
+    sourceId: ids.sourceId,
+    pointLayerId: ids.pointLayerId,
+    pointIconTranslate: paint.pointTranslate,
+    selectionIconTranslate: paint.selectedTranslate,
+  });
+  raiseSharedPointBadgeIconLayersOnTop(map, ids.pointLayerId);
   if (map.setPaintProperty) {
     for (const layerId of [
       ids.pointLayerId,

@@ -16,6 +16,7 @@ type MapStyleLike = {
 };
 
 import { buildMaptilerStyleUrl } from '@twinfile/geokit/ui/config/tile-cdn';
+import { isReservedMapStyleImageId } from '../../../../utils/map-surface/map-style-images';
 import { mapStyleSwapOptions } from './preserve-custom-style-overlays';
 
 const defaultStyleUrl = (apiKey: string) => buildMaptilerStyleUrl('dataviz-dark', apiKey);
@@ -114,6 +115,7 @@ export function createStyleImageMissingHandler(
   return (e: { id: string }) => {
     const id = e?.id;
     if (id == null) return;
+    if (isReservedMapStyleImageId(id)) return;
     try {
       if (!map.hasImage?.(id)) {
         map.addImage?.(id, placeholder);

@@ -308,6 +308,42 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     );
   });
 
+  it('skips selection-badge paint while selection source has a feature', () => {
+    const setPaintProperty = vi.fn();
+    const map = {
+      getSource: vi.fn((id: string) =>
+        id === 'venues-selection'
+          ? { _data: { features: [{ type: 'Feature', properties: { _badgeIcon: 'cube' } }] } }
+          : {}
+      ),
+      getLayer: vi.fn((id: string) =>
+        id === 'venues-point-selection-badge' || id === 'venues-point-selection-badge-outer'
+          ? {}
+          : undefined
+      ),
+      setPaintProperty,
+    };
+    const paint = sharedPointFloatingBadgePaintExpressions({
+      fallbackColor: '#9acd32',
+      themeElement: null,
+    });
+
+    applySharedPointLayerPaint(map as never, {
+      ids: {
+        sourceId: 'venues',
+        glowLayerId: 'venues-glow',
+        pointLayerId: 'venues-point',
+      },
+      ...paint,
+    });
+
+    expect(setPaintProperty).not.toHaveBeenCalledWith(
+      'venues-point-selection-badge',
+      'circle-stroke-width',
+      expect.anything()
+    );
+  });
+
   it('applyPaint keeps selected key-color core with white ring + key outer', () => {
     const setPaintProperty = vi.fn();
     const map = {
@@ -344,7 +380,7 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     expect(setPaintProperty).toHaveBeenCalledWith(
       'venues-point-selection-badge',
       'circle-stroke-color',
-      SHARED_POINT_FLOATING_BADGE_FILL
+      paint.selectionStrokeColorExpression
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       'venues-point-selection-badge-outer',
