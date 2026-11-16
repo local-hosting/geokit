@@ -42,6 +42,8 @@ export interface ReverseGeocodeResult {
   address?: string;
   streetAddress?: string;
   city?: string;
+  /** Region below state (county / subregion). */
+  county?: string;
   state?: string;
   postcode?: string;
   country?: string;

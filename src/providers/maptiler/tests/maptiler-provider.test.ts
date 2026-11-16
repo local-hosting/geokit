@@ -395,6 +395,36 @@ describe('MapTilerService', () => {
       expect(fetch).toHaveBeenCalled();
     });
 
+    it('extracts the county (or subregion) as the region below state', async () => {
+      await provider.initialize({ apiKey: 'test-api-key' });
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [-79.1, 42.7] },
+                place_type: ['county'],
+                text: 'Erie County',
+                place_name: 'Erie County, New York, United States',
+                context: [
+                  { id: 'region.456', text: 'New York' },
+                  { id: 'country.789', text: 'United States', short_code: 'us' },
+                ],
+              },
+            ],
+          }),
+      } as Response);
+
+      const result = await provider.reverseGeocode({ lat: 42.7, lng: -79.1 });
+
+      expect(result?.county).toBe('Erie County');
+      expect(result?.state).toBe('New York');
+      expect(result?.city).toBeUndefined();
+    });
+
     it('should include coordinates in URL path', async () => {
       await provider.initialize({ apiKey: 'test-api-key' });
 
