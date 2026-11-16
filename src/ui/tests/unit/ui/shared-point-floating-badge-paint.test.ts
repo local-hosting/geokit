@@ -596,6 +596,24 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     );
   });
 
+  it('re-stamps placeholder _color when locker fallback arrives after first paint', () => {
+    const out = annotatePointFeaturesFloatingBadgeHover(
+      {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: { venueId: 'buffalo', _color: '#888888' },
+            geometry: { type: 'Point', coordinates: [-78.88, 42.88] },
+          },
+        ],
+      },
+      { fallbackColor: '#9acd32' }
+    );
+    expect(out.features[0]?.properties?._color).toBe('#9acd32');
+    expect(out.features[0]?.properties?._colorResting).toBe('#9acd32');
+  });
+
   it('keeps hover at resting float height (lighten only — no raise/lower)', () => {
     const paint = sharedPointFloatingBadgePaintExpressions({
       fallbackColor: '#2dbad2',

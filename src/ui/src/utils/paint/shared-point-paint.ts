@@ -1141,6 +1141,35 @@ export function sharedPointFloatingBadgeSelectionFillExpression(
   ];
 }
 
+const CATALOG_MARKER_PLACEHOLDER_COLORS = new Set(['#888888', '#888', '#a1a1aa']);
+
+function isCatalogMarkerPlaceholderColor(color: string): boolean {
+  return CATALOG_MARKER_PLACEHOLDER_COLORS.has(color.trim().toLowerCase());
+}
+
+/** Resting key color when painting / re-syncing GeoJSON (locker identity or per-feature brand). */
+export function resolveFloatingBadgeAnnotateKeyColor(
+  properties: Record<string, unknown>,
+  fallbackColor: string,
+  colorProperty = '_color'
+): string {
+  const fallback = fallbackColor.trim() || '#888888';
+  const resting = properties._colorResting;
+  if (typeof resting === 'string' && resting.trim()) return resting.trim();
+
+  const marker = properties['marker-color'];
+  if (typeof marker === 'string' && marker.trim()) return marker.trim();
+
+  const raw = properties[colorProperty];
+  const color = typeof raw === 'string' ? raw.trim() : '';
+  const hover = properties._colorHover;
+  const hoverStr = typeof hover === 'string' ? hover.trim() : '';
+  if (color && (!hoverStr || color.toLowerCase() !== hoverStr.toLowerCase())) {
+    if (!isCatalogMarkerPlaceholderColor(color)) return color;
+  }
+  return fallback;
+}
+
 /** Adds `_colorHover` + `_colorSoft` for floating-badge hover / unselected fill paint. */
 export function annotatePointFeaturesFloatingBadgeHover(
   collection: FeatureCollection<Point>,
@@ -1160,15 +1189,18 @@ export function annotatePointFeaturesFloatingBadgeHover(
     type: 'FeatureCollection',
     features: collection.features.map((feature) => {
       const props = feature.properties ?? {};
-      const raw = props[colorProperty];
-      const fill =
-        typeof raw === 'string' && raw.trim() ? raw.trim() : fallbackColor;
+      const fill = resolveFloatingBadgeAnnotateKeyColor(
+        props,
+        fallbackColor,
+        colorProperty as string
+      );
       return {
         ...feature,
         properties: {
           ...props,
           // Bake fallback into `_color` so selection/hover lookups never lose the ring hue.
           [colorProperty]: fill,
+          _colorResting: fill,
           [softProperty]: sharedPointFloatingBadgeSoftColor(fill, softAmount),
           [hoverProperty]: lightenHexTowardWhite(fill, amount),
           [selectedProperty]: sharedPointFloatingBadgeSelectedColor(fill, selectedAmount),
