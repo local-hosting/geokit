@@ -23,7 +23,7 @@ export function sharedPointSelectionBadgeOuterLayerId(pointLayerId: string): str
   return `${pointLayerId}-selection-badge-outer`;
 }
 
-/** Resources use the rounded stack on the selection source — hide circle duplicates. */
+/** Hide selection-source chrome — select only darkens the resting marker's ground cast. */
 export function hideFloatingBadgeCircleSelectionLayers(
   map: MapInstance,
   pointLayerId: string
@@ -34,6 +34,10 @@ export function hideFloatingBadgeCircleSelectionLayers(
     [sharedPointSelectionBadgeLayerId(pointLayerId), 'circle-stroke-opacity', 0],
     [sharedPointSelectionBadgeOuterLayerId(pointLayerId), 'circle-opacity', 0],
     [sharedPointSelectionBadgeOuterLayerId(pointLayerId), 'circle-stroke-opacity', 0],
+    [`${pointLayerId}-selection-rounded-outer`, 'icon-opacity', 0],
+    [`${pointLayerId}-selection-rounded-ring`, 'icon-opacity', 0],
+    [`${pointLayerId}-selection-rounded-body`, 'icon-opacity', 0],
+    [`${pointLayerId}-selection-badge-icon`, 'icon-opacity', 0],
   ] as const) {
     if (!map.getLayer?.(layerId)) continue;
     try {

@@ -14,7 +14,6 @@ import {
   sharedPointFloatingBadgeOuterStrokeWidthExpression,
   sharedPointFloatingBadgeRingWidthExpression,
   sharedPointFloatingBadgeSelectedRadiusExpression,
-  sharedPointSelectedMiddleRingColor,
   hideFloatingBadgeCircleSelectionLayers,
   sharedPointSelectionBadgeLayerId,
   sharedPointSelectionBadgeOuterLayerId,
@@ -23,7 +22,6 @@ import {
   SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
 } from '../paint/shared-point-paint';
 import {
-  applySharedPointRoundedRectSelectionChrome,
   ensureSharedPointSelectionRoundedRectChromeLayers,
   sharedPointSelectionRoundedBodyLayerId,
 } from '../paint/shared-point-rounded-body';
@@ -129,7 +127,7 @@ export type FloatingBadgeSelectionChromeOptions = {
   shape: MarkerBodyShape;
 };
 
-/** Selected grounded badge: key fill + white ring + key outer (places and resources). */
+/** Selected grounded badge: same palette as resting (light core + key ring + white outer). */
 export type FloatingBadgeSelectedChromeSpec = {
   accentColor: string;
   outerAccentColor: string;
@@ -167,55 +165,27 @@ export function buildFloatingBadgeSelectedChromeSpec(
 function applyCircleFloatingBadgeSelectionChrome(
   map: MapInstance,
   pointLayerId: string,
-  spec: FloatingBadgeSelectedChromeSpec,
-  iconSize: unknown
+  _spec: FloatingBadgeSelectedChromeSpec,
+  _iconSize: unknown
 ): void {
-  const badgeId = sharedPointSelectionBadgeLayerId(pointLayerId);
-  const badgeOuterId = sharedPointSelectionBadgeOuterLayerId(pointLayerId);
-  const iconLayerId = `${pointLayerId}-selection-badge-icon`;
-  setMapProps(
-    map,
-    [
-      [badgeId, 'circle-color', spec.accentColor],
-      [badgeId, 'circle-radius', spec.selectedRadius],
-      [badgeId, 'circle-stroke-width', spec.ringWidth],
-      [badgeId, 'circle-stroke-opacity', 1],
-      [badgeId, 'circle-stroke-color', sharedPointSelectedMiddleRingColor(spec.accentColor, spec.white)],
-      [badgeId, 'circle-opacity', 1],
-      [badgeOuterId, 'circle-color', spec.outerAccentColor],
-      [badgeOuterId, 'circle-stroke-color', spec.outerAccentColor],
-      [badgeOuterId, 'circle-radius', spec.outerDiscRadius],
-      [badgeOuterId, 'circle-stroke-width', spec.outerStrokeWidthExpression],
-      [badgeOuterId, 'circle-opacity', 1],
-      [badgeOuterId, 'circle-stroke-opacity', 1],
-      [iconLayerId, 'icon-opacity', 0],
-    ],
-    [[iconLayerId, 'icon-size', iconSize]]
-  );
+  // Shadow-only select — never paint a second badge on the selection source.
+  hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
 }
 
 function applyRoundedFloatingBadgeSelectionChrome(
   map: MapInstance,
   pointLayerId: string,
-  spec: FloatingBadgeSelectedChromeSpec,
-  iconTranslate: unknown,
+  _spec: FloatingBadgeSelectedChromeSpec,
+  _iconTranslate: unknown,
   iconSize: unknown
 ): void {
   const iconLayerId = `${pointLayerId}-selection-badge-icon`;
+  // Shadow-only select — keep the resting rounded marker; hide selection-source chrome.
   hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
-  applySharedPointRoundedRectSelectionChrome(map, pointLayerId, {
-    accentColor: spec.accentColor,
-    outerAccentColor: spec.outerAccentColor,
-    white: spec.white,
-    selectedRadius: spec.selectedRadius,
-    ringWidth: spec.ringWidth,
-    outerStrokeWidth: spec.outerStrokeWidth,
-    iconTranslate,
-  });
   setMapProps(
     map,
     [
-      [iconLayerId, 'icon-opacity', 1],
+      [iconLayerId, 'icon-opacity', 0],
     ],
     [[iconLayerId, 'icon-size', iconSize]]
   );

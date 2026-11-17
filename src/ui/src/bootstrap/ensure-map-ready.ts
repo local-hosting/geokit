@@ -17,6 +17,10 @@ export type EnsureMapReadyOptions = {
   };
   mapbox?: {
     accessToken?: string;
+    /** Single style URI override (locks light/dark unless styleUrls is set). */
+    styleUrl?: string;
+    /** Theme-keyed style URIs (e.g. Corio light/dark). */
+    styleUrls?: { light?: string; dark?: string };
     defer?: boolean;
     idleTimeoutMs?: number;
   };
@@ -135,6 +139,17 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
   );
   phase(options.onPhase, 'geokit core', geokitStep);
 
+  const mapboxOpts = options.mapbox;
+  if (mapboxOpts?.accessToken || mapboxOpts?.styleUrl || mapboxOpts?.styleUrls) {
+    configure({
+      mapbox: {
+        ...(mapboxOpts.accessToken ? { accessToken: mapboxOpts.accessToken } : {}),
+        ...(mapboxOpts.styleUrl ? { styleUrl: mapboxOpts.styleUrl } : {}),
+        ...(mapboxOpts.styleUrls ? { styleUrls: mapboxOpts.styleUrls } : {}),
+      },
+    });
+  }
+
   if (providerId === 'protomaps') {
     const protomapsStep = performance.now();
     const cssImports: Promise<unknown>[] = [];
@@ -153,7 +168,37 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
     configure({ maptiler: maptilerConfig });
   }
 
-  if (providerId !== 'protomaps' && providerId !== 'mapbox') {
+  if (providerId === 'mapbox') {
+    const mapboxStep = performance.now();
+    const { MapboxUIProvider } = await import('../providers/mapbox-provider');
+    const cssImports: Promise<unknown>[] = [];
+    if (options.importThemeCss !== false) {
+      cssImports.push(import('../theme.css'));
+      cssImports.push(import('mapbox-gl/dist/mapbox-gl.css'));
+    }
+    await Promise.all(cssImports);
+
+    const mapboxUiConfig = {
+      ...(mapboxOpts?.accessToken ? { accessToken: mapboxOpts.accessToken } : {}),
+      ...(mapboxOpts?.styleUrl ? { styleUrl: mapboxOpts.styleUrl } : {}),
+      ...(mapboxOpts?.styleUrls ? { styleUrls: mapboxOpts.styleUrls } : {}),
+    };
+    if (!mapboxUiConfig.accessToken) {
+      console.warn('[gk-bootstrap] Mapbox accessToken not set — Mapbox basemap disabled.');
+    } else {
+      if (!getUIProviderByName('mapbox')) {
+        registerUIProvider('mapbox', new MapboxUIProvider());
+      }
+      await setUIProvider('mapbox', mapboxUiConfig).catch((err) => {
+        console.warn('[gk-bootstrap] Failed to initialize Mapbox UI provider:', err);
+      });
+    }
+    phase(options.onPhase, 'mapbox provider', mapboxStep);
+
+    if (options.protomaps) {
+      await registerProtomaps(options.protomaps, false);
+    }
+  } else if (providerId !== 'protomaps') {
     const { MapTilerUIProvider } = await import('../providers/maptiler-provider');
     const maptilerStep = performance.now();
     const cssStep = performance.now();

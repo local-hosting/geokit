@@ -44,30 +44,16 @@ import {
   sharedPointFloatingBadgeSelectionFillExpression,
   resolveFloatingBadgeSelectionKeyColor,
   resolveFloatingBadgeSelectionAccentColor,
+  sharedPointFloatingBadgeRestingColor,
   SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY,
+  SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY,
   syncSharedPointSelectedLayerFilter,
+  hideFloatingBadgeCircleSelectionLayers,
   SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
 } from '../../../paint/shared-point-paint';
-import {
-  sharedPointBadgeVariantFromProperties,
-  syncBadgeChrome,
-} from '../../../markers/badge';
+import { syncBadgeChrome } from '../../../markers/badge';
 import { sharedPointCircleBodyFilter, trySetLayerFilter } from '../../../markers/marker-shape';
-import { ensureFloatingBadgeSelectionChrome } from '../../../markers/marker-selection-chrome';
-import {
-  ensureSharedPointBadgeIconLayers,
-  syncBadgeIconTranslate,
-  raiseSharedPointBadgeIconLayersOnTop,
-  SHARED_POINT_BADGE_ICON_PROPERTY,
-  syncSelectionBadgeIconTranslate,
-  sharedPointSelectionBadgeIconLayerId,
-} from '../../../paint/shared-point-badge-icon';
 import { resolveSharedPointLayerIdForSource } from '../../../shared-points/shared-point-heal';
-import {
-  sharedPointSelectionRoundedBodyLayerId,
-  sharedPointSelectionRoundedOuterLayerId,
-  sharedPointSelectionRoundedRingLayerId,
-} from '../../../paint/shared-point-rounded-body';
 
 // ============================================================================
 // Types
@@ -85,11 +71,10 @@ import {
 } from '../types';
 
 import {
-  animateSharedPointSelectionBadgeTranslate,
   cancelSelectionBadgeAnimation,
   setSelectionBadgeTranslate,
+  sharedPointSelectionBadgeTranslateForCamera,
 } from './badge-translate';
-import { selectionBadgeAnimByMap } from './animation-state';
 import { EMPTY_GEOJSON, extractPointLngLat, type GeoJSONSourceWithSetData } from './geojson';
 import {
   ensureSelectionRingOnTop,
@@ -163,12 +148,30 @@ export function resolveSharedPointRingColor(
   properties: Record<string, unknown> | null | undefined,
   fallbackColor: string
 ): string {
-  // `_colorResting` is the vivid key and never hover-patched; raw `color` is the pale locker key.
-  for (const key of ['_colorResting', '_color', 'color', 'marker-color'] as const) {
-    const raw = properties?.[key];
+  // Prefer identity key / resting — never a hover-lit `_color` (that wash stuck forever).
+  const key = properties?.[SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY];
+  if (typeof key === 'string' && key.trim()) return key.trim();
+
+  const resting = properties?._colorResting;
+  if (typeof resting === 'string' && resting.trim()) return resting.trim();
+
+  const color = typeof properties?._color === 'string' ? properties._color.trim() : '';
+  const hover =
+    typeof properties?._colorHover === 'string' ? properties._colorHover.trim() : '';
+  const rawFallback = fallbackColor.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
+  // One intensify pass — same as annotate/forceFallbackKey — so unannotated pins
+  // don't keep the softer raw locker hue next to key-colored neighbors.
+  const keyFallback = sharedPointFloatingBadgeRestingColor(rawFallback);
+  if (color && hover && color.toLowerCase() === hover.toLowerCase()) {
+    return keyFallback;
+  }
+  if (color) return color;
+
+  for (const prop of ['color', 'marker-color'] as const) {
+    const raw = properties?.[prop];
     if (typeof raw === 'string' && raw.trim()) return raw.trim();
   }
-  return fallbackColor;
+  return keyFallback;
 }
 
 /** Prefer annotated `_colorHover`, else lighten the resting ring toward white. */
@@ -452,10 +455,15 @@ export function setSharedPointSelection(
       });
       if (options?.selectionGroundBadge) {
         cancelSelectionBadgeAnimation(map, pointLayerId);
+        const tokens = resolveSharedPointFloatingBadgeTokens();
         setSelectionBadgeTranslate(
           map,
           pointLayerId,
-          resolveSharedPointFloatingBadgeTokens().floatTranslate
+          sharedPointSelectionBadgeTranslateForCamera(
+            tokens.floatTranslate,
+            map.getPitch?.() ?? 0,
+            map.getZoom?.() ?? 16
+          )
         );
       }
     }
@@ -478,39 +486,16 @@ export function setSharedPointSelection(
     resolvedProperties._color = keyColor;
     resolvedProperties._colorResting ??= keyColor;
     resolvedProperties[SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY] = accentColor;
-    syncSharedPointSelectedFeatureState(map, sourceId, previousFeatureId, featureId);
     getSharedPointSelectionMap(map).set(sourceId, { featureId, lngLat: resolvedLngLat });
     ensureSelectionRingReady(map, sourceId, options);
-    const selectionChanged = featureId !== previousFeatureId;
-    const isResourceSelection =
-      sharedPointBadgeVariantFromProperties(resolvedProperties) === 'resource';
-    const tokens = resolveSharedPointFloatingBadgeTokens();
-    if (options?.selectionGroundBadge && pointLayerId) {
-      if (isResourceSelection) {
-        ensureSharedPointBadgeIconLayers(map, {
-          sourceId,
-          pointLayerId,
-          selectionIconTranslate: tokens.selectedTranslate,
-        });
-        syncBadgeIconTranslate(map, pointLayerId);
-        raiseSharedPointBadgeIconLayersOnTop(map, pointLayerId);
-      }
-      if (selectionChanged) {
-        // New feature: lift from rest so the prior selection's painted offset is not reused.
-        animateSharedPointSelectionBadgeTranslate(map, pointLayerId, {
-          from: tokens.floatTranslate,
-        });
-      } else if (!selectionBadgeAnimByMap.get(map)?.has(pointLayerId)) {
-        // Same selection after layer rebuild: hold full selected screen lift (not zoom-scaled).
-        setSelectionBadgeTranslate(map, pointLayerId, tokens.selectedTranslate);
-      }
-    }
     updateSharedPointSelection(map, sourceId, {
       lngLat: resolvedLngLat,
       featureId,
       promoteId,
       properties: resolvedProperties,
     });
+    // Same resting marker stays put — feature-state only darkens the ground cast.
+    syncSharedPointSelectedFeatureState(map, sourceId, previousFeatureId, featureId);
     if (pointLayerId) {
       syncSharedPointSelectedLayerFilter(map, {
         pointLayerId,
@@ -518,33 +503,17 @@ export function setSharedPointSelection(
         promoteId,
         featureId,
       });
-      if (options?.selectionGroundBadge && isResourceSelection) {
-        const glowLayerId =
-          options?.glowLayerId ??
-          (pointLayerId.endsWith('-point')
-            ? `${pointLayerId.slice(0, -'-point'.length)}-glow`
-            : `${sourceId}-glow`);
-        ensureFloatingBadgeSelectionChrome(
-          map,
-          { sourceId, pointLayerId, glowLayerId },
-          {
-            selectionGroundBadgeFallbackColor: fallback,
-            pointRadiusExpression: sharedPointFloatingBadgeRadiusExpression(),
-            strokeWidthExpression: sharedPointFloatingBadgeRingWidthExpression(tokens.coloredRingWidth),
-            outerStrokeWidthExpression: sharedPointFloatingBadgeOuterStrokeWidthExpression(
-              tokens.outerStrokeWidth
-            ),
-            selectedTranslate: tokens.selectedTranslate,
-          }
-        );
+      if (options?.selectionGroundBadge) {
+        cancelSelectionBadgeAnimation(map, pointLayerId);
+        // Never draw a second badge on the selection source.
+        hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
       }
       syncBadgeChrome(map, pointLayerId, {
         keyColor,
         properties: resolvedProperties,
       });
-      if (isResourceSelection) {
-        syncBadgeIconTranslate(map, pointLayerId);
-        raiseSharedPointBadgeIconLayersOnTop(map, pointLayerId);
+      if (options?.selectionGroundBadge) {
+        hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
       }
     }
     clearSharedPointHoverOverlay(map, sourceId);
@@ -606,17 +575,19 @@ export function patchSharedPointFeatureRingColor(
     const prev = feature.properties ?? {};
     const resting =
       options?.restingColor ??
-      (typeof prev._colorResting === 'string' && prev._colorResting.trim()
-        ? prev._colorResting.trim()
-        : typeof prev._color === 'string' && prev._color.trim()
-          ? prev._color.trim()
-          : undefined);
+      resolveSharedPointRingColor(prev, SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR);
+    const key =
+      typeof prev[SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY] === 'string' &&
+      String(prev[SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY]).trim()
+        ? String(prev[SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY]).trim()
+        : resting;
     return {
       ...feature,
       properties: {
         ...prev,
-        // Preserve locker identity while `_color` is temporarily lit for hover.
-        ...(resting ? { _colorResting: resting } : {}),
+        // Preserve vivid identity while `_color` is temporarily lit for hover.
+        [SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY]: key,
+        _colorResting: resting,
         _color: ringColor,
       },
     };

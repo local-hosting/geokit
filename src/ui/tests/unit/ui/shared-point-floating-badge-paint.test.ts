@@ -51,12 +51,28 @@ import {
   SHARED_POINT_FLOATING_BADGE_GLASS_PAD,
   SHARED_POINT_FLOATING_BADGE_STROKE_OPACITY,
   SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_OPACITY,
+  sharedPointFloatingBadgeOuterColor,
   sharedPointFloatingBadgeSoftColor,
   sharedPointFloatingBadgeRestingColor,
   sharedPointFloatingBadgeTranslateAtZoom,
   sharedPointFloatingBadgeTranslateExpression,
   sharedPointGlassLayerId,
 } from '../../../src/utils/shared-point-paint';
+
+/** Mapbox GL: `zoom` may only feed a top-level `step` / `interpolate` for circle-radius. */
+function nestedZoomInCircleRadius(expr: unknown, top = true): boolean {
+  if (!Array.isArray(expr)) return false
+  const op = expr[0]
+  if (op === 'zoom') return !top
+  if ((op === 'interpolate' || op === 'step') && top) {
+    const inputIdx = op === 'interpolate' ? 2 : 1
+    return expr.some((child, i) => {
+      if (i === inputIdx && Array.isArray(child) && child[0] === 'zoom') return false
+      return nestedZoomInCircleRadius(child, false)
+    })
+  }
+  return expr.some((child) => nestedZoomInCircleRadius(child, false))
+}
 
 describe('sharedPointFloatingBadgePaintExpressions', () => {
   afterEach(() => {
@@ -66,10 +82,23 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       '--gk-badge-selected-y',
       '--gk-badge-select-ms',
       '--gk-badge-shadow-opacity',
+      '--gk-badge-outer-stroke-width',
     ]) {
       document.documentElement.style.removeProperty(name);
     }
   });
+
+  it('keeps glass/glow circle-radius Mapbox-safe when outer stroke width is 0', () => {
+    document.documentElement.style.setProperty('--gk-badge-outer-stroke-width', '0')
+    const paint = sharedPointFloatingBadgePaintExpressions({
+      fallbackColor: '#2dbad2',
+      themeElement: document.documentElement,
+    })
+    expect(nestedZoomInCircleRadius(paint.glowRadiusExpression)).toBe(false)
+    expect(nestedZoomInCircleRadius(paint.glassRadiusExpression)).toBe(false)
+    expect(paint.glowRadiusExpression[0]).toBe('interpolate')
+    expect(paint.glassRadiusExpression[0]).toBe('interpolate')
+  })
 
   it('builds floating-badge paint with map-pitched ground shadow', () => {
     const paint = sharedPointFloatingBadgePaintExpressions({
@@ -78,7 +107,8 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     });
 
     const soft = sharedPointFloatingBadgeSoftColor(sharedPointFloatingBadgeRestingColor('#2dbad2'));
-    // Unselected: white core + key ring + white outer stroke.
+    const resting = sharedPointFloatingBadgeRestingColor('#2dbad2');
+    // White core + key ring + light outer; selected keeps darker-key outer via feature-state.
     // Zoomed out: bright dot core (`_colorDot`, else key) on the glow; white core from z10.
     expect(paint.pointColorExpression).toEqual([
       'step',
@@ -88,24 +118,25 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       SHARED_POINT_FLOATING_BADGE_FILL,
     ]);
     expect(paint.glassColorExpression?.[0]).toBe('coalesce');
-    expect(paint.outerStrokeColorExpression).toBe(SHARED_POINT_FLOATING_BADGE_FILL);
-    expect(paint.selectionOuterStrokeColorExpression).toEqual(paint.selectionFillExpression);
-    // Radius + ring + outer stroke all zoom-interpolate so the badge scales with the map.
     expect(paint.pointRadiusExpression[0]).toBe('interpolate');
     expect(paint.pointRadiusExpression[2]).toEqual(['zoom']);
     expect(paint.strokeWidthExpression[0]).toBe('interpolate');
     expect(paint.strokeWidthExpression[2]).toEqual(['zoom']);
     expect(paint.outerStrokeWidthExpression[0]).toBe('interpolate');
-    expect(paint.outerStrokeWidthExpression[2]).toEqual(['zoom']);
-    // Outer rim matches ring width so it reads as a clear band around the badge.
-    expect(SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_WIDTH).toBe(7);
-    // No rim zoomed out (shining dots); readable band from city scale in.
-    const outerWidth = sharedPointFloatingBadgeOuterStrokeWidthExpression();
-    expect(sampleZoomInterpolateValue(outerWidth, 6)).toBe(0);
-    expect(sampleZoomInterpolateValue(outerWidth, 10)).toBeGreaterThanOrEqual(
-      SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_WIDTH * 0.45
-    );
-    expect(paint.strokeColorExpression).toEqual(['coalesce', ['get', '_color'], sharedPointFloatingBadgeRestingColor('#2dbad2')]);
+    expect(SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_WIDTH).toBe(2.5);
+    expect(sampleZoomInterpolateValue(paint.outerStrokeWidthExpression, 16)).toBeGreaterThan(0);
+    expect(paint.strokeColorExpression).toEqual(['coalesce', ['get', '_color'], resting]);
+    const darkerOuter = [
+      'coalesce',
+      ['get', '_colorOuter'],
+      sharedPointFloatingBadgeOuterColor(resting),
+    ];
+    expect(paint.outerStrokeColorExpression).toEqual([
+      'case',
+      ['boolean', ['feature-state', 'selected'], false],
+      darkerOuter,
+      SHARED_POINT_FLOATING_BADGE_FILL,
+    ]);
     expect(paint.strokeOpacity).toBe(SHARED_POINT_FLOATING_BADGE_STROKE_OPACITY);
     expect(paint.outerStrokeOpacity).toBe(SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_OPACITY);
     expect(SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_OPACITY).toBeGreaterThanOrEqual(0.9);
@@ -119,11 +150,51 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       }
       throw new Error(`missing zoom stop ${zoom}`);
     };
-    expect(radiusAt(6)).toBeLessThanOrEqual(3);
+    expect(radiusAt(6)).toBeLessThanOrEqual(1.75);
+    expect(radiusAt(8)).toBeLessThanOrEqual(2);
+    // Regional overview (~z7.8): pin dots, not fat blobs over city labels.
+    expect(
+      sampleZoomInterpolateValue(SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION, 7.78)
+    ).toBeLessThanOrEqual(1.9);
+    // No colored ring when zoomed out — shining dots ride the glow only.
+    expect(sampleZoomInterpolateValue(paint.strokeWidthExpression as unknown[], 7.78)).toBe(0);
+    expect(sampleZoomInterpolateValue(paint.strokeWidthExpression as unknown[], 9)).toBe(0);
     expect(radiusAt(10)).toBeGreaterThan(radiusAt(6));
-    expect(radiusAt(14)).toBeGreaterThanOrEqual(8);
-    expect(radiusAt(18)).toBeGreaterThanOrEqual(16);
-    expect(radiusAt(18)).toBeLessThan(42);
+    // Metro / city overview (~z11–13): compact dots, not street-scale discs.
+    expect(radiusAt(10)).toBe(2.2);
+    expect(radiusAt(12)).toBe(3.1);
+    expect(sampleZoomInterpolateValue(SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION, 11.5)).toBeCloseTo(
+      2.85,
+      3
+    );
+    // City overview (~z13): pin-sized over street grids — not fat pink discs.
+    expect(
+      sampleZoomInterpolateValue(SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION, 12.97)
+    ).toBeLessThanOrEqual(3.7);
+    expect(sampleZoomInterpolateValue(SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION, 13.15)).toBeLessThanOrEqual(
+      3.9
+    );
+    expect(radiusAt(14)).toBe(4.4);
+    // Street zoom (~z15): still compact — must not cover city blocks.
+    expect(sampleZoomInterpolateValue(SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION, 15.09)).toBeLessThanOrEqual(
+      5.8
+    );
+    expect(sampleZoomInterpolateValue(paint.strokeWidthExpression as unknown[], 15.09)).toBeGreaterThanOrEqual(
+      SHARED_POINT_FLOATING_BADGE_COLORED_RING_WIDTH * 0.55
+    );
+    expect(sampleZoomInterpolateValue(paint.strokeWidthExpression as unknown[], 15.09)).toBeLessThanOrEqual(
+      SHARED_POINT_FLOATING_BADGE_COLORED_RING_WIDTH * 0.75
+    );
+    // Mid / neighborhood zoom: readable key ring without dominating the basemap.
+    expect(sampleZoomInterpolateValue(paint.strokeWidthExpression as unknown[], 13.15)).toBeGreaterThanOrEqual(
+      SHARED_POINT_FLOATING_BADGE_COLORED_RING_WIDTH * 0.4
+    );
+    expect(sampleZoomInterpolateValue(paint.strokeWidthExpression as unknown[], 12.97)).toBeLessThanOrEqual(
+      SHARED_POINT_FLOATING_BADGE_COLORED_RING_WIDTH * 0.55
+    );
+    expect(radiusAt(16)).toBe(7);
+    expect(radiusAt(18)).toBe(10.5);
+    expect(radiusAt(18)).toBeLessThan(20);
     expect(radiusAt(18)).toBeGreaterThan(radiusAt(14));
     // Soft tint remains for frosted glass (not the unselected core).
     expect(SHARED_POINT_FLOATING_BADGE_SOFT_BRIGHTEN).toBeGreaterThanOrEqual(0.45);
@@ -167,23 +238,22 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     expect(paint.glowPitchAlignment).toBe(SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_ALIGNMENT);
     expect(paint.glowPitchScale).toBe(SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_SCALE);
     expect(paint.glowPitchAlignment).toBe('viewport');
-    expect(paint.glowPitchScale).toBe('map');
+    expect(paint.glowPitchScale).toBe('viewport');
     expect(paint.glowBlur[0]).toBe('interpolate');
     expect(paint.glowColorExpression).toBe('#000000');
+    // Resting cast on the main glow; selected uses selection-shadow under-cast.
     expect(paint.glowOpacity[0]).toBe('interpolate');
+    expect(JSON.stringify(paint.glowOpacity)).not.toContain('feature-state');
     expect(paint.glowRadiusExpression).toEqual(sharedPointFloatingBadgeShadowRadiusExpression());
-    // Soft / translucent ground contact — readable without a heavy black disk.
-    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY).toBeGreaterThanOrEqual(0.22);
-    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY).toBeLessThanOrEqual(0.36);
-    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_BLUR).toBeGreaterThanOrEqual(0.48);
-    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_BLUR).toBeLessThanOrEqual(0.62);
+    expect(paint.selectedShadowOpacity).toBeGreaterThan(SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY);
+    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY).toBeGreaterThanOrEqual(0.1);
+    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY).toBeLessThanOrEqual(0.18);
+    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_BLUR).toBeGreaterThanOrEqual(0.7);
+    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_BLUR).toBeLessThanOrEqual(1);
     // Pad is past the full badge; the cast offset does the peeking.
     expect(SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD).toBeGreaterThan(0);
     expect(SHARED_POINT_FLOATING_BADGE_SHADOW_RADIUS_PAD).toBeLessThanOrEqual(4);
-    expect(paint.pointOpacityExpression?.[0]).toBe('case');
-    expect(paint.pointOpacityExpression).toEqual(
-      expect.arrayContaining([['boolean', ['feature-state', 'selected'], false], 0])
-    );
+    expect(paint.pointOpacityExpression).toBeUndefined();
   });
 
   it('keeps float height and shadow tiny when zoomed out', () => {
@@ -202,16 +272,18 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     // Continental: shadow hugs the badge stack (no fat black disks).
     expect(radiusAt(shadow, 6) - radiusAt(glass, 6)).toBeLessThanOrEqual(1.25);
     const opacityAt = (zoom: number) => {
-      const expr = paint.glowOpacity as unknown[];
+      const glow = paint.glowOpacity as unknown[];
+      // Resting branch of feature-state selected case (last arm).
+      const expr = (glow[0] === 'case' ? glow[glow.length - 1] : glow) as unknown[];
       for (let i = 3; i < expr.length; i += 2) {
         if (expr[i] === zoom) return expr[i + 1] as number;
       }
       throw new Error(`missing opacity stop ${zoom}`);
     };
-    // City+ zooms keep a readable drop shadow; continental stays faint.
-    expect(opacityAt(6)).toBeLessThanOrEqual(0.1);
-    expect(opacityAt(12)).toBeGreaterThanOrEqual(0.16);
-    expect(opacityAt(16)).toBeGreaterThanOrEqual(0.22);
+    // City+ zooms keep a quiet drop shadow; continental stays fainter.
+    expect(opacityAt(6)).toBeLessThanOrEqual(0.06);
+    expect(opacityAt(12)).toBeGreaterThanOrEqual(0.09);
+    expect(opacityAt(16)).toBeGreaterThanOrEqual(0.11);
     expect(Math.abs(sharedPointFloatingBadgeTranslateAtZoom(-24, 6)[1])).toBeLessThanOrEqual(1);
     expect(Math.abs(sharedPointFloatingBadgeTranslateAtZoom(-24, 8)[1])).toBeLessThanOrEqual(6);
   });
@@ -239,22 +311,37 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     );
   });
 
-  it('inverts selected badges — darker key core + white ring + key outer', () => {
+  it('solidKeyCore paints the resting core with the key (no white disc that reads as a second color)', () => {
+    const paint = sharedPointFloatingBadgePaintExpressions({
+      fallbackColor: '#d580a3',
+      themeElement: null,
+      solidKeyCore: true,
+    });
+    const resting = sharedPointFloatingBadgeRestingColor('#d580a3');
+    const ringColor = ['coalesce', ['get', '_color'], resting];
+    expect(paint.pointColorExpression).toEqual(
+      sharedPointZoomedOutStep(sharedPointDotColorExpression(ringColor), ringColor)
+    );
+    expect(JSON.stringify(paint.pointColorExpression)).not.toContain('#ffffff');
+  });
+
+  it('keeps spare selection chrome outer as darker key (selected stroke)', () => {
     const paint = sharedPointFloatingBadgePaintExpressions({
       fallbackColor: '#2dbad2',
       themeElement: null,
     });
-    // Selected: darkened key core, white middle ring, darkened key outer ring.
-    expect(paint.selectionFillExpression).toEqual([
+    const resting = sharedPointFloatingBadgeRestingColor('#2dbad2');
+    expect(paint.selectionFillExpression).toBe(SHARED_POINT_FLOATING_BADGE_FILL);
+    expect(paint.selectionStrokeColorExpression).toEqual([
       'coalesce',
-      ['get', '_colorSelected'],
       ['get', '_color'],
-      sharedPointFloatingBadgeSelectedColor(sharedPointFloatingBadgeRestingColor('#2dbad2')),
+      resting,
     ]);
-    expect(paint.selectionStrokeColorExpression).toEqual(
-      sharedPointSelectedMiddleRingColor(paint.selectionFillExpression, SHARED_POINT_FLOATING_BADGE_FILL)
-    );
-    expect(paint.selectionOuterStrokeColorExpression).toEqual(paint.selectionFillExpression);
+    expect(paint.selectionOuterStrokeColorExpression).toEqual([
+      'coalesce',
+      ['get', '_colorOuter'],
+      sharedPointFloatingBadgeOuterColor(resting),
+    ]);
     expect(paint.paintRevision).toBeGreaterThanOrEqual(20);
   });
 
@@ -310,7 +397,7 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     expect(setPaintProperty).toHaveBeenCalledWith(
       'venues-point-outer-stroke',
       'circle-color',
-      sharedPointZoomedOutStep('rgba(0,0,0,0)', SHARED_POINT_FLOATING_BADGE_FILL)
+      sharedPointZoomedOutStep('rgba(0,0,0,0)', paint.outerStrokeColorExpression)
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       'venues-point-outer-stroke',
@@ -355,7 +442,7 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     );
   });
 
-  it('applyPaint keeps selected key-color core with white ring + key outer', () => {
+  it('applyPaint keeps selection-source badge layers at opacity 0 (no second marker)', () => {
     const setPaintProperty = vi.fn();
     const map = {
       getSource: vi.fn(() => ({})),
@@ -385,23 +472,13 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
 
     expect(setPaintProperty).toHaveBeenCalledWith(
       'venues-point-selection-badge',
-      'circle-color',
-      paint.selectionFillExpression
-    );
-    expect(setPaintProperty).toHaveBeenCalledWith(
-      'venues-point-selection-badge',
-      'circle-stroke-color',
-      paint.selectionStrokeColorExpression
+      'circle-opacity',
+      0
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       'venues-point-selection-badge-outer',
-      'circle-color',
-      paint.selectionOuterStrokeColorExpression
-    );
-    expect(setPaintProperty).toHaveBeenCalledWith(
-      'venues-point-selection-badge-outer',
-      'circle-stroke-width',
-      paint.outerStrokeWidthExpression
+      'circle-opacity',
+      0
     );
   });
 
@@ -422,24 +499,23 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE[1],
       16
     )[1];
-    expect(selectedY).toBeLessThan(floatY);
-    expect(selectedY).toBeLessThan(0);
+    // Default: selected matches float — no click settle.
+    expect(selectedY).toBe(floatY);
     expect(paint.outerStrokeWidthExpression[0]).toBe('interpolate');
-    expect(paint.outerStrokeWidthExpression[2]).toEqual(['zoom']);
     // Selection shadow lives on the selection source (MapLibre rejects case+interpolate radius).
-    // Lifted badge: wider + fainter than resting contact shadow.
-    expect(paint.selectedShadowScale).toBeGreaterThan(1);
-    expect(paint.selectedShadowOpacity).toBeLessThan(SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY);
+    // Selected: same footprint, stronger than resting.
+    expect(paint.selectedShadowScale).toBe(1);
+    expect(paint.selectedShadowOpacity).toBeGreaterThan(SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY);
     expect(paint.glowRadiusExpression).toEqual(sharedPointFloatingBadgeShadowRadiusExpression());
-    // Selected keeps resting size zoomed in (lift only); slightly larger dot zoomed out.
+    // Selected keeps resting size at every zoom — no click grow/jump.
     expect(SHARED_POINT_FLOATING_BADGE_SELECTED_RADIUS_SCALE).toBe(1);
+    expect(SHARED_POINT_ZOOMED_OUT_SELECTED_RADIUS_SCALE).toBe(1);
     const selectedRadius = sharedPointFloatingBadgeSelectedRadiusExpression();
     expect(sampleZoomInterpolateValue(selectedRadius, 12)).toBeCloseTo(
       sampleZoomInterpolateValue(SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION, 12)
     );
     expect(sampleZoomInterpolateValue(selectedRadius, 6)).toBeCloseTo(
-      sampleZoomInterpolateValue(SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION, 6) *
-        SHARED_POINT_ZOOMED_OUT_SELECTED_RADIUS_SCALE
+      sampleZoomInterpolateValue(SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION, 6)
     );
     expect(SHARED_POINT_FLOATING_BADGE_SELECTION_RING_COLOR).toMatch(/rgba\(\s*0,\s*0,\s*0,\s*0\s*\)/);
   });
@@ -502,9 +578,10 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     expect(sharedPointFloatingBadgeLerpTranslate([0, 0], [0, -12], 0.5)).toEqual([0, -6]);
   });
 
-  it('eases the selection badge translate from resting height up to selected', () => {
+  it('eases selection translate when heights differ; defaults keep float === selected', () => {
     const from = SHARED_POINT_FLOATING_BADGE_FLOAT_TRANSLATE;
     const to = SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE;
+    expect(from).toEqual(to);
     expect(sharedPointFloatingBadgeSelectionTranslateAt(from, to, 0)).toEqual(from);
     expect(
       sharedPointFloatingBadgeSelectionTranslateAt(
@@ -514,13 +591,13 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       )
     ).toEqual(to);
     const mid = sharedPointFloatingBadgeSelectionTranslateAt(
-      from,
-      to,
+      [0, 0],
+      [0, -12],
       SHARED_POINT_FLOATING_BADGE_SELECT_ANIMATION_MS / 2
     );
-    // Lift: Y becomes more negative (up on screen).
-    expect(mid[1]).toBeLessThan(from[1]);
-    expect(mid[1]).toBeGreaterThan(to[1]);
+    // Opt-in settle still eases Y more negative (up) or toward the target.
+    expect(mid[1]).toBeLessThan(0);
+    expect(mid[1]).toBeGreaterThan(-12);
     expect(SHARED_POINT_FLOATING_BADGE_SELECT_ANIMATION_MS).toBeGreaterThanOrEqual(120);
     expect(SHARED_POINT_FLOATING_BADGE_SELECT_ANIMATION_MS).toBeLessThanOrEqual(280);
   });
@@ -543,19 +620,19 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       fallbackColor: '#2dbad2',
       themeElement: document.documentElement,
     });
-    // Unselected core uses token fill (white/paper); selected fill is a darker key tint.
+    // Unselected + selected cores use token fill (white/paper); key stays on the ring.
     expect((paint.pointColorExpression as unknown[])[4]).toBe('#fafafa');
-    expect(paint.selectionFillExpression).toEqual([
+    expect(paint.selectionFillExpression).toBe('#fafafa');
+    expect(paint.selectionStrokeColorExpression).toEqual([
       'coalesce',
-      ['get', '_colorSelected'],
       ['get', '_color'],
-      sharedPointFloatingBadgeSelectedColor(sharedPointFloatingBadgeRestingColor('#2dbad2')),
+      sharedPointFloatingBadgeRestingColor('#2dbad2'),
     ]);
     expect(paint.pointTranslate).toEqual(sharedPointFloatingBadgeTranslateExpression(-30));
-    expect((paint.glowOpacity as unknown[])[0]).toBe('interpolate');
-    // Token sets max opacity; zoom expression reaches it when close in.
-    const opacityStops = paint.glowOpacity as unknown[];
-    expect(opacityStops[opacityStops.length - 1]).toBe(0.6);
+    // Token sets max resting opacity on the main glow; selected uses selection-shadow.
+    const restingOpacity = paint.glowOpacity as unknown[];
+    expect(restingOpacity[0]).toBe('interpolate');
+    expect(restingOpacity[restingOpacity.length - 1]).toBe(0.6);
     expect(paint.selectAnimationMs).toBe(220);
   });
 
@@ -607,12 +684,18 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     expect(out.features[0]?.properties?._colorSelected).toBe(
       sharedPointFloatingBadgeSelectedColor(sharedPointFloatingBadgeRestingColor('#2dbad2'))
     );
+    expect(out.features[0]?.properties?._colorOuter).toBe(
+      sharedPointFloatingBadgeOuterColor(sharedPointFloatingBadgeRestingColor('#2dbad2'))
+    );
     expect(out.features[1]?.properties?._color).toBe(sharedPointFloatingBadgeRestingColor('#9acd32'));
     expect(out.features[1]?.properties?._colorSelected).toBe(
       sharedPointFloatingBadgeSelectedColor(sharedPointFloatingBadgeRestingColor('#9acd32'))
     );
     expect(out.features[1]?.properties?._colorSoft).toBe(
       sharedPointFloatingBadgeSoftColor(sharedPointFloatingBadgeRestingColor('#9acd32'))
+    );
+    expect(out.features[1]?.properties?._colorOuter).toBe(
+      sharedPointFloatingBadgeOuterColor(sharedPointFloatingBadgeRestingColor('#9acd32'))
     );
   });
 
@@ -635,7 +718,61 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     expect(out.features[0]?.properties?._colorKey).toBe('#9acd32');
   });
 
-  it('keeps hover at resting float height (lighten only — no raise/lower)', () => {
+  it('forceFallbackKey stamps the brightened locker hue as the one key (ignores stale per-feature hues)', () => {
+    const key = sharedPointFloatingBadgeRestingColor('#d580a3', 0.3, 0.45);
+    const out = annotatePointFeaturesFloatingBadgeHover(
+      {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: {
+              venueId: 'hardy',
+              _color: '#ff00aa',
+              _colorResting: '#ff00aa',
+              _colorKey: '#ff00aa',
+            },
+            geometry: { type: 'Point', coordinates: [-85.3, 35.0] },
+          },
+          {
+            type: 'Feature',
+            properties: { venueId: 'aquarium', _color: '#d580a3' },
+            geometry: { type: 'Point', coordinates: [-85.31, 35.05] },
+          },
+        ],
+      },
+      { fallbackColor: '#d580a3', forceFallbackKey: true, restingBrighten: 0.3, restingSaturate: 0.45 }
+    );
+    expect(key).toBe('#e24b89');
+    expect(out.features[0]?.properties?._colorKey).toBe(key);
+    expect(out.features[0]?.properties?._color).toBe(key);
+    expect(out.features[0]?.properties?._colorResting).toBe(key);
+    expect(out.features[1]?.properties?._colorKey).toBe(key);
+    expect(out.features[1]?.properties?._color).toBe(key);
+  });
+
+  it('does not wash the ring by re-intensifying already annotated features', () => {
+    const once = annotatePointFeaturesFloatingBadgeHover(
+      {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: { venueId: 'dunkirk' },
+            geometry: { type: 'Point', coordinates: [-79.33, 42.48] },
+          },
+        ],
+      },
+      { fallbackColor: '#c2185b' }
+    );
+    const twice = annotatePointFeaturesFloatingBadgeHover(once, { fallbackColor: '#c2185b' });
+    expect(twice.features[0]?.properties?._color).toBe(once.features[0]?.properties?._color);
+    expect(twice.features[0]?.properties?._colorResting).toBe(once.features[0]?.properties?._colorResting);
+    expect(twice.features[0]?.properties?._colorKey).toBe('#c2185b');
+    expect(twice.features[0]?.properties?._color).toBe(sharedPointFloatingBadgeRestingColor('#c2185b'));
+  });
+
+  it('keeps hover at resting float height (key glow behind — no raise/lower)', () => {
     const paint = sharedPointFloatingBadgePaintExpressions({
       fallbackColor: '#2dbad2',
       themeElement: null,
@@ -643,7 +780,7 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     expect(paint.skipFeatureStateHoverGlow).toBe(true);
     expect(JSON.stringify(paint.strokeColorExpression)).not.toContain('feature-state');
     expect(paint.strokeColorExpression).toEqual(['coalesce', ['get', '_color'], sharedPointFloatingBadgeRestingColor('#2dbad2')]);
-    // Hover must not change height — select lifts above resting.
+    // Hover must not change height — select lifts above resting; glow is a separate layer.
     expect(paint.hoverTranslate).toEqual(paint.pointTranslate);
     const floatY = sharedPointFloatingBadgeTranslateAtZoom(
       SHARED_POINT_FLOATING_BADGE_FLOAT_TRANSLATE[1],
@@ -653,7 +790,7 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE[1],
       16
     )[1];
-    expect(selectedY).toBeLessThan(floatY);
+    expect(selectedY).toBe(floatY);
     expect(paint.pointTranslateAnchor).toBe('viewport');
   });
 });

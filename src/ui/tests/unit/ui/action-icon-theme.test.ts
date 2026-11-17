@@ -64,3 +64,42 @@ describe('gk-ctrl-action-icon theme (MapLibre control style)', () => {
     )
   })
 })
+
+describe('gk-map terrain + zoom control icons', () => {
+  it('paints terrain off/enabled mountain SVGs under gk-map', () => {
+    expect(themeCss).toMatch(
+      /gk-map button\.maplibregl-ctrl-terrain \.maplibregl-ctrl-icon[\s\S]*?background-image:\s*url\("data:image\/svg\+xml;charset=utf-8,/,
+    )
+    expect(themeCss).toMatch(
+      /gk-map button\.maplibregl-ctrl-terrain-enabled \.maplibregl-ctrl-icon[\s\S]*?background-image:\s*url\("data:image\/svg\+xml;charset=utf-8,/,
+    )
+    expect(themeCss).toMatch(
+      /maplibregl-ctrl-terrain-enabled[\s\S]*?%252333b5e5/,
+    )
+    expect(themeCss).toMatch(
+      /maplibregl-ctrl-terrain[\s\S]*?m1\.754%2013\.406%204\.453-4\.851/,
+    )
+  })
+
+  it('overrides mapbox + maplibre zoom in/out with thick disc +/- SVGs', () => {
+    for (const sel of [
+      'button.mapboxgl-ctrl-zoom-in .mapboxgl-ctrl-icon',
+      'button.mapboxgl-ctrl-zoom-out .mapboxgl-ctrl-icon',
+      'button.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon',
+      'button.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon',
+    ]) {
+      expect(themeCss).toMatch(
+        new RegExp(
+          `gk-map ${sel.replace('.', '\\.').replace(/\//g, '\\/')}[\\s\\S]*?background-image:\\s*url\\("data:image\\/svg\\+xml;charset=utf-8,`,
+        ),
+      )
+    }
+
+    const zoomInBlock = themeCss.match(
+      /gk-map button\.(?:mapboxgl|maplibregl)-ctrl-zoom-in[\s\S]*?background-image:\s*url\("[^"]+"\);/,
+    )?.[0]
+    expect(zoomInBlock).toBeTruthy()
+    expect(zoomInBlock).toMatch(/fill-rule%3D%27evenodd%27/)
+    expect(zoomInBlock).not.toMatch(/M14\.5 8\.5c-\.75 0-1\.5\.75/)
+  })
+})

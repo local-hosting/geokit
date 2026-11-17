@@ -1,9 +1,8 @@
 import type { MapInstance } from '../../providers/types';
 import { styleImageLayoutPixels } from '../map-surface/map-style-images';
-import { sharedPointRoundedRectBodyFilter } from '../markers/marker-shape';
 import { scaleInterpolateRadiusStops } from './shared-point-paint';
 
-/** Pre-blurred black rounded rect (non-SDF), same geometry as the badge rect sprite. */
+/** Pre-blurred black rounded rect (non-SDF) — legacy sprite id; no longer painted. */
 export const GK_ROUNDED_RECT_SHADOW_IMAGE_ID = 'gk-marker-rounded-rect-shadow';
 
 export function sharedPointRoundedShadowLayerId(pointLayerId: string): string {
@@ -34,50 +33,20 @@ export type EnsureRoundedShadowLayerOptions = {
   beforeId?: string;
 };
 
-/** Add (or repaint) a rounded drop-shadow symbol layer. */
+/** Hide legacy rounded-rect sprite shadows — soft circle glow casts for every shape. */
+export function hideRoundedShadowLayer(map: MapInstance, layerId: string): void {
+  if (!map.getLayer?.(layerId) || !map.setLayoutProperty) return;
+  try {
+    map.setLayoutProperty(layerId, 'visibility', 'none');
+  } catch {
+    /* style swap */
+  }
+}
+
+/** @deprecated Prefer {@link hideRoundedShadowLayer} — square sprites never read as soft shadows. */
 export function ensureRoundedShadowLayer(
   map: MapInstance,
   options: EnsureRoundedShadowLayerOptions
 ): void {
-  const iconSize = sharedPointRoundedShadowIconSizeExpression(options.shadowRadius);
-  const paint: Record<string, unknown> = {
-    'icon-opacity': options.opacity,
-    'icon-translate': options.translate,
-    'icon-translate-anchor': 'viewport',
-  };
-  if (map.getLayer?.(options.layerId)) {
-    try {
-      for (const [key, value] of Object.entries(paint)) {
-        map.setPaintProperty?.(options.layerId, key, value);
-      }
-      map.setLayoutProperty?.(options.layerId, 'icon-size', iconSize);
-    } catch {
-      /* style swap */
-    }
-    return;
-  }
-  if (!map.getSource?.(options.source)) return;
-  try {
-    map.addLayer?.(
-      {
-        id: options.layerId,
-        type: 'symbol',
-        source: options.source,
-        filter: sharedPointRoundedRectBodyFilter(),
-        layout: {
-          'icon-image': GK_ROUNDED_RECT_SHADOW_IMAGE_ID,
-          'icon-allow-overlap': true,
-          'icon-ignore-placement': true,
-          'icon-anchor': 'center',
-          'icon-pitch-alignment': 'viewport',
-          'icon-rotation-alignment': 'viewport',
-          'icon-size': iconSize,
-        },
-        paint,
-      } as never,
-      options.beforeId
-    );
-  } catch {
-    /* style swap */
-  }
+  hideRoundedShadowLayer(map, options.layerId);
 }

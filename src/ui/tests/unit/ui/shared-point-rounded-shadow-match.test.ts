@@ -4,22 +4,14 @@ import {
   ensureSharedPointRoundedRectChromeLayers,
   ensureSharedPointSelectionRoundedRectChromeLayers,
 } from '../../../src/utils/paint/shared-point-rounded-body';
-import {
-  GK_ROUNDED_RECT_SHADOW_IMAGE_ID,
-  sharedPointRoundedShadowIconSizeExpression,
-} from '../../../src/utils/paint/shared-point-rounded-shadow';
+import { GK_ROUNDED_RECT_SHADOW_IMAGE_ID } from '../../../src/utils/paint/shared-point-rounded-shadow';
 import {
   sharedPointCircleBodyFilter,
   sharedPointCombineLayerFilters,
-  sharedPointRoundedRectBodyFilter,
 } from '../../../src/utils/markers/marker-shape';
 import {
-  resolveSharedPointFloatingBadgeTokens,
-  scaleInterpolateRadiusStops,
-  SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE,
   sharedPointExcludeFeatureIdFilter,
   sharedPointFloatingBadgePaintExpressions,
-  sharedPointFloatingBadgeShadowRadiusExpression,
   syncSharedPointSelectedLayerFilter,
 } from '../../../src/utils/shared-point-paint';
 
@@ -40,38 +32,31 @@ function fakeMap(sources: string[]) {
   return { map, added };
 }
 
-describe('rounded-rect shadow matches the circle shadow', () => {
-  it('selected: same radius, opacity, and offset as the circle selection shadow', () => {
+describe('rounded-rect uses soft circle glow — no hard square sprite shadow', () => {
+  it('selected: does not add a rounded-rect shadow sprite layer', () => {
     const { map, added } = fakeMap([`${sourceId}-selection`]);
     ensureSharedPointSelectionRoundedRectChromeLayers(map as never, {
       sourceId,
       pointLayerId,
       fallbackColor: '#908ac7',
     });
-    const tokens = resolveSharedPointFloatingBadgeTokens();
-    const circleRadius = scaleInterpolateRadiusStops(
-      sharedPointFloatingBadgeShadowRadiusExpression(undefined, tokens.shadowRadiusPad),
-      tokens.selectedShadowScale
+    expect(added.find((spec) => spec.id === `${pointLayerId}-selection-rounded-shadow`)).toBeUndefined();
+    expect(added.some((spec) => spec.layout?.['icon-image'] === GK_ROUNDED_RECT_SHADOW_IMAGE_ID)).toBe(
+      false
     );
-
-    const shadow = added.find((spec) => spec.id === `${pointLayerId}-selection-rounded-shadow`)!;
-    expect(added.indexOf(shadow)).toBe(0);
-    expect(shadow.layout['icon-image']).toBe(GK_ROUNDED_RECT_SHADOW_IMAGE_ID);
-    expect(shadow.layout['icon-size']).toEqual(
-      sharedPointRoundedShadowIconSizeExpression(circleRadius)
-    );
-    expect(shadow.paint['icon-opacity']).toBe(tokens.selectedShadowOpacity);
-    expect(shadow.paint['icon-translate']).toEqual(SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE);
-    expect(shadow.paint['icon-translate-anchor']).toBe('viewport');
   });
 
-  it('resting: rounded shadow uses the glow radius, opacity curve, and offset', () => {
+  it('resting: does not add a rounded-rect shadow sprite layer', () => {
     const paint = sharedPointFloatingBadgePaintExpressions({
       fallbackColor: '#908ac7',
       themeElement: null,
     });
+    const setLayoutProperty = vi.fn();
     const { map, added } = fakeMap([sourceId]);
-    ensureSharedPointRoundedRectChromeLayers(map as never, {
+    const mapWithHide = { ...map, setLayoutProperty, getLayer: (id: string) =>
+      id.endsWith('-rounded-shadow') ? {} : undefined,
+    };
+    ensureSharedPointRoundedRectChromeLayers(mapWithHide as never, {
       sourceId,
       pointLayerId,
       fallbackColor: '#908ac7',
@@ -81,17 +66,15 @@ describe('rounded-rect shadow matches the circle shadow', () => {
       shadowTranslate: paint.glowTranslate,
     });
 
-    const shadow = added.find((spec) => spec.id === `${pointLayerId}-rounded-shadow`)!;
-    expect(added.indexOf(shadow)).toBe(0);
-    expect(shadow.layout['icon-image']).toBe(GK_ROUNDED_RECT_SHADOW_IMAGE_ID);
-    expect(shadow.layout['icon-size']).toEqual(
-      sharedPointRoundedShadowIconSizeExpression(paint.glowRadiusExpression)
+    expect(added.find((spec) => spec.id === `${pointLayerId}-rounded-shadow`)).toBeUndefined();
+    expect(setLayoutProperty).toHaveBeenCalledWith(
+      `${pointLayerId}-rounded-shadow`,
+      'visibility',
+      'none'
     );
-    expect(shadow.paint['icon-opacity']).toEqual(paint.glowOpacity);
-    expect(shadow.paint['icon-translate']).toEqual(paint.glowTranslate);
   });
 
-  it('keeps the circle glow off rounded-rect markers and hides the selected rounded shadow', () => {
+  it('moves the selected cast onto selection-shadow (resting glow yields under that pin)', () => {
     const setFilter = vi.fn();
     const map = { getLayer: () => ({}), setFilter };
     syncSharedPointSelectedLayerFilter(map, {
@@ -101,13 +84,11 @@ describe('rounded-rect shadow matches the circle shadow', () => {
       featureId: 'dock-crane',
     });
     const exclude = sharedPointExcludeFeatureIdFilter('mapPromoteId', 'dock-crane')!;
-    expect(setFilter).toHaveBeenCalledWith(
+    // Resting glow drops the selected pin; selection-shadow paints the clear under cast.
+    expect(setFilter).toHaveBeenCalledWith('canvas-places-glow', exclude);
+    expect(setFilter).not.toHaveBeenCalledWith(
       'canvas-places-glow',
       sharedPointCombineLayerFilters(sharedPointCircleBodyFilter(), exclude)
-    );
-    expect(setFilter).toHaveBeenCalledWith(
-      `${pointLayerId}-rounded-shadow`,
-      sharedPointCombineLayerFilters(sharedPointRoundedRectBodyFilter(), exclude)
     );
   });
 });

@@ -4,12 +4,7 @@ import {
   buildFloatingBadgeSelectedChromeSpec,
   floatingBadgeBodyShapeFromProperties,
 } from '../../../src/utils/markers/marker-selection-chrome';
-import {
-  SHARED_POINT_FLOATING_BADGE_FILL,
-  sharedPointFloatingBadgeSelectedColor,
-  sharedPointSelectedMiddleRingColor,
-  sharedPointZoomedOutStep,
-} from '../../../src/utils/paint/shared-point-paint';
+import { SHARED_POINT_FLOATING_BADGE_FILL } from '../../../src/utils/paint/shared-point-paint';
 
 describe('marker-selection-chrome', () => {
   const pointLayerId = 'canvas-places-point';
@@ -26,7 +21,6 @@ describe('marker-selection-chrome', () => {
 
   it('uses one entry point for circle vs rounded selection chrome', () => {
     const key = '#9acd32';
-    const fill = sharedPointFloatingBadgeSelectedColor(key);
     const setPaintProperty = vi.fn();
     const setLayoutProperty = vi.fn();
 
@@ -37,18 +31,19 @@ describe('marker-selection-chrome', () => {
         setLayoutProperty,
       } as never,
       pointLayerId,
-      { accentColor: fill, shape: 'circle' }
+      { accentColor: key, shape: 'circle' }
     );
 
+    // Shadow-only select — hide selection-source chrome for both shapes.
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge`,
-      'circle-stroke-color',
-      sharedPointSelectedMiddleRingColor(fill, SHARED_POINT_FLOATING_BADGE_FILL)
+      'circle-opacity',
+      0
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-outer`,
-      'circle-color',
-      fill
+      'circle-opacity',
+      0
     );
 
     setPaintProperty.mockClear();
@@ -59,7 +54,7 @@ describe('marker-selection-chrome', () => {
         setLayoutProperty,
       } as never,
       pointLayerId,
-      { accentColor: fill, shape: 'rounded-rect' }
+      { accentColor: key, shape: 'rounded-rect' }
     );
 
     expect(setPaintProperty).toHaveBeenCalledWith(
@@ -69,23 +64,13 @@ describe('marker-selection-chrome', () => {
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-rounded-body`,
-      'icon-color',
-      sharedPointZoomedOutStep(fill, SHARED_POINT_FLOATING_BADGE_FILL)
-    );
-    expect(setPaintProperty).toHaveBeenCalledWith(
-      `${pointLayerId}-selection-rounded-ring`,
-      'icon-color',
-      sharedPointSelectedMiddleRingColor(fill, SHARED_POINT_FLOATING_BADGE_FILL)
-    );
-    expect(setPaintProperty).toHaveBeenCalledWith(
-      `${pointLayerId}-selection-rounded-outer`,
-      'icon-color',
-      sharedPointZoomedOutStep('rgba(0,0,0,0)', fill)
+      'icon-opacity',
+      0
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-icon`,
-      'icon-color',
-      sharedPointZoomedOutStep('rgba(0,0,0,0)', fill)
+      'icon-opacity',
+      0
     );
   });
 

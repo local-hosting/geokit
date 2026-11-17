@@ -12,6 +12,8 @@ export interface UIProviderConfig {
   accessToken?: string;
   /** Full MapLibre style.json URL — overrides built-in theme/style names. */
   styleUrl?: string;
+  /** Theme-keyed style URIs (e.g. Corio light/dark). Wins over stock theme names. */
+  styleUrls?: { light?: string; dark?: string };
   /** Protomaps label language (`en` by default). Two-letter code used in hosted style URLs. */
   labelLanguage?: string;
   /** PMTiles archive URL. Used when the map should read a Protomaps basemap file instead of the hosted API. */

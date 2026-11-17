@@ -50,11 +50,9 @@ describe('buildFloatingBadgeStack', () => {
       'canvas-places-point-rounded-body',
       sharedPointRoundedRectBodyFilter()
     );
-    expect(setFilter).toHaveBeenCalledWith('canvas-places-glow', sharedPointCircleBodyFilter());
-    expect(setFilter).toHaveBeenCalledWith(
-      'canvas-places-point-rounded-shadow',
-      sharedPointRoundedRectBodyFilter()
-    );
+    // Ground glow is shape-agnostic (soft circle cast under every marker).
+    expect(setFilter).toHaveBeenCalledWith('canvas-places-glow', null);
+    expect(setFilter).toHaveBeenCalledWith('canvas-places-glow-hover', null);
   });
 
   it('re-applies selected feature exclude after shape filters (layer heal)', () => {

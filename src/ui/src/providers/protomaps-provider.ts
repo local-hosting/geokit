@@ -6,6 +6,7 @@
  * or a PMTiles archive via the `pmtiles://` protocol.
  */
 
+import { mapGpuCreateOptions } from '../utils/map-surface/map-gpu-budget';
 import { wrapMapResize } from '../utils/map-utils';
 import { getProviderConfig } from './registry';
 import { BaseUIProvider } from './types';
@@ -273,6 +274,7 @@ export class ProtomapsUIProvider extends BaseUIProvider {
       bearing: options.bearing || 0,
       interactive: options.interactive !== false,
       attributionControl: false,
+      ...mapGpuCreateOptions(),
       ...(options.extra || {}),
     };
 

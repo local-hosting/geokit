@@ -186,4 +186,5 @@ export function resolveSharedPointFeatureStateHoverPaint(
  * Layers use feature-state (hover/selected) so apps can wire hover via createHoverStateHandlers
  * or createSharedPointLayersWithHover. This is the GK point pattern for many points from one source.
  */
-export const DEFAULT_SELECTION_SHADOW_TRANSLATE: [number, number] = [2, 2];
+/** Same SE cast as resting — selection must not jump to a different offset. */
+export const DEFAULT_SELECTION_SHADOW_TRANSLATE: [number, number] = [3, 5];

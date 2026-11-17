@@ -4,6 +4,7 @@ const layerStylesMock = vi.hoisted(() => ({
   createSharedPointLayers: vi.fn(),
   ensureSharedPointSelectionRingLayer: vi.fn(),
   ensureSharedPointHoverLayers: vi.fn(),
+  setupSelectionGroundBadgeLayers: vi.fn(),
   getGlowRadiusInterpolation: () => ['literal', 12],
   multiplyRadiusExpression: (base: unknown, scale: number) => ['*', base, scale],
 }));
@@ -140,8 +141,8 @@ describe('applySharedPointLayerPaint', () => {
       glowBlur: 0.25,
       glowRadiusExpression,
       glowTranslate,
-      glowPitchAlignment: 'map',
-      glowPitchScale: 'map',
+      glowPitchAlignment: 'viewport',
+      glowPitchScale: 'viewport',
       pointTranslate,
       outerStrokeWidthExpression: ['literal', 2.5],
       outerStrokeColorExpression: ['literal', '#ffffff'],
@@ -161,12 +162,12 @@ describe('applySharedPointLayerPaint', () => {
     expect(setPaintProperty).toHaveBeenCalledWith(
       'demo-points-glow',
       'circle-pitch-alignment',
-      'map'
+      'viewport'
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       'demo-points-glow',
       'circle-pitch-scale',
-      'map'
+      'viewport'
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       'demo-points-points',
@@ -183,6 +184,55 @@ describe('applySharedPointLayerPaint', () => {
 });
 
 describe('createSharedPointLayersFromPaint', () => {
+  it('pushes forceFallbackKey-annotated GeoJSON after mount so unhovered pins match the key hue', async () => {
+    const { sharedPointFloatingBadgeRestingColor } = await import(
+      '../../../src/utils/paint/shared-point-paint'
+    );
+    const setData = vi.fn();
+    const map = {
+      getSource: vi.fn(() => ({ setData })),
+      getLayer: vi.fn(() => ({})),
+      setPaintProperty: vi.fn(),
+    };
+    const ids = {
+      sourceId: 'canvas-places',
+      glowLayerId: 'canvas-places-glow',
+      pointLayerId: 'canvas-places-point',
+    };
+    const key = sharedPointFloatingBadgeRestingColor('#d580a3', 0.3, 0.45);
+
+    await createSharedPointLayersFromPaint({
+      layerSetWaitMs: 0,
+      map: map as never,
+      ids,
+      geojson: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: { mapPromoteId: 'aquarium-conservation' },
+            geometry: { type: 'Point', coordinates: [-85.3, 35.0] },
+          },
+        ],
+      },
+      paint: {
+        ids,
+        pointColorExpression: ['literal', '#d580a3'],
+        pointRadiusExpression: ['literal', 4],
+        selectionGroundBadge: true,
+        selectionGroundBadgeFallbackColor: '#d580a3',
+        selectionGroundBadgeForceFallbackKey: true,
+      },
+    });
+
+    expect(setData).toHaveBeenCalled();
+    const annotated = setData.mock.calls.at(-1)?.[0] as {
+      features: Array<{ properties?: Record<string, unknown> }>;
+    };
+    expect(annotated.features[0]?.properties?._color).toBe(key);
+    expect(annotated.features[0]?.properties?._colorKey).toBe(key);
+  });
+
   it('creates layers with feature-state hover enabled by default', async () => {
     const setPaintProperty = vi.fn();
     const map = {
@@ -320,6 +370,60 @@ describe('syncExistingSharedPointLayers', () => {
       'circle-stroke-width',
       ['literal', 0]
     );
+  });
+
+  it('forceFallbackKey annotates every feature before setData so pins share one key hue', async () => {
+    const { sharedPointFloatingBadgeRestingColor } = await import(
+      '../../../src/utils/paint/shared-point-paint'
+    );
+    const setData = vi.fn();
+    const map = {
+      getSource: vi.fn(() => ({ setData })),
+      getLayer: vi.fn(() => ({})),
+      setPaintProperty: vi.fn(),
+    };
+    const ids = {
+      sourceId: 'canvas-places',
+      glowLayerId: 'canvas-places-glow',
+      pointLayerId: 'canvas-places-point',
+    };
+    const key = sharedPointFloatingBadgeRestingColor('#d580a3', 0.3, 0.45);
+
+    await syncExistingSharedPointLayers({
+      map: map as never,
+      ids,
+      geojson: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: { mapPromoteId: 'aquarium-conservation' },
+            geometry: { type: 'Point', coordinates: [-85.3, 35.0] },
+          },
+          {
+            type: 'Feature',
+            properties: { mapPromoteId: 'stem-chattanooga', _color: '#ff00aa' },
+            geometry: { type: 'Point', coordinates: [-85.31, 35.05] },
+          },
+        ],
+      },
+      paint: {
+        ids,
+        pointColorExpression: ['literal', '#d580a3'],
+        pointRadiusExpression: ['literal', 4],
+        selectionGroundBadge: true,
+        selectionGroundBadgeFallbackColor: '#d580a3',
+        selectionGroundBadgeForceFallbackKey: true,
+      },
+      healIncompleteLayerSet: false,
+    });
+
+    expect(setData).toHaveBeenCalled();
+    const annotated = setData.mock.calls.at(-1)?.[0] as {
+      features: Array<{ properties?: Record<string, unknown> }>;
+    };
+    expect(annotated.features.map((f) => f.properties?._color)).toEqual([key, key]);
+    expect(annotated.features.map((f) => f.properties?._colorKey)).toEqual([key, key]);
   });
 });
 describe('isSharedPointLayerSetComplete', () => {
