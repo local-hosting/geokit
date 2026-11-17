@@ -5,16 +5,16 @@ import {
 } from './shared-point-paint';
 
 /** Badge image width as a share of the key-colored core disk diameter. */
-export const SHARED_POINT_BADGE_ICON_DISK_FILL = 0.9;
+export const SHARED_POINT_BADGE_ICON_DISK_FILL = 1.2;
 
 /**
  * Zoomed-out glyph fill (share of core diameter) — the core shrinks faster than the
  * ring, so the glyph spills into the ring to stay legible. Ends at the default fill.
  */
 const SHARED_POINT_BADGE_ICON_ZOOM_FILL: ReadonlyArray<readonly [number, number]> = [
-  [8, 2],
-  [10, 1.6],
-  [12, 1.2],
+  [8, 2.4],
+  [10, 1.9],
+  [12, 1.45],
   [14, SHARED_POINT_BADGE_ICON_DISK_FILL],
 ];
 

@@ -18,9 +18,10 @@ afterEach(() => {
 });
 
 describe('selected badge widths', () => {
-  it('default to the resting ring and outer stroke widths', () => {
-    setVars({ '--gk-badge-ring-width': '9', '--gk-badge-outer-stroke-width': '3' });
+  it('defaults selected outer independently of resting outer', () => {
+    setVars({ '--gk-badge-ring-width': '9', '--gk-badge-outer-stroke-width': '2.5' });
     const tokens = resolveSharedPointFloatingBadgeTokens();
+    expect(tokens.outerStrokeWidth).toBe(2.5);
     expect(tokens.selectedRingWidth).toBe(9);
     expect(tokens.selectedOuterStrokeWidth).toBe(3);
   });

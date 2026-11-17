@@ -9,6 +9,7 @@ import {
   ensureSharedPointLayerSetHealed,
   isSharedPointLayerSetFullyComplete,
 } from './shared-point-heal';
+import { attachSharedPointFloatingBadgePitchLift } from '../paint/shared-point-pitch-lift';
 import {
   attachSharedPointHoverGlowRadiusSync,
   createSharedPointLayersFromPaint,
@@ -155,12 +156,20 @@ export function createSharedPointLayerController(
     return isSharedPointLayerSetFullyComplete(currentMap as never, ids);
   }
 
-  function attachHoverGlowSync(currentMap: SharedPointLayerMap, glowLayerId: string): void {
+  function attachHoverGlowSync(
+    currentMap: SharedPointLayerMap,
+    ids: SharedPointLayerIds
+  ): void {
     layerCleanup?.();
-    layerCleanup = attachSharedPointHoverGlowRadiusSync(
+    const stopHover = attachSharedPointHoverGlowRadiusSync(
       currentMap as never,
-      glowLayerId
+      ids.glowLayerId
     );
+    const stopPitch = attachSharedPointFloatingBadgePitchLift(currentMap as never, ids);
+    layerCleanup = () => {
+      stopHover();
+      stopPitch();
+    };
   }
 
 
@@ -234,7 +243,7 @@ export function createSharedPointLayerController(
         layersCreated = complete;
         lastPaintFingerprint = paintFingerprint;
         if (complete) {
-          attachHoverGlowSync(currentMap, ids.glowLayerId);
+          attachHoverGlowSync(currentMap, ids);
           await options.onAfterCreate?.(currentMap);
           if (generation !== updateGeneration) return;
           gkMap.setAttribute?.('data-before-isochrone-layer', ids.glowLayerId);
@@ -293,7 +302,7 @@ export function createSharedPointLayerController(
       lastPaintFingerprint = paintFingerprint;
 
       if (complete) {
-        attachHoverGlowSync(currentMap, ids.glowLayerId);
+        attachHoverGlowSync(currentMap, ids);
         await options.onAfterCreate?.(currentMap);
         if (generation !== updateGeneration) return;
         gkMap.setAttribute?.('data-before-isochrone-layer', ids.glowLayerId);

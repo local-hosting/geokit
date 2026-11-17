@@ -22,11 +22,16 @@ function paint() {
 }
 
 describe('floating badge drop shadow', () => {
-  it('stays round and casts straight down the screen when the map is pitched', () => {
+  it('stays round and casts in one screen-space direction when the map is pitched', () => {
     const p = paint();
     expect(p.glowPitchAlignment).toBe('viewport');
+    expect(p.glowPitchScale).toBe('viewport');
     expect(p.glowTranslateAnchor).toBe('viewport');
-    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE[0]).toBe(0);
+    // Single light source: slight SE cast (positive X + Y in viewport space).
+    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE[0]).toBeGreaterThan(0);
+    expect(SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE[1]).toBeGreaterThan(
+      SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE[0]
+    );
   });
 
   it('peeks below the full badge (fill + ring + outer band) at city and street zoom', () => {
@@ -66,7 +71,76 @@ describe('floating badge drop shadow', () => {
     });
 
     const shadowId = `${pointLayerId}-selection-shadow`;
-    expect(setPaintProperty).toHaveBeenCalledWith(shadowId, 'circle-pitch-alignment', 'map');
-    expect(setPaintProperty).toHaveBeenCalledWith(shadowId, 'circle-pitch-scale', 'map');
+    expect(setPaintProperty).toHaveBeenCalledWith(shadowId, 'circle-pitch-alignment', 'viewport');
+    expect(setPaintProperty).toHaveBeenCalledWith(shadowId, 'circle-pitch-scale', 'viewport');
+  });
+
+  it('keeps selected shadow on the same zoom-scaled cast as resting (no jump on click)', () => {
+    const pointLayerId = 'canvas-places-point';
+    const sourceId = 'canvas-places';
+    const layers = new Set<string>();
+    const setPaintProperty = vi.fn();
+    const map = {
+      getSource: (id: string) => (id === `${sourceId}-selection` ? {} : undefined),
+      getLayer: (id: string) => (layers.has(id) || id === pointLayerId ? {} : undefined),
+      addLayer: vi.fn((spec: { id: string }) => layers.add(spec.id)),
+      setPaintProperty,
+      setFilter: vi.fn(),
+      moveLayer: vi.fn(),
+    };
+
+    setupSelectionGroundBadgeLayers(map as never, sourceId, pointLayerId, {
+      fallbackColor: '#908ac7',
+    });
+
+    const shadowId = `${pointLayerId}-selection-shadow`;
+    const translateCall = setPaintProperty.mock.calls.find(
+      (c) => c[0] === shadowId && c[1] === 'circle-translate'
+    );
+    expect(translateCall?.[2]?.[0]).toBe('interpolate');
+    expect(setPaintProperty).toHaveBeenCalledWith(
+      shadowId,
+      'circle-translate-anchor',
+      'viewport'
+    );
+  });
+
+  it('casts selection shadow for every marker shape (not circle-only)', () => {
+    const pointLayerId = 'canvas-places-point';
+    const sourceId = 'canvas-places';
+    const layers = new Set<string>();
+    const added: Array<{ id: string; filter?: unknown }> = [];
+    const setFilter = vi.fn();
+    const setPaintProperty = vi.fn();
+    const map = {
+      getSource: (id: string) => (id === `${sourceId}-selection` ? {} : undefined),
+      getLayer: (id: string) => (layers.has(id) || id === pointLayerId ? {} : undefined),
+      addLayer: vi.fn((spec: { id: string; filter?: unknown }) => {
+        layers.add(spec.id);
+        added.push(spec);
+      }),
+      setPaintProperty,
+      setFilter,
+      moveLayer: vi.fn(),
+    };
+
+    setupSelectionGroundBadgeLayers(map as never, sourceId, pointLayerId, {
+      fallbackColor: '#908ac7',
+    });
+
+    const shadow = added.find((s) => s.id === `${pointLayerId}-selection-shadow`);
+    expect(shadow).toBeTruthy();
+    // Same as resting glow — soft circle cast under rounded-rect and circle alike.
+    expect(shadow?.filter == null || shadow?.filter === undefined).toBe(true);
+    // Clear under-shadow — selection cast is visible (not a spare opacity-0 layer).
+    expect(setPaintProperty).toHaveBeenCalledWith(
+      `${pointLayerId}-selection-shadow`,
+      'circle-opacity',
+      expect.any(Number)
+    );
+    const opacityCall = setPaintProperty.mock.calls.find(
+      (c) => c[0] === `${pointLayerId}-selection-shadow` && c[1] === 'circle-opacity'
+    );
+    expect(opacityCall?.[2]).toBeGreaterThan(0);
   });
 });

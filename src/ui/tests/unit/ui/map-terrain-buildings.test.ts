@@ -57,6 +57,44 @@ describe('map-terrain-buildings', () => {
     expect(map.addSource).not.toHaveBeenCalled();
   });
 
+  it('terrain zoom handler re-adds DEM source after style wipe before setTerrain', () => {
+    const map = createMapStub();
+    let hasSource = false;
+    map.getSource = vi.fn(() => (hasSource ? { type: 'raster-dem' } : null));
+    map.addSource = vi.fn(() => {
+      hasSource = true;
+    });
+
+    const attrs = new Map<string, string>([
+      ['terrain-enabled', 'true'],
+      ['provider', 'maptiler'],
+      ['api-key', 'test-key'],
+    ]);
+
+    const handler = createTerrainZoomHandler({
+      getAttribute: (name) => attrs.get(name) ?? null,
+      map: map as never,
+    });
+    expect(handler).not.toBeNull();
+    expect(map.addSource).toHaveBeenCalledTimes(1);
+    expect(map.setTerrain).toHaveBeenCalled();
+
+    // Style swap / full rebuild drops the DEM source; zoom/move still fires the handler.
+    hasSource = false;
+    map.addSource.mockClear();
+    map.setTerrain.mockClear();
+
+    handler!();
+
+    expect(map.addSource).toHaveBeenCalledWith(
+      'gk-terrain-dem',
+      expect.objectContaining({ type: 'raster-dem' })
+    );
+    expect(map.setTerrain).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'gk-terrain-dem' })
+    );
+  });
+
   it('buildTerrainDemSource uses proxied tile templates when transformRequest is set', () => {
     configure({
       maptiler: {

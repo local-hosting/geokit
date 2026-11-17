@@ -12,6 +12,7 @@ import {
   inlineMapTilerTileJsonSources,
   rewriteMapTilerStyleResourceUrls,
 } from '../config/maptiler-dev-proxy';
+import { mapGpuCreateOptions } from '../utils/map-surface/map-gpu-budget';
 import { BaseUIProvider } from './types';
 import { getProviderConfig } from './registry';
 import { wrapMapResize } from '../utils/map-utils';
@@ -311,9 +312,16 @@ export class MapTilerUIProvider extends BaseUIProvider {
       scaleControl: false,
       fullscreenControl: false,
       attributionControl: false,
+      ...mapGpuCreateOptions(),
       ...(options.extra || {}),
       terrain: false,
       terrainControl: false,
+      // MapTiler setStyle idle-path calls initSpace/initHalo → addLayer before the
+      // style is ready ("Style is not done loading"). Force off like terrain.
+      space: false,
+      halo: false,
+      // Banner would otherwise print on every Map() (freeze/remount), not just SDK import.
+      logSDKVersion: false,
     };
     if (apiKey) {
       mapOptions.apiKey = apiKey;

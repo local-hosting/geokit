@@ -5,6 +5,7 @@
  * Handles map rendering, controls, markers, and popups
  */
 
+import { mapGpuCreateOptions } from '../utils/map-surface/map-gpu-budget';
 import { wrapMapResize } from '../utils/map-utils';
 import { getProviderConfig } from './registry';
 import { BaseUIProvider } from './types';
@@ -104,17 +105,15 @@ export class MapboxUIProvider extends BaseUIProvider {
       throw new Error('Mapbox access token is required. Call initialize() with accessToken first.');
     }
 
-    const configuredStyleUrl =
-      this.config?.styleUrl?.trim() || getProviderConfig('mapbox')?.styleUrl?.trim();
-
-    // Build style: configured style URL wins over stock Mapbox theme names.
+    // Build style: theme-keyed / configured style URL wins over stock Mapbox theme names.
     let style = options.style;
     if (
       !style ||
       (typeof style === 'string' && !style.startsWith('mapbox://') && !style.startsWith('http'))
     ) {
-      if (configuredStyleUrl) {
-        style = configuredStyleUrl;
+      const fromTheme = this.resolveConfiguredStyleUrl(typeof style === 'string' ? style : 'streets');
+      if (fromTheme) {
+        style = fromTheme;
       } else {
         const key = (style || 'streets').toLowerCase();
         const styleMap: Record<string, string> = {
@@ -147,6 +146,7 @@ export class MapboxUIProvider extends BaseUIProvider {
       interactive: options.interactive !== false,
       // Disable all default controls - users must add them explicitly via child components
       attributionControl: false,
+      ...mapGpuCreateOptions(),
       // Spread any extra options
       ...(options.extra || {}),
     };
@@ -232,12 +232,26 @@ export class MapboxUIProvider extends BaseUIProvider {
     return null;
   }
 
-  getStyleForTheme(styleName: string): string | null {
-    const configuredStyleUrl =
-      this.config?.styleUrl?.trim() || getProviderConfig('mapbox')?.styleUrl?.trim();
-    if (configuredStyleUrl) {
-      return configuredStyleUrl;
+  /** Prefer theme-keyed `styleUrls`, then single `styleUrl`, from instance or registry config. */
+  protected resolveConfiguredStyleUrl(styleName: string): string | null {
+    const merged = {
+      ...(getProviderConfig('mapbox') || {}),
+      ...(this.config || {}),
+    } as UIProviderConfig;
+    const urls = merged.styleUrls;
+    if (urls) {
+      const key = styleName.toLowerCase();
+      const dark = key === 'dark' || key === 'dataviz-dark';
+      const picked = (dark ? urls.dark : urls.light)?.trim() || urls.light?.trim() || urls.dark?.trim();
+      if (picked) return picked;
     }
+    const single = merged.styleUrl?.trim();
+    return single || null;
+  }
+
+  getStyleForTheme(styleName: string): string | null {
+    const configured = this.resolveConfiguredStyleUrl(styleName);
+    if (configured) return configured;
     const key = styleName.toLowerCase();
     const themeToStyle: Record<string, string> = {
       light: 'mapbox://styles/mapbox/light-v11',

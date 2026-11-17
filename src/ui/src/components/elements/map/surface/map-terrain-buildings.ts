@@ -137,14 +137,19 @@ export function createTerrainZoomHandler(ctx: MapTerrainContext): (() => void) |
     ? parseFloat(String(exaggerationAttr))
     : 1;
 
-  if (!map.getSource?.(TERRAIN_SOURCE_ID)) {
+  const ensureTerrainSource = (): boolean => {
+    if (map.getSource?.(TERRAIN_SOURCE_ID)) return true;
     try {
       map.addSource(TERRAIN_SOURCE_ID, buildTerrainDemSource({ provider, apiKey, explicitUrl }));
+      return true;
     } catch (err) {
       debug.warn('[gk-map] Failed to add terrain source', err);
-      return null;
+      return false;
     }
-  }
+  };
+
+  // Style swaps / full rebuilds drop DEM; zoom/move still call updateTerrain.
+  if (!ensureTerrainSource()) return null;
 
   const updateTerrain = (): void => {
     try {
@@ -153,6 +158,7 @@ export function createTerrainZoomHandler(ctx: MapTerrainContext): (() => void) |
       const currentZoom = map.getZoom?.() ?? 0;
       const zoomOk = currentZoom >= minZoom;
       if (toggleEnabled && zoomOk) {
+        if (!ensureTerrainSource()) return;
         map.setTerrain?.({ source: TERRAIN_SOURCE_ID, exaggeration });
       } else {
         map.setTerrain?.(null);

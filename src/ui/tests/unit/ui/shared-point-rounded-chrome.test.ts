@@ -17,8 +17,8 @@ import {
   sharedPointSelectionRoundedOuterLayerId,
 } from '../../../src/utils/paint/shared-point-rounded-body';
 import {
-  sharedPointFloatingBadgeSelectedColor,
-  SHARED_POINT_FLOATING_BADGE_FILL,
+  SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION,
+  sampleZoomInterpolateValue,
   sharedPointSelectionBadgeLayerId,
   syncSharedPointSelectedLayerFilter,
 } from '../../../src/utils/paint/shared-point-paint';
@@ -82,7 +82,8 @@ describe('rounded-rect map chrome', () => {
     const z14Idx = body.indexOf(14);
     expect(z14Idx).toBeGreaterThan(0);
     const iconSizeAt14 = body[z14Idx + 1];
-    expect(iconSizeAt14).toBeCloseTo((12.5 * 2) / 64, 5);
+    const radiusAt14 = sampleZoomInterpolateValue(SHARED_POINT_FLOATING_BADGE_RADIUS_EXPRESSION, 14);
+    expect(iconSizeAt14).toBeCloseTo((radiusAt14 * 2) / 64, 5);
   });
 
   it('keeps resource selection chrome when stack paint runs with an active selection', () => {
@@ -131,28 +132,21 @@ describe('rounded-rect map chrome', () => {
       }
     );
 
-    const selectionBodyColors = setPaintProperty.mock.calls
-      .filter(
-        (call) =>
-          call[0] === sharedPointSelectionRoundedBodyLayerId(pointLayerId) &&
-          call[1] === 'icon-color'
-      )
-      .map((call) => call[2]);
-    // White body zoomed in (step's last value); solid key zoomed out.
-    expect(selectionBodyColors).toHaveLength(1);
-    expect(selectionBodyColors[0]).toEqual(
-      expect.arrayContaining(['step', SHARED_POINT_FLOATING_BADGE_FILL])
-    );
-
+    // Shadow-only select — selection-source rounded chrome stays hidden.
     expect(setPaintProperty).toHaveBeenCalledWith(
       sharedPointSelectionBadgeLayerId(pointLayerId),
       'circle-opacity',
       0
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
+      sharedPointSelectionRoundedBodyLayerId(pointLayerId),
+      'icon-opacity',
+      0
+    );
+    expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-icon`,
-      'icon-color',
-      expect.arrayContaining(['step', sharedPointFloatingBadgeSelectedColor('#9acd32')])
+      'icon-opacity',
+      0
     );
   });
 });

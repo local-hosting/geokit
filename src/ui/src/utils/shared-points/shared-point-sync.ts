@@ -35,6 +35,7 @@ function geojsonWithFloatingBadgeHoverColors(
   paint: {
     selectionGroundBadge?: boolean;
     selectionGroundBadgeFallbackColor?: string;
+    selectionGroundBadgeForceFallbackKey?: boolean;
     selectedDarken?: number;
   }
 ): FeatureCollection {
@@ -42,6 +43,7 @@ function geojsonWithFloatingBadgeHoverColors(
   return annotatePointFeaturesFloatingBadgeHover(geojson as FeatureCollection<Point>, {
     fallbackColor: paint.selectionGroundBadgeFallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
     selectedAmount: paint.selectedDarken,
+    forceFallbackKey: paint.selectionGroundBadgeForceFallbackKey === true,
   });
 }
 
@@ -664,6 +666,13 @@ export async function createSharedPointLayersFromPaint(
     healSharedPointLayerSet,
     options.layerSetWaitMs ?? 4000
   );
+
+  // Source may have been seeded unannotated before layers mounted (MapTiler helper /
+  // ensureSharedPointGeoJsonSource). Always push annotated GeoJSON so every pin shares
+  // one key hue — otherwise hover patches leave a second softer shade on touched dots.
+  if (map.getSource?.(ids.sourceId)) {
+    await updateSharedPointSourceData(map, ids.sourceId, annotatedGeojson);
+  }
 
   await ensureSharedPointLayerSetHealed(map, ids, {
     paint: scaled.paint,

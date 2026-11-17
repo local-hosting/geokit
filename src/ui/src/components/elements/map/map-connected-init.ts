@@ -32,6 +32,7 @@ import {
 } from '../../../utils/theme';
 import { debug } from '../../../utils/logger';
 import { shouldSilenceStyleLoadPoll } from './style/style-load-poll-guard';
+import { resolveInitialMapStyle } from './style/resolve-initial-map-style';
 import {
   STUCK_PLACEHOLDER_MS as STUCK_MS,
   createPlaceholderContent as createPlaceholderContentFn,
@@ -315,9 +316,15 @@ export class MapConnectedInit extends MapBase {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore - import.meta is available in ESNext modules
             const token = accessToken || import.meta.env?.MAPBOX_TOKEN;
+            const styleUrl = this.getAttribute('style-url') || undefined;
             provider = await getProviderByName(
               'mapbox',
-              token ? { accessToken: token } : undefined
+              token || styleUrl
+                ? {
+                    ...(token ? { accessToken: token } : {}),
+                    ...(styleUrl ? { styleUrl } : {}),
+                  }
+                : undefined
             );
           } else if (providerName === 'protomaps') {
             const { ProtomapsUIProvider } = await import('../../../providers/protomaps-provider');
@@ -339,7 +346,13 @@ export class MapConnectedInit extends MapBase {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore - import.meta is available in ESNext modules
             const token = accessToken || import.meta.env?.MAPBOX_TOKEN;
-            if (token) config = { accessToken: token };
+            const styleUrl = this.getAttribute('style-url') || undefined;
+            if (token || styleUrl) {
+              config = {
+                ...(token ? { accessToken: token } : {}),
+                ...(styleUrl ? { styleUrl } : {}),
+              };
+            }
           } else if (providerName === 'protomaps') {
             config = this.protomapsConfigFromAttributes();
           } else if (apiKey) {
@@ -378,29 +391,34 @@ export class MapConnectedInit extends MapBase {
         throw new Error('Map container not found');
       }
 
-      // Get map style: explicit theme > map-style attribute > system theme
+      // First-paint style: host style-url (Corio) > map-style > theme stock name.
       // DO NOT use 'style' attribute - that's for CSS, not map tiles!
       const themeAttr = this.getAttribute('theme');
       const mapStyleAttr = this.getAttribute('map-style');
+      const styleUrlAttr = this.getAttribute('style-url');
       let styleAttr: string;
 
       if (themeAttr && isValidTheme(themeAttr)) {
-        // Use explicit theme's map style
         this._currentTheme = getTheme(themeAttr);
-        styleAttr = this._currentTheme.mapStyle;
         this._usingSystemTheme = false;
-      } else if (mapStyleAttr) {
-        // Use explicit map-style attribute
-        styleAttr = mapStyleAttr;
+      } else if (mapStyleAttr || styleUrlAttr) {
         this._usingSystemTheme = false;
+        if (!themeAttr) {
+          this._currentTheme = getTheme(getSystemTheme());
+        }
       } else {
-        // No explicit theme or style - use system theme and listen for changes
         const systemThemeName = getSystemTheme();
         this._currentTheme = getTheme(systemThemeName);
-        styleAttr = this._currentTheme.mapStyle;
         this._usingSystemTheme = true;
         mapEl(this).setupSystemThemeListener();
       }
+
+      styleAttr = resolveInitialMapStyle({
+        styleUrl: styleUrlAttr,
+        mapStyleAttr,
+        themeMapStyle: themeAttr && isValidTheme(themeAttr) ? this._currentTheme.mapStyle : null,
+        systemMapStyle: this._currentTheme.mapStyle,
+      });
 
       // Parse max-pitch attribute (default 60 prevents disorienting "upside down" tilting)
       const maxPitchAttr = this.getAttribute('max-pitch');

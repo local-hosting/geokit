@@ -58,6 +58,8 @@ export {
   SHARED_POINT_FLOATING_BADGE_COLORED_RING_WIDTH,
   SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_WIDTH,
   SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_COLOR,
+  SHARED_POINT_FLOATING_BADGE_OUTER_DARKEN,
+  SHARED_POINT_FLOATING_BADGE_OUTER_COLOR_PROPERTY,
   SHARED_POINT_FLOATING_BADGE_SHADOW_COLOR,
   SHARED_POINT_FLOATING_BADGE_SHADOW_OPACITY,
   SHARED_POINT_FLOATING_BADGE_SHADOW_BLUR,
@@ -80,6 +82,7 @@ export {
   sharedPointFloatingBadgeHoverRingColorAt,
   sharedPointFloatingBadgeSoftColor,
   sharedPointFloatingBadgeRestingColor,
+  sharedPointFloatingBadgeOuterColor,
   sharedPointFloatingBadgeSelectedColor,
   resolveFloatingBadgeSelectionAccentColor,
   SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY,
@@ -144,6 +147,13 @@ export {
   type SharedPointFloatingBadgePaintOptions,
   type SharedPointFloatingBadgeTokens,
 } from './utils/shared-point-paint';
+
+export {
+  SHARED_POINT_FLOATING_BADGE_PITCH_LIFT_BOOST,
+  sharedPointFloatingBadgePitchLiftFactor,
+  sharedPointFloatingBadgeFloatYForPitch,
+  attachSharedPointFloatingBadgePitchLift,
+} from './utils/paint/shared-point-pitch-lift';
 
 export {
   removeMapSourcesWithPrefix,

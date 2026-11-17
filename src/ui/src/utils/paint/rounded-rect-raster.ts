@@ -2,8 +2,12 @@
 
 /** Badge rect inset from the raster edge (room for the SDF spread). */
 export const ROUNDED_RECT_SDF_INSET_RATIO = 0.08;
-/** Corner radius as a fraction of the badge rect width. */
-const CORNER_RATIO = 0.22 / (1 - 2 * ROUNDED_RECT_SDF_INSET_RATIO);
+/**
+ * Corner radius as a fraction of the badge rect width — keep ≤0.16 so resources
+ * read as rounded rectangles, not near-circles.
+ */
+export const ROUNDED_RECT_CORNER_RATIO_OF_WIDTH = 0.14;
+const CORNER_RATIO = ROUNDED_RECT_CORNER_RATIO_OF_WIDTH / (1 - 2 * ROUNDED_RECT_SDF_INSET_RATIO);
 /** MapLibre SDF convention: alpha 0.75 at the edge (tiny-sdf cutoff 0.25). */
 const SDF_CUTOFF = 0.25;
 

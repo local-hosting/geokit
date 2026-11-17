@@ -8,6 +8,7 @@ export * from './layer-stack';
 export * from './logger';
 export * from './map-element-on';
 export * from './map-events';
+export * from './map-gpu-budget';
 export * from './map-semantic-events';
 export * from './map-terrain-disable';
 export * from './map-utils';

@@ -22,6 +22,17 @@ import type { MapInstance } from '../../providers/types';
 import type { Feature } from '@doppler-group/geokit/core/types';
 import type { IsochroneOptions } from '@doppler-group/geokit/service/types';
 import { getServiceForCapability } from '@doppler-group/geokit/service/registry';
+import { bindMapDocumentVisibilityGpu, resolveMapPixelRatio } from './map-gpu-budget';
+
+export {
+  DEFAULT_MAP_MAX_TILE_CACHE_SIZE,
+  MAX_MAP_PIXEL_RATIO,
+  bindMapDocumentVisibilityGpu,
+  mapGpuCreateOptions,
+  resolveMapPixelRatio,
+  setMapGpuPaused,
+} from './map-gpu-budget';
+export type { MapGpuCreateOptions, MapGpuPauseTarget } from './map-gpu-budget';
 
 // ============================================================================
 // DOM Navigation Utilities
@@ -398,10 +409,10 @@ export function hasRenderableMapSize(element: HTMLElement | null | undefined): b
  * Returns true when resize ran without throwing.
  */
 
-/** Match MapLibre canvas backing store to devicePixelRatio (avoids blurry upscale on Retina). */
+/** Match MapLibre canvas backing store to a capped devicePixelRatio (GPU memory budget). */
 export function syncMapDevicePixelRatio(map: ResizeTargetMap | null | undefined): void {
   if (!map || typeof window === 'undefined') return;
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = resolveMapPixelRatio(window.devicePixelRatio || 1);
   if (typeof map.getPixelRatio !== 'function' || typeof map.setPixelRatio !== 'function') return;
   try {
     if (map.getPixelRatio() !== dpr) map.setPixelRatio(dpr);
@@ -436,6 +447,7 @@ export function wrapMapResize(
   map:
     | (ResizeTargetMap & {
         resize?: () => void;
+        remove?: () => void;
         _onWindowResize?: () => void;
         _removed?: boolean;
         painter?: unknown;
@@ -466,6 +478,15 @@ export function wrapMapResize(
       } catch {
         // Stale window resize handler after map.remove() or Vite HMR.
       }
+    };
+  }
+
+  const unbindGpuVisibility = bindMapDocumentVisibilityGpu(map);
+  if (typeof map.remove === 'function') {
+    const originalRemove = map.remove.bind(map);
+    map.remove = () => {
+      unbindGpuVisibility();
+      return originalRemove();
     };
   }
 }

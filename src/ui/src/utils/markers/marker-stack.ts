@@ -25,10 +25,6 @@ import {
   sharedPointSelectionRoundedRingLayerId,
 } from '../paint/shared-point-rounded-body';
 import {
-  sharedPointRoundedShadowLayerId,
-  sharedPointSelectionRoundedShadowLayerId,
-} from '../paint/shared-point-rounded-shadow';
-import {
   buildFloatingBadgeRoundedChromeOptions,
   ensureFloatingBadgeSelectionChrome,
   reapplyFloatingBadgeSelectionChromeIfActive,
@@ -43,7 +39,7 @@ import {
 } from './marker-shape';
 
 export type FloatingBadgeStack = {
-  /** Circle ground shadow (rounded-rect markers cast their own in `roundedResting`). */
+  /** Soft circle ground glow — casts for every marker shape. */
   shadow: readonly string[];
   /** Circle floating badge (places). */
   circleBody: readonly string[];
@@ -63,7 +59,6 @@ export type FloatingBadgeStack = {
 
 export function floatingBadgeRoundedRestingLayerIds(pointLayerId: string): string[] {
   return [
-    sharedPointRoundedShadowLayerId(pointLayerId),
     sharedPointRoundedOuterLayerId(pointLayerId),
     sharedPointRoundedRingLayerId(pointLayerId),
     sharedPointRoundedBodyLayerId(pointLayerId),
@@ -73,7 +68,6 @@ export function floatingBadgeRoundedRestingLayerIds(pointLayerId: string): strin
 
 export function floatingBadgeSelectionRoundedLayerIds(pointLayerId: string): string[] {
   return [
-    sharedPointSelectionRoundedShadowLayerId(pointLayerId),
     sharedPointSelectionRoundedOuterLayerId(pointLayerId),
     sharedPointSelectionRoundedRingLayerId(pointLayerId),
     sharedPointSelectionRoundedBodyLayerId(pointLayerId),
@@ -92,7 +86,12 @@ export function setFloatingBadgeSelectionLift(
   if (!map.setPaintProperty) return;
   const screenTranslate = sharedPointFloatingBadgeNormalizeViewportTranslate(translate);
   for (const layerId of floatingBadgeSelectionLiftLayerIds(ids.pointLayerId)) {
-    const layer = map.getLayer?.(layerId) as { type?: string } | undefined;
+    let layer: { type?: string } | undefined;
+    try {
+      layer = map.getLayer?.(layerId) as { type?: string } | undefined;
+    } catch {
+      continue;
+    }
     if (!layer) continue;
     const prefix = layer.type === 'circle' ? 'circle' : 'icon';
     try {
@@ -146,7 +145,7 @@ export function buildFloatingBadgeStack(ids: SharedPointLayerIds): FloatingBadge
   };
 }
 
-/** Shape split — each shape casts its own matching shadow. */
+/** Shape split — badge bodies by shape; soft circle glow casts for every marker. */
 export function syncFloatingBadgeStackShapeFilters(
   map: MapInstance,
   ids: SharedPointLayerIds
@@ -156,7 +155,10 @@ export function syncFloatingBadgeStackShapeFilters(
   const circleFilter = sharedPointCircleBodyFilter();
   const roundedFilter = sharedPointRoundedRectBodyFilter();
 
-  for (const layerId of [...stack.shadow, ...stack.circleBody]) {
+  for (const layerId of stack.shadow) {
+    trySetLayerFilter(map, layerId, null);
+  }
+  for (const layerId of stack.circleBody) {
     trySetLayerFilter(map, layerId, circleFilter);
   }
   for (const layerId of stack.roundedResting) {

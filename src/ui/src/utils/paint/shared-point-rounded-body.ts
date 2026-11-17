@@ -2,12 +2,13 @@ import type { MapInstance } from '../../providers/types';
 import {
   DEFAULT_STYLE_IMAGE_RASTER_SIZE,
   STYLE_IMAGE_PIXEL_RATIO,
+  reserveMapStyleImageIds,
   styleImageLayoutPixels,
 } from '../map-surface/map-style-images';
 import { registerBadgeIconImage } from './shared-point-badge-icon';
 import { roundedRectSdfRaster, roundedRectShadowRaster } from './rounded-rect-raster';
 import {
-  ensureRoundedShadowLayer,
+  hideRoundedShadowLayer,
   GK_ROUNDED_RECT_SHADOW_IMAGE_ID,
   sharedPointRoundedShadowLayerId,
   sharedPointSelectionRoundedShadowLayerId,
@@ -24,19 +25,16 @@ import {
   resolveFloatingBadgeSelectionAccentColor,
   resolveSharedPointFloatingBadgeTokens,
   SHARED_POINT_FLOATING_BADGE_FILL,
+  SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_COLOR,
   sharedPointFloatingBadgeSelectedRadiusExpression,
   sharedPointFloatingBadgeSelectionFillExpression,
-  sharedPointFloatingBadgeShadowOpacityExpression,
-  sharedPointFloatingBadgeShadowRadiusExpression,
-  sharedPointFloatingBadgeShadowTranslateExpression,
   sharedPointFloatingBadgeTranslateExpression,
+  sharedPointFloatingBadgeNormalizeViewportTranslate,
   hideFloatingBadgeCircleSelectionLayers,
   sharedPointSelectionSourceHasFeature,
   sharedPointSelectionSourcePrimaryProperties,
   SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
   sharedPointDotColorExpression,
-  sharedPointRestingGlyphColor,
-  sharedPointSelectedMiddleRingColor,
   sharedPointZoomedOutStep,
 } from './shared-point-paint';
 import { SHARED_POINT_BADGE_ICON_PROPERTY } from './shared-point-badge-constants';
@@ -84,8 +82,8 @@ function registerRoundedRectImage(
   data: Uint8ClampedArray,
   sdf: boolean
 ): void {
-  if (map.hasImage?.(id)) return;
   const size = DEFAULT_STYLE_IMAGE_RASTER_SIZE;
+  // Always replace — `styleimagemissing` may have installed a 1×1 placeholder first.
   registerBadgeIconImage(
     map,
     id,
@@ -96,6 +94,7 @@ function registerRoundedRectImage(
 
 export function registerRoundedRectMarkerImage(map: MapInstance): boolean {
   if (!sharedPointMapHasDrawableCanvas(map)) return false;
+  reserveMapStyleImageIds(GK_ROUNDED_RECT_MARKER_IMAGE_ID, GK_ROUNDED_RECT_SHADOW_IMAGE_ID);
   const size = DEFAULT_STYLE_IMAGE_RASTER_SIZE;
   registerRoundedRectImage(map, GK_ROUNDED_RECT_MARKER_IMAGE_ID, roundedRectSdfRaster(size), true);
   registerRoundedRectImage(
@@ -184,14 +183,14 @@ export function sharedPointRoundedBodyIconColorExpression(
 }
 
 /**
- * Resting rounded outer band: white rim zoomed in; hidden zoomed out, where the
- * shape-agnostic glass layer draws the shining-dot glow instead.
+ * Resting rounded outer band — same feature-state light/dark outer as circles; hidden zoomed out.
  */
 export function sharedPointRestingRoundedOuterColor(
-  paint: Pick<ApplySharedPointPaintOptions, 'outerStrokeColorExpression'>
+  paint?: Pick<ApplySharedPointPaintOptions, 'outerStrokeColorExpression'>
 ): unknown[] {
-  const outerColor = paint.outerStrokeColorExpression ?? ['literal', '#ffffff'];
-  return sharedPointZoomedOutStep('rgba(0,0,0,0)', outerColor);
+  const outer =
+    paint?.outerStrokeColorExpression ?? SHARED_POINT_FLOATING_BADGE_OUTER_STROKE_COLOR;
+  return sharedPointZoomedOutStep('rgba(0,0,0,0)', outer);
 }
 
 function restingRoundedChromeFromPaint(
@@ -208,11 +207,17 @@ function restingRoundedChromeFromPaint(
   fallback: string
 ) {
   const pointRadius = paint.pointRadiusExpression ?? sharedPointFloatingBadgeRadiusExpression();
-  const ringColor = sharedPointRoundedBodyIconColorExpression(fallback, paint.strokeColorExpression);
+  const keyRing = sharedPointRoundedBodyIconColorExpression(fallback, paint.strokeColorExpression);
   const outerColor = sharedPointRestingRoundedOuterColor(paint);
+  // Light core + key ring (same as circles) — key-tinted glyph stays visible on paper.
+  const coreColor =
+    paint.pointColorExpression ??
+    sharedPointZoomedOutStep(sharedPointDotColorExpression(keyRing), SHARED_POINT_FLOATING_BADGE_FILL);
+  // Zoomed out: no ring band (matches circle stroke width 0) — tiny core on the glow only.
+  const ringColor = sharedPointZoomedOutStep('rgba(0,0,0,0)', keyRing);
   return {
     pointRadius,
-    coreColor: sharedPointZoomedOutStep(sharedPointDotColorExpression(ringColor), ringColor),
+    coreColor,
     ringColor,
     outerColor,
     coreSize: sharedPointRoundedBodyIconSizeExpression(pointRadius),
@@ -222,7 +227,7 @@ function restingRoundedChromeFromPaint(
       paint.strokeWidthExpression,
       paint.outerStrokeWidthExpression
     ),
-    glyphColor: sharedPointRestingGlyphColor(resolveSharedPointFloatingBadgeTokens().glyphColor),
+    glyphColor: sharedPointZoomedOutStep('rgba(0,0,0,0)', keyRing),
   };
 }
 
@@ -246,6 +251,9 @@ export function applySharedPointRoundedRectChromePaint(
     | 'selectedDarken'
   >
 ): void {
+  // Legacy square sprite shadows must stay off even when ensure() is skipped.
+  hideRoundedShadowLayer(map, sharedPointRoundedShadowLayerId(pointLayerId));
+  hideRoundedShadowLayer(map, sharedPointSelectionRoundedShadowLayerId(pointLayerId));
   const fallback = paint.selectionGroundBadgeFallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
   const resting = restingRoundedChromeFromPaint(paint, fallback);
   const iconTranslate =
@@ -257,38 +265,8 @@ export function applySharedPointRoundedRectChromePaint(
   const selectionActive = Boolean(sourceId && sharedPointSelectionSourceHasFeature(map, sourceId));
 
   if (selectionActive && sourceId && paint.selectionGroundBadge) {
-    const props = sharedPointSelectionSourcePrimaryProperties(map, sourceId);
-  const shape =
-    markerBodyShapeFromProperties(props) === 'rounded-rect' ||
-    (typeof props?.[SHARED_POINT_BADGE_ICON_PROPERTY] === 'string' &&
-      props[SHARED_POINT_BADGE_ICON_PROPERTY].trim())
-      ? 'rounded-rect'
-      : 'circle';
-    if (shape === 'rounded-rect') {
-      const fallback = paint.selectionGroundBadgeFallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
-      const accent = resolveFloatingBadgeSelectionAccentColor(
-        props,
-        fallback,
-        paint.selectedDarken
-      );
-      const tokens = resolveSharedPointFloatingBadgeTokens();
-      const ringWidth = sharedPointFloatingBadgeRingWidthExpression(tokens.selectedRingWidth);
-      const outerStrokeWidth = tokens.selectedOuterStrokeWidth;
-      applySharedPointRoundedRectSelectionChrome(map, pointLayerId, {
-        accentColor: accent,
-        white: SHARED_POINT_FLOATING_BADGE_FILL,
-        selectedRadius,
-        ringWidth,
-        outerStrokeWidth,
-        iconTranslate:
-          paint.selectedTranslate ??
-          paint.pointTranslate ??
-          sharedPointFloatingBadgeTranslateExpression(tokens.selectedTranslate[1]),
-      });
-      hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
-      return;
-    }
-    return;
+    // Shadow-only select — never swap in a second selection-source marker.
+    hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
   }
 
   const restingLayers = [
@@ -319,24 +297,23 @@ export function applySharedPointRoundedRectChromePaint(
     ],
   ] as const;
 
-  const layersToPaint = [...restingLayers, ...selectionLayers] as const;
-
-  const restingIconOpacity =
-    paint.selectionGroundBadge && paint.pointOpacityExpression != null
-      ? paint.pointOpacityExpression
-      : 1;
-
-  for (const [layerId, size, color] of layersToPaint) {
+  // Only paint the resting stack — selection-source rounded layers stay hidden.
+  for (const [layerId, size, color] of restingLayers) {
     if (!map.getLayer?.(layerId) || !map.setPaintProperty) continue;
-    const isRestingRounded =
-      layerId.includes('-rounded-') && !layerId.includes('-selection-rounded-');
     try {
       map.setPaintProperty(layerId, 'icon-size', size);
       map.setPaintProperty(layerId, 'icon-color', color);
       map.setPaintProperty(layerId, 'icon-translate', iconTranslate);
-      if (isRestingRounded) {
-        map.setPaintProperty(layerId, 'icon-opacity', restingIconOpacity);
-      }
+      map.setPaintProperty(layerId, 'icon-opacity', 1);
+    } catch {
+      /* style swap */
+    }
+  }
+
+  for (const [layerId] of selectionLayers) {
+    if (!map.getLayer?.(layerId) || !map.setPaintProperty) continue;
+    try {
+      map.setPaintProperty(layerId, 'icon-opacity', 0);
     } catch {
       /* style swap */
     }
@@ -347,24 +324,23 @@ export function applySharedPointRoundedRectChromePaint(
     try {
       map.setPaintProperty(pointIconId, 'icon-color', resting.glyphColor);
       map.setPaintProperty(pointIconId, 'icon-translate', iconTranslate);
-      if (paint.selectionGroundBadge && paint.pointOpacityExpression != null) {
-        map.setPaintProperty(pointIconId, 'icon-opacity', restingIconOpacity);
-      }
+      map.setPaintProperty(pointIconId, 'icon-opacity', 1);
     } catch {
       /* style swap */
     }
   }
 
+  hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
 }
 
 /**
- * Selected rounded-rect colors: white body + key outer zoomed in; zoomed out a solid key
- * marker — the selection ring layer draws the white ring with a gap around it.
+ * Selected rounded-rect colors — light core + key ring + white outer (matches resting).
+ * Key-tinted glyph stays visible on the paper fill. Zoomed out: solid key body.
  */
-function selectionRoundedColors(accent: unknown, outerAccent: unknown, white: unknown) {
+function selectionRoundedColors(accent: unknown, _outerAccent: unknown, white: unknown) {
   return {
-    outer: sharedPointZoomedOutStep('rgba(0,0,0,0)', outerAccent),
-    ring: sharedPointSelectedMiddleRingColor(accent, white),
+    outer: sharedPointZoomedOutStep('rgba(0,0,0,0)', white),
+    ring: sharedPointZoomedOutStep('rgba(0,0,0,0)', accent),
     body: sharedPointZoomedOutStep(accent, white),
     glyph: sharedPointZoomedOutStep('rgba(0,0,0,0)', accent),
   };
@@ -396,6 +372,9 @@ export function applySharedPointRoundedRectSelectionChrome(
     options.ringWidth,
     options.outerStrokeWidth
   );
+  const screenTranslate = sharedPointFloatingBadgeNormalizeViewportTranslate(
+    options.iconTranslate as [number, number] | unknown[]
+  );
   for (const [layerId, size, color] of [
     [sharedPointSelectionRoundedOuterLayerId(pointLayerId), outerSize, colors.outer],
     [sharedPointSelectionRoundedRingLayerId(pointLayerId), ringSize, colors.ring],
@@ -405,7 +384,8 @@ export function applySharedPointRoundedRectSelectionChrome(
     try {
       map.setPaintProperty(layerId, 'icon-size', size);
       map.setPaintProperty(layerId, 'icon-color', color);
-      map.setPaintProperty(layerId, 'icon-translate', options.iconTranslate);
+      map.setPaintProperty(layerId, 'icon-translate-anchor', 'viewport');
+      map.setPaintProperty(layerId, 'icon-translate', screenTranslate);
     } catch {
       /* style swap */
     }
@@ -522,19 +502,8 @@ export function ensureSharedPointRoundedRectChromeLayers(
   const outerLayerId = sharedPointRoundedOuterLayerId(options.pointLayerId);
   const ringLayerId = sharedPointRoundedRingLayerId(options.pointLayerId);
   const bodyLayerId = sharedPointRoundedBodyLayerId(options.pointLayerId);
-  const tokens = resolveSharedPointFloatingBadgeTokens();
 
-  ensureRoundedShadowLayer(map, {
-    layerId: sharedPointRoundedShadowLayerId(options.pointLayerId),
-    source: options.sourceId,
-    beforeId: options.beforeId,
-    shadowRadius:
-      options.shadowRadius ??
-      sharedPointFloatingBadgeShadowRadiusExpression(undefined, tokens.shadowRadiusPad),
-    opacity:
-      options.shadowOpacity ?? sharedPointFloatingBadgeShadowOpacityExpression(tokens.shadowOpacity),
-    translate: options.shadowTranslate ?? sharedPointFloatingBadgeShadowTranslateExpression(),
-  });
+  hideRoundedShadowLayer(map, sharedPointRoundedShadowLayerId(options.pointLayerId));
   ensureRoundedSymbolLayer(
     map,
     options,
@@ -591,17 +560,7 @@ export function ensureSharedPointSelectionRoundedRectChromeLayers(
     ? `${options.pointLayerId}-selection-badge-icon`
     : `${options.pointLayerId}-selection-badge`;
 
-  ensureRoundedShadowLayer(map, {
-    layerId: sharedPointSelectionRoundedShadowLayerId(options.pointLayerId),
-    source: selectionSourceId,
-    beforeId,
-    shadowRadius: scaleInterpolateRadiusStops(
-      sharedPointFloatingBadgeShadowRadiusExpression(undefined, tokens.shadowRadiusPad),
-      tokens.selectedShadowScale
-    ),
-    opacity: tokens.selectedShadowOpacity,
-    translate: tokens.selectedShadowTranslate,
-  });
+  hideRoundedShadowLayer(map, sharedPointSelectionRoundedShadowLayerId(options.pointLayerId));
 
   for (const [layerId, size, color] of [
     [

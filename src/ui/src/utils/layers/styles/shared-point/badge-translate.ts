@@ -32,6 +32,9 @@ import {
   sharedPointFloatingBadgeShadowRadiusExpression,
   sharedPointFloatingBadgeSoftColor,
   sharedPointFloatingBadgeTranslatesNearlyEqual,
+  sharedPointFloatingBadgeTranslateAtZoom,
+  sharedPointFloatingBadgeTranslateExpression,
+  sharedPointFloatingBadgeViewportTranslate,
   sharedPointGlassLayerId,
   sharedPointHitLayerIds,
   sharedPointHoverBadgeLayerId,
@@ -84,6 +87,7 @@ import {
   resolveMapTilerHelperPointColor,
 } from '../types';
 
+import { sharedPointFloatingBadgeFloatYForPitch } from '../../../paint/shared-point-pitch-lift';
 import {
   hoverBadgeAnimByMap,
   hoverRingColorAnimByMap,
@@ -246,6 +250,8 @@ export function setSelectionBadgeTranslate(
   translate: [number, number] | unknown[]
 ): void {
   setBadgeLayersTranslate(map, selectionBadgeLayerIds(pointLayerId), translate);
+  // Same viewport normalize as circles — map-anchored Y slides sideways under bearing/pitch.
+  const screenTranslate = sharedPointFloatingBadgeNormalizeViewportTranslate(translate);
   for (const layerId of [
     sharedPointSelectionRoundedOuterLayerId(pointLayerId),
     sharedPointSelectionRoundedRingLayerId(pointLayerId),
@@ -253,12 +259,13 @@ export function setSelectionBadgeTranslate(
   ]) {
     if (!map.getLayer?.(layerId) || !map.setPaintProperty) continue;
     try {
-      map.setPaintProperty(layerId, 'icon-translate', translate);
+      map.setPaintProperty(layerId, 'icon-translate-anchor', 'viewport');
+      map.setPaintProperty(layerId, 'icon-translate', screenTranslate);
     } catch {
       /* style swap */
     }
   }
-  syncSelectionBadgeIconTranslate(map, pointLayerId, translate);
+  syncSelectionBadgeIconTranslate(map, pointLayerId, screenTranslate);
 }
 
 /** Numeric circle-translate already written by JS animation, if any. */
@@ -384,7 +391,40 @@ export function animateSharedPointHoverBadgeTranslate(
   });
 }
 
-/** Ease selection badge from resting height up to selected (or custom from/to). */
+/** Token float/selected Y scaled by camera pitch (matches resting pitch-lift). */
+export function sharedPointSelectionBadgeTranslateForPitch(
+  token: [number, number],
+  pitchDegrees: number
+): [number, number] {
+  return sharedPointFloatingBadgeViewportTranslate(
+    sharedPointFloatingBadgeFloatYForPitch(token[1], pitchDegrees)
+  );
+}
+
+/**
+ * Same screen offset the resting badge uses right now (pitch + zoom).
+ * Full token Y without zoom scaling jumps the badge on click at mid zoom.
+ */
+export function sharedPointSelectionBadgeTranslateForCamera(
+  token: [number, number],
+  pitchDegrees: number,
+  zoom: number
+): [number, number] {
+  const pitchedY = sharedPointFloatingBadgeFloatYForPitch(token[1], pitchDegrees);
+  return sharedPointFloatingBadgeTranslateAtZoom(pitchedY, zoom);
+}
+
+/** Same zoom expression resting badges use — avoids numeric/expression mismatch jumps. */
+export function sharedPointSelectionBadgeTranslateExpression(
+  token: [number, number],
+  pitchDegrees: number
+): unknown[] {
+  return sharedPointFloatingBadgeTranslateExpression(
+    sharedPointFloatingBadgeFloatYForPitch(token[1], pitchDegrees)
+  );
+}
+
+/** Ease selection badge from resting height down to selected (or custom from/to). */
 export function animateSharedPointSelectionBadgeTranslate(
   map: MapInstance,
   pointLayerId: string,
@@ -396,13 +436,25 @@ export function animateSharedPointSelectionBadgeTranslate(
   }
 ): void {
   const tokens = resolveSharedPointFloatingBadgeTokens();
+  const pitch = map.getPitch?.() ?? 0;
+  const zoom = map.getZoom?.() ?? 16;
+  // Match resting paint (pitch + zoom) so select does not jump to full-token height.
+  const cameraFloat = sharedPointSelectionBadgeTranslateForCamera(
+    tokens.floatTranslate,
+    pitch,
+    zoom
+  );
+  const cameraSelected = sharedPointSelectionBadgeTranslateForCamera(
+    tokens.selectedTranslate,
+    pitch,
+    zoom
+  );
   // Prefer current paint translate so a second select/re-apply does not snap down to rest.
-  // Token screen offsets (not zoom-scaled): Places fly must not settle the pop.
   const from =
     options?.from ??
     readNumericBadgeTranslate(map, selectionBadgeLayerIds(pointLayerId)) ??
-    tokens.floatTranslate;
-  const to = options?.to ?? tokens.selectedTranslate;
+    cameraFloat;
+  const to = options?.to ?? cameraSelected;
   scheduleBadgeTranslateAnimation({
     store: selectionBadgeAnimByMap,
     map,
