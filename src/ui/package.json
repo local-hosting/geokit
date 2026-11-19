@@ -292,6 +292,37 @@
       "require": "./dist/cjs/elements-lite.cjs",
       "default": "./dist/esm/elements-lite.js"
     },
+    "./elements-lite/register": {
+      "source": "./src/elements-lite/register.ts",
+      "types": "./dist/esm/elements-lite/register.d.ts",
+      "import": "./dist/esm/elements-lite/register.js",
+      "require": "./dist/cjs/elements-lite/register.cjs",
+      "default": "./dist/esm/elements-lite/register.js"
+    },
+    "./elements/map": {
+      "source": "./src/components/elements/map/map.ts",
+      "types": "./dist/esm/components/elements/map/map.d.ts",
+      "import": "./dist/esm/components/elements/map/map.js",
+      "default": "./dist/esm/components/elements/map/map.js"
+    },
+    "./elements/point": {
+      "source": "./src/components/elements/point/point-static-factory.ts",
+      "types": "./dist/esm/components/elements/point/point-static-factory.d.ts",
+      "import": "./dist/esm/components/elements/point/point-static-factory.js",
+      "default": "./dist/esm/components/elements/point/point-static-factory.js"
+    },
+    "./elements/point-visual": {
+      "source": "./src/components/elements/point/point-visual.ts",
+      "types": "./dist/esm/components/elements/point/point-visual.d.ts",
+      "import": "./dist/esm/components/elements/point/point-visual.js",
+      "default": "./dist/esm/components/elements/point/point-visual.js"
+    },
+    "./elements/h3": {
+      "source": "./src/components/elements/h3.ts",
+      "types": "./dist/esm/components/elements/h3.d.ts",
+      "import": "./dist/esm/components/elements/h3.js",
+      "default": "./dist/esm/components/elements/h3.js"
+    },
     "./storage": {
       "types": "./src/storage/index.ts",
       "import": "./src/storage/index.ts",

@@ -1,6 +1,6 @@
 {
   "name": "@local-hosting/geokit",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Geospatial SDK for map hosts and place search",
   "license": "MPL-2.0",
   "type": "module",
@@ -350,6 +350,12 @@
       "types": "./src/h3/dist/esm/lite.d.ts",
       "import": "./src/h3/dist/esm/lite.js",
       "default": "./src/h3/dist/esm/lite.js"
+    },
+    "./h3/map-ui": {
+      "source": "./src/h3/src/map-ui.ts",
+      "types": "./src/h3/dist/esm/map-ui.d.ts",
+      "import": "./src/h3/dist/esm/map-ui.js",
+      "default": "./src/h3/dist/esm/map-ui.js"
     },
     "./h3/cell-to-region-index": {
       "types": "./src/h3/dist/esm/cell/cell-to-region-index.d.ts",
@@ -725,6 +731,37 @@
       "import": "./src/ui/dist/esm/elements-lite.js",
       "require": "./src/ui/dist/cjs/elements-lite.cjs",
       "default": "./src/ui/dist/esm/elements-lite.js"
+    },
+    "./ui/elements-lite/register": {
+      "source": "./src/ui/src/elements-lite/register.ts",
+      "types": "./src/ui/dist/esm/elements-lite/register.d.ts",
+      "import": "./src/ui/dist/esm/elements-lite/register.js",
+      "require": "./src/ui/dist/cjs/elements-lite/register.cjs",
+      "default": "./src/ui/dist/esm/elements-lite/register.js"
+    },
+    "./ui/elements/map": {
+      "source": "./src/ui/src/components/elements/map/map.ts",
+      "types": "./src/ui/dist/esm/components/elements/map/map.d.ts",
+      "import": "./src/ui/dist/esm/components/elements/map/map.js",
+      "default": "./src/ui/dist/esm/components/elements/map/map.js"
+    },
+    "./ui/elements/point": {
+      "source": "./src/ui/src/components/elements/point/point-static-factory.ts",
+      "types": "./src/ui/dist/esm/components/elements/point/point-static-factory.d.ts",
+      "import": "./src/ui/dist/esm/components/elements/point/point-static-factory.js",
+      "default": "./src/ui/dist/esm/components/elements/point/point-static-factory.js"
+    },
+    "./ui/elements/point-visual": {
+      "source": "./src/ui/src/components/elements/point/point-visual.ts",
+      "types": "./src/ui/dist/esm/components/elements/point/point-visual.d.ts",
+      "import": "./src/ui/dist/esm/components/elements/point/point-visual.js",
+      "default": "./src/ui/dist/esm/components/elements/point/point-visual.js"
+    },
+    "./ui/elements/h3": {
+      "source": "./src/ui/src/components/elements/h3.ts",
+      "types": "./src/ui/dist/esm/components/elements/h3.d.ts",
+      "import": "./src/ui/dist/esm/components/elements/h3.js",
+      "default": "./src/ui/dist/esm/components/elements/h3.js"
     },
     "./ui/storage": {
       "types": "./src/ui/dist/esm/storage/index.d.ts",
