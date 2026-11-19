@@ -1,0 +1,11 @@
+# Ship dist trees only (see package.json "files"); block stray docs beside dist.
+src/**/README.md
+src/**/src/**
+src/**/tests/**
+src/**/test/**
+demo/
+config/
+scripts/
+*.test.*
+vitest.config.*
+tsconfig*.json

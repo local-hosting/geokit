@@ -1,5 +1,1 @@
-yarn workspace geokit exec lint-staged
-yarn workspace @twinfile/geokit/api run typecheck
-yarn workspaces foreach -Apt --include '@twinfile/geokit/api' --include 'services/*' run test
-yarn workspace geokit run typecheck
-yarn workspace geokit run test
+yarn run check

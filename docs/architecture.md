@@ -33,12 +33,14 @@ Say **service**, **plugin**, or **UI provider** — not bare "provider".
 
 ## Install
 
-| Need | Packages |
-|------|----------|
+npm ships **one** dependency: `@local-hosting/geokit` (all dist slices in the tarball). A slim app is built by **which subpaths you import**, not by installing multiple packages — your bundler only pulls what you reference.
+
+| Need | Import subpath |
+|------|----------------|
 | Geo utils only | `@local-hosting/geokit/core` |
 | Map UI | `@local-hosting/geokit/ui` |
-| Place search / geocoding / isochrones | + `@local-hosting/geokit/service` |
-| Vendor APIs | + one or more `src/providers/*` packages |
+| Place search / geocoding / isochrones | `@local-hosting/geokit/service` |
+| Vendor APIs | `@local-hosting/geokit/foursquare`, `/mapbox`, `/maptiler`, … (see layout table above) |
 
 ## Bootstrap
 

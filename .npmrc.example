@@ -1,3 +1,3 @@
-# npm registry auth (optional — only needed for private scoped packages)
-# Copy this file to .npmrc and set your token when publishing or installing private deps.
-# //registry.npmjs.org/:_authToken=${NPM_TOKEN}
+# GitHub Packages (@local-hosting/geokit). Copy to .npmrc when installing or publishing.
+@local-hosting:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}

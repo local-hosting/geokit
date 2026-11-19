@@ -100,6 +100,9 @@ export function createLibraryTsupConfig(packageRoot) {
       clean: true,
       platform: 'node',
       tsconfig,
+      onSuccess: async () => {
+        await fixEsmImports(join(packageRoot, 'dist/esm'));
+      },
     },
     {
       name: 'cjs',
@@ -114,7 +117,6 @@ export function createLibraryTsupConfig(packageRoot) {
       platform: 'node',
       tsconfig,
       onSuccess: async () => {
-        await fixEsmImports(join(packageRoot, 'dist/esm'));
         await fixCjsRequires(join(packageRoot, 'dist/cjs'));
       },
     },

@@ -1,7 +1,7 @@
 {
   "name": "@local-hosting/geokit",
   "version": "0.4.3",
-  "description": "Geospatial SDK for Twinfile map hosts and place search",
+  "description": "Geospatial SDK for map hosts and place search",
   "license": "MPL-2.0",
   "type": "module",
   "repository": {
@@ -18,7 +18,7 @@
     "build:core": "yarn build:core:bundle && yarn build:core:types",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "test": "yarn test:core && yarn test:crosswalk && yarn validate:exports",
-    "check": "node scripts/check-vendor-neutral.mjs && node scripts/check-no-retired-scopes-in-dist.mjs && yarn generate:tsconfig-paths && yarn test:crosswalk",
+    "check": "node scripts/check-vendor-neutral.mjs && node scripts/check-no-retired-scopes-in-dist.mjs && node scripts/check-publish-pack.mjs && yarn generate:tsconfig-paths && yarn test:crosswalk",
     "pretest": "yarn generate:dev-config",
     "test:core": "vitest run --config src/core/config/vitest.config.ts",
     "verify:parity": "bash src/core/scripts/verify-parity.sh",
@@ -37,7 +37,7 @@
     "build:foursquare": "cd src/providers/foursquare && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "normalize:exports": "node scripts/normalize-package-exports.mjs",
     "validate:exports": "node scripts/validate-package-exports.mjs",
-    "prepublishOnly": "node scripts/publish-consumer-build.mjs && yarn normalize:exports && yarn validate:exports",
+    "prepublishOnly": "node scripts/publish-consumer-build.mjs && yarn normalize:exports && yarn validate:exports && node scripts/check-publish-pack.mjs",
     "generate:tsconfig-paths": "node scripts/generate-geokit-tsconfig-paths.mjs",
     "generate:dev-config": "node scripts/generate-dev-config.mjs",
     "build:core:bundle": "node src/core/scripts/check-build-tsconfig.mjs && cd src/core && tsup --config config/tsup.config.js && node ../../scripts/check-no-src-declarations.mjs",
@@ -358,7 +358,7 @@
       "source": "./src/h3/src/index.ts",
       "import": "./src/h3/dist/esm/index.js",
       "default": "./src/h3/dist/esm/index.js",
-      "development": "./src/h3/src/index.ts"
+      "development": "./src/h3/dist/esm/index.js"
     },
     "./h3/lite": {
       "types": "./src/h3/dist/esm/lite.d.ts",
@@ -891,13 +891,14 @@
   },
   "packageManager": "yarn@4.18.0",
   "files": [
-    "src",
-    "config",
-    "scripts/normalize-package-exports.mjs",
-    "scripts/validate-package-exports.mjs",
-    "scripts/generate-geokit-tsconfig-paths.mjs",
-    "scripts/generate-dev-config.mjs",
-    "scripts/geokit-vitest-aliases.mjs",
-    "tests/package-exports.test.mjs"
+    "README.md",
+    "src/core/dist",
+    "src/crosswalk/dist",
+    "src/env/dist",
+    "src/formats/dist",
+    "src/h3/dist",
+    "src/service/dist",
+    "src/ui/dist",
+    "src/providers/foursquare/dist"
   ]
 }

@@ -1,0 +1,10 @@
+[
+  "src/core/dist",
+  "src/crosswalk/dist",
+  "src/env/dist",
+  "src/formats/dist",
+  "src/h3/dist",
+  "src/service/dist",
+  "src/ui/dist",
+  "src/providers/foursquare/dist"
+]

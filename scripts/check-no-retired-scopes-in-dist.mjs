@@ -1,15 +1,25 @@
 #!/usr/bin/env node
 /**
- * Fail when compiled dist still references retired geokit package names.
- * Source may be renamed while stale local dist breaks consumers (MCP map/geo surfaces).
+ * Fail when compiled dist still references non-@local-hosting geokit package scopes.
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
-const BANNED = ['@local-hosting/geokit', '@twinfile/geokit', '@local-hosting/geokit'];
+const CANONICAL_SCOPE = '@local-hosting/geokit';
+const FOREIGN_GEOKIT_SCOPE = /@[\w-]+\/geokit/g;
 const EXT = new Set(['.js', '.cjs', '.mjs', '.d.ts']);
+
+function foreignGeokitScopesIn(text) {
+  const found = new Set();
+  for (const match of text.matchAll(FOREIGN_GEOKIT_SCOPE)) {
+    if (match[0] !== CANONICAL_SCOPE) {
+      found.add(match[0]);
+    }
+  }
+  return [...found];
+}
 
 function walkDist(dir, hits) {
   let entries;
@@ -32,10 +42,8 @@ function walkDist(dir, hits) {
     } catch {
       continue;
     }
-    for (const needle of BANNED) {
-      if (text.includes(needle)) {
-        hits.push({ path, needle });
-      }
+    for (const needle of foreignGeokitScopesIn(text)) {
+      hits.push({ path, needle });
     }
   }
 }
@@ -70,7 +78,7 @@ for (const distRoot of collectDistRoots(join(root, 'src'))) {
 }
 
 if (hits.length > 0) {
-  console.error('[check-no-retired-scopes-in-dist] stale package names in dist:\n');
+  console.error('[check-no-retired-scopes-in-dist] non-canonical geokit scopes in dist:\n');
   for (const { path, needle } of hits) {
     console.error(`  ${needle}\n    ${path.replace(`${root}/`, '')}`);
   }
