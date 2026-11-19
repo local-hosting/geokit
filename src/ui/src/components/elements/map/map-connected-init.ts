@@ -468,11 +468,18 @@ export class MapConnectedInit extends MapBase {
         return;
       }
 
+      const mapInstance = this.map;
+      if (!mapInstance) {
+        this.isInitialized = false;
+        this._isInitializing = false;
+        return;
+      }
+
       // Wrap queryRenderedFeatures so MapTiler SDK internal calls (e.g. mousemove) don't throw
       // "unknown feature value" when parsing vector tiles in Safari
-      if (this.map?.queryRenderedFeatures) {
-        const original = this.map.queryRenderedFeatures.bind(this.map);
-        this.map.queryRenderedFeatures = (
+      if (mapInstance.queryRenderedFeatures) {
+        const original = mapInstance.queryRenderedFeatures.bind(mapInstance);
+        mapInstance.queryRenderedFeatures = (
           point: { x: number; y: number },
           options?: { layers?: string[] }
         ) => {
@@ -486,7 +493,7 @@ export class MapConnectedInit extends MapBase {
 
       // Wrap setFeatureState/removeFeatureState so MapTiler SDK "unknown feature value" during
       // coalesceChanges/render (sync or async) doesn't surface as uncaught
-      const mapAny = this.map as {
+      const mapAny = mapInstance as {
         setFeatureState?: (
           state: { source: string; id: string | number },
           props: Record<string, unknown>
@@ -494,10 +501,10 @@ export class MapConnectedInit extends MapBase {
         removeFeatureState?: (state: { source: string; id: string | number }) => void;
       };
       if (mapAny.setFeatureState) {
-        const originalSet = mapAny.setFeatureState.bind(this.map);
+        const originalSet = mapAny.setFeatureState.bind(mapInstance);
         mapAny.setFeatureState = (state, props) => {
           // Skip before the source is on the style — Mapbox fires a hard error otherwise.
-          if (this.map.getSource && !this.map.getSource(state.source)) return;
+          if (mapInstance.getSource && !mapInstance.getSource(state.source)) return;
           try {
             originalSet(state, props);
           } catch {
@@ -506,7 +513,7 @@ export class MapConnectedInit extends MapBase {
         };
       }
       if (mapAny.removeFeatureState) {
-        const originalRemove = mapAny.removeFeatureState.bind(this.map);
+        const originalRemove = mapAny.removeFeatureState.bind(mapInstance);
         mapAny.removeFeatureState = (state) => {
           try {
             originalRemove(state);

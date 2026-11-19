@@ -1,4 +1,11 @@
 {
+  "consumer": [
+    "generate:tsconfig-paths",
+    "build:env",
+    "build:h3",
+    "generate:tsconfig-paths",
+    "build:core:bundle"
+  ],
   "publish": [
     "generate:tsconfig-paths",
     "build:env",
