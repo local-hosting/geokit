@@ -55,9 +55,9 @@ export interface PointOptions {
   pointName?: string;
 }
 
-import { PointBase } from './point-base';
+import { PointStyleGetters } from './point-style-getters';
 
-export class PointLayersRuntime extends PointBase {
+export class PointLayersRuntime extends PointStyleGetters {
   protected addPoint(): void {
     if (!pointEl(this).map) return;
 
