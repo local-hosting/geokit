@@ -111,6 +111,32 @@ describe('shared point badge icon', () => {
     }
   });
 
+  it('includes a no-op feature-state paint expr (Mapbox GL #13714)', () => {
+    // Symbol layers on a feature-state source without any feature-state paint crash when
+    // setPaintProperty / setTerrain runs while hover/selected state exists on that source.
+    const pointLayerId = 'canvas-places-point';
+    const sourceId = 'canvas-places';
+    const layers = new Map<string, { paint?: Record<string, unknown> }>();
+    const map = {
+      getSource: (id: string) =>
+        id === sourceId || id === `${sourceId}-selection` ? {} : undefined,
+      getLayer: (id: string) => (layers.has(id) || id === pointLayerId ? {} : undefined),
+      addLayer: (spec: { id: string; paint?: Record<string, unknown> }) => {
+        layers.set(spec.id, spec);
+      },
+    };
+
+    ensureSharedPointBadgeIconLayers(map as never, { sourceId, pointLayerId });
+
+    for (const id of [
+      sharedPointPointBadgeIconLayerId(pointLayerId),
+      sharedPointSelectionBadgeIconLayerId(pointLayerId),
+    ]) {
+      const paintJson = JSON.stringify(layers.get(id)?.paint ?? {});
+      expect(paintJson).toContain('feature-state');
+    }
+  });
+
   it('raises selection icon above badge disks', () => {
     const pointLayerId = 'canvas-places-point';
     const selectionIconId = sharedPointSelectionBadgeIconLayerId(pointLayerId);
@@ -134,5 +160,43 @@ describe('shared point badge icon', () => {
     expect(moveLayer).toHaveBeenCalledWith(badgeOuterId, selectionIconId);
     expect(moveLayer).toHaveBeenCalledWith(badgeId, selectionIconId);
     expect(moveLayer).toHaveBeenCalledWith(selectionIconId);
+  });
+
+  it('aligns Mapbox Standard slots before moveLayer when glass is top and glyph is not', () => {
+    const pointLayerId = 'canvas-places-point';
+    const selectionIconId = sharedPointSelectionBadgeIconLayerId(pointLayerId);
+    const glassId = `${pointLayerId}-glass`;
+    const slots = new Map<string, string | undefined>([
+      [glassId, 'top'],
+      [selectionIconId, undefined],
+      [pointLayerId, 'top'],
+    ]);
+    const layerIds = new Set([glassId, selectionIconId, pointLayerId]);
+    const setSlot = vi.fn((id: string, slot?: string | null) => {
+      slots.set(id, slot ?? undefined);
+    });
+    const moveLayer = vi.fn((id: string, beforeId?: string) => {
+      if (beforeId == null) return;
+      if (slots.get(id) !== slots.get(beforeId)) {
+        throw new Error(
+          `Layer with id "${beforeId}" has a different slot. Layers can only be rearranged within the same slot.`
+        );
+      }
+    });
+
+    expect(() =>
+      raiseSharedPointBadgeIconLayersOnTop(
+        {
+          getLayer: (id: string) =>
+            layerIds.has(id) ? { id, slot: slots.get(id) } : undefined,
+          setSlot,
+          moveLayer,
+        } as never,
+        pointLayerId
+      )
+    ).not.toThrow();
+
+    expect(setSlot).toHaveBeenCalledWith(selectionIconId, 'top');
+    expect(moveLayer).toHaveBeenCalledWith(glassId, selectionIconId);
   });
 });

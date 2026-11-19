@@ -37,6 +37,7 @@ import {
   sharedPointHoverBadgeOuterLayerId,
   sharedPointFloatingBadgeOuterDiscRadius,
   sharedPointFloatingBadgeOuterStrokeRadius,
+  moveSharedPointLayer,
   sharedPointOuterStrokeLayerId,
   sharedPointRadiusPlusStrokeWidth,
   sharedPointGlassPaint,
@@ -105,6 +106,10 @@ import {
   DEFAULT_SHARED_POINT_ID_PROPERTIES,
   extractPointLngLat,
   getSharedPointSelection,
+  lookupSharedPointProperties,
+  patchSharedPointFeatureRingColor,
+  resolveSharedPointHoverRingColor,
+  resolveSharedPointRingColor,
   resolveSharedPointSelectionLngLat,
   setSharedPointSelection,
 } from './shared-point/selection';
@@ -844,6 +849,10 @@ export interface HoverLayerOptions {
   /** Keep selection halo off when grounded floating-badge is active. */
   selectionGroundBadge?: boolean;
   selectionGroundBadgeFallbackColor?: string;
+  /** App hover ring accent — patches `_color` so circle places match rounded resources. */
+  hoverRingColor?: string;
+  /** App selected ring accent — leave-restore while a marker stays active. */
+  selectedRingColor?: string;
   selectionPointStrokeWidth?: number | unknown[];
   selectionRingColor?: string;
   /** Resting badge translate (floating-badge). Zoom expression or `[x, y]`. */
@@ -1277,7 +1286,7 @@ export function setupSelectionGroundBadgeLayers(
           paint: {
             'circle-radius': outerStrokeRadius,
             'circle-color': outerColor,
-            // Spare layer — select is shadow-only on the resting marker.
+            // Starts hidden; syncBadgeChrome reveals on select for settle.
             'circle-opacity': 0,
             'circle-blur': 0,
             'circle-stroke-width': outerWidth,
@@ -1306,7 +1315,7 @@ export function setupSelectionGroundBadgeLayers(
           paint: {
             'circle-radius': selectedRadius,
             'circle-color': fillColor,
-            // Spare layer — select is shadow-only on the resting marker.
+            // Starts hidden; syncBadgeChrome reveals on select for settle.
             'circle-opacity': 0,
             'circle-blur': 0,
             'circle-stroke-width': ringWidth,
@@ -1350,12 +1359,8 @@ export function setupSelectionGroundBadgeLayers(
         map.setPaintProperty(badgeLayerId, 'circle-stroke-opacity', 0);
       }
       // Heal sessions that still have outer above the white ring.
-      if (
-        map.getLayer?.(badgeOuterLayerId) &&
-        map.getLayer?.(badgeLayerId) &&
-        typeof map.moveLayer === 'function'
-      ) {
-        map.moveLayer(badgeOuterLayerId, badgeLayerId);
+      if (map.getLayer?.(badgeOuterLayerId) && map.getLayer?.(badgeLayerId)) {
+        moveSharedPointLayer(map, badgeOuterLayerId, badgeLayerId);
       }
     } catch {
       /* style swap */
@@ -1365,6 +1370,16 @@ export function setupSelectionGroundBadgeLayers(
   raiseSharedPointBadgeIconLayersOnTop(map, pointLayerId);
 }
 
+
+/** Lowest resting badge body layer the cast must sit under (glass → outer → fill). */
+function selectionShadowBeforeId(map: MapInstance, pointLayerId: string): string | undefined {
+  const glassId = sharedPointGlassLayerId(pointLayerId);
+  if (map.getLayer?.(glassId)) return glassId;
+  const outerId = sharedPointOuterStrokeLayerId(pointLayerId);
+  if (map.getLayer?.(outerId)) return outerId;
+  if (map.getLayer?.(pointLayerId)) return pointLayerId;
+  return undefined;
+}
 
 function setupSelectionShadowLayer(
   map: MapInstance,
@@ -1388,43 +1403,53 @@ function setupSelectionShadowLayer(
             ? selectionShadowTranslate
             : SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE) as [number, number]
         );
+  // Insert under glass/outer — beforeId=point alone stacks shadow *above* the blue rim.
+  const beforeId = selectionShadowBeforeId(map, pointLayerId);
 
   if (!map.getLayer?.(shadowLayerId)) {
     try {
-      map.addLayer(
-        {
-          id: shadowLayerId,
-          type: 'circle',
-          source: selectionSourceId,
-          // Shape-agnostic — same soft cast under circle and rounded-rect selections.
-          minzoom: 0,
-          paint: {
-            'circle-radius': getSelectionShadowRadiusFromPointRadius(
-              pointRadius ?? getPointRadiusInterpolation(),
-              pointStrokeWidth ?? 0
-            ),
-            'circle-color': selectionShadowColor,
-            'circle-opacity': SHARED_POINT_FLOATING_BADGE_SELECTED_SHADOW_OPACITY,
-            'circle-blur': 0.7,
-            'circle-stroke-width': 0,
-            'circle-translate': castTranslate,
-            'circle-translate-anchor': 'viewport',
-            'circle-pitch-alignment': 'viewport',
-            'circle-pitch-scale': 'viewport',
-          },
-        } as any,
-        pointLayerId
-      );
-      debug.log('[layer-styles] selection shadow layer ADD', { shadowLayerId });
+      const layerSpec = {
+        id: shadowLayerId,
+        type: 'circle',
+        source: selectionSourceId,
+        // Shape-agnostic — same soft cast under circle and rounded-rect selections.
+        minzoom: 0,
+        paint: {
+          'circle-radius': getSelectionShadowRadiusFromPointRadius(
+            pointRadius ?? getPointRadiusInterpolation(),
+            pointStrokeWidth ?? 0
+          ),
+          'circle-color': selectionShadowColor,
+          'circle-opacity': SHARED_POINT_FLOATING_BADGE_SELECTED_SHADOW_OPACITY,
+          'circle-blur': 0.7,
+          'circle-stroke-width': 0,
+          'circle-translate': castTranslate,
+          'circle-translate-anchor': 'viewport',
+          'circle-pitch-alignment': 'viewport',
+          'circle-pitch-scale': 'viewport',
+        },
+      } as any;
+      if (beforeId) {
+        map.addLayer(layerSpec, beforeId);
+      } else {
+        map.addLayer(layerSpec);
+      }
+      debug.log('[layer-styles] selection shadow layer ADD', { shadowLayerId, beforeId });
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add selection shadow ${shadowLayerId}:`, err);
     }
-  } else if (map.setFilter) {
-    // Heal older circle-only filters so selected rounded-rects keep their cast.
-    try {
-      map.setFilter(shadowLayerId, null);
-    } catch {
-      /* style swap */
+  } else {
+    // Heal sessions that still have the cast between outer ring and fill.
+    if (beforeId) {
+      moveSharedPointLayer(map, shadowLayerId, beforeId);
+    }
+    if (map.setFilter) {
+      // Heal older circle-only filters so selected rounded-rects keep their cast.
+      try {
+        map.setFilter(shadowLayerId, null);
+      } catch {
+        /* style swap */
+      }
     }
   }
 }
@@ -1486,12 +1511,8 @@ function setupSelectionRingLayer(
 
 export function ensureSelectionRingOnTop(map: MapInstance, pointLayerId: string): void {
   const ringLayerId = `${pointLayerId}-selection-ring`;
-  if (!map.getLayer?.(ringLayerId) || !map.moveLayer) return;
-  try {
-    (map.moveLayer as (id: string) => void)(ringLayerId);
-  } catch {
-    /* layer order best-effort */
-  }
+  if (!map.getLayer?.(ringLayerId)) return;
+  moveSharedPointLayer(map, ringLayerId);
 }
 
 
@@ -1692,8 +1713,12 @@ function setupHoverLayers(
     }
   }
 
-  /** Floating-badge hover has no visual chrome (cursor + events only). */
+  /** Floating-badge hover has no overlay chrome — ring color patches the main source. */
   let hoverLiftMode: 'none' | 'overlay' = 'none';
+  const ringFallback =
+    options.selectionGroundBadgeFallbackColor?.trim() ||
+    options.hoverRingColor?.trim() ||
+    SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
 
   function clearHoverOverlayNow(): void {
     if (hoverLiftMode === 'none') return;
@@ -1701,21 +1726,72 @@ function setupHoverLayers(
     clearSharedPointHoverOverlay(map, sourceId);
   }
 
+  function restingRingColorForFeature(
+    properties: Record<string, unknown> | null | undefined
+  ): string {
+    const resting = properties?._colorResting;
+    if (typeof resting === 'string' && resting.trim()) return resting.trim();
+    const key = properties?._colorKey;
+    if (typeof key === 'string' && key.trim()) return key.trim();
+    return resolveSharedPointRingColor(properties, ringFallback);
+  }
+
+  function selectedRingColorForFeature(
+    properties: Record<string, unknown> | null | undefined
+  ): string {
+    const fromOptions = options.selectedRingColor?.trim();
+    if (fromOptions) return fromOptions;
+    const annotated = properties?.[SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY];
+    if (typeof annotated === 'string' && annotated.trim()) return annotated.trim();
+    return resolveFloatingBadgeSelectionAccentColor(properties, ringFallback);
+  }
+
+  function applyFloatingBadgeHoverRingColor(
+    featureId: string,
+    properties: Record<string, unknown> | null | undefined
+  ): void {
+    if (!options.selectionGroundBadge) return;
+    const hoverColor =
+      options.hoverRingColor?.trim() ||
+      resolveSharedPointHoverRingColor(properties, ringFallback);
+    patchSharedPointFeatureRingColor(map, sourceId, featureId, hoverColor, idProperties, {
+      restingColor: restingRingColorForFeature(properties),
+    });
+  }
+
+  function restoreFloatingBadgeRingColor(featureId: string | null): void {
+    if (!options.selectionGroundBadge || !featureId) return;
+    const properties = lookupSharedPointProperties(map, sourceId, featureId, idProperties);
+    const selected = getSharedPointSelection(map, sourceId);
+    const isSelected = selected?.featureId != null && String(selected.featureId) === String(featureId);
+    const color = isSelected
+      ? selectedRingColorForFeature(properties)
+      : restingRingColorForFeature(properties);
+    patchSharedPointFeatureRingColor(map, sourceId, featureId, color, idProperties, {
+      restingColor: restingRingColorForFeature(properties),
+    });
+  }
+
   function setFloatingBadgeHoverFeature(
     feature: Feature | null,
-    _featureId: string | null
+    featureId: string | null
   ): void {
     if (!options.selectionGroundBadge) return;
     cancelHoverBadgeAnimation(map, pointLayerId);
-    if (!feature) {
+    if (!feature || !featureId) {
       clearHoverOverlayNow();
       return;
     }
-    // No glow / lighten — keep hover source empty.
+    // No glow overlay — circle places + rounded resources share the `_color` ring patch.
     clearHoverOverlayNow();
+    applyFloatingBadgeHoverRingColor(
+      featureId,
+      (feature.properties as Record<string, unknown> | null) ?? null
+    );
   }
 
   function finalizeHoverChrome(): void {
+    // Ring color already restored in scheduleEndHover / endHover — clear hover state only.
     clearHoverFeatureState();
     setCursor('');
     dispatchHoverEnd();
@@ -1723,6 +1799,9 @@ function setupHoverLayers(
 
   function endHover(): void {
     // Instant stop: reverse the ring color now; chrome can settle with the leave debounce.
+    const leavingId =
+      lastHoveredFeatureId != null ? String(lastHoveredFeatureId) : null;
+    restoreFloatingBadgeRingColor(leavingId);
     if (hoverLiftMode !== 'none') {
       clearHoverOverlayNow();
     }
@@ -1741,7 +1820,11 @@ function setupHoverLayers(
   }
 
   function scheduleEndHover(): void {
-    // Color reverse starts immediately — debounce only gates cursor/feature-state teardown.
+    // Color + feature-state reverse immediately so places snap to selected/resting blue.
+    const leavingId =
+      lastHoveredFeatureId != null ? String(lastHoveredFeatureId) : null;
+    restoreFloatingBadgeRingColor(leavingId);
+    clearHoverFeatureState();
     if (hoverLiftMode !== 'none') {
       clearHoverOverlayNow();
     }
@@ -1791,9 +1874,13 @@ function setupHoverLayers(
     if (key === currentHoverKey) return;
 
     currentHoverKey = key;
-    setFloatingBadgeHoverFeature(featureForId, featureIdKey);
 
     if (featureId != null && featureId !== lastHoveredFeatureId) {
+      const previousId =
+        lastHoveredFeatureId != null ? String(lastHoveredFeatureId) : null;
+      if (previousId && previousId !== String(featureId)) {
+        restoreFloatingBadgeRingColor(previousId);
+      }
       clearHoverFeatureState();
       if (map.setFeatureState && map.getSource?.(sourceId)) {
         try {
@@ -1802,8 +1889,12 @@ function setupHoverLayers(
         } catch {
           // promoteId missing on source
         }
+      } else {
+        lastHoveredFeatureId = featureId;
       }
     }
+
+    setFloatingBadgeHoverFeature(featureForId, featureIdKey);
 
     if (key && key !== lastDispatchedKey) {
       lastDispatchedKey = key;

@@ -120,6 +120,8 @@ export {
   sharedPointStrokeFromFillColorExpression,
   annotatePointFeaturesStrokeFromFill,
   sharedPointOuterStrokeLayerId,
+  applySharedPointMarkerPitchAboveExtrusions,
+  applySharedPointLayersAbove3dExtrusions,
   literalNumberFromPaintExpression,
   sharedPointRadiusPlusStrokeWidth,
   sharedPointFloatingBadgeOuterDiscRadius,

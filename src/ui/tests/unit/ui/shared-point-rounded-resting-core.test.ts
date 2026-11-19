@@ -13,8 +13,8 @@ import {
 } from '../../../src/utils/paint/shared-point-rounded-body';
 import { ROUNDED_RECT_CORNER_RATIO_OF_WIDTH } from '../../../src/utils/paint/rounded-rect-raster';
 
-describe('rounded-rect resting core matches circle light inner', () => {
-  it('paints the rounded body with the same light core as circle pointColorExpression', () => {
+describe('rounded-rect resource badge chrome', () => {
+  it('paints the rounded body with a key-colored core (white glyph sits on it)', () => {
     const paint = sharedPointFloatingBadgePaintExpressions({
       fallbackColor: '#d580a3',
       themeElement: null,
@@ -38,19 +38,18 @@ describe('rounded-rect resting core matches circle light inner', () => {
     });
 
     const resting = sharedPointFloatingBadgeRestingColor('#d580a3');
-    const ringColor = ['coalesce', ['get', '_color'], resting];
+    const keyRing = ['coalesce', ['get', '_color'], resting];
     const expectedCore = sharedPointZoomedOutStep(
-      sharedPointDotColorExpression(ringColor),
-      SHARED_POINT_FLOATING_BADGE_FILL
+      sharedPointDotColorExpression(keyRing),
+      keyRing
     );
 
     expect(setPaintProperty).toHaveBeenCalledWith(bodyId, 'icon-color', expectedCore);
-    // Zoomed-in branch must be the light fill, not the solid key ring.
-    expect(JSON.stringify(expectedCore)).toContain(SHARED_POINT_FLOATING_BADGE_FILL);
-    expect(paint.pointColorExpression).toEqual(expectedCore);
+    // Zoomed-in branch must be the solid key — not paper fill — so the white cube reads.
+    expect(JSON.stringify(expectedCore)).not.toContain(SHARED_POINT_FLOATING_BADGE_FILL);
   });
 
-  it('tints the resource glyph with the key ring (visible on the light core)', () => {
+  it('tints the resource glyph white (visible on the key-colored core)', () => {
     const paint = sharedPointFloatingBadgePaintExpressions({
       fallbackColor: '#c9a86c',
       themeElement: null,
@@ -72,12 +71,10 @@ describe('rounded-rect resting core matches circle light inner', () => {
       },
     });
 
-    const resting = sharedPointFloatingBadgeRestingColor('#c9a86c');
-    const keyRing = ['coalesce', ['get', '_color'], resting];
     expect(setPaintProperty).toHaveBeenCalledWith(
       'canvas-places-point-badge-icon',
       'icon-color',
-      sharedPointZoomedOutStep('rgba(0,0,0,0)', keyRing)
+      sharedPointZoomedOutStep('rgba(0,0,0,0)', SHARED_POINT_FLOATING_BADGE_FILL)
     );
   });
 

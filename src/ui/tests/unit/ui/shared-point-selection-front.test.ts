@@ -54,10 +54,8 @@ describe('selected marker draws in front', () => {
     expect(map.order.slice(-front.length)).toEqual(front);
   });
 
-  it('orders shadows under the lifted badge and the glyph above it', () => {
+  it('raises the lifted badge only — ground shadows stay under the ring', () => {
     expect(sharedPointSelectionFrontLayerIds(p)).toEqual([
-      `${p}-selection-shadow`,
-      `${p}-selection-rounded-shadow`,
       `${p}-selection-badge-outer`,
       `${p}-selection-badge`,
       `${p}-selection-rounded-outer`,
@@ -65,5 +63,9 @@ describe('selected marker draws in front', () => {
       `${p}-selection-rounded-body`,
       `${p}-selection-badge-icon`,
     ]);
+    expect(sharedPointSelectionFrontLayerIds(p)).not.toContain(`${p}-selection-shadow`);
+    expect(sharedPointSelectionFrontLayerIds(p)).not.toContain(
+      `${p}-selection-rounded-shadow`
+    );
   });
 });

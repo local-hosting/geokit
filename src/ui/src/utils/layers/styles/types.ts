@@ -139,6 +139,10 @@ export interface SharedPointLayersConfig {
   selectionGroundBadge?: boolean;
   /** Fallback ring color for the grounded selection badge. */
   selectionGroundBadgeFallbackColor?: string;
+  /** App hover ring accent for floating-badge `_color` patches. */
+  hoverRingColor?: string;
+  /** App selected ring accent for leave-restore while active. */
+  selectedRingColor?: string;
 }
 
 export interface CircleLayerConfig {

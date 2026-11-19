@@ -94,6 +94,19 @@ import {
   selectionBadgeAnimByMap,
   type HoverRingColorTarget,
 } from './animation-state';
+
+/** Mapbox `getLayer` reads `style.getOwnLayer` — throws when style is mid-swap / gone. */
+function tryGetLayer(
+  map: MapInstance,
+  layerId: string
+): { type?: string } | undefined {
+  try {
+    return map.getLayer?.(layerId) as { type?: string } | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function hoverRingColorLayerId(
   pointLayerId: string,
   target: HoverRingColorTarget
@@ -111,7 +124,7 @@ function setHoverBadgeRingColor(
 ): void {
   if (!map.setPaintProperty) return;
   const layerId = hoverRingColorLayerId(pointLayerId, target);
-  if (!map.getLayer?.(layerId)) return;
+  if (!tryGetLayer(map, layerId)) return;
   try {
     if (target === 'selection') {
       // Selected: lighten key-color core + outer ring; middle ring stays white.
@@ -122,7 +135,7 @@ function setHoverBadgeRingColor(
         sharedPointSelectedMiddleRingColor(color, resolveSharedPointFloatingBadgeTokens().fill)
       );
       const outerId = sharedPointSelectionBadgeOuterLayerId(pointLayerId);
-      if (map.getLayer?.(outerId)) {
+      if (tryGetLayer(map, outerId)) {
         map.setPaintProperty(outerId, 'circle-color', color);
       }
       return;
@@ -226,7 +239,7 @@ function setBadgeLayersTranslate(
   // Viewport anchor + x=0 — lift is straight up on screen away from the shadow.
   const screenTranslate = sharedPointFloatingBadgeNormalizeViewportTranslate(translate);
   for (const layerId of layerIds) {
-    if (!map.getLayer?.(layerId)) continue;
+    if (!tryGetLayer(map, layerId)) continue;
     try {
       map.setPaintProperty(layerId, 'circle-translate-anchor', 'viewport');
       map.setPaintProperty(layerId, 'circle-translate', screenTranslate);
@@ -257,7 +270,7 @@ export function setSelectionBadgeTranslate(
     sharedPointSelectionRoundedRingLayerId(pointLayerId),
     sharedPointSelectionRoundedBodyLayerId(pointLayerId),
   ]) {
-    if (!map.getLayer?.(layerId) || !map.setPaintProperty) continue;
+    if (!tryGetLayer(map, layerId) || !map.setPaintProperty) continue;
     try {
       map.setPaintProperty(layerId, 'icon-translate-anchor', 'viewport');
       map.setPaintProperty(layerId, 'icon-translate', screenTranslate);
@@ -275,7 +288,7 @@ function readNumericBadgeTranslate(
 ): [number, number] | null {
   if (!map.getPaintProperty) return null;
   for (const layerId of layerIds) {
-    if (!map.getLayer?.(layerId)) continue;
+    if (!tryGetLayer(map, layerId)) continue;
     try {
       const value = map.getPaintProperty(layerId, 'circle-translate');
       if (

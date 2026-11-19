@@ -127,6 +127,21 @@ describe('shared point selection', () => {
     expect(ringData.features).toHaveLength(0);
   });
 
+  it('skips feature-state selected when the point source is not on the style yet', () => {
+    const map = createMockMap();
+    const sourceId = 'canvas-places';
+    // Selection ring source may exist while the main GeoJSON source is still mounting.
+    map._sources.set(`${sourceId}-selection`, { data: null });
+
+    setSharedPointSelection(map as never, sourceId, {
+      featureId: 'venue-1',
+      lngLat: { lng: -85.7, lat: 38.2 },
+    });
+
+    expect(map.setFeatureState).not.toHaveBeenCalled();
+    expect(getSharedPointSelection(map as never, sourceId)?.featureId).toBe('venue-1');
+  });
+
   it('sets and clears feature-state selected for grounded badge landing', () => {
     const map = createMockMap();
     const sourceId = 'points-test';
@@ -452,9 +467,11 @@ describe('shared point selection', () => {
     );
   });
 
-  it('does not animate a select lift (shadow-only — resting marker stays put)', () => {
-    document.documentElement.style.setProperty('--gk-badge-float-y', '0');
-    document.documentElement.style.setProperty('--gk-badge-selected-y', '-6');
+  it('animates grounded select settle from float down toward the map', () => {
+    // MapLibre: less-negative Y = down. Float above, selected closer to the cast.
+    document.documentElement.style.setProperty('--gk-badge-float-y', '-8');
+    document.documentElement.style.setProperty('--gk-badge-selected-y', '0');
+    document.documentElement.style.setProperty('--gk-badge-select-ms', '100');
     const map = createMockMap();
     const sourceId = 'canvas-venues';
     const pointLayerId = 'canvas-venues-point';
@@ -464,13 +481,20 @@ describe('shared point selection', () => {
       id === pointLayerId ||
       id === badgeLayerId ||
       id === `${pointLayerId}-selection-badge-outer`
-        ? {}
+        ? { type: 'circle' }
         : undefined
     );
     map.setPaintProperty = vi.fn();
     map.setFilter = vi.fn();
     map.getZoom = vi.fn(() => 18);
-    const raf = vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(() => 1);
+    const frames: FrameRequestCallback[] = [];
+    const raf = vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    vi.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(() => {});
+    const t0 = 4_000;
+    vi.spyOn(performance, 'now').mockReturnValue(t0);
 
     setSharedPointSelection(
       map as never,
@@ -483,13 +507,21 @@ describe('shared point selection', () => {
       { pointLayerId, promoteId: 'venueId', selectionGroundBadge: true }
     );
 
-    expect(raf).not.toHaveBeenCalled();
+    expect(frames.length).toBeGreaterThan(0);
+    frames[0]?.(t0);
+    frames[frames.length - 1]?.(t0 + 100);
+    const translateCalls = (map.setPaintProperty as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (c) => c[0] === badgeLayerId && c[1] === 'circle-translate'
+    );
+    expect(translateCalls[0]?.[2]).toEqual([0, -8]);
+    expect(translateCalls[translateCalls.length - 1]?.[2]).toEqual([0, 0]);
     raf.mockRestore();
     document.documentElement.style.removeProperty('--gk-badge-float-y');
     document.documentElement.style.removeProperty('--gk-badge-selected-y');
+    document.documentElement.style.removeProperty('--gk-badge-select-ms');
   });
 
-  it('keeps selection-source badge opacity at 0 (no second marker on click)', () => {
+  it('shows the selection-source badge on click (resting feature is filtered off)', () => {
     const map = createMockMap();
     const sourceId = 'canvas-venues';
     const pointLayerId = 'canvas-venues-point';
@@ -515,13 +547,8 @@ describe('shared point selection', () => {
       { pointLayerId, promoteId: 'venueId', selectionGroundBadge: true }
     );
 
-    const opacityCalls = (map.setPaintProperty as ReturnType<typeof vi.fn>).mock.calls.filter(
-      (c) =>
-        (c[0] === badgeLayerId || c[0] === badgeOuterLayerId) &&
-        (c[1] === 'circle-opacity' || c[1] === 'circle-stroke-opacity')
-    );
-    expect(opacityCalls.length).toBeGreaterThan(0);
-    expect(opacityCalls.every((c) => c[2] === 0)).toBe(true);
+    expect(map.setPaintProperty).toHaveBeenCalledWith(badgeLayerId, 'circle-opacity', 1);
+    expect(map.setPaintProperty).toHaveBeenCalledWith(badgeOuterLayerId, 'circle-opacity', 1);
   });
 
   it('lands the grounded badge before filtering off the floating stack', () => {
@@ -529,6 +556,7 @@ describe('shared point selection', () => {
     const sourceId = 'points-test';
     const pointLayerId = 'canvas-venues-point';
     const badgeLayerId = `${pointLayerId}-selection-badge`;
+    map._sources.set(sourceId, { data: null });
     map._sources.set(`${sourceId}-selection`, { data: null });
     map.getLayer = vi.fn((id: string) =>
       id === pointLayerId ||
@@ -584,7 +612,7 @@ describe('shared point selection', () => {
 
     expect(order.indexOf('setData')).toBeGreaterThanOrEqual(0);
     expect(order.lastIndexOf('filter')).toBeGreaterThan(order.indexOf('setData'));
-    // Opacity hide via feature-state must not run before the selection badge lands.
+    // Filter resting off only after the selection badge lands in the source.
     expect(order.indexOf('featureState')).toBeGreaterThan(order.indexOf('setData'));
   });
 
@@ -850,6 +878,20 @@ describe('shared point selection', () => {
       );
       expect(map.setPaintProperty).toHaveBeenCalledWith(layerId, 'icon-translate', [0, -16]);
     }
+  });
+
+  it('skips badge translate when Mapbox getLayer throws (style mid-swap / no getOwnLayer)', () => {
+    const map = createMockMap();
+    const pointLayerId = 'canvas-venues-point';
+    map.getLayer = vi.fn(() => {
+      throw new TypeError("Cannot read properties of undefined (reading 'getOwnLayer')");
+    });
+    map.setPaintProperty = vi.fn();
+
+    expect(() =>
+      setSelectionBadgeTranslate(map as never, pointLayerId, [0, -12])
+    ).not.toThrow();
+    expect(map.setPaintProperty).not.toHaveBeenCalled();
   });
 
   it('pitch+zoom scales select from/to so the badge does not jump to full-token height', () => {

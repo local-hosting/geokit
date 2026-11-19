@@ -13,7 +13,9 @@ describe('createBuildingsToggleControl', () => {
     const button = root.querySelector('button') as HTMLButtonElement;
     expect(button.classList.contains('gk-ctrl-buildings')).toBe(true);
     expect(button.getAttribute('aria-label')).toBe('3D buildings');
-    expect(button.querySelector('.maplibregl-ctrl-icon')).not.toBeNull();
+    const icon = button.querySelector('.maplibregl-ctrl-icon') as HTMLElement;
+    expect(icon).not.toBeNull();
+    expect(icon.classList.contains('mapboxgl-ctrl-icon')).toBe(true);
   });
 
   it('toggles buildings-enabled on the map element', () => {

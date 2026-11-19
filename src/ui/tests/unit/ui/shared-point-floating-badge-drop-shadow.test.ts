@@ -143,4 +143,76 @@ describe('floating badge drop shadow', () => {
     );
     expect(opacityCall?.[2]).toBeGreaterThan(0);
   });
+
+  it('inserts selection shadow under glass/outer — not between outer ring and fill', () => {
+    const pointLayerId = 'canvas-places-point';
+    const sourceId = 'canvas-places';
+    const glassId = `${pointLayerId}-glass`;
+    const outerId = `${pointLayerId}-outer-stroke`;
+    const layers = new Set<string>([pointLayerId, outerId, glassId]);
+    const addLayer = vi.fn((spec: { id: string }, beforeId?: string) => {
+      layers.add(spec.id);
+      return { id: spec.id, beforeId };
+    });
+    const map = {
+      getSource: (id: string) => (id === `${sourceId}-selection` ? {} : undefined),
+      getLayer: (id: string) => (layers.has(id) ? { id } : undefined),
+      addLayer,
+      setPaintProperty: vi.fn(),
+      setFilter: vi.fn(),
+      moveLayer: vi.fn(),
+    };
+
+    setupSelectionGroundBadgeLayers(map as never, sourceId, pointLayerId, {
+      fallbackColor: '#908ac7',
+    });
+
+    const shadowCall = addLayer.mock.calls.find(
+      (c) => c[0]?.id === `${pointLayerId}-selection-shadow`
+    );
+    expect(shadowCall?.[1]).toBe(glassId);
+  });
+
+  it('aligns Mapbox Standard slots before healing selection shadow under glass', () => {
+    const pointLayerId = 'canvas-places-point';
+    const sourceId = 'canvas-places';
+    const glassId = `${pointLayerId}-glass`;
+    const shadowId = `${pointLayerId}-selection-shadow`;
+    const slots = new Map<string, string | undefined>([
+      [glassId, 'top'],
+      [shadowId, undefined],
+      [pointLayerId, 'top'],
+    ]);
+    const layers = new Set<string>([pointLayerId, glassId, shadowId]);
+    const setSlot = vi.fn((id: string, slot?: string | null) => {
+      slots.set(id, slot ?? undefined);
+    });
+    const moveLayer = vi.fn((id: string, beforeId?: string) => {
+      if (beforeId == null) return;
+      if (slots.get(id) !== slots.get(beforeId)) {
+        throw new Error(
+          `Layer with id "${beforeId}" has a different slot. Layers can only be rearranged within the same slot.`
+        );
+      }
+    });
+    const map = {
+      getSource: (id: string) => (id === `${sourceId}-selection` ? {} : undefined),
+      getLayer: (id: string) =>
+        layers.has(id) ? { id, slot: slots.get(id) } : undefined,
+      addLayer: vi.fn(),
+      setPaintProperty: vi.fn(),
+      setFilter: vi.fn(),
+      setSlot,
+      moveLayer,
+    };
+
+    expect(() =>
+      setupSelectionGroundBadgeLayers(map as never, sourceId, pointLayerId, {
+        fallbackColor: '#908ac7',
+      })
+    ).not.toThrow();
+
+    expect(setSlot).toHaveBeenCalledWith(shadowId, 'top');
+    expect(moveLayer).toHaveBeenCalledWith(shadowId, glassId);
+  });
 });

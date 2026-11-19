@@ -439,46 +439,60 @@ export function safeResizeMap(
   }
 }
 
+type WrapMapResizeTarget = ResizeTargetMap & {
+  resize?: (...args: unknown[]) => unknown;
+  remove?: () => unknown;
+  _onWindowResize?: (event?: Event) => void;
+  _removed?: boolean;
+  painter?: unknown;
+};
+
 /**
- * Guard MapTiler/MapLibre internal ResizeObserver resize calls.
+ * Guard MapTiler/MapLibre/Mapbox resize paths.
  * Call once immediately after map construction.
+ *
+ * Mapbox `Map._onWindowResize` does `this.resize(...)._update()`, so the
+ * wrapped `resize` must return the map. Mapbox also `bindAll`s the handler
+ * before `addEventListener`; replacing `_onWindowResize` without swapping
+ * the window listeners leaves a stale listener that `remove()` cannot detach.
  */
-export function wrapMapResize(
-  map:
-    | (ResizeTargetMap & {
-        resize?: () => void;
-        remove?: () => void;
-        _onWindowResize?: () => void;
-        _removed?: boolean;
-        painter?: unknown;
-      })
-    | null
-    | undefined
-): void {
+export function wrapMapResize(map: WrapMapResizeTarget | null | undefined): void {
   if (!map || typeof map.resize !== 'function') return;
 
   const originalResize = map.resize.bind(map);
-  map.resize = () => {
+  map.resize = (...args: unknown[]) => {
     const target = getMapResizeTarget(map);
-    if (!hasRenderableMapSize(target)) return;
+    if (!hasRenderableMapSize(target)) return map;
     try {
       syncMapDevicePixelRatio(map);
-      originalResize();
+      return originalResize(...args) ?? map;
     } catch {
       // SDK can throw transformMat4 errors when resize races teardown or zero-size layout.
+      return map;
     }
   };
 
-  const originalOnWindowResize = map._onWindowResize?.bind(map);
-  if (typeof originalOnWindowResize === 'function') {
-    map._onWindowResize = () => {
+  const previousOnWindowResize = map._onWindowResize;
+  if (typeof previousOnWindowResize === 'function' && typeof window !== 'undefined') {
+    const fullscreenEvent =
+      typeof document !== 'undefined' && 'onfullscreenchange' in document
+        ? 'fullscreenchange'
+        : 'webkitfullscreenchange';
+    const guardedOnWindowResize = (event?: Event) => {
       if (map._removed || !map.painter) return;
       try {
-        originalOnWindowResize();
+        previousOnWindowResize(event);
       } catch {
         // Stale window resize handler after map.remove() or Vite HMR.
       }
     };
+    window.removeEventListener('resize', previousOnWindowResize, false);
+    window.removeEventListener('orientationchange', previousOnWindowResize, false);
+    window.removeEventListener(fullscreenEvent, previousOnWindowResize, false);
+    window.addEventListener('resize', guardedOnWindowResize, false);
+    window.addEventListener('orientationchange', guardedOnWindowResize, false);
+    window.addEventListener(fullscreenEvent, guardedOnWindowResize, false);
+    map._onWindowResize = guardedOnWindowResize;
   }
 
   const unbindGpuVisibility = bindMapDocumentVisibilityGpu(map);

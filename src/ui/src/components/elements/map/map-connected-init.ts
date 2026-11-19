@@ -33,6 +33,7 @@ import {
 import { debug } from '../../../utils/logger';
 import { shouldSilenceStyleLoadPoll } from './style/style-load-poll-guard';
 import { resolveInitialMapStyle } from './style/resolve-initial-map-style';
+import { isUpgradedMapCollectionAncestor } from './is-upgraded-map-collection';
 import {
   STUCK_PLACEHOLDER_MS as STUCK_MS,
   createPlaceholderContent as createPlaceholderContentFn,
@@ -49,6 +50,7 @@ import {
   injectAutoHideStyles as injectAutoHideStylesFn,
   isMaplibreLayoutCssLoaded,
 } from './style/map-controls-styles';
+import { ensureMapboxGlCss } from '../../../utils/map-provider-css';
 import {
   parseUrlHashState as parseUrlHashStateFn,
   buildHashFromState,
@@ -126,11 +128,9 @@ export class MapConnectedInit extends MapBase {
     // Initialize child element tracking
     mapEl(this)._initializeChildTracking();
 
-    // Check if inside a gk-map-collection FIRST - collection manages placeholder timing
-    // to avoid showing "Loading map..." during scroll
-    const parentCollection = this.closest('gk-map-collection');
-    if (parentCollection) {
-      // Mark as pool-managed so we don't try again
+    // Defer only to an *upgraded* gk-map-collection. An unregistered tag still matches
+    // closest(), and would leave maps blank forever (elements-lite does not define it).
+    if (isUpgradedMapCollectionAncestor(this)) {
       this.setAttribute('data-pool-managed', 'true');
       return;
     }
@@ -288,12 +288,7 @@ export class MapConnectedInit extends MapBase {
             await import('@maptiler/sdk/dist/maptiler-sdk.css');
           }
         } else if (providerName === 'mapbox') {
-          const hasMapboxCss = Array.from(document.styleSheets).some((sheet) =>
-            sheet.href?.includes('mapbox-gl')
-          );
-          if (!hasMapboxCss) {
-            await import('mapbox-gl/dist/mapbox-gl.css');
-          }
+          await ensureMapboxGlCss();
         } else if (providerName === 'protomaps') {
           if (!isMaplibreLayoutCssLoaded()) {
             await import('maplibre-gl/dist/maplibre-gl.css');
@@ -501,6 +496,8 @@ export class MapConnectedInit extends MapBase {
       if (mapAny.setFeatureState) {
         const originalSet = mapAny.setFeatureState.bind(this.map);
         mapAny.setFeatureState = (state, props) => {
+          // Skip before the source is on the style — Mapbox fires a hard error otherwise.
+          if (this.map.getSource && !this.map.getSource(state.source)) return;
           try {
             originalSet(state, props);
           } catch {
