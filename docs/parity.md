@@ -43,7 +43,7 @@ Use **GeoKit wrappers** on both platforms for behavior locked by `parity-fixture
 
 | TypeScript | Swift |
 |------------|--------|
-| Curried helpers: `midpoint(from)(to)`, `pointInPolygon(point)(polygon)` | Static methods + labels: `Bearing.midpoint(from:to:)`, `Containment.isPointInPolygon(_:polygon:)` |
+| Curried helpers: `midpoint(from)(to)`, `pointInPolygon(point)(polygon)` | Same **export names** as top-level functions / mirrored files under `GeoKitCore/Utils/*` and `GeoKitContract/Offline.swift`, plus static methods: `Bearing.midpoint(from:to:)`, `Containment.isPointInPolygon(_:polygon:)` |
 | `[lat, lon]` tuples / `LatLon` objects per export | `LatLon(latitude:longitude:)` and `[Double]` bounds `[minLon, minLat, maxLon, maxLat]` |
 
 ### Tier 1 — same fixtures
