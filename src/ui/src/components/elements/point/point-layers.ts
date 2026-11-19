@@ -154,6 +154,33 @@ export function createPointLayers(
     }
   }
 
+  const paint: Record<string, unknown> = {
+    'circle-radius': getZoomRadiusExpression(size),
+    'circle-color': color,
+    'circle-opacity': opacity,
+    'circle-blur': pointBlur,
+  };
+  if (strokeWidth > 0) {
+    paint['circle-stroke-width'] = strokeWidth;
+    paint['circle-stroke-color'] = strokeColor;
+    paint['circle-stroke-opacity'] = strokeOpacity;
+  } else {
+    paint['circle-stroke-width'] = 0;
+  }
+
+  try {
+    map.addLayer({
+      id: layerId,
+      type: 'circle',
+      source: sourceId,
+      paint,
+    });
+    debug.log(' createPointLayers main layer', { layerId });
+  } catch (error) {
+    console.error('[gk-point] Failed to add main layer:', error);
+    return;
+  }
+
   const el = mapElement ?? document.documentElement;
   const hoverOpacity = getCSSVariableNumber(
     el,
@@ -205,29 +232,5 @@ export function createPointLayers(
     }
   }
 
-  const paint: Record<string, unknown> = {
-    'circle-radius': getZoomRadiusExpression(size),
-    'circle-color': color,
-    'circle-opacity': opacity,
-    'circle-blur': pointBlur,
-  };
-  if (strokeWidth > 0) {
-    paint['circle-stroke-width'] = strokeWidth;
-    paint['circle-stroke-color'] = strokeColor;
-    paint['circle-stroke-opacity'] = strokeOpacity;
-  } else {
-    paint['circle-stroke-width'] = 0;
-  }
-
-  try {
-    map.addLayer({
-      id: layerId,
-      type: 'circle',
-      source: sourceId,
-      paint,
-    });
-    debug.log(' createPointLayers done', { layerId });
-  } catch (error) {
-    console.error('[gk-point] Failed to add main layer:', error);
-  }
+  debug.log(' createPointLayers done', { layerId });
 }

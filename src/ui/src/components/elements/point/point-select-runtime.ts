@@ -58,6 +58,29 @@ export interface PointOptions {
 import { PointLayersRuntime } from './point-layers-runtime';
 
 export class PointSelectRuntime extends PointLayersRuntime {
+  public focus(): void {
+    if (!pointEl(this).map || !pointEl(this).sourceId) return;
+
+    const lat = pointEl(this)._propLat ?? parseFloat(pointEl(this).safeGetAttribute('lat') || '');
+    const lng = pointEl(this)._propLng ?? parseFloat(pointEl(this).safeGetAttribute('lng') || '');
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+
+    const fallback: GeoJSON.Feature = {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [lng, lat] },
+      properties: {},
+    };
+    const feature = pointEl(this).canonicalPointFeature(fallback);
+    if (!feature) return;
+
+    pointEl(this).setHoverAt(null);
+    pointEl(this).applySelectedVisual(feature);
+  }
+
+  get selected(): boolean {
+    return pointEl(this).selectedLayers != null;
+  }
+
   protected canonicalPointFeature(fallback: GeoJSON.Feature): GeoJSON.Feature | null {
     const properties = { ...(fallback.properties as Record<string, unknown>) };
 
