@@ -1,8 +1,6 @@
 # Geokit monorepo
 
-**Canonical single source** for the JS geospatial SDK (`@local-hosting/geokit`). Sibling checkout under [`local-hosting/geokit`](../); remote `github.com/local-hosting/geokit`.
-
-Yarn workspaces monorepo for the geospatial SDK.
+`@local-hosting/geokit` — core geo utils, map UI, and provider plugins (subpath exports below).
 
 ## Packages
 
