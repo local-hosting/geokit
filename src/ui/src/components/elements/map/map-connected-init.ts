@@ -15,7 +15,7 @@ import {
   getUIProviderByName,
   setUIProvider,
 } from '../../../providers/registry';
-import { MapTilerUIProvider } from '../../../providers/maptiler-provider';
+import { ensureMaptilerUIProviderRegistered } from '../../../providers/lazy-ui-provider';
 import type { PointElement } from '../point/point';
 import type { PolygonElement } from '../polygon';
 import { type IsochroneElement } from '../isochrone/isochrone';
@@ -298,9 +298,7 @@ export class MapConnectedInit extends MapBase {
         if (!existingProvider) {
           // Provider not registered, register and initialize it
           if (providerName === 'maptiler') {
-            if (!getUIProviderByName('maptiler')) {
-              registerUIProvider('maptiler', new MapTilerUIProvider());
-            }
+            await ensureMaptilerUIProviderRegistered();
             // Only pass config if explicitly provided via attributes
             provider = await getProviderByName('maptiler', apiKey ? { apiKey } : undefined);
           } else if (providerName === 'mapbox') {
@@ -364,9 +362,7 @@ export class MapConnectedInit extends MapBase {
           // No provider set, auto-initialize MapTiler if we have an API key
           if (apiKey) {
             debug.warn('[gk-map] Auto-initializing MapTiler provider from api-key attribute');
-            if (!getUIProviderByName('maptiler')) {
-              registerUIProvider('maptiler', new MapTilerUIProvider());
-            }
+            await ensureMaptilerUIProviderRegistered();
             provider = await getProviderByName('maptiler', { apiKey });
             if (!this.getAttribute('provider')) {
               this.setAttribute('provider', 'maptiler');

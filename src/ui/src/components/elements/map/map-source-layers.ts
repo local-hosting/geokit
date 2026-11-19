@@ -14,7 +14,6 @@ import {
   getProviderByName,
   getUIProviderByName,
 } from '../../../providers/registry';
-import { MapTilerUIProvider } from '../../../providers/maptiler-provider';
 import type { PointElement } from '../point/point';
 import type { PolygonElement } from '../polygon';
 import { type IsochroneElement } from '../isochrone/isochrone';

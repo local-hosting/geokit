@@ -7,6 +7,7 @@
  * Heavy / interaction-only elements are excluded to keep the initial
  * bundle lean.  Import them from their dedicated entry points:
  *
+ *   import '@local-hosting/geokit/ui/elements-lite/register';
  *   import { PopupElement }         from '@local-hosting/geokit/ui/elements/popup';
  *   import { MapCollectionElement } from '@local-hosting/geokit/ui/elements/map-collection';
  *   await import('@local-hosting/geokit/ui/elements/isochrone');
@@ -35,8 +36,9 @@ if (typeof globalThis.requestIdleCallback === 'undefined') {
   };
 }
 
-// Re-export UI providers (types, registry, implementations)
-export * from './providers';
+// Re-export UI provider types + registry only (implementations load on demand)
+export * from './providers/types';
+export * from './providers/registry';
 
 // Re-export map chrome controls used at startup (nav + terrain + buildings)
 export { NavigationControlElement } from './components/controls/navigation-control';
