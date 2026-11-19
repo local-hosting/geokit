@@ -47,4 +47,4 @@ Add **`@local-hosting/geokit`** once, then import subpaths (`@local-hosting/geok
 
 ## Publishing
 
-One tarball **`@local-hosting/geokit`** on GitHub Packages: push a **`v*`** tag or **Actions → Publish GitHub Packages**. Locally: `yarn publish:package` with `NODE_AUTH_TOKEN` (`write:packages`).
+One tarball **`@local-hosting/geokit`** on GitHub Packages: push a **`v*`** tag or **Actions → Publish GitHub Packages**. Locally: `yarn publish:package` (`prepare:publish` = `build:publish` + export checks) with `NODE_AUTH_TOKEN` (`write:packages`). Day-to-day dev uses `yarn build` (includes UI typecheck); npm prep uses `yarn build:publish` only.
