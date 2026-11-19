@@ -34,7 +34,13 @@ function main() {
     console.error(result.stderr ?? result.stdout);
     process.exit(result.status ?? 1);
   }
-  const packed = JSON.parse(result.stdout);
+  const jsonBlock = result.stdout.match(/\[[\s\S]*\]\s*$/);
+  if (!jsonBlock) {
+    console.error('[check-publish-pack] npm pack --json produced no JSON array');
+    console.error(result.stdout.slice(0, 500));
+    process.exit(1);
+  }
+  const packed = JSON.parse(jsonBlock[0]);
   const entry = Array.isArray(packed) ? packed[0] : packed;
   const files = entry?.files ?? [];
   const bad = [];
