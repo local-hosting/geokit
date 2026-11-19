@@ -12,7 +12,7 @@
 
 | Package | README |
 |---------|--------|
-| `@local-hosting/geokit/core` | [src/core/README.md](../src/core/README.md) — geo utilities |
+| `@local-hosting/geokit/core` | [core-package.md](core-package.md) — geo utilities |
 | `@local-hosting/geokit/ui` | Map Web Components (see architecture + events) |
 | `@local-hosting/geokit/env` | `src/env/` — service keys and map credentials |
 | `@local-hosting/geokit/h3` | `src/h3/` — H3 geometry (`h3-js` peer) |

@@ -26,18 +26,4 @@ try {
 
 fs.symlinkSync(geokitRoot, linkPath, "dir");
 
-// Drop legacy scope link if present (rename from @doppler-group/geokit).
-const legacyDir = path.join(geokitRoot, "node_modules", "@doppler-group");
-const legacyPath = path.join(legacyDir, "geokit");
-try {
-  const legacy = fs.lstatSync(legacyPath);
-  if (legacy.isSymbolicLink() || legacy.isDirectory()) {
-    fs.unlinkSync(legacyPath);
-  }
-} catch (err) {
-  if (err && typeof err === "object" && "code" in err && err.code !== "ENOENT") {
-    throw err;
-  }
-}
-
 console.log(`@local-hosting/geokit → ${geokitRoot}`);

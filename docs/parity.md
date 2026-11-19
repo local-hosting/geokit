@@ -19,7 +19,7 @@ Layer overview (detail: cheat sheet below and [`geokit-swift/docs/module-map.md`
 ## Fixture contract
 
 - **File:** `geokit-swift/Tests/GeoKitCoreTests/Fixtures/parity-fixtures.json`
-- **Full verify (Twinfile layout):** `bash geokit/src/core/scripts/verify-parity.sh` from repo root, or `yarn verify:parity` from `geokit/`
+- **Full verify:** `bash geokit/src/core/scripts/verify-parity.sh` from repo root, or `yarn verify:parity` from `geokit/`
 - **Export only:** `yarn link-self` in `geokit/`, then `yarn build:h3 && yarn build:core:bundle`, then `node geokit/src/core/scripts/export-parity-fixtures.mjs` → fixture path above
 - **Drift check:** `yarn link-self` (if needed), then `node geokit/src/core/scripts/check-parity-fixtures.mjs` from `geokit/src/core/` (after core dist exists)
 

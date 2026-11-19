@@ -29,7 +29,7 @@ export default defineConfig({
       { find: '@local-hosting/geokit/h3/lite', replacement: path.join(h3Root, 'lite.ts') },
       { find: '@local-hosting/geokit/h3', replacement: path.join(h3Root, 'index.ts') },
       { find: '@local-hosting/geokit/ui/config/tile-cdn', replacement: path.join(uiRoot, 'src/config/tile-cdn.ts') },
-      { find: /^@doppler-group\/geokit\/core$/, replacement: path.join(coreSrc, 'index.ts') },
+      { find: /^@local-hosting\/geokit\/core$/, replacement: path.join(coreSrc, 'index.ts') },
       { find: './elements-lite.js', replacement: path.join(coreDist, 'index.js') },
     ],
   },

@@ -28,41 +28,23 @@ See [docs/README.md](docs/README.md). Start with [docs/architecture.md](docs/arc
 
 ```bash
 yarn install
-yarn build          # build @local-hosting/geokit/core and @local-hosting/geokit/ui
-yarn build:all      # build every workspace package
-yarn test           # all workspaces
-yarn typecheck      # all workspaces
+yarn build          # all published dist slices (core, ui, service, …)
+yarn test
+yarn typecheck
 yarn demo           # interactive map demos (demo/)
 ```
 
+Package API reference: [docs/core-package.md](docs/core-package.md).
 
-Package API reference: [src/core/README.md](src/core/README.md).
+## Consumers
 
-
-## Slim vs full install
-
-| Need | Install |
-|------|---------|
-| Geo utils only | `@local-hosting/geokit/core` |
-| Map UI | `@local-hosting/geokit/ui` |
-| Place search / geocoding / isochrones | + `@local-hosting/geokit/service` |
-| Vendor APIs | + `src/providers/*` packages as needed |
-
-## Publishing (@local-hosting/geokit/*)
-
-Packages publish to GitHub Packages on tag push:
-
-```bash
-git tag v0.2.33
-git push origin v0.2.33
-```
-
-Or run **Actions → Publish GitHub Packages → Run workflow**.
-
-Consumers need `.npmrc`:
+Add **`@local-hosting/geokit`** once, then import subpaths (`@local-hosting/geokit/core`, `/ui`, `/service`, providers, …). Which subpaths to use — [architecture.md → Install](docs/architecture.md#install).
 
 ```ini
-@twinfile:registry=https://npm.pkg.github.com
+@local-hosting:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
 
-CI/Vercel: `NODE_AUTH_TOKEN` with `read:packages` (or `GITHUB_TOKEN` in Actions).
+## Publishing
+
+One tarball **`@local-hosting/geokit`** on GitHub Packages: push a **`v*`** tag or **Actions → Publish GitHub Packages**. Locally: `yarn publish:package` with `NODE_AUTH_TOKEN` (`write:packages`).

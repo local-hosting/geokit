@@ -1,45 +1,45 @@
 #!/usr/bin/env node
 /**
- * Build dist artifacts required by server-side consumers of geokit packages
- * without the full UI/core typecheck graph that blocks `yarn build` in CI-less publish.
+ * Build dist artifacts required for npm publish (server + map consumers).
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = process.cwd();
 
 function run(command, args, cwd = root) {
-  const result = spawnSync(command, args, { cwd, stdio: 'inherit', shell: false });
+  const result = spawnSync(command, args, { cwd, stdio: 'inherit', shell: false, env: process.env });
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
   }
 }
 
-const tsupBin = join(root, 'node_modules/.bin/tsup');
+const distRoots = JSON.parse(
+  readFileSync(join(root, 'scripts/publish-dist-paths.json'), 'utf8'),
+);
 
-const steps = [
-  () => run('yarn', ['build:h3']),
-  () => run(tsupBin, ['--config', 'config/tsup.config.js'], join(root, 'src/crosswalk')),
-  () => run('yarn', ['build:core:bundle']),
-  () => run(tsupBin, ['--config', 'config/tsup.config.js'], join(root, 'src/formats')),
+const yarnSteps = [
+  ['build:env'],
+  ['build:h3'],
+  ['build:core'],
+  ['build:formats'],
+  ['build:service'],
+  ['build:crosswalk'],
+  ['build:foursquare'],
+  ['build:ui'],
 ];
 
-for (const step of steps) {
-  step();
+for (const args of yarnSteps) {
+  run('yarn', args);
 }
 
-const required = [
-  'src/h3/dist/esm/index.js',
-  'src/crosswalk/dist/esm/src/index.js',
-  'src/core/dist/esm/index.js',
-  'src/formats/dist/esm/index.js',
-];
-
-for (const rel of required) {
-  const abs = join(root, rel);
+for (const rel of distRoots) {
+  const marker = join(root, rel, 'esm/index.js');
+  const crosswalkMarker = join(root, rel, 'esm/src/index.js');
+  const abs = existsSync(marker) ? marker : crosswalkMarker;
   if (!existsSync(abs)) {
-    console.error(`publish-consumer-build: missing ${rel}`);
+    console.error(`publish-consumer-build: missing dist at ${rel}`);
     process.exit(1);
   }
 }
