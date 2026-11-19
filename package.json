@@ -104,13 +104,6 @@
       "import": "./src/core/dist/esm/utils/coordinates/index.js",
       "require": "./src/core/dist/cjs/utils/coordinates/index.cjs"
     },
-    "./core/core": {
-      "source": "./src/core/src/core/index.ts",
-      "types": "./src/core/dist/esm/core/index.d.ts",
-      "import": "./src/core/dist/esm/core/index.js",
-      "require": "./src/core/dist/cjs/core/index.cjs",
-      "default": "./src/core/dist/esm/core/index.js"
-    },
     "./core/distance": {
       "source": "./src/core/src/utils/distance/index.ts",
       "types": "./src/core/dist/esm/utils/distance/index.d.ts",
@@ -239,16 +232,6 @@
       "import": "./src/core/dist/esm/utils/retry.js",
       "require": "./src/core/dist/cjs/utils/retry.cjs",
       "default": "./src/core/dist/esm/utils/retry.js"
-    },
-    "./core/src/providers/registry": {
-      "types": "./src/service/dist/esm/services/registry.d.ts",
-      "import": "./src/service/dist/esm/services/registry.js",
-      "default": "./src/service/dist/esm/services/registry.js"
-    },
-    "./core/src/providers/setup-capability-routers": {
-      "types": "./src/service/dist/esm/setup-capability-routers.d.ts",
-      "import": "./src/service/dist/esm/setup-capability-routers.js",
-      "default": "./src/service/dist/esm/setup-capability-routers.js"
     },
     "./core/buffer-point": {
       "source": "./src/core/src/utils/buffer/buffer-point.ts",
@@ -650,13 +633,6 @@
       "require": "./src/ui/dist/cjs/utils/shared-point-map-orchestrator.cjs",
       "default": "./src/ui/dist/esm/utils/shared-point-map-orchestrator.js"
     },
-    "./ui/shared-point-layer-controller": {
-      "source": "./src/ui/src/utils/shared-point-layer-controller.ts",
-      "types": "./src/ui/dist/esm/utils/shared-point-layer-controller.d.ts",
-      "import": "./src/ui/dist/esm/utils/shared-point-layer-controller.js",
-      "require": "./src/ui/dist/cjs/utils/shared-point-layer-controller.cjs",
-      "default": "./src/ui/dist/esm/utils/shared-point-layer-controller.js"
-    },
     "./ui/shared-point-controller": {
       "source": "./src/ui/src/utils/shared-point-layer-controller.ts",
       "types": "./src/ui/dist/esm/utils/shared-point-layer-controller.d.ts",
@@ -698,24 +674,6 @@
       "import": "./src/ui/dist/esm/utils/boundary-outline-preset.js",
       "require": "./src/ui/dist/cjs/utils/boundary-outline-preset.cjs",
       "default": "./src/ui/dist/esm/utils/boundary-outline-preset.js"
-    },
-    "./ui/controls/terrain": {
-      "source": "./src/ui/src/components/controls/terrain-control.ts",
-      "types": "./src/ui/dist/esm/components/controls/terrain-control.d.ts",
-      "import": "./src/ui/dist/esm/components/controls/terrain-control.js",
-      "default": "./src/ui/dist/esm/components/controls/terrain-control.js"
-    },
-    "./ui/controls/buildings": {
-      "source": "./src/ui/src/components/controls/buildings-control.ts",
-      "types": "./src/ui/dist/esm/components/controls/buildings-control.d.ts",
-      "import": "./src/ui/dist/esm/components/controls/buildings-control.js",
-      "default": "./src/ui/dist/esm/components/controls/buildings-control.js"
-    },
-    "./ui/controls/actions": {
-      "source": "./src/ui/src/components/controls/actions-control.ts",
-      "types": "./src/ui/dist/esm/components/controls/actions-control.d.ts",
-      "import": "./src/ui/dist/esm/components/controls/actions-control.js",
-      "default": "./src/ui/dist/esm/components/controls/actions-control.js"
     },
     "./ui/controls/fullscreen": {
       "source": "./src/ui/src/components/controls/fullscreen-control.ts",
@@ -870,8 +828,8 @@
     "@types/yauzl": "^2.10.3",
     "@typescript-eslint/eslint-plugin": "^8.47.0",
     "@typescript-eslint/parser": "^8.47.0",
-    "@vitest/browser": "^2.1.8",
-    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/browser": "^5.1.1",
+    "@vitest/coverage-v8": "^5.1.1",
     "dotenv": "^17.2.3",
     "eslint": "^9.39.1",
     "happy-dom": "^20.1.0",
@@ -885,13 +843,13 @@
     "tsup": "^8.5.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3",
-    "vite": "^6.1.0",
-    "vitest": "^2.1.8",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1",
     "vue": "^3.5.13",
     "yauzl": "^3.2.0",
     "zod": "^3.25.0"
   },
-  "packageManager": "yarn@4.18.0",
+  "packageManager": "yarn@4.18.1",
   "files": [
     "README.md",
     "src/core/dist",

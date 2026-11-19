@@ -1,35 +1,21 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
+import {
+  loadGeokitVitestAliases,
+  vitestAliasEntries,
+} from '../../../config/vitest.aliases.js';
 
 const uiRoot = path.resolve(__dirname, '..');
-const coreRoot = path.join(uiRoot, '../core');
-const coreDist = path.join(coreRoot, 'dist/esm');
-const coreSrc = path.join(coreRoot, 'src');
-const h3Root = path.join(uiRoot, '../h3/src');
+const geokitRoot = path.resolve(__dirname, '../../..');
+const coreDist = path.join(geokitRoot, 'src/core/dist/esm');
 
-const geokitRoot = path.resolve(__dirname, '..');
-const serviceSrc = path.join(uiRoot, '../service/src');
+const generated = vitestAliasEntries(loadGeokitVitestAliases(geokitRoot));
 
 export default defineConfig({
   resolve: {
     alias: [
-      { find: '@local-hosting/geokit/core/bounds', replacement: path.join(coreDist, 'utils/bounds/index.js') },
-      { find: '@local-hosting/geokit/core/coordinates', replacement: path.join(coreDist, 'utils/coordinates/index.js') },
-      { find: '@local-hosting/geokit/core/geojson', replacement: path.join(coreDist, 'utils/geojson/index.js') },
-      { find: '@local-hosting/geokit/core/simplify', replacement: path.join(coreDist, 'utils/simplify/index.js') },
-      { find: '@local-hosting/geokit/core/types/layer-datasets', replacement: path.join(coreDist, 'types/layer-datasets.js') },
-      { find: '@local-hosting/geokit/core/types/cell-layers.types', replacement: path.join(coreDist, 'types/cell-layers.types.js') },
-      { find: '@local-hosting/geokit/core/types', replacement: path.join(coreDist, 'types/index.js') },
-      { find: '@local-hosting/geokit/core/containment', replacement: path.join(coreSrc, 'utils/containment/index.ts') },
-      {
-        find: '@local-hosting/geokit/service/types/api-composite',
-        replacement: path.join(serviceSrc, 'types/api-composite.ts'),
-      },
-      { find: '@local-hosting/geokit/h3/cell-to-region-index', replacement: path.join(h3Root, 'cell/cell-to-region-index.ts') },
-      { find: '@local-hosting/geokit/h3/lite', replacement: path.join(h3Root, 'lite.ts') },
-      { find: '@local-hosting/geokit/h3', replacement: path.join(h3Root, 'index.ts') },
-      { find: '@local-hosting/geokit/ui/config/tile-cdn', replacement: path.join(uiRoot, 'src/config/tile-cdn.ts') },
-      { find: /^@local-hosting\/geokit\/core$/, replacement: path.join(coreSrc, 'index.ts') },
+      ...generated,
+      // UI test-only: elements-lite resolves to core dist in this suite
       { find: './elements-lite.js', replacement: path.join(coreDist, 'index.js') },
     ],
   },
