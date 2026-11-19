@@ -28,7 +28,8 @@ See [docs/README.md](docs/README.md). Start with [docs/architecture.md](docs/arc
 
 ```bash
 yarn install
-yarn build          # all published dist slices (core, ui, service, …)
+yarn build          # full monorepo dist (run-geokit-build full)
+yarn build:publish  # npm slices only (skips UI tsc)
 yarn test
 yarn typecheck
 yarn demo           # interactive map demos (demo/)
@@ -47,4 +48,4 @@ Add **`@local-hosting/geokit`** once, then import subpaths (`@local-hosting/geok
 
 ## Publishing
 
-One tarball **`@local-hosting/geokit`** on GitHub Packages: push a **`v*`** tag or **Actions → Publish GitHub Packages**. Locally: `yarn publish:package` (`prepare:publish` = `build:publish` + export checks) with `NODE_AUTH_TOKEN` (`write:packages`). Day-to-day dev uses `yarn build` (includes UI typecheck); npm prep uses `yarn build:publish` only.
+One tarball **`@local-hosting/geokit`** on GitHub Packages: push a **`v*`** tag or **Actions → Publish GitHub Packages**. Locally: `yarn publish:package` (runs `prepublishOnly` → `prepare:publish`) with `NODE_AUTH_TOKEN` (`write:packages`). Build phases live in `scripts/geokit-build-phases.json`.

@@ -1,0 +1,39 @@
+{
+  "publish": [
+    "generate:tsconfig-paths",
+    "build:env",
+    "build:h3",
+    "generate:tsconfig-paths",
+    "build:core:bundle",
+    "generate:pre-ui-tsconfig-paths",
+    "build:core:types:pre-ui",
+    "generate:tsconfig-paths",
+    "build:formats",
+    "generate:tsconfig-paths",
+    "build:service",
+    "build:crosswalk",
+    "generate:tsconfig-paths",
+    "build:foursquare",
+    "build:ui:bundle"
+  ],
+  "full": [
+    "generate:tsconfig-paths",
+    "build:env",
+    "build:h3",
+    "generate:tsconfig-paths",
+    "build:core:bundle",
+    "generate:pre-ui-tsconfig-paths",
+    "build:core:types:pre-ui",
+    "generate:tsconfig-paths",
+    "build:formats",
+    "generate:tsconfig-paths",
+    "build:service",
+    "build:crosswalk",
+    "generate:tsconfig-paths",
+    "generate:ui-tsconfig-paths",
+    "build:ui",
+    "generate:tsconfig-paths",
+    "build:foursquare",
+    "generate:tsconfig-paths"
+  ]
+}

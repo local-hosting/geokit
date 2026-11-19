@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Build publish dist, normalize exports, validate, and verify pack contents. */
+/** npm prepublish: dist build, exports, strip link deps, pack check. */
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +17,7 @@ function run(command, args, cwd = root) {
 run('node', [rel('build-publish-dist.mjs')]);
 run('yarn', ['normalize:exports']);
 run('yarn', ['validate:exports']);
+run('node', [rel('prepare-publish-package-json.mjs')]);
 run('node', [rel('check-publish-pack.mjs')]);
 
 console.log('[prepare:publish] ok');

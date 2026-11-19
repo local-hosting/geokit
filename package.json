@@ -14,7 +14,7 @@
   },
   "scripts": {
     "clean": "node scripts/clean-dist.mjs",
-    "build": "yarn generate:tsconfig-paths && yarn build:env && yarn build:h3 && yarn generate:tsconfig-paths && yarn build:core:bundle && yarn generate:pre-ui-tsconfig-paths && yarn build:core:types:pre-ui && yarn generate:tsconfig-paths && yarn build:formats && yarn generate:tsconfig-paths && yarn build:service && yarn build:crosswalk && yarn generate:tsconfig-paths && yarn generate:ui-tsconfig-paths && yarn build:ui && yarn generate:tsconfig-paths && yarn build:foursquare && yarn generate:tsconfig-paths && node scripts/check-no-src-declarations.mjs",
+    "build": "node scripts/run-geokit-build.mjs full",
     "build:core": "yarn build:core:bundle && yarn build:core:types",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "build:ui:bundle": "cd src/ui && tsup --config config/tsup.config.js",
@@ -31,8 +31,7 @@
     "typecheck": "tsc -p src/core/config/tsconfig.json --noEmit",
     "pretypecheck": "yarn generate:tsconfig-paths",
     "demo": "vite --config vite.demo.config.js",
-    "publish:package": "yarn prepare:publish && npm publish --registry=https://npm.pkg.github.com",
-    "build:packages": "yarn build:env && yarn build:service && yarn build:h3 && yarn build:foursquare",
+    "publish:package": "npm publish --registry=https://npm.pkg.github.com",
     "build:env": "cd src/env && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "build:service": "cd src/service && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "build:h3": "cd src/h3 && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
