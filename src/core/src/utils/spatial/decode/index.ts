@@ -1,6 +1,6 @@
 /**
- * Spatial index decode and conversion — pulls in @doppler-group/geokit/h3.
- * Import `@doppler-group/geokit/core/spatial/decode` when H3 interop is needed.
+ * Spatial index decode and conversion — pulls in @local-hosting/geokit/h3.
+ * Import `@local-hosting/geokit/core/spatial/decode` when H3 interop is needed.
  */
 
 export {

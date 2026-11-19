@@ -14,7 +14,7 @@ import {
   intensifyHex,
   lightenHexTowardWhite,
   mixHexColors,
-} from '@doppler-group/geokit/core';
+} from '@local-hosting/geokit/core';
 import type { MapInstance } from '../../providers/types';
 import {
   sharedPointCircleBodyFilter,
@@ -413,6 +413,9 @@ export const SHARED_POINT_FLOATING_BADGE_SHADOW_STRENGTH_ZOOM_STOPS: [number, nu
 ];
 /** Viewport-aligned so pitch does not squash or skew the cast under the upright badge. */
 export const SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_ALIGNMENT = 'viewport' as const;
+/** Upright badge disks stay above Mapbox `fill-extrusion` depth (3D buildings). */
+export const SHARED_POINT_FLOATING_BADGE_MARKER_PITCH_ALIGNMENT = 'viewport' as const;
+export const SHARED_POINT_FLOATING_BADGE_MARKER_PITCH_SCALE = 'viewport' as const;
 export const SHARED_POINT_FLOATING_BADGE_SHADOW_TRANSLATE_ANCHOR = 'viewport' as const;
 /** Viewport scale keeps every shadow disc round — `map` made casts lean differently across the view. */
 export const SHARED_POINT_FLOATING_BADGE_SHADOW_PITCH_SCALE = 'viewport' as const;
@@ -476,8 +479,8 @@ export type SyncSharedPointSelectedLayerFilterOptions = {
 };
 
 /**
- * Keep resting badge filters shape-only.
- * Select must not hide/swap the marker — only feature-state darkens the ground cast.
+ * Hide the selected feature on the resting stack while the selection source
+ * draws the grounded badge (so select can settle without a double marker).
  */
 export function syncSharedPointSelectedLayerFilter(
   map: {
@@ -487,8 +490,20 @@ export function syncSharedPointSelectedLayerFilter(
   options: SyncSharedPointSelectedLayerFilterOptions
 ): void {
   if (!map.setFilter) return;
+  const excludeSelected =
+    options.featureId != null && options.featureId !== ''
+      ? sharedPointExcludeFeatureIdFilter(options.promoteId, options.featureId)
+      : null;
   const circleShape = sharedPointCircleBodyFilter();
   const roundedShape = sharedPointRoundedRectBodyFilter();
+  const circleFilter =
+    excludeSelected != null
+      ? sharedPointCombineLayerFilters(circleShape, excludeSelected)
+      : circleShape;
+  const roundedFilter =
+    excludeSelected != null
+      ? sharedPointCombineLayerFilters(roundedShape, excludeSelected)
+      : roundedShape;
   const glowLayerId =
     options.glowLayerId ??
     (options.pointLayerId.endsWith('-point')
@@ -497,25 +512,13 @@ export function syncSharedPointSelectedLayerFilter(
   const circleBodyLayerIds = [
     options.pointLayerId,
     sharedPointOuterStrokeLayerId(options.pointLayerId),
+    sharedPointGlassLayerId(options.pointLayerId),
   ];
-  const excludeSelected =
-    options.featureId != null && options.featureId !== ''
-      ? sharedPointExcludeFeatureIdFilter(options.promoteId, options.featureId)
-      : null;
 
   for (const layerId of circleBodyLayerIds) {
     if (!map.getLayer?.(layerId)) continue;
     try {
-      map.setFilter(layerId, circleShape);
-    } catch {
-      /* layer may reject filter briefly during style swap */
-    }
-  }
-  // Glass glows behind every shape; frosted opacity hides it zoomed in.
-  const glassLayerId = sharedPointGlassLayerId(options.pointLayerId);
-  if (map.getLayer?.(glassLayerId)) {
-    try {
-      map.setFilter(glassLayerId, null);
+      map.setFilter(layerId, circleFilter);
     } catch {
       /* layer may reject filter briefly during style swap */
     }
@@ -545,7 +548,7 @@ export function syncSharedPointSelectedLayerFilter(
   ]) {
     if (!map.getLayer?.(layerId)) continue;
     try {
-      map.setFilter(layerId, roundedShape);
+      map.setFilter(layerId, roundedFilter);
     } catch {
       /* layer may reject filter briefly during style swap */
     }
@@ -777,7 +780,7 @@ export function annotatePointFeaturesStrokeFromFill(
 }
 
 import {
-  hideFloatingBadgeCircleSelectionLayers,
+  applySharedPointLayersAbove3dExtrusions,
   sharedPointGlassLayerId,
   sharedPointHoverBadgeLayerId,
   sharedPointHoverBadgeOuterLayerId,
@@ -1158,6 +1161,10 @@ export type AnnotateFloatingBadgeHoverOptions = {
    * Ignores stale per-feature `_color` / `_colorKey` / `_colorResting`.
    */
   forceFallbackKey?: boolean;
+  /** When set, stamps `_colorHover` to this hex (app accent) instead of lightening the key. */
+  hoverColor?: string;
+  /** When set, stamps `_colorSelected` to this hex instead of darkening the key. */
+  selectedColor?: string;
 };
 
 /** Soft fill/outer tint from key color (unselected badges). */
@@ -1316,6 +1323,8 @@ export function annotatePointFeaturesFloatingBadgeHover(
   const restingSaturate = options.restingSaturate ?? tokens.restingSaturate;
   const outerAmount = options.outerAmount ?? tokens.outerDarken;
   const forceFallbackKey = options.forceFallbackKey === true;
+  const hoverColor = options.hoverColor?.trim() || '';
+  const selectedColor = options.selectedColor?.trim() || '';
   return {
     type: 'FeatureCollection',
     features: collection.features.map((feature) => {
@@ -1343,9 +1352,10 @@ export function annotatePointFeaturesFloatingBadgeHover(
           _colorResting: resting,
           [SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY]: keyColor,
           [softProperty]: sharedPointFloatingBadgeSoftColor(resting, softAmount),
-          [hoverProperty]: lightenHexTowardWhite(resting, amount),
+          [hoverProperty]: hoverColor || lightenHexTowardWhite(resting, amount),
           [SHARED_POINT_DOT_COLOR_PROPERTY]: lightenHexTowardWhite(resting, tokens.dotLighten),
-          [selectedProperty]: sharedPointFloatingBadgeSelectedColor(resting, selectedAmount),
+          [selectedProperty]:
+            selectedColor || sharedPointFloatingBadgeSelectedColor(resting, selectedAmount),
           [outerProperty]: sharedPointFloatingBadgeOuterColor(resting, outerAmount),
         },
       };
@@ -1890,6 +1900,10 @@ export interface ApplySharedPointPaintOptions {
   selectionGroundBadgeFallbackColor?: string;
   /** Re-key every feature from `selectionGroundBadgeFallbackColor` on annotate. */
   selectionGroundBadgeForceFallbackKey?: boolean;
+  /** App accent for hover ring (annotated onto `_colorHover`; JS hover patch uses it). */
+  hoverRingColor?: string;
+  /** App accent for selected ring (annotated onto `_colorSelected`; leave-restore uses it). */
+  selectedRingColor?: string;
   /** Selected badge fill (darkened key-color core). */
   selectionFillExpression?: unknown[];
   /** Mix toward black for annotated `_colorSelected` (see `--gk-badge-selected-darken`). */
@@ -2196,10 +2210,7 @@ export function applySharedPointLayerPaint(
       map.setPaintProperty?.(selectionBadgeOuterLayerId, 'circle-stroke-color', outerColor);
     }
   }
-  if (selectionGroundBadge) {
-    // Spare layers — select is shadow-only on the resting marker.
-    hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
-  }
+  // Selection chrome opacity is owned by syncBadgeChrome / clear — do not force-hide here.
 
   const hoverGlowLayerId = `${glowLayerId}-hover`;
   if (map.getLayer?.(hoverGlowLayerId)) {
@@ -2210,6 +2221,9 @@ export function applySharedPointLayerPaint(
     );
   }
 
+  if (pointTranslateAnchor === 'viewport') {
+    applySharedPointLayersAbove3dExtrusions(map, { glowLayerId, pointLayerId });
+  }
 }
 
 /**
@@ -2252,5 +2266,5 @@ export {
   darkenHexTowardBlack,
   lightenHexTowardWhite,
   mixHexColors,
-} from '@doppler-group/geokit/core';
+} from '@local-hosting/geokit/core';
 export { SHARED_POINT_BADGE_ICON_PROPERTY } from './shared-point-badge-constants';

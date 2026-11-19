@@ -2,7 +2,7 @@
  * gk-layer dataset registry — host app registers mounts via registerLayerDatasetMount() at boot.
  */
 
-import { resolveLayerDatasetMount } from '@doppler-group/geokit/ui/geojson-loader';
+import { resolveLayerDatasetMount } from '@local-hosting/geokit/ui/geojson-loader';
 import type {
   LayerDatasetContext,
   LayerDatasetHandle,
@@ -10,7 +10,7 @@ import type {
   LayerDatasetMode,
   LayerDatasetOptions,
   LayerDatasetReadyDetail,
-} from '@doppler-group/geokit/core/types/layer-datasets';
+} from '@local-hosting/geokit/core/types/layer-datasets';
 
 export type {
   LayerDatasetContext,
@@ -75,4 +75,4 @@ export {
   registerLayerDatasetMount,
   unregisterLayerDatasetMount,
   clearLayerDatasetMounts,
-} from '@doppler-group/geokit/ui/geojson-loader';
+} from '@local-hosting/geokit/ui/geojson-loader';

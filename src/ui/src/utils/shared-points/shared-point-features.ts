@@ -4,7 +4,7 @@
 
 import type { Feature, FeatureCollection, Point } from 'geojson';
 
-import { convert, GKPoint, GeoKind, isUsCrosswalkLoaded } from '@doppler-group/geokit/crosswalk';
+import { convert, GKPoint, GeoKind, isUsCrosswalkLoaded } from '@local-hosting/geokit/crosswalk';
 
 import {
   POINT_DMA_PROPERTY,

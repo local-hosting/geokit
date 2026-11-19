@@ -8,11 +8,11 @@
  */
 
 import { MapChildElement } from '../map-child-element';
-import { normalizeCoordinatesArray } from '@doppler-group/geokit/core/coordinates';
-import { lineLengthMeters } from '@doppler-group/geokit/core';
-import { getBounds } from '@doppler-group/geokit/core/bounds';
+import { normalizeCoordinatesArray } from '@local-hosting/geokit/core/coordinates';
+import { lineLengthMeters } from '@local-hosting/geokit/core';
+import { getBounds } from '@local-hosting/geokit/core/bounds';
 import { getCSSVariable } from '../../utils/theme';
-import type { Bounds } from '@doppler-group/geokit/core/types';
+import type { Bounds } from '@local-hosting/geokit/core/types';
 import type { MapEvent } from '../../providers/types';
 
 export interface PolylineOptions {

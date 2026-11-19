@@ -1,12 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
-import { sharedPointCircleBodyFilter } from '../../../src/utils/markers/marker-shape';
+import {
+  sharedPointCircleBodyFilter,
+  sharedPointCombineLayerFilters,
+} from '../../../src/utils/markers/marker-shape';
 import {
   sharedPointExcludeFeatureIdFilter,
   syncSharedPointSelectedLayerFilter,
 } from '../../../src/utils/paint/shared-point-paint';
 
 describe('syncSharedPointSelectedLayerFilter', () => {
-  it('keeps resting badge bodies visible on select (shadow-only — no chrome swap)', () => {
+  it('filters the selected feature off resting badge bodies (selection source draws settle)', () => {
     const setFilter = vi.fn();
     const map = {
       getLayer: vi.fn((id: string) =>
@@ -22,15 +25,11 @@ describe('syncSharedPointSelectedLayerFilter', () => {
       featureId: 'v1',
     });
 
-    const circleShape = sharedPointCircleBodyFilter();
-    // Same marker stays put — select only darkens the ground cast via feature-state.
-    expect(setFilter).toHaveBeenCalledWith('pts', circleShape);
-    expect(setFilter).toHaveBeenCalledWith('pts-outer-stroke', circleShape);
-    expect(setFilter).toHaveBeenCalledWith('pts-glow', null);
-    expect(setFilter).not.toHaveBeenCalledWith(
-      'pts',
-      expect.arrayContaining([sharedPointExcludeFeatureIdFilter('venueId', 'v1')])
-    );
+    const exclude = sharedPointExcludeFeatureIdFilter('venueId', 'v1');
+    const circleFilter = sharedPointCombineLayerFilters(sharedPointCircleBodyFilter(), exclude);
+    expect(setFilter).toHaveBeenCalledWith('pts', circleFilter);
+    expect(setFilter).toHaveBeenCalledWith('pts-outer-stroke', circleFilter);
+    expect(setFilter).toHaveBeenCalledWith('pts-glow', exclude);
   });
 
   it('clears filters when selection is empty', () => {

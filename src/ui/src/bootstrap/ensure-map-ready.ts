@@ -83,7 +83,7 @@ export function prefetchMapTilerSdk(apiKey?: string): Promise<MapTilerSdkModule>
 async function initMapboxProvider(accessToken?: string, maptilerApiKey?: string): Promise<void> {
   try {
     const { ensureCapabilityRoutersReady } = await import(
-      '@doppler-group/geokit/service/builtins'
+      '@local-hosting/geokit/service/builtins'
     );
     await ensureCapabilityRoutersReady({
       mapboxAccessToken: accessToken,
@@ -171,10 +171,11 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
   if (providerId === 'mapbox') {
     const mapboxStep = performance.now();
     const { MapboxUIProvider } = await import('../providers/mapbox-provider');
+    const { ensureMapboxGlCss } = await import('../utils/map-provider-css');
     const cssImports: Promise<unknown>[] = [];
     if (options.importThemeCss !== false) {
       cssImports.push(import('../theme.css'));
-      cssImports.push(import('mapbox-gl/dist/mapbox-gl.css'));
+      cssImports.push(ensureMapboxGlCss());
     }
     await Promise.all(cssImports);
 

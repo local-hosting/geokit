@@ -1,5 +1,5 @@
 import type { Polygon } from '../../types';
-import { unwrapPolygonRingLongitudes } from '@doppler-group/geokit/h3/lite';
+import { unwrapPolygonRingLongitudes } from '@local-hosting/geokit/h3/lite';
 import { geohashBounds } from './bounds';
 import { validateGeohash } from './validation';
 

@@ -1,5 +1,5 @@
-import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@doppler-group/geokit/service/plugin';
-import { resolveRoutingAccessToken } from '@doppler-group/geokit/env/service-keys';
+import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@local-hosting/geokit/service/plugin';
+import { resolveRoutingAccessToken } from '@local-hosting/geokit/env/service-keys';
 import { MapboxService } from './mapbox-service';
 
 export const mapboxPlugin: GeokitServicePlugin = {

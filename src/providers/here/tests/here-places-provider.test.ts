@@ -5,7 +5,7 @@ import {
   normalizeHereDiscoverItem,
 } from '../src/here-places-service';
 
-describe('@doppler-group/geokit/here', () => {
+describe('@local-hosting/geokit/here', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

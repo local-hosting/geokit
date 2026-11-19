@@ -1,5 +1,5 @@
 {
-  "name": "@doppler-group/geokit-env",
+  "name": "@local-hosting/geokit-env",
   "version": "0.1.0",
   "description": "Geokit environment key resolution and bootstrap (no geo dependencies)",
   "license": "MPL-2.0",
@@ -51,6 +51,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/twinfile/geokit.git"
+    "url": "git+https://github.com/local-hosting/geokit.git"
   }
 }

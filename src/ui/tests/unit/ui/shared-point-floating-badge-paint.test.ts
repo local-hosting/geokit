@@ -442,7 +442,7 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     );
   });
 
-  it('applyPaint keeps selection-source badge layers at opacity 0 (no second marker)', () => {
+  it('applyPaint does not force-hide selection-source badge opacity', () => {
     const setPaintProperty = vi.fn();
     const map = {
       getSource: vi.fn(() => ({})),
@@ -470,15 +470,16 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
       ...paint,
     });
 
-    expect(setPaintProperty).toHaveBeenCalledWith(
+    // Opacity is owned by select/clear chrome — paint refresh must not force-hide.
+    expect(setPaintProperty).not.toHaveBeenCalledWith(
       'venues-point-selection-badge',
       'circle-opacity',
-      0
+      expect.anything()
     );
-    expect(setPaintProperty).toHaveBeenCalledWith(
+    expect(setPaintProperty).not.toHaveBeenCalledWith(
       'venues-point-selection-badge-outer',
       'circle-opacity',
-      0
+      expect.anything()
     );
   });
 
@@ -716,6 +717,32 @@ describe('sharedPointFloatingBadgePaintExpressions', () => {
     expect(out.features[0]?.properties?._color).toBe(sharedPointFloatingBadgeRestingColor('#9acd32'));
     expect(out.features[0]?.properties?._colorResting).toBe(sharedPointFloatingBadgeRestingColor('#9acd32'));
     expect(out.features[0]?.properties?._colorKey).toBe('#9acd32');
+  });
+
+  it('stamps app hover/selected ring accents when provided (circle places share the path)', () => {
+    const out = annotatePointFeaturesFloatingBadgeHover(
+      {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: { venueId: 'place-circle' },
+            geometry: { type: 'Point', coordinates: [-85.3, 35.0] },
+          },
+        ],
+      },
+      {
+        fallbackColor: '#d580a3',
+        forceFallbackKey: true,
+        hoverColor: '#2563eb',
+        selectedColor: '#5182ef',
+      }
+    );
+    expect(out.features[0]?.properties?._colorHover).toBe('#2563eb');
+    expect(out.features[0]?.properties?._colorSelected).toBe('#5182ef');
+    expect(out.features[0]?.properties?._color).toBe(
+      sharedPointFloatingBadgeRestingColor('#d580a3')
+    );
   });
 
   it('forceFallbackKey stamps the brightened locker hue as the one key (ignores stale per-feature hues)', () => {

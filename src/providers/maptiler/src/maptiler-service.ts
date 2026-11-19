@@ -9,11 +9,11 @@
  * - Rate limiting support
  */
 
-import { Service } from '@doppler-group/geokit/service';
-import { type ServiceConfig, type ServiceCapability, type IsochroneOptions, type GeocodeOptions, type ReverseGeocodeOptions, type ReverseGeocodeResult } from '@doppler-group/geokit/service/types';
-import { ProviderCache, coordinateCacheKey } from '@doppler-group/geokit/service';
-import { RequestQueue } from '@doppler-group/geokit/service';
-import { requireAPIKey, fetchWithRetry } from '@doppler-group/geokit/service';
+import { Service } from '@local-hosting/geokit/service';
+import { type ServiceConfig, type ServiceCapability, type IsochroneOptions, type GeocodeOptions, type ReverseGeocodeOptions, type ReverseGeocodeResult } from '@local-hosting/geokit/service/types';
+import { ProviderCache, coordinateCacheKey } from '@local-hosting/geokit/service';
+import { RequestQueue } from '@local-hosting/geokit/service';
+import { requireAPIKey, fetchWithRetry } from '@local-hosting/geokit/service';
 import type { FeatureCollection } from 'geojson';
 import { normalizeMaptilerGeocodeCollection } from './normalize-maptiler-geocode';
 import { resolveMaptilerRequestReferer } from './maptiler-referer';

@@ -8,7 +8,7 @@ import {
   type NormalizedFoursquarePlace,
 } from './types/foursquare-places';
 
-import { resolveFoursquareApiKey } from '@doppler-group/geokit/env';
+import { resolveFoursquareApiKey } from '@local-hosting/geokit/env';
 
 export function foursquarePlacesApiKey(): string | undefined {
   return resolveFoursquareApiKey();

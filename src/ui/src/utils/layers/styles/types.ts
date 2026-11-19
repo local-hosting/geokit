@@ -6,8 +6,8 @@
  */
 
 import type { MapInstance } from '../../../providers/types';
-import type { Feature } from '@doppler-group/geokit/core/types';
-import { getFeatureId } from '@doppler-group/geokit/core/geojson';
+import type { Feature } from '@local-hosting/geokit/core/types';
+import { getFeatureId } from '@local-hosting/geokit/core/geojson';
 import { getCSSVariable, getCSSVariableNumber } from '../../map-surface/theme';
 import { debug } from '../../map-surface/logger';
 import { HOVER_CONFIG, type HoverStateHandlers } from '../../map-surface/feature-state-hover';
@@ -139,6 +139,10 @@ export interface SharedPointLayersConfig {
   selectionGroundBadge?: boolean;
   /** Fallback ring color for the grounded selection badge. */
   selectionGroundBadgeFallbackColor?: string;
+  /** App hover ring accent for floating-badge `_color` patches. */
+  hoverRingColor?: string;
+  /** App selected ring accent for leave-restore while active. */
+  selectedRingColor?: string;
 }
 
 export interface CircleLayerConfig {

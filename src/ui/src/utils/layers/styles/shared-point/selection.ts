@@ -1,7 +1,7 @@
 /** Selection state, lookups, and setters. */
 import type { MapInstance } from '../../../../providers/types';
-import type { Feature } from '@doppler-group/geokit/core/types';
-import { getFeatureId } from '@doppler-group/geokit/core/geojson';
+import type { Feature } from '@local-hosting/geokit/core/types';
+import { getFeatureId } from '@local-hosting/geokit/core/geojson';
 import { getCSSVariable, getCSSVariableNumber } from '../../../map-surface/theme';
 import { debug } from '../../../map-surface/logger';
 import { HOVER_CONFIG, type HoverStateHandlers } from '../../../map-surface/feature-state-hover';
@@ -54,6 +54,7 @@ import {
 import { syncBadgeChrome } from '../../../markers/badge';
 import { sharedPointCircleBodyFilter, trySetLayerFilter } from '../../../markers/marker-shape';
 import { resolveSharedPointLayerIdForSource } from '../../../shared-points/shared-point-heal';
+import { selectionBadgeAnimByMap } from './animation-state';
 
 // ============================================================================
 // Types
@@ -71,6 +72,7 @@ import {
 } from '../types';
 
 import {
+  animateSharedPointSelectionBadgeTranslate,
   cancelSelectionBadgeAnimation,
   setSelectionBadgeTranslate,
   sharedPointSelectionBadgeTranslateForCamera,
@@ -389,6 +391,8 @@ function syncSharedPointSelectedFeatureState(
   nextFeatureId: string | null
 ): void {
   if (!map.setFeatureState) return;
+  // Mapbox fires/throws when the GeoJSON source is not on the style yet (init race).
+  if (map.getSource && !map.getSource(sourceId)) return;
   if (previousFeatureId && previousFeatureId !== nextFeatureId) {
     try {
       map.setFeatureState({ source: sourceId, id: previousFeatureId }, { selected: false });
@@ -455,6 +459,7 @@ export function setSharedPointSelection(
       });
       if (options?.selectionGroundBadge) {
         cancelSelectionBadgeAnimation(map, pointLayerId);
+        hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
         const tokens = resolveSharedPointFloatingBadgeTokens();
         setSelectionBadgeTranslate(
           map,
@@ -494,26 +499,47 @@ export function setSharedPointSelection(
       promoteId,
       properties: resolvedProperties,
     });
-    // Same resting marker stays put — feature-state only darkens the ground cast.
+    // Selection source draws the grounded badge; resting stack drops this feature.
     syncSharedPointSelectedFeatureState(map, sourceId, previousFeatureId, featureId);
     if (pointLayerId) {
-      syncSharedPointSelectedLayerFilter(map, {
-        pointLayerId,
-        glowLayerId: options?.glowLayerId,
-        promoteId,
-        featureId,
-      });
+      const selectionChanged = featureId !== previousFeatureId;
       if (options?.selectionGroundBadge) {
-        cancelSelectionBadgeAnimation(map, pointLayerId);
-        // Never draw a second badge on the selection source.
-        hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
-      }
-      syncBadgeChrome(map, pointLayerId, {
-        keyColor,
-        properties: resolvedProperties,
-      });
-      if (options?.selectionGroundBadge) {
-        hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
+        // Paint the selection badge at float height before filtering resting off.
+        syncBadgeChrome(map, pointLayerId, {
+          keyColor,
+          properties: resolvedProperties,
+        });
+        if (selectionChanged) {
+          animateSharedPointSelectionBadgeTranslate(map, pointLayerId);
+        } else if (!selectionBadgeAnimByMap.get(map)?.has(pointLayerId)) {
+          const tokens = resolveSharedPointFloatingBadgeTokens();
+          setSelectionBadgeTranslate(
+            map,
+            pointLayerId,
+            sharedPointSelectionBadgeTranslateForCamera(
+              tokens.selectedTranslate,
+              map.getPitch?.() ?? 0,
+              map.getZoom?.() ?? 16
+            )
+          );
+        }
+        syncSharedPointSelectedLayerFilter(map, {
+          pointLayerId,
+          glowLayerId: options?.glowLayerId,
+          promoteId,
+          featureId,
+        });
+      } else {
+        syncSharedPointSelectedLayerFilter(map, {
+          pointLayerId,
+          glowLayerId: options?.glowLayerId,
+          promoteId,
+          featureId,
+        });
+        syncBadgeChrome(map, pointLayerId, {
+          keyColor,
+          properties: resolvedProperties,
+        });
       }
     }
     clearSharedPointHoverOverlay(map, sourceId);

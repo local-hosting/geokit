@@ -134,7 +134,7 @@ export class MapStyleSetup extends MapConnectedInit {
     const mapId = this.getAttribute('map-id')?.trim();
     if (!mapId) return;
     try {
-      const { MapOfflineContextLoader } = await import('@doppler-group/geokit/ui/storage/map-offline-context-loader');
+      const { MapOfflineContextLoader } = await import('@local-hosting/geokit/ui/storage/map-offline-context-loader');
       const zoom = parseFloat(this.getAttribute('zoom') || '12');
       await MapOfflineContextLoader.onMapContextLoad(mapId, { zoom });
     } catch (error) {

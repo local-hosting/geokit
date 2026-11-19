@@ -5,12 +5,12 @@
  * Handles provider integration, lifecycle management, and common utilities
  */
 
-import { getBounds, boundsToObject } from '@doppler-group/geokit/core/bounds';
+import { getBounds, boundsToObject } from '@local-hosting/geokit/core/bounds';
 import { getUIProvider, getUIProviderByName } from '../providers/registry';
-import { getServiceForCapability } from '@doppler-group/geokit/service/registry';
+import { getServiceForCapability } from '@local-hosting/geokit/service/registry';
 import { debug } from '../utils/logger';
 import type { BaseUIProvider, MapInstance, MapEvent } from '../providers/types';
-import type { ServiceCapability } from '@doppler-group/geokit/service/types';
+import type { ServiceCapability } from '@local-hosting/geokit/service/types';
 import {
   addControlToMapInstance,
   mapSupportsAddControl,

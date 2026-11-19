@@ -8,7 +8,7 @@
 import {
   capPolygonCollectionForMapLibre,
   polygonsToBoundaryLines,
-} from '@doppler-group/geokit/core/geojson';
+} from '@local-hosting/geokit/core/geojson';
 import {
   COUNTY_BOUNDARY_GEOJSON_SOURCE_OPTIONS,
   STATE_BOUNDARY_GEOJSON_SOURCE_OPTIONS,

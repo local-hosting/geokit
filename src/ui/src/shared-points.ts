@@ -23,7 +23,7 @@ export {
   GKH3,
   GKDMA,
   GeoKind,
-} from '@doppler-group/geokit/crosswalk';
+} from '@local-hosting/geokit/crosswalk';
 
 export {
   POINT_DMA_PROPERTY,
@@ -120,6 +120,8 @@ export {
   sharedPointStrokeFromFillColorExpression,
   annotatePointFeaturesStrokeFromFill,
   sharedPointOuterStrokeLayerId,
+  applySharedPointMarkerPitchAboveExtrusions,
+  applySharedPointLayersAbove3dExtrusions,
   literalNumberFromPaintExpression,
   sharedPointRadiusPlusStrokeWidth,
   sharedPointFloatingBadgeOuterDiscRadius,

@@ -7,12 +7,12 @@ const config = JSON.parse(readFileSync(configPath, 'utf8'));
 const paths = config.compilerOptions?.paths ?? {};
 
 const forbidden = Object.keys(paths).filter(
-  (key) => key === '@doppler-group/geokit/h3' || key.startsWith('@doppler-group/geokit/h3/')
+  (key) => key === '@local-hosting/geokit/h3' || key.startsWith('@local-hosting/geokit/h3/')
 );
 
 if (forbidden.length > 0) {
   console.error(
-    '[@doppler-group/geokit/core] tsconfig.build.json must not path-map @doppler-group/geokit/h3 — tsc will emit .d.ts into src/h3/src.'
+    '[@local-hosting/geokit/core] tsconfig.build.json must not path-map @local-hosting/geokit/h3 — tsc will emit .d.ts into src/h3/src.'
   );
   for (const key of forbidden) {
     console.error(`  paths["${key}"]`);

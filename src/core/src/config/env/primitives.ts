@@ -1,2 +1,2 @@
-/** @deprecated Import from `@doppler-group/geokit/env/primitives` instead. */
-export * from '@doppler-group/geokit/env/primitives';
+/** @deprecated Import from `@local-hosting/geokit/env/primitives` instead. */
+export * from '@local-hosting/geokit/env/primitives';

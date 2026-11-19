@@ -79,7 +79,7 @@ export function createLabeledActionsControl(
         button.className = `gk-ctrl-action-icon gk-ctrl-action-icon--${iconSlug}`;
         button.title = action.label;
         const icon = document.createElement('span');
-        icon.className = 'maplibregl-ctrl-icon';
+        icon.className = 'maplibregl-ctrl-icon mapboxgl-ctrl-icon';
         icon.setAttribute('aria-hidden', 'true');
         button.appendChild(icon);
       } else {

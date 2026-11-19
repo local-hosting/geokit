@@ -1,7 +1,7 @@
 /** Sizing, radius, and hover-paint helpers. */
 import type { MapInstance } from '../../../../providers/types';
-import type { Feature } from '@doppler-group/geokit/core/types';
-import { getFeatureId } from '@doppler-group/geokit/core/geojson';
+import type { Feature } from '@local-hosting/geokit/core/types';
+import { getFeatureId } from '@local-hosting/geokit/core/geojson';
 import { getCSSVariable, getCSSVariableNumber } from '../../../map-surface/theme';
 import { debug } from '../../../map-surface/logger';
 import { HOVER_CONFIG, type HoverStateHandlers } from '../../../map-surface/feature-state-hover';

@@ -5,12 +5,12 @@ import {
   type GeoPoint,
   type GeoRef,
   type MacroRegion,
-} from '@doppler-group/geokit/core';
+} from '@local-hosting/geokit/core';
 import { GeoKind } from '../geo-kind.js';
 import type { CrosswalkCountry, CrosswalkResult, CrosswalkSpine } from '../types';
 import { geohashCellIdForLookup } from '../geohash/cell-id';
 import { geohashCellToLatLon, geohashForLatLon, geohashForPoint } from './geohash';
-import { compactH3CellId } from '@doppler-group/geokit/h3/lite';
+import { compactH3CellId } from '@local-hosting/geokit/h3/lite';
 import { normalizeTractGeoid, stateAbbrForTract, tractCountyFips } from '../us/tract-geoid.js';
 import { h3CellToLatLng, latLngToH3Cell, isH3ProjectionLoaded } from '../h3/project';
 import { requireUsCrosswalkLookups, getCrosswalkSpine } from '../load/registry';

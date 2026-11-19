@@ -69,13 +69,13 @@ export function sharedPointSelectionLiftLayerIds(pointLayerId: string): string[]
   return suffixes.map((suffix) => `${pointLayerId}${suffix}`);
 }
 
-/** Selected marker draw order, bottom to top — always above every resting marker. */
+/**
+ * Selected marker draw order, bottom to top — always above every resting marker.
+ * Ground shadows stay out of this list: raising them parks the cast on top of the
+ * badge (select settles on the selection-source chrome).
+ */
 export function sharedPointSelectionFrontLayerIds(pointLayerId: string): string[] {
-  return [
-    `${pointLayerId}-selection-shadow`,
-    `${pointLayerId}-selection-rounded-shadow`,
-    ...sharedPointSelectionLiftLayerIds(pointLayerId),
-  ];
+  return [...sharedPointSelectionLiftLayerIds(pointLayerId)];
 }
 
 /** @deprecated Use {@link sharedPointCircleBodyLayerIds} — glow is not circle-scoped. */

@@ -8,7 +8,7 @@ import {
   initService,
   getServiceForCapability,
   _resetRegistries,
-} from '@doppler-group/geokit/service/registry';
+} from '@local-hosting/geokit/service/registry';
 import { FoursquareService } from '../src/foursquare-service';
 
 describe('FoursquareService', () => {

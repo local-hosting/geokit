@@ -1,5 +1,5 @@
-import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@doppler-group/geokit/service/plugin';
-import { resolveHereApiKey } from '@doppler-group/geokit/env/service-keys';
+import { createKeyedPluginRegistrar, type GeokitServicePlugin } from '@local-hosting/geokit/service/plugin';
+import { resolveHereApiKey } from '@local-hosting/geokit/env/service-keys';
 import { HerePlacesService } from './here-places-service';
 
 export const herePlacesPlugin: GeokitServicePlugin = {

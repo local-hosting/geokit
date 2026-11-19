@@ -37,6 +37,8 @@ function geojsonWithFloatingBadgeHoverColors(
     selectionGroundBadgeFallbackColor?: string;
     selectionGroundBadgeForceFallbackKey?: boolean;
     selectedDarken?: number;
+    hoverRingColor?: string;
+    selectedRingColor?: string;
   }
 ): FeatureCollection {
   if (!paint.selectionGroundBadge) return geojson;
@@ -44,6 +46,8 @@ function geojsonWithFloatingBadgeHoverColors(
     fallbackColor: paint.selectionGroundBadgeFallbackColor?.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
     selectedAmount: paint.selectedDarken,
     forceFallbackKey: paint.selectionGroundBadgeForceFallbackKey === true,
+    hoverColor: paint.hoverRingColor,
+    selectedColor: paint.selectedRingColor,
   });
 }
 
@@ -858,6 +862,8 @@ async function attachSharedPointHoverAfterMount(
     promoteId: options.promoteId,
     selectionGroundBadge: options.paint.selectionGroundBadge,
     selectionGroundBadgeFallbackColor: options.paint.selectionGroundBadgeFallbackColor,
+    hoverRingColor: options.paint.hoverRingColor,
+    selectedRingColor: options.paint.selectedRingColor,
     selectionPointStrokeWidth: 0,
     selectionRingColor: undefined,
     floatTranslate: options.paint.pointTranslate,

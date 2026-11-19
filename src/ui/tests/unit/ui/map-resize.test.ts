@@ -73,6 +73,81 @@ describe('map resize guards', () => {
     expect(originalResize).not.toHaveBeenCalled();
   });
 
+  it('wrapMapResize returns the map so Mapbox resize()._update() chaining works', () => {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    mockRect(host, 320, 240);
+
+    const update = vi.fn();
+    const map = {
+      painter: {},
+      getContainer: () => host,
+      resize: vi.fn(function (this: { _update: () => void }) {
+        return this;
+      }),
+      _update: update,
+    };
+
+    wrapMapResize(map);
+
+    expect(() => {
+      map.resize()._update();
+    }).not.toThrow();
+    expect(update).toHaveBeenCalledOnce();
+    expect(map.resize()).toBe(map);
+  });
+
+  it('wrapMapResize returns the map when skipping a zero-size container', () => {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    mockRect(host, 0, 0);
+
+    const originalResize = vi.fn(function (this: object) {
+      return this;
+    });
+    const map = { resize: originalResize, getContainer: () => host };
+
+    wrapMapResize(map);
+
+    expect(map.resize()).toBe(map);
+    expect(originalResize).not.toHaveBeenCalled();
+  });
+
+  it('wrapMapResize rebinds window resize so remove() can detach the listener', () => {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    mockRect(host, 320, 240);
+
+    const update = vi.fn();
+    const map: {
+      painter: object;
+      _removed?: boolean;
+      getContainer: () => HTMLDivElement;
+      resize: (arg?: unknown) => unknown;
+      _update: () => void;
+      _onWindowResize: (event?: Event) => void;
+    } = {
+      painter: {},
+      getContainer: () => host,
+      resize: vi.fn(function (this: { _update: () => void }) {
+        return this;
+      }),
+      _update: update,
+      _onWindowResize(event?: Event) {
+        this.resize({ originalEvent: event })._update();
+      },
+    };
+    map._onWindowResize = map._onWindowResize.bind(map);
+    window.addEventListener('resize', map._onWindowResize, false);
+
+    wrapMapResize(map);
+
+    window.removeEventListener('resize', map._onWindowResize, false);
+    window.dispatchEvent(new Event('resize'));
+
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it('getMapResizeTarget prefers the explicit host element', () => {
     host = document.createElement('div');
     const container = document.createElement('div');

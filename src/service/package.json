@@ -1,5 +1,5 @@
 {
-  "name": "@doppler-group/geokit-service",
+  "name": "@local-hosting/geokit-service",
   "version": "0.1.0",
   "description": "Geokit service registry, routing, and shared HTTP utilities",
   "license": "MPL-2.0",
@@ -57,30 +57,30 @@
     "build": "tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json"
   },
   "peerDependencies": {
-    "@doppler-group/geokit-core": ">=0.2.33",
-    "@doppler-group/geokit-foursquare": ">=0.1.0",
-    "@doppler-group/geokit-google": ">=0.1.0",
-    "@doppler-group/geokit-mapbox": ">=0.1.0",
-    "@doppler-group/geokit-maptiler": ">=0.1.0",
-    "@doppler-group/geokit-osm": ">=0.1.0"
+    "@local-hosting/geokit-core": ">=0.2.33",
+    "@local-hosting/geokit-foursquare": ">=0.1.0",
+    "@local-hosting/geokit-google": ">=0.1.0",
+    "@local-hosting/geokit-mapbox": ">=0.1.0",
+    "@local-hosting/geokit-maptiler": ">=0.1.0",
+    "@local-hosting/geokit-osm": ">=0.1.0"
   },
   "peerDependenciesMeta": {
-    "@doppler-group/geokit-core": {
+    "@local-hosting/geokit-core": {
       "optional": false
     },
-    "@doppler-group/geokit-foursquare": {
+    "@local-hosting/geokit-foursquare": {
       "optional": true
     },
-    "@doppler-group/geokit-google": {
+    "@local-hosting/geokit-google": {
       "optional": true
     },
-    "@doppler-group/geokit-mapbox": {
+    "@local-hosting/geokit-mapbox": {
       "optional": true
     },
-    "@doppler-group/geokit-maptiler": {
+    "@local-hosting/geokit-maptiler": {
       "optional": true
     },
-    "@doppler-group/geokit-osm": {
+    "@local-hosting/geokit-osm": {
       "optional": true
     }
   },
@@ -90,6 +90,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/twinfile/geokit.git"
+    "url": "git+https://github.com/local-hosting/geokit.git"
   }
 }

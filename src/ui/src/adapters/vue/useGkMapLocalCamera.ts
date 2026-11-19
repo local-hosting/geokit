@@ -1,4 +1,4 @@
-import type { MapLocalPersistScope } from '@doppler-group/geokit/core/contract/offline';
+import type { MapLocalPersistScope } from '@local-hosting/geokit/core/contract/offline';
 import { onUnmounted, watch, type Ref } from 'vue';
 import {
   bindMapMoveendLocalSync,

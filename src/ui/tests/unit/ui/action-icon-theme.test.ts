@@ -50,35 +50,44 @@ describe('gk-ctrl-action-icon theme (MapLibre control style)', () => {
 
   it('sizes save/snap glyphs like MapLibre terrain (intrinsic ~18px, not full 29px button)', () => {
     // MapLibre terrain uses width/height 22; solid Heroicons need more padding → 18.
-    expect(themeCss).toMatch(
-      /gk-ctrl-action-icon--save[\s\S]*?width='18' height='18'/,
-    )
-    expect(themeCss).toMatch(
-      /gk-ctrl-action-icon--snap[\s\S]*?width='18' height='18'/,
-    )
-    expect(themeCss).not.toMatch(
-      /gk-ctrl-action-icon--save[\s\S]*?width='29' height='29'/,
-    )
-    expect(themeCss).not.toMatch(
-      /gk-ctrl-action-icon--snap[\s\S]*?width='29' height='29'/,
-    )
+    const saveUrl = themeCss.match(
+      /gk-ctrl-action-icon--save \.maplibregl-ctrl-icon,[\s\S]*?url\("([^"]+)"\)/,
+    )?.[1]
+    const snapUrl = themeCss.match(
+      /gk-ctrl-action-icon--snap \.maplibregl-ctrl-icon,[\s\S]*?url\("([^"]+)"\)/,
+    )?.[1]
+    expect(saveUrl).toMatch(/width='18' height='18'/)
+    expect(snapUrl).toMatch(/width='18' height='18'/)
+    expect(saveUrl).not.toMatch(/width='29' height='29'/)
+    expect(snapUrl).not.toMatch(/width='29' height='29'/)
   })
 })
 
 describe('gk-map terrain + zoom control icons', () => {
-  it('paints terrain off/enabled mountain SVGs under gk-map', () => {
-    expect(themeCss).toMatch(
-      /gk-map button\.maplibregl-ctrl-terrain \.maplibregl-ctrl-icon[\s\S]*?background-image:\s*url\("data:image\/svg\+xml;charset=utf-8,/,
-    )
-    expect(themeCss).toMatch(
-      /gk-map button\.maplibregl-ctrl-terrain-enabled \.maplibregl-ctrl-icon[\s\S]*?background-image:\s*url\("data:image\/svg\+xml;charset=utf-8,/,
-    )
-    expect(themeCss).toMatch(
-      /maplibregl-ctrl-terrain-enabled[\s\S]*?%252333b5e5/,
-    )
-    expect(themeCss).toMatch(
-      /maplibregl-ctrl-terrain[\s\S]*?m1\.754%2013\.406%204\.453-4\.851/,
-    )
+  it('uses MapTiler twin-peak mountain in #333 for off and enabled (no cyan)', () => {
+    const terrainBlock = themeCss.match(
+      /gk-map button\.maplibregl-ctrl-terrain \.maplibregl-ctrl-icon,[\s\S]*?background-image:\s*url\("([^"]+)"\)/,
+    )?.[0]
+    expect(terrainBlock).toBeTruthy()
+    expect(terrainBlock).toMatch(/maplibregl-ctrl-terrain-enabled/)
+    expect(terrainBlock).toMatch(/fill='%23333'/)
+    expect(terrainBlock).not.toMatch(/33b5e5|%2523/)
+    // MapTiler SDK path (not MapLibre m1.754… / not a Heroicon)
+    expect(terrainBlock).toMatch(/M1\.083[, ]10\.209/)
+    expect(terrainBlock).not.toMatch(/m1\.754 13\.406/)
+  })
+
+  it('sizes MapLibre terrain icon classes on Mapbox (no maplibre-gl.css)', () => {
+    // Without MapLibre layout CSS, `.maplibregl-ctrl-icon` is inline/auto — paint would be invisible.
+    // MapTiler twin-peak needs near-button size (29px control) to match zoom weight.
+    const sizeBlock = themeCss.match(
+      /gk-map button\.maplibregl-ctrl-terrain \.maplibregl-ctrl-icon,[\s\S]*?background-size:\s*28px 28px;/,
+    )?.[0]
+    expect(sizeBlock).toBeTruthy()
+    expect(sizeBlock).toMatch(/display:\s*block/)
+    expect(sizeBlock).toMatch(/width:\s*100%/)
+    expect(sizeBlock).toMatch(/height:\s*100%/)
+    expect(sizeBlock).toMatch(/mapboxgl-ctrl-icon/)
   })
 
   it('overrides mapbox + maplibre zoom in/out with thick disc +/- SVGs', () => {
@@ -99,7 +108,9 @@ describe('gk-map terrain + zoom control icons', () => {
       /gk-map button\.(?:mapboxgl|maplibregl)-ctrl-zoom-in[\s\S]*?background-image:\s*url\("[^"]+"\);/,
     )?.[0]
     expect(zoomInBlock).toBeTruthy()
-    expect(zoomInBlock).toMatch(/fill-rule%3D%27evenodd%27/)
+    expect(zoomInBlock).toMatch(/fill-rule(?:%3D|=)(?:%27|')evenodd/)
+    expect(zoomInBlock).toMatch(/fill(?:%3D|=)(?:%27|')%23333/)
+    expect(zoomInBlock).not.toMatch(/%2523/)
     expect(zoomInBlock).not.toMatch(/M14\.5 8\.5c-\.75 0-1\.5\.75/)
   })
 })

@@ -2,9 +2,9 @@
  * Esri ArcGIS Places service — near-point search.
  */
 
-import { CachedService } from '@doppler-group/geokit/service';
-import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@doppler-group/geokit/service/types';
-import { fetchWithRetry } from '@doppler-group/geokit/service';
+import { CachedService } from '@local-hosting/geokit/service';
+import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@local-hosting/geokit/service/types';
+import { fetchWithRetry } from '@local-hosting/geokit/service';
 import {
   ESRI_PLACES_NEAR_POINT,
   type EsriPlaceRaw,

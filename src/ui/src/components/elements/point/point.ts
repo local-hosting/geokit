@@ -15,7 +15,7 @@ import {
   extractPointLngLat,
   normalizeCoordinatesArray,
   isValidCoordinate,
-} from '@doppler-group/geokit/core/coordinates';
+} from '@local-hosting/geokit/core/coordinates';
 import type { MapEvent, MapRenderedFeature } from '../../../providers/types';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
 import { createGeokitLogger } from '../../../utils/logger';

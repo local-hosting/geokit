@@ -14,7 +14,7 @@ export type {
   Geometry,
   Feature,
   FeatureCollection
-} from '@doppler-group/geokit/core'
+} from '@local-hosting/geokit/core'
 
 // Export geodrop-specific types
 export type {

@@ -1,6 +1,6 @@
-# @doppler-group/geokit/core
+# @local-hosting/geokit/core
 
-Slim geospatial utilities for browser and Node.js. Map UI lives in `@doppler-group/geokit/ui`; H3 geometry in `@doppler-group/geokit/h3`; env keys in `@doppler-group/geokit/env`. See [docs/architecture.md](../../docs/architecture.md) for package layout and import tiers.
+Slim geospatial utilities for browser and Node.js. Map UI lives in `@local-hosting/geokit/ui`; H3 geometry in `@local-hosting/geokit/h3`; env keys in `@local-hosting/geokit/env`. See [docs/architecture.md](../../docs/architecture.md) for package layout and import tiers.
 
 A functional, curried geospatial utility toolkit for browser and Node.js.
 
@@ -741,7 +741,7 @@ const nearby = pois
 
 ### H3 Hexagonal Indexing
 
-> H3 APIs moved to `@doppler-group/geokit/h3`. `@doppler-group/geokit/core/h3` shims remain for one release.
+> H3 APIs moved to `@local-hosting/geokit/h3`. `@local-hosting/geokit/core/h3` shims remain for one release.
 
 - `coordinatesToH3(coords, resolution?)` - Convert coordinates to H3 index
 - `h3ToCoordinates(h3Index)` - Convert H3 index to coordinates
@@ -770,8 +770,8 @@ const nearby = pois
 - `asH3Point(index)` - Create H3Point (with validation)
 - `geohashPointToH3Point(geohash, resolution)` - Convert geohash to H3
 - `h3PointToGeohashPoint(h3, precision)` - Convert H3 to geohash
-- `decodePointToCoordinates(index)` - Universal decode — import from `@doppler-group/geokit/core/spatial/decode`
-- `getBoundsFromPoint(index)` - Universal bounds — import from `@doppler-group/geokit/core/spatial/decode`
+- `decodePointToCoordinates(index)` - Universal decode — import from `@local-hosting/geokit/core/spatial/decode`
+- `getBoundsFromPoint(index)` - Universal bounds — import from `@local-hosting/geokit/core/spatial/decode`
 
 ## Browser and Node.js Compatibility
 
@@ -779,7 +779,7 @@ This package is designed to work in both browser and Node.js environments. It us
 
 ## Map UI (Web Components)
 
-Import from `@doppler-group/geokit/ui`. Custom elements (`gk-map`, `gk-point`, `gk-layer`, …) emit `gk-*` events for app integration.
+Import from `@local-hosting/geokit/ui`. Custom elements (`gk-map`, `gk-point`, `gk-layer`, …) emit `gk-*` events for app integration.
 
 See [docs/events.md](../../docs/events.md) for the event reference.
 

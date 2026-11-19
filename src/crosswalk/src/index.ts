@@ -11,7 +11,7 @@ export type {
   PlaceKey,
   StateCode,
   ZipCode,
-} from '@doppler-group/geokit/core';
+} from '@local-hosting/geokit/core';
 
 export {
   normalizeTractGeoid,
@@ -37,7 +37,7 @@ export {
   asDmaSlugOrUndefined,
   asZipCode,
   parseGeoRef,
-} from '@doppler-group/geokit/core';
+} from '@local-hosting/geokit/core';
 
 export { GeoKind } from './geo-kind.js';
 
@@ -99,7 +99,7 @@ export {
   normalizeGeohashCellId,
   truncateGeohashCellId,
 } from './geohash/cell-id';
-export { compactH3CellId, expandH3CellId } from '@doppler-group/geokit/h3/lite';
+export { compactH3CellId, expandH3CellId } from '@local-hosting/geokit/h3/lite';
 export { ensureH3Projection, isH3ProjectionLoaded } from './h3/project';
 export {
   isCrosswalkCountryLoaded,

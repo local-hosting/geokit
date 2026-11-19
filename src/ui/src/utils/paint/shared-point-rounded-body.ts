@@ -35,6 +35,7 @@ import {
   sharedPointSelectionSourcePrimaryProperties,
   SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR,
   sharedPointDotColorExpression,
+  sharedPointRestingGlyphColor,
   sharedPointZoomedOutStep,
 } from './shared-point-paint';
 import { SHARED_POINT_BADGE_ICON_PROPERTY } from './shared-point-badge-constants';
@@ -209,10 +210,8 @@ function restingRoundedChromeFromPaint(
   const pointRadius = paint.pointRadiusExpression ?? sharedPointFloatingBadgeRadiusExpression();
   const keyRing = sharedPointRoundedBodyIconColorExpression(fallback, paint.strokeColorExpression);
   const outerColor = sharedPointRestingRoundedOuterColor(paint);
-  // Light core + key ring (same as circles) — key-tinted glyph stays visible on paper.
-  const coreColor =
-    paint.pointColorExpression ??
-    sharedPointZoomedOutStep(sharedPointDotColorExpression(keyRing), SHARED_POINT_FLOATING_BADGE_FILL);
+  // Key-colored core — white cube glyph stays visible on the fill (not paper + key tint).
+  const coreColor = sharedPointZoomedOutStep(sharedPointDotColorExpression(keyRing), keyRing);
   // Zoomed out: no ring band (matches circle stroke width 0) — tiny core on the glow only.
   const ringColor = sharedPointZoomedOutStep('rgba(0,0,0,0)', keyRing);
   return {
@@ -227,7 +226,7 @@ function restingRoundedChromeFromPaint(
       paint.strokeWidthExpression,
       paint.outerStrokeWidthExpression
     ),
-    glyphColor: sharedPointZoomedOutStep('rgba(0,0,0,0)', keyRing),
+    glyphColor: sharedPointRestingGlyphColor(resolveSharedPointFloatingBadgeTokens().glyphColor),
   };
 }
 
@@ -264,40 +263,13 @@ export function applySharedPointRoundedRectChromePaint(
   const sourceId = paint.ids?.sourceId;
   const selectionActive = Boolean(sourceId && sharedPointSelectionSourceHasFeature(map, sourceId));
 
-  if (selectionActive && sourceId && paint.selectionGroundBadge) {
-    // Shadow-only select — never swap in a second selection-source marker.
-    hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
-  }
-
   const restingLayers = [
     [sharedPointRoundedOuterLayerId(pointLayerId), resting.outerSize, resting.outerColor],
     [sharedPointRoundedRingLayerId(pointLayerId), resting.ringSize, resting.ringColor],
     [sharedPointRoundedBodyLayerId(pointLayerId), resting.coreSize, resting.coreColor],
   ] as const;
 
-  const selectionLayers = [
-    [
-      sharedPointSelectionRoundedOuterLayerId(pointLayerId),
-      sharedPointRoundedOuterIconSizeExpression(
-        selectedRadius,
-        paint.strokeWidthExpression,
-        paint.outerStrokeWidthExpression
-      ),
-      resting.outerColor,
-    ],
-    [
-      sharedPointSelectionRoundedRingLayerId(pointLayerId),
-      sharedPointRoundedRingIconSizeExpression(selectedRadius, paint.strokeWidthExpression),
-      resting.ringColor,
-    ],
-    [
-      sharedPointSelectionRoundedBodyLayerId(pointLayerId),
-      sharedPointRoundedBodyIconSizeExpression(selectedRadius),
-      resting.coreColor,
-    ],
-  ] as const;
-
-  // Only paint the resting stack — selection-source rounded layers stay hidden.
+  // Resting stack always keeps size/color in sync; selected feature is filtered off.
   for (const [layerId, size, color] of restingLayers) {
     if (!map.getLayer?.(layerId) || !map.setPaintProperty) continue;
     try {
@@ -305,15 +277,6 @@ export function applySharedPointRoundedRectChromePaint(
       map.setPaintProperty(layerId, 'icon-color', color);
       map.setPaintProperty(layerId, 'icon-translate', iconTranslate);
       map.setPaintProperty(layerId, 'icon-opacity', 1);
-    } catch {
-      /* style swap */
-    }
-  }
-
-  for (const [layerId] of selectionLayers) {
-    if (!map.getLayer?.(layerId) || !map.setPaintProperty) continue;
-    try {
-      map.setPaintProperty(layerId, 'icon-opacity', 0);
     } catch {
       /* style swap */
     }
@@ -330,19 +293,48 @@ export function applySharedPointRoundedRectChromePaint(
     }
   }
 
-  hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
+  if (selectionActive && sourceId && paint.selectionGroundBadge) {
+    const properties = sharedPointSelectionSourcePrimaryProperties(map, sourceId);
+    const accent = resolveFloatingBadgeSelectionAccentColor(properties, fallback);
+    const tokens = resolveSharedPointFloatingBadgeTokens();
+    hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
+    applySharedPointRoundedRectSelectionChrome(map, pointLayerId, {
+      accentColor: accent,
+      outerAccentColor: accent,
+      white: SHARED_POINT_FLOATING_BADGE_FILL,
+      selectedRadius,
+      ringWidth: paint.strokeWidthExpression ?? tokens.coloredRingWidth,
+      outerStrokeWidth: tokens.selectedOuterStrokeWidth,
+      iconTranslate: paint.selectedTranslate ?? tokens.selectedTranslate,
+    });
+    for (const layerId of [
+      sharedPointSelectionRoundedOuterLayerId(pointLayerId),
+      sharedPointSelectionRoundedRingLayerId(pointLayerId),
+      sharedPointSelectionRoundedBodyLayerId(pointLayerId),
+      sharedPointSelectionBadgeIconLayerId(pointLayerId),
+    ]) {
+      if (!map.getLayer?.(layerId) || !map.setPaintProperty) continue;
+      try {
+        map.setPaintProperty(layerId, 'icon-opacity', 1);
+      } catch {
+        /* style swap */
+      }
+    }
+  } else {
+    hideFloatingBadgeCircleSelectionLayers(map, pointLayerId);
+  }
 }
 
 /**
- * Selected rounded-rect colors — light core + key ring + white outer (matches resting).
- * Key-tinted glyph stays visible on the paper fill. Zoomed out: solid key body.
+ * Selected rounded-rect colors — key body + key ring + white outer (matches resting).
+ * White glyph stays visible on the key fill. Zoomed out: solid key body, glyph hidden.
  */
 function selectionRoundedColors(accent: unknown, _outerAccent: unknown, white: unknown) {
   return {
     outer: sharedPointZoomedOutStep('rgba(0,0,0,0)', white),
     ring: sharedPointZoomedOutStep('rgba(0,0,0,0)', accent),
-    body: sharedPointZoomedOutStep(accent, white),
-    glyph: sharedPointZoomedOutStep('rgba(0,0,0,0)', accent),
+    body: sharedPointZoomedOutStep(accent, accent),
+    glyph: sharedPointZoomedOutStep('rgba(0,0,0,0)', white),
   };
 }
 

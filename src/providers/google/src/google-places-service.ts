@@ -2,9 +2,9 @@
  * Google Places service — place search via Google Places API.
  */
 
-import { CachedService } from '@doppler-group/geokit/service';
-import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@doppler-group/geokit/service/types';
-import { fetchWithRetry } from '@doppler-group/geokit/service';
+import { CachedService } from '@local-hosting/geokit/service';
+import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@local-hosting/geokit/service/types';
+import { fetchWithRetry } from '@local-hosting/geokit/service';
 const SERVICE_LABEL = 'Google Places';
 
 export class GooglePlacesService extends CachedService<PlaceSearchResult[]> {

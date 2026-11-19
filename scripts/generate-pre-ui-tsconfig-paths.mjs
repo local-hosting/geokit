@@ -8,7 +8,7 @@ const importsPath = join(repoRoot, 'config/tsconfig.geokit-imports.json');
 const imports = JSON.parse(readFileSync(importsPath, 'utf8'));
 
 const stubPaths = {
-  '@doppler-group/geokit/service/types/api-composite': [
+  '@local-hosting/geokit/service/types/api-composite': [
     'src/core/config/build-stubs/service/types/api-composite.d.ts',
   ],
 };

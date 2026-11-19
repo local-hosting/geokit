@@ -24,7 +24,7 @@ function findDeclarationArtifacts(dir) {
 const stray = findDeclarationArtifacts(srcRoot);
 if (stray.length > 0) {
   console.error(
-    '[@doppler-group/geokit/h3] source-first package: do not emit .d.ts under src/. Remove artifacts and fix the build that created them.'
+    '[@local-hosting/geokit/h3] source-first package: do not emit .d.ts under src/. Remove artifacts and fix the build that created them.'
   );
   for (const file of stray) {
     console.error(`  ${file}`);

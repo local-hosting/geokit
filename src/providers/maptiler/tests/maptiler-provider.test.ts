@@ -8,7 +8,7 @@ import {
   initService,
   getServiceForCapability,
   _resetRegistries,
-} from '@doppler-group/geokit/service/registry';
+} from '@local-hosting/geokit/service/registry';
 import { MapTilerService } from '../src/maptiler-service';
 
 describe('MapTilerService', () => {

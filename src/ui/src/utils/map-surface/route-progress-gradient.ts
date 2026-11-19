@@ -1,4 +1,4 @@
-import { hexToRgb } from '@doppler-group/geokit/core';
+import { hexToRgb } from '@local-hosting/geokit/core';
 
 export interface RouteProgressGradientOptions {
   /** CSS hex color for the route */

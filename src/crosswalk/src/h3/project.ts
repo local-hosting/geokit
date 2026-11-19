@@ -3,7 +3,7 @@
  */
 
 import type { LatLon } from '../types';
-import { compactH3CellId, expandH3CellId } from '@doppler-group/geokit/h3/lite';
+import { compactH3CellId, expandH3CellId } from '@local-hosting/geokit/h3/lite';
 
 type LatLngToCell = (lat: number, lon: number, resolution: number) => string;
 type CellToLatLng = (cell: string) => [number, number];

@@ -4,9 +4,9 @@ import {
   asMacroRegion,
   asMacroRegionOrUndefined,
   type DMA,
-} from '@doppler-group/geokit/core';
+} from '@local-hosting/geokit/core';
 
-export { asDmaSlugOrUndefined as canonicalDmaSlug } from '@doppler-group/geokit/core';
+export { asDmaSlugOrUndefined as canonicalDmaSlug } from '@local-hosting/geokit/core';
 
 export function toDMA(
   slug: string | undefined,

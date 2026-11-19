@@ -2,7 +2,7 @@ import type {
   LayerDatasetContext,
   LayerDatasetHandle,
   LayerDatasetId,
-} from '@doppler-group/geokit/core/types/layer-datasets';
+} from '@local-hosting/geokit/core/types/layer-datasets';
 
 export type LayerDatasetMountFn = (
   ctx: LayerDatasetContext

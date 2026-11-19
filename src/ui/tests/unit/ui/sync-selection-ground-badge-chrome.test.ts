@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { syncBadgeChrome } from '../../../src/utils/markers/badge';
 
 describe('syncBadgeChrome', () => {
-  it('hides place selection chrome (shadow-only — no second badge)', () => {
+  it('shows place selection chrome so select can settle the grounded badge', () => {
     const pointLayerId = 'canvas-places-point';
     const setPaintProperty = vi.fn();
     syncBadgeChrome(
@@ -21,16 +21,16 @@ describe('syncBadgeChrome', () => {
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge`,
       'circle-opacity',
-      0
+      1
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-outer`,
       'circle-opacity',
-      0
+      1
     );
   });
 
-  it('hides rounded selection chrome too (same resting marker, shadow-only)', () => {
+  it('shows rounded selection chrome for resource settle (hides circle selection disks)', () => {
     const pointLayerId = 'canvas-places-point';
     const setPaintProperty = vi.fn();
     const setLayoutProperty = vi.fn();
@@ -60,14 +60,9 @@ describe('syncBadgeChrome', () => {
       0
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
-      `${pointLayerId}-selection-rounded-body`,
-      'icon-opacity',
-      0
-    );
-    expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-icon`,
       'icon-opacity',
-      0
+      1
     );
     void setLayoutProperty;
   });

@@ -147,7 +147,7 @@ describe('point DMA enrichment', () => {
       ensureUsCrosswalkLoaded,
       resetCrosswalkForTest,
       setCountyBoundaryLoader,
-    } = await import('@doppler-group/geokit/crosswalk');
+    } = await import('@local-hosting/geokit/crosswalk');
 
     const lat = 39.7684;
     const lon = -86.1581;

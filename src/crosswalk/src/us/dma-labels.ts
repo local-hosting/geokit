@@ -1,4 +1,4 @@
-import { asDmaSlugOrUndefined } from '@doppler-group/geokit/core';
+import { asDmaSlugOrUndefined } from '@local-hosting/geokit/core';
 
 /** Retired bootstrap slugs → canonical Nielsen slug on FW shapes CDN. */
 export const LEGACY_DMA_SLUG_ALIASES: Record<string, string> = {

@@ -53,8 +53,8 @@ export function scheduleMapboxApiInit(mapboxToken) {
   }
   const initMapbox = async () => {
     try {
-      const { registerService, initService } = await import('@doppler-group/geokit/service/registry');
-      const { MapboxService } = await import('@doppler-group/geokit/mapbox');
+      const { registerService, initService } = await import('@local-hosting/geokit/service/registry');
+      const { MapboxService } = await import('@local-hosting/geokit/mapbox');
       registerService('mapbox', new MapboxService());
       await initService('mapbox', { accessToken: mapboxToken });
     } catch (error) {

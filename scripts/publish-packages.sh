@@ -9,6 +9,6 @@ cd "${root}"
 yarn generate:tsconfig-paths
 yarn build
 node scripts/prepare-publish-package-json.mjs
-echo "publish-packages: @doppler-group/geokit@$(node -p "require('./package.json').version")"
+echo "publish-packages: @local-hosting/geokit@$(node -p "require('./package.json').version")"
 npm publish --registry=https://npm.pkg.github.com --ignore-scripts
 echo "publish-packages OK"

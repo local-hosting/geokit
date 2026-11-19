@@ -13,7 +13,10 @@ describe('createTerrainToggleControl', () => {
     expect(root.className).toMatch(/maplibregl-ctrl-group/);
     const button = root.querySelector('button') as HTMLButtonElement;
     expect(button.classList.contains('maplibregl-ctrl-terrain')).toBe(true);
-    expect(button.querySelector('.maplibregl-ctrl-icon')).not.toBeNull();
+    const icon = button.querySelector('.maplibregl-ctrl-icon') as HTMLElement;
+    expect(icon).not.toBeNull();
+    // Mapbox CSS sizes `.mapboxgl-ctrl-icon` only — dual-class so the mountain SVG is visible.
+    expect(icon.classList.contains('mapboxgl-ctrl-icon')).toBe(true);
   });
 
   it('toggles terrain-enabled and hillshade-enabled on the map element', () => {

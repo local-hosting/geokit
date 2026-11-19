@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assignFeaturesToH3ByCentroid } from '@doppler-group/geokit/h3';
+import { assignFeaturesToH3ByCentroid } from '@local-hosting/geokit/h3';
 
 describe('assignFeaturesToH3ByCentroid', () => {
   it('assigns features to compact H3 cells via centroid', () => {

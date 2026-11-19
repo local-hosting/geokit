@@ -12,6 +12,7 @@ import {
   sharedPointHoverBadgeOuterLayerId,
   sharedPointRestingGlyphColor,
 } from './shared-point-paint';
+import { moveSharedPointLayer } from './shared-point/layer-ids';
 
 export { SHARED_POINT_BADGE_ICON_PROPERTY };
 
@@ -54,63 +55,55 @@ export function sharedPointBadgeDiskLayerIds(pointLayerId: string): string[] {
   ];
 }
 
+/** Mapbox `getLayer` reads `style.getOwnLayer` — throws when style is mid-swap / gone. */
+function tryGetLayer(map: MapInstance, layerId: string): unknown {
+  try {
+    return map.getLayer?.(layerId);
+  } catch {
+    return undefined;
+  }
+}
+
 /** Glyphs above their badge disks; the selected marker above every resting marker. */
 export function raiseSharedPointBadgeIconLayersOnTop(
   map: MapInstance,
   pointLayerId: string
 ): void {
-  const target = map as { moveLayer?: MoveLayer };
-  if (typeof target.moveLayer !== 'function') return;
-  const moveLayer = target.moveLayer.bind(map);
+  if (typeof (map as { moveLayer?: unknown }).moveLayer !== 'function') return;
 
   const pointIconId = sharedPointPointBadgeIconLayerId(pointLayerId);
   const selectionIconId = sharedPointSelectionBadgeIconLayerId(pointLayerId);
-  const anchor = map.getLayer?.(selectionIconId)
+  const anchor = tryGetLayer(map, selectionIconId)
     ? selectionIconId
-    : map.getLayer?.(pointIconId)
+    : tryGetLayer(map, pointIconId)
       ? pointIconId
       : null;
-  if (anchor) raiseBadgeIconsAboveDisks(map, moveLayer, pointLayerId, anchor);
-  raiseSelectionToFront(map, moveLayer, pointLayerId);
+  if (anchor) raiseBadgeIconsAboveDisks(map, pointLayerId, anchor);
+  raiseSelectionToFront(map, pointLayerId);
 }
-
-type MoveLayer = (id: string, beforeId?: string) => void;
 
 function raiseBadgeIconsAboveDisks(
   map: MapInstance,
-  moveLayer: MoveLayer,
   pointLayerId: string,
   anchor: string
 ): void {
   const pointIconId = sharedPointPointBadgeIconLayerId(pointLayerId);
 
   for (const diskId of sharedPointBadgeDiskLayerIds(pointLayerId)) {
-    if (diskId === anchor || !map.getLayer?.(diskId)) continue;
-    try {
-      moveLayer(diskId, anchor);
-    } catch {
-      /* style swap */
-    }
+    if (diskId === anchor || !tryGetLayer(map, diskId)) continue;
+    moveSharedPointLayer(map, diskId, anchor);
   }
 
-  if (map.getLayer?.(pointIconId)) {
-    try {
-      moveLayer(pointIconId);
-    } catch {
-      /* style swap */
-    }
+  if (tryGetLayer(map, pointIconId)) {
+    moveSharedPointLayer(map, pointIconId);
   }
 }
 
 /** Selected marker always draws above every resting marker. */
-function raiseSelectionToFront(map: MapInstance, moveLayer: MoveLayer, pointLayerId: string): void {
+function raiseSelectionToFront(map: MapInstance, pointLayerId: string): void {
   for (const layerId of sharedPointSelectionFrontLayerIds(pointLayerId)) {
-    if (!map.getLayer?.(layerId)) continue;
-    try {
-      moveLayer(layerId);
-    } catch {
-      /* style swap */
-    }
+    if (!tryGetLayer(map, layerId)) continue;
+    moveSharedPointLayer(map, layerId);
   }
 }
 
@@ -118,6 +111,18 @@ const badgeIconFilter: unknown[] = [
   'all',
   ['has', SHARED_POINT_BADGE_ICON_PROPERTY],
   ['!=', ['to-string', ['get', SHARED_POINT_BADGE_ICON_PROPERTY]], ''],
+];
+
+/**
+ * Mapbox GL ≥3.21 (#13714): symbol layers that share a source with feature-state
+ * must include ≥1 feature-state paint expression, or setPaintProperty/setTerrain
+ * crashes in hasStateDependentPaint when stateDependentLayers is empty.
+ */
+const MAPBOX_SYMBOL_FEATURE_STATE_PROBE: unknown[] = [
+  'case',
+  ['boolean', ['feature-state', '__gkProbe'], false],
+  0,
+  0,
 ];
 
 function buildBadgeIconLayerSpec(input: {
@@ -132,6 +137,8 @@ function buildBadgeIconLayerSpec(input: {
     'icon-opacity': 1,
     'icon-translate': iconTranslate,
     'icon-translate-anchor': 'viewport',
+    // No-op width — marks the layer state-dependent for Mapbox UBO updates.
+    'icon-halo-width': MAPBOX_SYMBOL_FEATURE_STATE_PROBE,
   };
   if (input.iconColor) paint['icon-color'] = input.iconColor;
   return {
@@ -147,6 +154,7 @@ function buildBadgeIconLayerSpec(input: {
       'icon-pitch-alignment': 'viewport',
       'icon-rotation-alignment': 'viewport',
       'icon-size': sharedPointBadgeIconSizeExpression(),
+      'symbol-z-elevate': true,
     },
     paint,
   };
@@ -190,37 +198,56 @@ export function ensureSharedPointBadgeIconLayers(
     options.pointIconTranslate ?? sharedPointFloatingBadgeTranslateExpression(0);
   const selectionTranslate = options.selectionIconTranslate ?? pointTranslate;
 
-  if (map.getSource?.(sourceId) && !map.getLayer?.(pointIconId) && map.addLayer) {
-    try {
-      map.addLayer(
-        buildBadgeIconLayerSpec({
-          id: pointIconId,
-          source: sourceId,
-          iconTranslate: pointTranslate,
-          iconColor: sharedPointRestingGlyphColor(resolveSharedPointFloatingBadgeTokens().glyphColor),
-        }) as never
-      );
-    } catch {
-      /* ignore */
+  if (map.getSource?.(sourceId) && map.addLayer) {
+    if (!map.getLayer?.(pointIconId)) {
+      try {
+        map.addLayer(
+          buildBadgeIconLayerSpec({
+            id: pointIconId,
+            source: sourceId,
+            iconTranslate: pointTranslate,
+            iconColor: sharedPointRestingGlyphColor(resolveSharedPointFloatingBadgeTokens().glyphColor),
+          }) as never
+        );
+      } catch {
+        /* ignore */
+      }
+    } else {
+      ensureBadgeIconFeatureStateProbe(map, pointIconId);
     }
   }
 
-  if (map.getSource?.(selectionSourceId) && !map.getLayer?.(selectionIconId) && map.addLayer) {
-    try {
-      map.addLayer(
-        buildBadgeIconLayerSpec({
-          id: selectionIconId,
-          source: selectionSourceId,
-          iconTranslate: selectionTranslate,
-        }) as never
-      );
-    } catch {
-      /* ignore */
+  if (map.getSource?.(selectionSourceId) && map.addLayer) {
+    if (!map.getLayer?.(selectionIconId)) {
+      try {
+        map.addLayer(
+          buildBadgeIconLayerSpec({
+            id: selectionIconId,
+            source: selectionSourceId,
+            iconTranslate: selectionTranslate,
+          }) as never
+        );
+      } catch {
+        /* ignore */
+      }
+    } else {
+      ensureBadgeIconFeatureStateProbe(map, selectionIconId);
     }
   }
 
   syncBadgeIconTranslate(map, pointLayerId);
   raiseSharedPointBadgeIconLayersOnTop(map, pointLayerId);
+}
+
+function ensureBadgeIconFeatureStateProbe(map: MapInstance, layerId: string): void {
+  if (!map.setPaintProperty || !map.getPaintProperty) return;
+  try {
+    const current = map.getPaintProperty(layerId, 'icon-halo-width');
+    if (JSON.stringify(current).includes('feature-state')) return;
+    map.setPaintProperty(layerId, 'icon-halo-width', MAPBOX_SYMBOL_FEATURE_STATE_PROBE);
+  } catch {
+    /* style swap */
+  }
 }
 
 function selectionBadgeCircleLayerId(pointLayerId: string): string {
@@ -251,7 +278,7 @@ export function syncSelectionBadgeIconTranslate(
 ): void {
   if (!map.setPaintProperty) return;
   const iconLayerId = sharedPointSelectionBadgeIconLayerId(pointLayerId);
-  if (!map.getLayer?.(iconLayerId)) return;
+  if (!tryGetLayer(map, iconLayerId)) return;
   const screenTranslate = sharedPointFloatingBadgeNormalizeViewportTranslate(translate);
   try {
     map.setPaintProperty(iconLayerId, 'icon-translate-anchor', 'viewport');

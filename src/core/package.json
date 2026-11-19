@@ -1,7 +1,7 @@
 {
-  "name": "@doppler-group/geokit-core",
+  "name": "@local-hosting/geokit-core",
   "version": "0.2.33",
-  "description": "Geospatial utilities (slim core - add @doppler-group/geokit/ui for map components, @doppler-group/geokit/service for place search)",
+  "description": "Geospatial utilities (slim core - add @local-hosting/geokit/ui for map components, @local-hosting/geokit/service for place search)",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",
@@ -176,11 +176,11 @@
       "require": "./dist/cjs/types/map-provider.cjs",
       "default": "./dist/esm/types/map-provider.js"
     },
-    "./ui": "@doppler-group/geokit-ui",
-    "./adapters/shared": "@doppler-group/geokit/ui/adapters/shared",
-    "./vue": "@doppler-group/geokit/ui/vue",
-    "./react": "@doppler-group/geokit/ui/react",
-    "./svelte": "@doppler-group/geokit/ui/svelte",
+    "./ui": "@local-hosting/geokit-ui",
+    "./adapters/shared": "@local-hosting/geokit/ui/adapters/shared",
+    "./vue": "@local-hosting/geokit/ui/vue",
+    "./react": "@local-hosting/geokit/ui/react",
+    "./svelte": "@local-hosting/geokit/ui/svelte",
     "./h3/cell-to-region-index": {
       "source": "./src/utils/h3/cell-to-region-index.ts",
       "types": "./dist/esm/utils/h3/cell-to-region-index.d.ts",
@@ -388,15 +388,15 @@
     "topojson-simplify": "^3.0.3"
   },
   "peerDependencies": {
-    "@doppler-group/geokit-service": ">=0.1.0"
+    "@local-hosting/geokit-service": ">=0.1.0"
   },
   "peerDependenciesMeta": {
-    "@doppler-group/geokit-service": {
+    "@local-hosting/geokit-service": {
       "optional": true
     }
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/twinfile/geokit.git"
+    "url": "git+https://github.com/local-hosting/geokit.git"
   }
 }

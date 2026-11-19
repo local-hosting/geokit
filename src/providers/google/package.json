@@ -14,9 +14,9 @@
     "test": "yarn run -T vitest run --config ../../config/vitest.plugin.config.ts"
   },
   "peerDependencies": {
-    "@doppler-group/geokit-core": ">=0.2.33",
-    "@doppler-group/geokit-service": ">=0.1.0"
+    "@local-hosting/geokit-core": ">=0.2.33",
+    "@local-hosting/geokit-service": ">=0.1.0"
   },
-  "name": "@doppler-group/geokit-google",
+  "name": "@local-hosting/geokit-google",
   "description": "Google Places search plugin for geokit"
 }

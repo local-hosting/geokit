@@ -6,6 +6,7 @@
  */
 
 import { mapGpuCreateOptions } from '../utils/map-surface/map-gpu-budget';
+import { ensureMapboxGlCss } from '../utils/map-provider-css';
 import { wrapMapResize } from '../utils/map-utils';
 import { getProviderConfig } from './registry';
 import { BaseUIProvider } from './types';
@@ -92,6 +93,9 @@ export class MapboxUIProvider extends BaseUIProvider {
     if (!this.sdk) {
       await this.initialize(this.config || {});
     }
+
+    // Vite injects CSS as <style> (no href); Mapbox warns without the canary rule.
+    await ensureMapboxGlCss();
 
     // Ensure access token is set on the SDK module before creating map
     // Mapbox GL JS requires this to be set before Map instantiation

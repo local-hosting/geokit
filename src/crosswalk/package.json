@@ -1,5 +1,5 @@
 {
-  "name": "@doppler-group/geokit-crosswalk",
+  "name": "@local-hosting/geokit-crosswalk",
   "version": "0.2.0",
   "description": "Geo identity crosswalk - many-to-many lookups between points, H3, ZIP, DMA, state, county",
   "license": "MPL-2.0",
@@ -59,7 +59,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/twinfile/geokit.git"
+    "url": "git+https://github.com/local-hosting/geokit.git"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",

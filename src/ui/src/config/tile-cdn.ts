@@ -6,9 +6,9 @@ import {
   createMapTilerDevTransformRequest,
   type MapTilerTransformRequest,
 } from './maptiler-dev-proxy';
-import { firstEnv, readRuntimeEnv } from '@doppler-group/geokit/env/primitives';
-import type { GeokitEnv } from '@doppler-group/geokit/env';
-import { MAP_STYLE_URL_KEYS, TILE_API_URL_KEYS, TILE_CDN_URL_KEYS } from '@doppler-group/geokit/env';
+import { firstEnv, readRuntimeEnv } from '@local-hosting/geokit/env/primitives';
+import type { GeokitEnv } from '@local-hosting/geokit/env';
+import { MAP_STYLE_URL_KEYS, TILE_API_URL_KEYS, TILE_CDN_URL_KEYS } from '@local-hosting/geokit/env';
 
 export type TileCdnEnv = GeokitEnv;
 

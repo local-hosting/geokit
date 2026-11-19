@@ -69,7 +69,8 @@ export function createMapAttributeToggleControl(
       button.className = offClass;
       button.setAttribute('aria-label', label);
       const icon = document.createElement('span');
-      icon.className = 'maplibregl-ctrl-icon';
+      // Dual-class: Mapbox CSS sizes `.mapboxgl-ctrl-icon`; theme paints `.maplibregl-ctrl-*`.
+      icon.className = 'maplibregl-ctrl-icon mapboxgl-ctrl-icon';
       icon.setAttribute('aria-hidden', 'true');
       button.appendChild(icon);
       button.addEventListener('click', onClick);

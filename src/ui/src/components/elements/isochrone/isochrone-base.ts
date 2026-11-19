@@ -10,8 +10,8 @@
  */
 
 import { MapChildElement } from '../../map-child-element';
-import { getServiceForCapability } from '@doppler-group/geokit/service/registry';
-import { smoothFeatureCollection } from '@doppler-group/geokit/core';
+import { getServiceForCapability } from '@local-hosting/geokit/service/registry';
+import { smoothFeatureCollection } from '@local-hosting/geokit/core';
 import { debug } from '../../../utils/logger';
 import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
 import {

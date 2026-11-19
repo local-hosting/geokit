@@ -5,7 +5,7 @@ import type {
   MacroRegion,
   StateCode,
   ZipCode,
-} from '@doppler-group/geokit/core';
+} from '@local-hosting/geokit/core';
 import {
   asCountyFipsOrUndefined,
   asGeohashPoint,
@@ -13,8 +13,8 @@ import {
   asMacroRegionOrUndefined,
   asStateCodeOrUndefined,
   asZipCodeOrUndefined,
-} from '@doppler-group/geokit/core';
-import { compactH3CellId, expandH3CellId } from '@doppler-group/geokit/h3/lite';
+} from '@local-hosting/geokit/core';
+import { compactH3CellId, expandH3CellId } from '@local-hosting/geokit/h3/lite';
 import { geohashCellIdForLookup } from '../geohash/cell-id';
 
 function uniqSortedBranded<T extends string>(values: readonly T[]): readonly T[] {

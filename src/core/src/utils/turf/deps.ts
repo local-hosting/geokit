@@ -1,6 +1,6 @@
 /**
  * Internal choke point for @turf/* — only this module imports Turf package ids.
- * App and test consumers should use @doppler-group/geokit/core/turf or geokit geometry helpers.
+ * App and test consumers should use @local-hosting/geokit/core/turf or geokit geometry helpers.
  */
 
 export { default as turfAlong } from '@turf/along';

@@ -7,8 +7,8 @@ import type {
   MapCameraFrame,
   MapLocalPersistScope,
   MapLocalState,
-} from '@doppler-group/geokit/core/contract/offline';
-import { MapOfflineDefaults } from '@doppler-group/geokit/core/contract/offline';
+} from '@local-hosting/geokit/core/contract/offline';
+import { MapOfflineDefaults } from '@local-hosting/geokit/core/contract/offline';
 import {
   SNAPSHOT_STORE,
   STATE_STORE,

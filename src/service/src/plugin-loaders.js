@@ -1,4 +1,4 @@
-export const loadMapTilerPlugin = () => import('@doppler-group/geokit/maptiler');
-export const loadMapboxPlugin = () => import('@doppler-group/geokit/mapbox');
-export const loadFoursquarePlugin = () => import('@doppler-group/geokit/foursquare');
-export const loadGooglePlacesPlugin = () => import('@doppler-group/geokit/google');
+export const loadMapTilerPlugin = () => import('@local-hosting/geokit/maptiler');
+export const loadMapboxPlugin = () => import('@local-hosting/geokit/mapbox');
+export const loadFoursquarePlugin = () => import('@local-hosting/geokit/foursquare');
+export const loadGooglePlacesPlugin = () => import('@local-hosting/geokit/google');

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MapOfflineContextLoader } from '@doppler-group/geokit/ui/storage/map-offline-context-loader';
-import { MapOfflineTileCache, TILE_CACHE_NAME } from '@doppler-group/geokit/ui/storage/map-offline-tile-cache';
-import { resetGeoKitOfflineDBForTesting } from '@doppler-group/geokit/ui/storage/indexed-db';
+import { MapOfflineContextLoader } from '@local-hosting/geokit/ui/storage/map-offline-context-loader';
+import { MapOfflineTileCache, TILE_CACHE_NAME } from '@local-hosting/geokit/ui/storage/map-offline-tile-cache';
+import { resetGeoKitOfflineDBForTesting } from '@local-hosting/geokit/ui/storage/indexed-db';
 
 const bounds = { south: 40.7, west: -74.02, north: 40.72, east: -74.0 };
 

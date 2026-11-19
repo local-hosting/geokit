@@ -10,10 +10,10 @@ import type {
   MacroRegion,
   StateCode,
   ZipCode,
-} from '@doppler-group/geokit/core';
+} from '@local-hosting/geokit/core';
 import type { UsCrosswalkTableName } from './us/table-names';
 
-export type { DMA, GeoRef, LatLon } from '@doppler-group/geokit/core';
+export type { DMA, GeoRef, LatLon } from '@local-hosting/geokit/core';
 
 /** @deprecated Use {@link GeoRef}. */
 export type CrosswalkInput = GeoRef;

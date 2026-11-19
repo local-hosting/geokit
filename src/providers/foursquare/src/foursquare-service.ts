@@ -11,11 +11,11 @@
  * Note: Behavioral/ratings API was deprecated by Foursquare - use placeSearch only
  */
 
-import { Service } from '@doppler-group/geokit/service';
-import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@doppler-group/geokit/service/types';
-import { ProviderCache, buildPlaceSearchCacheKey } from '@doppler-group/geokit/service';
-import { RequestQueue } from '@doppler-group/geokit/service';
-import { requireAPIKey, fetchWithRetry } from '@doppler-group/geokit/service';
+import { Service } from '@local-hosting/geokit/service';
+import { type ServiceConfig, type ServiceCapability, type PlaceSearchOptions, type PlaceSearchResult } from '@local-hosting/geokit/service/types';
+import { ProviderCache, buildPlaceSearchCacheKey } from '@local-hosting/geokit/service';
+import { RequestQueue } from '@local-hosting/geokit/service';
+import { requireAPIKey, fetchWithRetry } from '@local-hosting/geokit/service';
 import {
   buildFoursquarePlacesSearchUrl,
   foursquarePlacesHeaders,

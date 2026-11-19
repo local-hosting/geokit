@@ -1,4 +1,4 @@
-import { asDmaSlugOrUndefined } from '@doppler-group/geokit/core';
+import { asDmaSlugOrUndefined } from '@local-hosting/geokit/core';
 import { getUsCrosswalkTables, requireUsCrosswalkLookups } from '../load/registry';
 import type { UsCrosswalkTables } from '../types';
 import type { UsCrosswalkTableName } from './table-names';

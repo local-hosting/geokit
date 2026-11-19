@@ -4,8 +4,8 @@ import {
   registerService,
   initService,
   getServiceForCapability,
-} from '@doppler-group/geokit/service/registry';
-import type { Service, ServiceCapability } from '@doppler-group/geokit/service/types';
+} from '@local-hosting/geokit/service/registry';
+import type { Service, ServiceCapability } from '@local-hosting/geokit/service/types';
 import type { BaseUIProvider } from '../../../src/providers/types';
 import { MockAPIProvider } from '../../mocks/mock-api-provider';
 import { MockUIProvider } from '../../mocks/mock-ui-provider';

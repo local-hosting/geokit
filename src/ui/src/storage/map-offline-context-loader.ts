@@ -6,11 +6,11 @@ import type {
   MapOfflineCoverage,
   MapOfflineHostContext,
   MapOfflinePrefetchRequest,
-} from '@doppler-group/geokit/core/contract/offline';
+} from '@local-hosting/geokit/core/contract/offline';
 import {
   defaultOfflineZoomRangeForMap,
   validateOfflinePrefetchRequest,
-} from '@doppler-group/geokit/core/contract/offline';
+} from '@local-hosting/geokit/core/contract/offline';
 import {
   MapOfflineTileCache,
   type MapOfflinePrefetchOptions,

@@ -23,10 +23,10 @@ export function sharedPointSelectionBadgeOuterLayerId(pointLayerId: string): str
   return `${pointLayerId}-selection-badge-outer`;
 }
 
-/** Hide selection-source chrome — select only darkens the resting marker's ground cast. */
+/** Hide selection-source chrome (clear / idle). Select reveals it for settle. */
 export function hideFloatingBadgeCircleSelectionLayers(
   map: MapInstance,
-  pointLayerId: string
+  pointLayerId: string,
 ): void {
   if (!map.setPaintProperty) return;
   for (const [layerId, prop, value] of [
@@ -77,4 +77,141 @@ export function sharedPointHitLayerIds(pointLayerId: string, glowLayerId: string
     `${pointLayerId}-rounded-outer`,
     `${pointLayerId}-selection-rounded-outer`,
   ];
+}
+
+/** Mapbox Standard style slot for venue overlays above 3D buildings. */
+export const MAPBOX_VENUE_OVERLAY_SLOT = 'top';
+
+type MapWithStyleSlots = MapInstance & {
+  setSlot?: (layerId: string, slot?: string | null) => void;
+  setLayoutProperty?: (layerId: string, name: string, value: unknown) => void;
+  moveLayer?: (layerId: string, beforeId?: string) => void;
+};
+
+function layerStyleSlot(
+  map: MapWithStyleSlots,
+  layerId: string
+): string | null | undefined {
+  const layer = map.getLayer?.(layerId) as { slot?: string | null } | null | undefined;
+  if (!layer || typeof layer !== 'object') return undefined;
+  return layer.slot ?? undefined;
+}
+
+function setVenueLayerSlotTop(map: MapWithStyleSlots, layerId: string): void {
+  try {
+    map.setSlot?.(layerId, MAPBOX_VENUE_OVERLAY_SLOT);
+  } catch {
+    /* non–Mapbox Standard styles */
+  }
+}
+
+/**
+ * Mapbox Standard forbids moveLayer across slots and console.errors before throwing.
+ * Align both layers to the same slot (prefer existing / venue `top`) then move.
+ */
+export function moveSharedPointLayer(
+  map: MapInstance,
+  layerId: string,
+  beforeId?: string
+): void {
+  const m = map as MapWithStyleSlots;
+  if (typeof m.moveLayer !== 'function' || !m.getLayer?.(layerId)) return;
+  if (beforeId && !m.getLayer?.(beforeId)) {
+    try {
+      m.moveLayer(layerId);
+    } catch {
+      /* style swap */
+    }
+    return;
+  }
+  if (beforeId && typeof m.setSlot === 'function') {
+    const beforeSlot = layerStyleSlot(m, beforeId);
+    const layerSlot = layerStyleSlot(m, layerId);
+    if (beforeSlot !== layerSlot) {
+      const target = beforeSlot ?? layerSlot ?? MAPBOX_VENUE_OVERLAY_SLOT;
+      try {
+        if (layerSlot !== target) m.setSlot(layerId, target);
+        if (beforeSlot !== target) m.setSlot(beforeId, target);
+      } catch {
+        /* non–Mapbox Standard styles */
+      }
+    }
+  }
+  try {
+    if (beforeId !== undefined) m.moveLayer(layerId, beforeId);
+    else m.moveLayer(layerId);
+  } catch {
+    /* style swap / concurrent mutation */
+  }
+}
+
+function healCircleLayerAbove3dExtrusions(map: MapWithStyleSlots, layerId: string): void {
+  if (!map.getLayer?.(layerId) || !map.setPaintProperty) return;
+  try {
+    map.setPaintProperty(layerId, 'circle-pitch-alignment', 'viewport');
+    map.setPaintProperty(layerId, 'circle-pitch-scale', 'viewport');
+    map.setPaintProperty(layerId, 'circle-emissive-strength', 1);
+    setVenueLayerSlotTop(map, layerId);
+  } catch {
+    /* mixed layer types */
+  }
+}
+
+function healSymbolLayerAbove3dExtrusions(map: MapWithStyleSlots, layerId: string): void {
+  if (!map.getLayer?.(layerId)) return;
+  try {
+    map.setLayoutProperty?.(layerId, 'symbol-z-elevate', true);
+    map.setPaintProperty?.(layerId, 'icon-occlusion-opacity', 0);
+    setVenueLayerSlotTop(map, layerId);
+  } catch {
+    /* not a symbol layer */
+  }
+}
+
+/** Venue markers above Corio / Mapbox Standard 3D buildings and `gk-3d-buildings`. */
+export function applySharedPointLayersAbove3dExtrusions(
+  map: MapInstance,
+  ids: Pick<SharedPointLayerIds, 'glowLayerId' | 'pointLayerId'>,
+): void {
+  const mapSlot = map as MapWithStyleSlots;
+  const { pointLayerId, glowLayerId } = ids;
+  const circleLayerIds = [
+    glowLayerId,
+    `${glowLayerId}-hover`,
+    pointLayerId,
+    sharedPointOuterStrokeLayerId(pointLayerId),
+    sharedPointGlassLayerId(pointLayerId),
+    sharedPointHoverBadgeLayerId(pointLayerId),
+    sharedPointHoverBadgeOuterLayerId(pointLayerId),
+    sharedPointSelectionBadgeLayerId(pointLayerId),
+    sharedPointSelectionBadgeOuterLayerId(pointLayerId),
+    sharedPointSelectionRingLayerId(pointLayerId),
+    `${pointLayerId}-selection-shadow`,
+  ];
+  for (const layerId of circleLayerIds) {
+    healCircleLayerAbove3dExtrusions(mapSlot, layerId);
+  }
+
+  const symbolLayerIds = [
+    `${pointLayerId}-badge-icon`,
+    `${pointLayerId}-selection-badge-icon`,
+    `${pointLayerId}-rounded-outer`,
+    `${pointLayerId}-rounded-ring`,
+    `${pointLayerId}-rounded-body`,
+    `${pointLayerId}-selection-rounded-outer`,
+    `${pointLayerId}-selection-rounded-ring`,
+    `${pointLayerId}-selection-rounded-body`,
+  ];
+  for (const layerId of symbolLayerIds) {
+    healSymbolLayerAbove3dExtrusions(mapSlot, layerId);
+  }
+}
+
+/** @deprecated Use {@link applySharedPointLayersAbove3dExtrusions}. */
+export function applySharedPointMarkerPitchAboveExtrusions(
+  map: MapInstance,
+  pointLayerId: string,
+  glowLayerId = `${pointLayerId.replace(/-point$/, '')}-glow`,
+): void {
+  applySharedPointLayersAbove3dExtrusions(map, { glowLayerId, pointLayerId });
 }

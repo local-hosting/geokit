@@ -1,5 +1,5 @@
 {
-  "name": "@doppler-group/geokit-h3",
+  "name": "@local-hosting/geokit-h3",
   "version": "0.1.0",
   "description": "H3 hex grid geometry utilities for Geokit",
   "license": "MPL-2.0",
@@ -43,6 +43,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/twinfile/geokit.git"
+    "url": "git+https://github.com/local-hosting/geokit.git"
   }
 }

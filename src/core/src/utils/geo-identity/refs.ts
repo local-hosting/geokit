@@ -7,7 +7,7 @@ import {
   asPlaceKey,
   asZipCode,
 } from './constructors';
-import { expandH3CellId } from '@doppler-group/geokit/h3/lite';
+import { expandH3CellId } from '@local-hosting/geokit/h3/lite';
 import { placeKeyFromStateAndSlug } from './normalize';
 
 /** WGS84 coordinate → {@link GeoRef} point. */
