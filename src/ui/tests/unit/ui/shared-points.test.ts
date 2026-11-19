@@ -15,7 +15,7 @@ import {
   sharedPointStrokeFromFillWidthExpression,
 } from '../../../src/utils/shared-point-paint';
 
-/** Stand-in for Loro pack identity `blendHexWithBlack(hex, 0.45)`. */
+/** Stand-in for host identity `blendHexWithBlack(hex, 0.45)`. */
 function darkenTowardBlack(hex: string, blackWeight = 0.45): string {
   const clean = hex.replace('#', '');
   const mix = (channel: number) => Math.round(channel * (1 - blackWeight));

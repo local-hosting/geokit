@@ -715,7 +715,7 @@ export function sharedPointStrokeColorExpression(): unknown[] {
 /** Default circle-stroke-width when outlining points from fill color. */
 export const SHARED_POINT_STROKE_FROM_FILL_WIDTH = 1.25;
 
-/** Transforms a fill hex into a stroke hex (e.g. Loro pack `blendHexWithBlack`). */
+/** Transforms a fill hex into a stroke hex (e.g. host `blendHexWithBlack`). */
 export type SharedPointFillColorTransform = (fillHex: string) => string;
 
 /** Light-basemap outline width derived from fill (not selection ring). */
@@ -728,7 +728,7 @@ export function sharedPointStrokeFromFillWidthExpression(
 /**
  * Stroke color: feature `_stroke` when present, else `transformFill(fallbackFill)`.
  * Pair with `annotatePointFeaturesStrokeFromFill` for per-feature colors.
- * Pass Loro pack identity `blendHexWithBlack` (or similar) as `transformFill`.
+ * Pass host identity `blendHexWithBlack` (or similar) as `transformFill`.
  */
 export function sharedPointStrokeFromFillColorExpression(
   fallbackFill: string,
@@ -740,7 +740,7 @@ export function sharedPointStrokeFromFillColorExpression(
 
 export type AnnotatePointStrokeFromFillOptions = {
   fallbackFill: string;
-  /** Color transform — typically Loro pack identity `blendHexWithBlack`. */
+  /** Color transform — typically host identity `blendHexWithBlack`. */
   transformFill: SharedPointFillColorTransform;
   colorProperty?: string;
   strokeProperty?: string;
