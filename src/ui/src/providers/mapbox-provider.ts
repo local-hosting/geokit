@@ -18,6 +18,16 @@ import type {
   PopupOptions,
 } from './types';
 
+/** Vite/Rollup ESM often exports mapbox-gl with a read-only namespace `accessToken`. */
+function trySetMapboxAccessToken(sdk: unknown, token: string | undefined): void {
+  if (!token || sdk == null || typeof sdk !== 'object') return;
+  try {
+    (sdk as { accessToken?: string }).accessToken = token;
+  } catch {
+    // Per-Map `accessToken` in createMap() handles bundled builds.
+  }
+}
+
 export class MapboxUIProvider extends BaseUIProvider {
   protected sdk: any = null;
   private sdkLoadPromise: Promise<any> | null = null;
@@ -48,11 +58,7 @@ export class MapboxUIProvider extends BaseUIProvider {
     // Check if SDK is already loaded globally
     if (typeof window !== 'undefined' && (window as any).mapboxgl) {
       this.sdk = (window as any).mapboxgl;
-      if (config?.accessToken) {
-        this.sdk.accessToken = config.accessToken;
-        // Ensure it's set on the module itself
-        (this.sdk as any).accessToken = config.accessToken;
-      }
+      trySetMapboxAccessToken(this.sdk, config?.accessToken);
       return Promise.resolve(this.sdk);
     }
 
@@ -67,11 +73,8 @@ export class MapboxUIProvider extends BaseUIProvider {
         const mapboxgl = (mapboxModule as any).default || mapboxModule;
 
         // Set access token if provided
-        if (config?.accessToken) {
-          mapboxgl.accessToken = config.accessToken;
-          // Also set on the module itself for compatibility
-          (mapboxModule as any).accessToken = config.accessToken;
-        }
+        trySetMapboxAccessToken(mapboxgl, config?.accessToken);
+        trySetMapboxAccessToken(mapboxModule, config?.accessToken);
 
         // Expose to window for backward compatibility
         if (typeof window !== 'undefined') {
@@ -97,17 +100,12 @@ export class MapboxUIProvider extends BaseUIProvider {
     // Vite injects CSS as <style> (no href); Mapbox warns without the canary rule.
     await ensureMapboxGlCss();
 
-    // Ensure access token is set on the SDK module before creating map
-    // Mapbox GL JS requires this to be set before Map instantiation
-    if (this.config?.accessToken) {
-      (this.sdk as any).accessToken = this.config.accessToken;
-      // Also set on the default export if it exists
-      if ((this.sdk as any).default) {
-        (this.sdk as any).default.accessToken = this.config.accessToken;
-      }
-    } else {
+    const accessToken = this.config?.accessToken?.trim();
+    if (!accessToken) {
       throw new Error('Mapbox access token is required. Call initialize() with accessToken first.');
     }
+    trySetMapboxAccessToken(this.sdk, accessToken);
+    trySetMapboxAccessToken((this.sdk as { default?: unknown }).default, accessToken);
 
     // Build style: theme-keyed / configured style URL wins over stock Mapbox theme names.
     let style = options.style;
@@ -135,6 +133,7 @@ export class MapboxUIProvider extends BaseUIProvider {
     }
 
     const mapOptions = {
+      accessToken,
       container,
       style,
       center: [options.lng || 0, options.lat || 0] as [number, number],

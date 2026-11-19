@@ -1,6 +1,6 @@
 {
   "name": "@local-hosting/geokit",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Geospatial SDK for map hosts and place search",
   "license": "MPL-2.0",
   "type": "module",
