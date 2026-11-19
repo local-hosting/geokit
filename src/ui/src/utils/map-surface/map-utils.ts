@@ -22,7 +22,11 @@ import type { MapInstance } from '../../providers/types';
 import type { Feature } from '@local-hosting/geokit/core/types';
 import type { IsochroneOptions } from '@local-hosting/geokit/service/types';
 import { getServiceForCapability } from '@local-hosting/geokit/service/registry';
-import { bindMapDocumentVisibilityGpu, resolveMapPixelRatio } from './map-gpu-budget';
+import {
+  bindMapDocumentVisibilityGpu,
+  resolveMapPixelRatio,
+  type MapGpuPauseTarget,
+} from './map-gpu-budget';
 
 export {
   DEFAULT_MAP_MAX_TILE_CACHE_SIZE,
@@ -439,13 +443,14 @@ export function safeResizeMap(
   }
 }
 
-type WrapMapResizeTarget = ResizeTargetMap & {
-  resize?: (...args: unknown[]) => unknown;
-  remove?: () => unknown;
-  _onWindowResize?: (event?: Event) => void;
-  _removed?: boolean;
-  painter?: unknown;
-};
+type WrapMapResizeTarget = ResizeTargetMap &
+  MapGpuPauseTarget & {
+    resize?: (...args: unknown[]) => unknown;
+    remove?: () => unknown;
+    _onWindowResize?: (event?: Event) => void;
+    _removed?: boolean;
+    painter?: unknown;
+  };
 
 /**
  * Guard MapTiler/MapLibre/Mapbox resize paths.

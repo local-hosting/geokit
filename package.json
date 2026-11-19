@@ -15,6 +15,7 @@
   "scripts": {
     "clean": "node scripts/clean-dist.mjs",
     "build": "node scripts/run-geokit-build.mjs full",
+    "build:consumer": "node scripts/run-geokit-build.mjs consumer",
     "build:core": "yarn build:core:bundle && yarn build:core:types",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
     "build:ui:bundle": "cd src/ui && tsup --config config/tsup.config.js",

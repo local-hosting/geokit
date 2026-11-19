@@ -1905,7 +1905,7 @@ export interface ApplySharedPointPaintOptions {
   /** App accent for selected ring (annotated onto `_colorSelected`; leave-restore uses it). */
   selectedRingColor?: string;
   /** Selected badge fill (darkened key-color core). */
-  selectionFillExpression?: unknown[];
+  selectionFillExpression?: string | unknown[];
   /** Mix toward black for annotated `_colorSelected` (see `--gk-badge-selected-darken`). */
   selectedDarken?: number;
   /** Selected badge ring stroke (white chrome). */

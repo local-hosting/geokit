@@ -187,6 +187,10 @@ export interface MapInstance {
   getCenter?(): { lng: number; lat: number };
   setZoom?(zoom: number): void;
   getZoom?(): number;
+  getPitch?(): number;
+  setPitch?(pitch: number): void;
+  getBearing?(): number;
+  setBearing?(bearing: number): void;
 
   // Feature state (MapLibre promoteId + hover/selection)
   setFeatureState?(
