@@ -27,7 +27,7 @@ const yarnSteps = [
   ['build:service'],
   ['build:crosswalk'],
   ['build:foursquare'],
-  ['build:ui'],
+  ['build:ui:bundle'],
 ];
 
 for (const args of yarnSteps) {

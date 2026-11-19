@@ -17,6 +17,7 @@
     "build": "yarn generate:tsconfig-paths && yarn build:env && yarn build:h3 && yarn generate:tsconfig-paths && yarn build:core:bundle && yarn generate:pre-ui-tsconfig-paths && yarn build:core:types:pre-ui && yarn generate:tsconfig-paths && yarn build:formats && yarn generate:tsconfig-paths && yarn build:service && yarn build:crosswalk && yarn generate:tsconfig-paths && yarn generate:ui-tsconfig-paths && yarn build:ui && yarn generate:tsconfig-paths && yarn build:foursquare && yarn generate:tsconfig-paths && node scripts/check-no-src-declarations.mjs",
     "build:core": "yarn build:core:bundle && yarn build:core:types",
     "build:ui": "cd src/ui && tsup --config config/tsup.config.js && tsc -p config/tsconfig.build.json",
+    "build:ui:bundle": "cd src/ui && tsup --config config/tsup.config.js",
     "test": "yarn test:core && yarn test:crosswalk && yarn validate:exports",
     "check": "node scripts/check-vendor-neutral.mjs && node scripts/check-no-retired-scopes-in-dist.mjs && node scripts/check-publish-pack.mjs && yarn generate:tsconfig-paths && yarn test:crosswalk",
     "pretest": "yarn generate:dev-config",
