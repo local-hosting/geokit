@@ -6,8 +6,5 @@ if [[ -z "${NODE_AUTH_TOKEN:-}" ]]; then
   exit 1
 fi
 cd "${root}"
-yarn prepare:publish
-node scripts/prepare-publish-package-json.mjs
-echo "publish-packages: @local-hosting/geokit@$(node -p "require('./package.json').version")"
-npm publish --registry=https://npm.pkg.github.com --ignore-scripts
+npm publish --registry=https://npm.pkg.github.com
 echo "publish-packages OK"
