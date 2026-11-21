@@ -35,7 +35,7 @@
     "prepare": "node scripts/link-self-for-dev.mjs",
     "test:crosswalk": "vitest run --config config/vitest.crosswalk.config.ts",
     "typecheck": "yarn typecheck:core && yarn typecheck:crosswalk && yarn typecheck:ui && yarn typecheck:service && yarn typecheck:h3 && yarn typecheck:env && yarn typecheck:formats && yarn typecheck:providers",
-    "typecheck:core": "tsc -p src/core/config/tsconfig.json --noEmit",
+    "typecheck:core": "yarn run -T tsc -p src/core/config/tsconfig.json --noEmit",
     "typecheck:crosswalk": "yarn run -T tsc -p src/crosswalk/tsconfig.json --noEmit",
     "typecheck:ui": "yarn run -T tsc -p src/ui/config/tsconfig.json --noEmit",
     "typecheck:service": "yarn run -T tsc -p src/service/tsconfig.json --noEmit",
