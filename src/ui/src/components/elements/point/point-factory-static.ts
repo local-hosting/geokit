@@ -54,13 +54,14 @@ type PointElementCtor = typeof PointSelectRuntime & {
 export function installPointFactoryStatics<T extends typeof PointSelectRuntime>(
   PointClass: T,
 ): PointElementCtor {
-  PointClass.create = function create(options: PointOptions) {
+  const ctor = PointClass as unknown as PointElementCtor;
+  ctor.create = function create(options: PointOptions) {
     const point = document.createElement('gk-point');
     (point as HTMLElement & { _createOptions?: PointOptions })._createOptions = options;
     return point;
   };
 
-  PointClass.createFromGeoJSON = function createFromGeoJSON(
+  ctor.createFromGeoJSON = function createFromGeoJSON(
     geojson: GeoJSON.FeatureCollection,
     options: PointCreateFromGeoJsonOptions = {},
   ) {
@@ -107,7 +108,7 @@ export function installPointFactoryStatics<T extends typeof PointSelectRuntime>(
           ? String(feature.properties[colorProperty])
           : defaultColor;
 
-      const point = PointClass.create({
+      const point = ctor.create({
         lat,
         lng,
         color: featureColor,
@@ -143,5 +144,5 @@ export function installPointFactoryStatics<T extends typeof PointSelectRuntime>(
     return points;
   };
 
-  return PointClass as PointElementCtor;
+  return ctor;
 }
