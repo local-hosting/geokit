@@ -12,6 +12,11 @@ const coreDist = path.join(geokitRoot, 'src/core/dist/esm');
 const generated = vitestAliasEntries(loadGeokitVitestAliases(geokitRoot));
 
 export default defineConfig({
+  server: {
+    fs: {
+      allow: [geokitRoot],
+    },
+  },
   resolve: {
     alias: [
       ...generated,
