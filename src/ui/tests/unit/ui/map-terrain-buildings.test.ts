@@ -273,11 +273,17 @@ describe('map-terrain-buildings', () => {
       { id: 'canvas-places-point', type: 'circle', source: 'canvas-places' },
     ];
     const moveLayer = vi.fn();
-    const addLayer = vi.fn();
+    const addLayer = vi.fn(() => {
+      layers.push({
+        id: 'gk-3d-buildings',
+        type: 'fill-extrusion',
+        source: 'composite',
+      });
+    });
     const map = {
       getZoom: vi.fn(() => 15),
       getLayer: vi.fn((id: string) =>
-        id === 'gk-3d-buildings' ? null : layers.some((l) => l.id === id) ? { id } : null,
+        layers.some((l) => l.id === id) ? { id } : null,
       ),
       getStyle: vi.fn(() => ({
         layers,
@@ -296,10 +302,12 @@ describe('map-terrain-buildings', () => {
       ['buildings-enabled', 'true'],
       ['buildings-min-zoom', '14'],
     ]);
-    createBuildingsZoomHandler({
+    const updateBuildings = createBuildingsZoomHandler({
       getAttribute: (name) => attrs.get(name) ?? null,
       map: map as never,
     });
+    expect(updateBuildings).toBeTypeOf('function');
+    updateBuildings?.();
     expect(addLayer).toHaveBeenCalled();
     expect(moveLayer).toHaveBeenCalledWith('canvas-places-point');
   });

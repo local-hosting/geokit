@@ -34,16 +34,15 @@ describe('marker-selection-chrome', () => {
       { accentColor: key, shape: 'circle' }
     );
 
-    // Shadow-only select — hide selection-source chrome for both shapes.
+    expect(setPaintProperty).toHaveBeenCalledWith(
+      `${pointLayerId}-selection-badge`,
+      'circle-color',
+      key
+    );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge`,
       'circle-opacity',
-      0
-    );
-    expect(setPaintProperty).toHaveBeenCalledWith(
-      `${pointLayerId}-selection-badge-outer`,
-      'circle-opacity',
-      0
+      1
     );
 
     setPaintProperty.mockClear();
@@ -65,12 +64,12 @@ describe('marker-selection-chrome', () => {
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-rounded-body`,
       'icon-opacity',
-      0
+      1
     );
     expect(setPaintProperty).toHaveBeenCalledWith(
       `${pointLayerId}-selection-badge-icon`,
       'icon-opacity',
-      0
+      1
     );
   });
 
