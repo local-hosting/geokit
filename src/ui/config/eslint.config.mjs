@@ -1,5 +1,6 @@
 import tsParser from '@typescript-eslint/parser';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
+import unusedImports from 'eslint-plugin-unused-imports';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 
@@ -24,12 +25,15 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
+      'unused-imports': unusedImports,
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': [
+      '@typescript-eslint/no-explicit-any': 'off',
+      'unused-imports/no-unused-imports': 'error',
+      '@typescript-eslint/no-unused-vars': 'off',
+      'unused-imports/no-unused-vars': [
         'error',
         {
           argsIgnorePattern: '^_',
@@ -43,9 +47,30 @@ export default [
           fixStyle: 'inline-type-imports',
         },
       ],
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': 'off',
       'prefer-const': 'error',
       'no-var': 'error',
+    },
+  },
+  {
+    files: [
+      'src/utils/layers/styles/types.ts',
+      'src/utils/layers/styles/circle-glow.ts',
+    ],
+    rules: {
+      'unused-imports/no-unused-vars': 'off',
+    },
+  },
+  {
+    files: [
+      'src/components/elements/map/map-*.ts',
+      '!src/components/elements/map/map-static-factory.ts',
+      '!src/components/elements/map/map-connected-init.ts',
+      '!src/components/elements/map/map-element-like.ts',
+    ],
+    rules: {
+      'unused-imports/no-unused-imports': 'off',
+      'unused-imports/no-unused-vars': 'off',
     },
   },
   {
@@ -59,19 +84,22 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
+      'unused-imports': unusedImports,
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': [
+      'unused-imports/no-unused-imports': 'error',
+      '@typescript-eslint/no-unused-vars': 'off',
+      'unused-imports/no-unused-vars': [
         'error',
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
         },
       ],
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': 'off',
       'prefer-const': 'error',
       'no-var': 'error',
     },

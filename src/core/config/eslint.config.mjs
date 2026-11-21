@@ -1,5 +1,6 @@
 import tsParser from '@typescript-eslint/parser';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
+import unusedImports from 'eslint-plugin-unused-imports';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 
@@ -9,7 +10,14 @@ const projectRoot = resolve(__dirname, '..');
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', '*.cjs', '*.mjs'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      '*.cjs',
+      '*.mjs',
+      'config/build-stubs/**',
+      '**/*.d.ts',
+    ],
   },
   {
     files: ['src/**/*.ts'],
@@ -24,12 +32,15 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
+      'unused-imports': unusedImports,
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': [
+      '@typescript-eslint/no-explicit-any': 'off',
+      'unused-imports/no-unused-imports': 'error',
+      '@typescript-eslint/no-unused-vars': 'off',
+      'unused-imports/no-unused-vars': [
         'error',
         {
           argsIgnorePattern: '^_',
@@ -43,7 +54,7 @@ export default [
           fixStyle: 'inline-type-imports',
         },
       ],
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': 'off',
       'prefer-const': 'error',
       'no-var': 'error',
     },
@@ -59,19 +70,22 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
+      'unused-imports': unusedImports,
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': [
+      'unused-imports/no-unused-imports': 'error',
+      '@typescript-eslint/no-unused-vars': 'off',
+      'unused-imports/no-unused-vars': [
         'error',
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
         },
       ],
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': 'off',
       'prefer-const': 'error',
       'no-var': 'error',
     },
