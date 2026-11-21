@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 
 import type { Feature, MultiPolygon, Polygon as GeoJsonPolygon } from 'geojson';

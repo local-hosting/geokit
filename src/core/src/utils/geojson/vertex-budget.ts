@@ -199,7 +199,7 @@ function refineLongSegments(
   maxSegmentDeg: number
 ): Position[] {
   const referenceOpen = toOpenRing(reference);
-  let open = toOpenRing(simplified);
+  const open = toOpenRing(simplified);
 
   for (let pass = 0; pass < 24; pass += 1) {
     if (maxRingSegmentLengthDeg(closeRing(open)) <= maxSegmentDeg) break;
@@ -265,10 +265,6 @@ function withoutSelfIntersection(
   return null;
 }
 
-function capScore(candidate: Position[]): number {
-  return maxRingSegmentLengthDeg(candidate) * 10_000 + candidate.length;
-}
-
 function findToleranceForPointBudget(ring: Position[], pointBudget: number): number {
   if (ring.length <= pointBudget) return 0;
 
@@ -305,7 +301,7 @@ export function capGeoJsonRingToMaxPoints(
 
   const segmentTarget = Math.min(maxSegmentDeg, maxRingSegmentLengthDeg(ring));
   const tolerance = findToleranceForPointBudget(ring, pointBudget);
-  let candidate = refineLongSegments(
+  const candidate = refineLongSegments(
     simplifyGeoJsonRing(ring, tolerance),
     ring,
     pointBudget,

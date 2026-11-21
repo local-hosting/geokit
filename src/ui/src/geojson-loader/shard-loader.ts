@@ -85,7 +85,7 @@ export function h3CellIdsForViewportLoad(options: ViewportH3LoadOptions): string
     );
   }
 
-  let expanded = expandViewportH3Neighbors(cappedCore, neighborDiskK);
+  const expanded = expandViewportH3Neighbors(cappedCore, neighborDiskK);
   if (options.maxCells == null || expanded.length <= options.maxCells) {
     return expanded;
   }

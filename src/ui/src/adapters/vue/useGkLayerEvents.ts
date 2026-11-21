@@ -11,20 +11,20 @@ export function useGkLayerEvents(
   selector: string,
   handlers: GkLayerEventHandlers
 ): void {
-  let target: Element | null = null;
+  let _target: Element | null = null;
   const unsubs: Array<() => void> = [];
 
   function cleanup(): void {
     for (const unsub of unsubs) unsub();
     unsubs.length = 0;
-    target = null;
+    _target = null;
   }
 
   function bind(): void {
     cleanup();
     const el = root.value?.querySelector(selector) ?? null;
     if (!el) return;
-    target = el;
+    _target = el;
     for (const [type, handler] of Object.entries(handlers)) {
       const listener = handler as EventListener;
       el.addEventListener(type, listener);

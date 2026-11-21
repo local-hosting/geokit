@@ -5,7 +5,6 @@ import {
   asDmaSlugOrUndefined,
   asZipCode,
   asMacroRegion,
-  parseGeoRef,
   GKPoint,
   GKZip,
 } from '../../../src/utils/geo-identity';
