@@ -38,7 +38,7 @@ MAPBOX_TOKEN=your_mapbox_token
 
 ### 3. Current Token Issue
 
-The token from MAPI (`REDACTED_MAPBOX_TOKEN`) returns **403 Forbidden** when used from:
+The token from MAPI (your `MAPBOX_TOKEN` with URL restrictions) returns **403 Forbidden** when used from:
 
 - Node.js tests
 - CLI/curl requests
