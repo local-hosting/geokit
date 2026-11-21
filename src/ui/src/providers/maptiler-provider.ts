@@ -366,9 +366,9 @@ export class MapTilerUIProvider extends BaseUIProvider {
     // setStyle (expects URL or StyleSpec). No-oping avoids deprecation and "Invalid style" logs.
     const originalSetStyle = map.setStyle?.bind(map);
     if (typeof originalSetStyle === 'function') {
-      map.setStyle = (s: unknown) => {
+      map.setStyle = (s: unknown, options?: object) => {
         if (isValidStyleForSetStyle(s)) {
-          return originalSetStyle(s);
+          return originalSetStyle(s, options);
         }
       };
     }

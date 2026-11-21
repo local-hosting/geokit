@@ -40,12 +40,16 @@ export function preserveCustomStyleOverlays(
 
 /** Options bag for MapLibre / MapTiler `setStyle` theme swaps. */
 export function mapStyleSwapOptions(): {
+  diff: false
   transformStyle: (
     previous: StyleOverlaySpec | undefined,
     next: StyleOverlaySpec,
   ) => StyleOverlaySpec
 } {
   return {
+    // MapTiler's bundled GL still throws Unimplemented: setSprite on incremental diffs
+    // when light/dark basemaps differ only by sprite/glyphs; full swap is the fallback anyway.
+    diff: false,
     transformStyle: (previous, next) => preserveCustomStyleOverlays(previous, next),
   }
 }

@@ -53,6 +53,10 @@ describe('preserveCustomStyleOverlays', () => {
     expect(preserveCustomStyleOverlays(null, next)).toBe(next)
   })
 
+  it('disables incremental style diff so sprite/glyph swaps do not warn on MapTiler GL', () => {
+    expect(mapStyleSwapOptions().diff).toBe(false)
+  })
+
   it('exposes transformStyle options for setStyle theme swaps', () => {
     const opts = mapStyleSwapOptions()
     const previous = {
