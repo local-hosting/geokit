@@ -18,7 +18,6 @@
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "baseUrl": ".",
     "types": [
       "vite/client",
       "node"

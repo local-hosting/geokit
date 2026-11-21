@@ -10,26 +10,11 @@
  * <gk-point lat="40.7128" lng="-74.0060" color="#ff0000" size="8" glow></gk-point>
  */
 
-import { MapChildElement } from '../../map-child-element';
 import {
-  extractPointLngLat,
   normalizeCoordinatesArray,
   isValidCoordinate,
 } from '@local-hosting/geokit/core/coordinates';
-import type { MapEvent, MapRenderedFeature } from '../../../providers/types';
-import { getCSSVariable, getCSSVariableNumber } from '../../../utils/theme';
-import { createGeokitLogger } from '../../../utils/logger';
-import { PopupElement } from '../popup/popup';
-import { readFirstPointCoordinatesFromGeoJsonSource } from '../../../utils/geojson-source-options';
-import { applyPointPaintProperties } from './point-style';
-import { createPointLayers as createPointLayersFn, type PointMapLike } from './point-layers';
-import {
-  applySelectedVisual as applySelectedVisualFn,
-  clearSelectedVisual,
-} from './point-selection';
-
 import { pointEl } from './point-el';
-const { debug } = createGeokitLogger('point');
 
 export interface PointOptions {
   lat: number;

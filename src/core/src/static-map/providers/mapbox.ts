@@ -16,7 +16,6 @@ import {
 } from '../region-path';
 import {
   staticMapDimensions,
-  staticMapImageSuffix,
   staticMapPaddingPx,
   staticMapRefererHeaders,
 } from '../dimensions';

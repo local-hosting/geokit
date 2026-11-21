@@ -3,14 +3,6 @@
     "../../config/tsconfig.base.json",
     "../../config/tsconfig.geokit-imports.json"
   ],
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "geokit/*": [
-        "../core/src/*"
-      ]
-    }
-  },
   "include": [
     "src/**/*.ts"
   ],

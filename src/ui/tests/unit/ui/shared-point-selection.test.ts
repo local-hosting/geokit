@@ -14,8 +14,6 @@ import {
   sharedPointSelectionRoundedRingLayerId,
 } from '../../../src/utils/paint/shared-point-rounded-body';
 import {
-  SHARED_POINT_FLOATING_BADGE_FLOAT_TRANSLATE,
-  SHARED_POINT_FLOATING_BADGE_SELECTED_TRANSLATE,
   sharedPointFloatingBadgeTranslateAtZoom,
   sharedPointZoomedOutStep,
 } from '../../../src/utils/shared-point-paint';

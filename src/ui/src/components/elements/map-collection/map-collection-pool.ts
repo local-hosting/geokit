@@ -5,14 +5,11 @@
  * LAZY freezing - only freezes maps when we need room for a new visible map.
  */
 
-import { BaseElement } from '../../base-element';
 import { type MapElement } from '../map/map';
-import { getProviderConfig } from '../../../providers/registry';
 import { debug } from '../../../utils/logger';
 import {
   delayForWebGLRelease,
   getLiveMapCount,
-  getMaxActiveMaps,
   getWebGLMapBudget,
 } from '../map/lifecycle/map-freeze';
 
@@ -32,22 +29,12 @@ interface SlotInfo {
   firstSeenRestoringAt: number;
 }
 
-// Debounce delay - wait for scrolling to stop before activating.
-// Only decide which maps are "on screen" after scroll has settled to avoid loading maps for cards that scroll through.
-const SCROLL_DEBOUNCE_MS = 300;
-
-// Extended debounce when user is actively scrolling (detected via rapid intersection changes)
-const SCROLL_ACTIVE_DEBOUNCE_MS = 500;
-
 // Serialize activations — MapTiler allocates ~2 WebGL contexts per map; parallel createMap races teardown.
 const CONCURRENT_ACTIVATION_BATCH = 1;
 
 // Retry configuration for failed map loads
 const MAX_FAIL_COUNT = 3; // Max retries before giving up
 const RETRY_BACKOFF_MS = 2000; // Wait 2s between retries
-
-// Health check: only "stuck activating" (map handles placeholder stuck via gk-map-stuck)
-const STUCK_ACTIVATING_MS = 15000;
 
 // Only activate slots that actually intersect the visible viewport (small margin).
 // IntersectionObserver uses a large rootMargin so we filter here to avoid activating maps above/below the fold.

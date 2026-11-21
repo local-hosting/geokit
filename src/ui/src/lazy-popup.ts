@@ -14,7 +14,9 @@
 // Cached lazy loader
 // ---------------------------------------------------------------------------
 
-type PopupModule = typeof import('./components/elements/popup/popup');
+import type * as PopupModuleTypes from './components/elements/popup/popup';
+
+type PopupModule = typeof PopupModuleTypes;
 
 let _cached: PopupModule | null = null;
 let _loading: Promise<PopupModule> | null = null;

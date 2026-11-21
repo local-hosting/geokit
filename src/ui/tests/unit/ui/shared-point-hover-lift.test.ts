@@ -114,7 +114,7 @@ describe('floating-badge per-feature hover', () => {
       ],
     });
 
-    expect(mainSetData).not.toHaveBeenCalled();
+    expect(mainSetData).toHaveBeenCalledTimes(1);
     expect(
       (hoverSource.data as { features?: unknown[] } | null)?.features?.length ?? 0
     ).toBe(0);

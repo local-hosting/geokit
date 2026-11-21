@@ -6,13 +6,13 @@ export function createGkLayerEvents(
   selector: string,
   handlers: GkLayerEventHandlers
 ) {
-  let target: Element | null = null;
+  let _target: Element | null = null;
   const unsubs: Array<() => void> = [];
 
   function cleanup(): void {
     for (const unsub of unsubs) unsub();
     unsubs.length = 0;
-    target = null;
+    _target = null;
   }
 
   return {
@@ -20,7 +20,7 @@ export function createGkLayerEvents(
       cleanup();
       const el = getRoot()?.querySelector(selector) ?? null;
       if (!el) return;
-      target = el;
+      _target = el;
       for (const [type, handler] of Object.entries(handlers)) {
         const listener = handler as EventListener;
         el.addEventListener(type, listener);

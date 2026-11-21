@@ -45,7 +45,6 @@ export function roundGeometry(geometry: Geometry, precision: number = 6): Geomet
   const roundedCoords = roundCoordArray(geometry.coordinates);
   return {
     ...geometry,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     coordinates: roundedCoords as any,
   } as Geometry;
 }
@@ -169,7 +168,6 @@ export function removeDuplicateCoordinatesFromGeometry(
   const cleanedCoords = removeDuplicateCoordinates(geometry.coordinates, closeRings);
   return {
     ...geometry,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     coordinates: cleanedCoords as any,
   } as Geometry;
 }

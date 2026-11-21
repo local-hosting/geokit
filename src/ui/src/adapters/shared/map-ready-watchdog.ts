@@ -37,7 +37,7 @@ export function scheduleMapReadyWatchdog(
 
     const map = getGkMapInstance(element);
     const elapsed = performance.now() - started;
-    const { styleLoaded, hasCanvas, ready } = isGkMapRenderable(element, map);
+    const { styleLoaded, hasCanvas } = isGkMapRenderable(element, map);
     const canvasReady = Boolean(map && hasCanvas && elapsed >= canvasReadyMs);
 
     if ((styleLoaded || canvasReady) && map) {
@@ -71,7 +71,7 @@ export function tryForceGkMapReady(
   onReady: (detail: { element: GkMapElement; map: unknown }) => void | Promise<void>
 ): boolean {
   const map = getGkMapInstance(element);
-  const { ready, styleLoaded, hasCanvas } = isGkMapRenderable(element, map);
+  const { ready } = isGkMapRenderable(element, map);
   if (!map || !ready) return false;
   void onReady({ element, map });
   return true;

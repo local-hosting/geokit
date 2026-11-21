@@ -12,10 +12,8 @@ export function onMapViewportSettled(
   onSettled: () => void
 ): () => void {
   let isDragging = false;
-  let isMoving = false;
 
   const handleInteractionEnd = () => {
-    isMoving = false;
     if (!isDragging) {
       onSettled();
     }
@@ -23,7 +21,6 @@ export function onMapViewportSettled(
 
   const onDragStart = () => {
     isDragging = true;
-    isMoving = true;
   };
 
   const onDragEnd = () => {
@@ -31,13 +28,8 @@ export function onMapViewportSettled(
     handleInteractionEnd();
   };
 
-  const onMove = () => {
-    isMoving = true;
-  };
-
   map.on('dragstart', onDragStart);
   map.on('dragend', onDragEnd);
-  map.on('move', onMove);
   map.on('moveend', handleInteractionEnd);
   map.on('zoomend', handleInteractionEnd);
   map.on('rotateend', handleInteractionEnd);
@@ -47,7 +39,6 @@ export function onMapViewportSettled(
   return () => {
     map.off('dragstart', onDragStart);
     map.off('dragend', onDragEnd);
-    map.off('move', onMove);
     map.off('moveend', handleInteractionEnd);
     map.off('zoomend', handleInteractionEnd);
     map.off('rotateend', handleInteractionEnd);

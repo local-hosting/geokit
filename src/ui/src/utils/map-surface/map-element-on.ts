@@ -20,7 +20,7 @@ const DOM_EVENT_BY_MAP_EVENT: Record<GkMapListenEvent, string> = {
   click: 'gk-map-click',
 };
 
-const handlerWrappers = new WeakMap<Function, EventListener>();
+const handlerWrappers = new WeakMap<object, EventListener>();
 
 function domEventFor(event: GkMapListenEvent): string {
   return DOM_EVENT_BY_MAP_EVENT[event];
@@ -29,13 +29,13 @@ function domEventFor(event: GkMapListenEvent): string {
 function listenerFor<E extends GkMapListenEvent>(
   handler: GkMapEventHandler<E>
 ): EventListener {
-  const existing = handlerWrappers.get(handler);
+  const existing = handlerWrappers.get(handler as object);
   if (existing) return existing;
 
   const wrapper: EventListener = (event: Event) => {
     handler((event as CustomEvent<GkMapEventDetailMap[E]>).detail);
   };
-  handlerWrappers.set(handler, wrapper);
+  handlerWrappers.set(handler as object, wrapper);
   return wrapper;
 }
 
@@ -56,7 +56,7 @@ export function offGkMapEvent<E extends GkMapListenEvent>(
   event: E,
   handler: GkMapEventHandler<E>
 ): void {
-  const listener = handlerWrappers.get(handler);
+  const listener = handlerWrappers.get(handler as object);
   if (!listener) return;
   element.removeEventListener(domEventFor(event), listener);
 }

@@ -5,7 +5,6 @@
 
 import { haversineMeters } from '../distance';
 import { pointInPolygon } from '../containment';
-import { getBounds } from '../bounds';
 import type { Coordinate, Polygon } from '../../types';
 
 /**

@@ -10,10 +10,10 @@ export function pluginVitestAliases(repoRoot: string): Record<string, string> {
   const envRoot = path.join(repoRoot, 'src/env');
   const h3Root = path.join(repoRoot, 'src/h3');
   return {
-    '@local-hosting/geokit/service/types': path.join(serviceRoot, 'src/src/providers/types.ts'),
+    '@local-hosting/geokit/service/types': path.join(serviceRoot, 'src/services/types.ts'),
     '@local-hosting/geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
     '@local-hosting/geokit/service/plugin': path.join(serviceRoot, 'src/plugin.ts'),
-    '@local-hosting/geokit/service/registry': path.join(serviceRoot, 'src/src/providers/registry.ts'),
+    '@local-hosting/geokit/service/registry': path.join(serviceRoot, 'src/services/registry.ts'),
     '@local-hosting/geokit/service/setup-capability-routers': path.join(
       serviceRoot,
       'src/setup-capability-routers.ts'
@@ -49,8 +49,8 @@ export function serviceVitestAliases(repoRoot: string): Record<string, string> {
   return {
     '@local-hosting/geokit/service': path.join(serviceRoot, 'src/index.ts'),
     '@local-hosting/geokit/service/builtins': path.join(serviceRoot, 'src/builtins.ts'),
-    '@local-hosting/geokit/service/registry': path.join(serviceRoot, 'src/src/providers/registry.ts'),
-    '@local-hosting/geokit/service/types': path.join(serviceRoot, 'src/src/providers/types.ts'),
+    '@local-hosting/geokit/service/registry': path.join(serviceRoot, 'src/services/registry.ts'),
+    '@local-hosting/geokit/service/types': path.join(serviceRoot, 'src/services/types.ts'),
     '@local-hosting/geokit/service/types/api-composite': path.join(serviceRoot, 'src/types/api-composite.ts'),
     '@local-hosting/geokit/foursquare': path.join(repoRoot, 'src/providers/foursquare/src/index.ts'),
     '@local-hosting/geokit/foursquare/foursquare-places': path.join(

@@ -921,6 +921,9 @@ export function sharedPointRadiusPlusStrokeWidth(
       }
       return result;
     }
+    if (Array.isArray(pointRadius) && pointRadius[0] === 'literal') {
+      return ['+', pointRadius, strokeNum];
+    }
     return pointRadius;
   }
   if (Array.isArray(strokeWidth)) {
@@ -2003,12 +2006,12 @@ export function applySharedPointLayerPaint(
       );
     }
     // Never hide the ground cast when selected — selection chrome draws above it.
-    if (Array.isArray(glowOpacity)) {
+    if (hoverPaint) {
+      map.setPaintProperty?.(glowLayerId, 'circle-opacity', hoverPaint.glowOpacity);
+    } else if (Array.isArray(glowOpacity)) {
       map.setPaintProperty?.(glowLayerId, 'circle-opacity', glowOpacity);
     } else if (glowOpacity != null) {
       map.setPaintProperty?.(glowLayerId, 'circle-opacity', glowOpacity);
-    } else if (hoverPaint) {
-      map.setPaintProperty?.(glowLayerId, 'circle-opacity', hoverPaint.glowOpacity);
     }
     if (glowBlur != null) {
       map.setPaintProperty?.(glowLayerId, 'circle-blur', glowBlur);
