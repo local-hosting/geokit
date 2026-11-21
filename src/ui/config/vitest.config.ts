@@ -20,10 +20,11 @@ export default defineConfig({
     ],
   },
   test: {
+    root: uiRoot,
     name: '@local-hosting/geokit/ui',
     globals: true,
     environment: 'happy-dom',
-    setupFiles: [path.join(geokitRoot, 'tests/setup/happy-dom-polyfills.ts')],
+    setupFiles: [path.join(geokitRoot, 'src/core/tests/setup/happy-dom-polyfills.ts')],
     hookTimeout: 60000,
     testTimeout: 30000,
     exclude: ['**/node_modules/**', '**/dist/**', '**/tests/unit/ui/browser/**'],
