@@ -270,7 +270,7 @@ export function createTerrainZoomHandler(ctx: MapTerrainContext): (() => void) |
         map.addSource(TERRAIN_SOURCE_ID, buildTerrainDemSource({ provider, apiKey, explicitUrl }));
         return TERRAIN_SOURCE_ID;
       } catch (err) {
-        debug.warn('[gk-map] Failed to add terrain source', err);
+        debug.warn('Failed to add terrain source', err);
         return null;
       }
     }
@@ -289,7 +289,7 @@ export function createTerrainZoomHandler(ctx: MapTerrainContext): (() => void) |
       map.addSource(TERRAIN_SOURCE_ID, buildTerrainDemSource({ provider, apiKey, explicitUrl }));
       return TERRAIN_SOURCE_ID;
     } catch (err) {
-      debug.warn('[gk-map] Failed to add terrain source', err);
+      debug.warn('Failed to add terrain source', err);
       return null;
     }
   };
@@ -485,20 +485,23 @@ export function cleanup3DBuildings(map: MapInstance | null, handler: (() => void
 export function setupHillshade(ctx: MapTerrainContext): (() => void) | null {
   if (!ctx.map) return null;
 
+  const hillshadeEnabled =
+    ctx.getAttribute('hillshade-enabled') !== null &&
+    ctx.getAttribute('hillshade-enabled') !== 'false';
+  if (!hillshadeEnabled) return null;
+
   const map = ctx.map as any;
   if (!map.addSource || !map.addLayer) return null;
 
   const provider = ctx.getAttribute('provider');
-  const apiKey = ctx.getAttribute('api-key');
-  const sourceUrl =
-    provider === 'maptiler' && apiKey
-      ? `https://api.maptiler.com/tiles/hand-drawn-hillshade/tiles.json?key=${apiKey}`
-      : null;
-
-  if (!sourceUrl || !apiKey) {
-    debug.warn('[gk-map] Hillshade requires maptiler provider with an api-key');
+  if (provider !== 'maptiler') {
     return null;
   }
+  const apiKey = ctx.getAttribute('api-key');
+  if (!apiKey) {
+    return null;
+  }
+  const sourceUrl = `https://api.maptiler.com/tiles/hand-drawn-hillshade/tiles.json?key=${apiKey}`;
 
   const hillshadeApiKey = apiKey;
   const opacityAttr = ctx.getAttribute('hillshade-opacity');
@@ -515,11 +518,11 @@ export function setupHillshade(ctx: MapTerrainContext): (() => void) | null {
       const hasSource = !!map.getSource?.(HILLSHADE_SOURCE_ID);
       const hasLayer = !!map.getLayer?.(HILLSHADE_LAYER_ID);
 
-      debug.log('[gk-map] hillshade update', { enabled, hasSource, hasLayer, sourceUrl, opacity });
+      debug.log('hillshade update', { enabled, hasSource, hasLayer, sourceUrl, opacity });
 
       if (enabled && !hasSource) {
         map.addSource(HILLSHADE_SOURCE_ID, buildHillshadeRasterSource(hillshadeApiKey, sourceUrl));
-        debug.log('[gk-map] hillshade: source added');
+        debug.log('hillshade: source added');
       }
 
       if (enabled && !hasLayer) {
@@ -543,10 +546,10 @@ export function setupHillshade(ctx: MapTerrainContext): (() => void) | null {
 
         if (beforeLayerId) {
           map.addLayer(layerSpec, beforeLayerId);
-          debug.log('[gk-map] hillshade: layer added before', beforeLayerId);
+          debug.log('hillshade: layer added before', beforeLayerId);
         } else {
           map.addLayer(layerSpec);
-          debug.log('[gk-map] hillshade: layer added (top)');
+          debug.log('hillshade: layer added (top)');
         }
       } else if (!enabled && hasLayer) {
         map.removeLayer(HILLSHADE_LAYER_ID);
@@ -556,7 +559,7 @@ export function setupHillshade(ctx: MapTerrainContext): (() => void) | null {
         map.removeSource(HILLSHADE_SOURCE_ID);
       }
     } catch (err) {
-      debug.warn('[gk-map] Hillshade update failed', err);
+      debug.warn('Hillshade update failed', err);
     }
   };
 

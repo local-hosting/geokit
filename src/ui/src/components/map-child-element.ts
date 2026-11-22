@@ -98,7 +98,7 @@ export class MapChildElement extends BaseElement {
    * Check if map style is ready (synchronous check)
    * Returns true if style is ready, false otherwise
    */
-  private isMapStyleReady(): boolean {
+  protected isMapStyleReady(): boolean {
     if (!this.map) return false;
 
     const isStyleLoaded = (this.map as { isStyleLoaded?: () => boolean }).isStyleLoaded;
@@ -119,7 +119,7 @@ export class MapChildElement extends BaseElement {
    * Uses the map element's whenStyleReady method if available
    * Optimized to check if style is already loaded before waiting
    */
-  private async waitForMapStyleReady(): Promise<void> {
+  protected async waitForMapStyleReady(): Promise<void> {
     if (!this.map || !this.mapElement) return;
 
     // Use synchronous check first to avoid Promise microtask

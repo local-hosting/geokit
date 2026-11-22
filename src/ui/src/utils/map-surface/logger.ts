@@ -1,12 +1,10 @@
 /**
- * Geokit Debug Logger
- *
- * Prefer {@link createGeokitLogger} with a scope so messages use `[gk-<scope>]`.
+ * Map element debug logger — scope `gk-map` (tag from pino-blanc; do not put `[gk-map]` in msg).
  */
 
-import { createGeokitLogger, createLogger, geokitTag } from '@local-hosting/geokit/core';
+import { createGeokitLogger, geokitTag } from '@local-hosting/geokit/core';
 
-const logger = createLogger({ windowFlag: '__GEOKIT_DEBUG__' });
+const logger = createGeokitLogger('map');
 
 export const { debug, setDebugEnabled, isDebugEnabled } = logger;
 export { createGeokitLogger, geokitTag };

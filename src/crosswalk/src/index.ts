@@ -122,6 +122,15 @@ export {
 } from './us/setup';
 
 export {
+  H3_SCOPE_COUNTRY_MAX_RES,
+  H3_SCOPE_MARKET_MIN_RES,
+  h3ScopeLabel,
+  h3ScopeShortTitle,
+  resetH3ScopeLabelCache,
+  type H3ScopeLabelHit,
+} from './lookup/h3-scope-label';
+
+export {
   LEGACY_DMA_SLUG_ALIASES,
   resolveCanonicalDmaSlug,
   slugToDmaDisplayName,

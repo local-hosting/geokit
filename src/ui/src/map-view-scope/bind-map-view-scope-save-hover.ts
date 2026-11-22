@@ -7,11 +7,23 @@ export function bindMapViewScopeSaveHover(
 ): () => void {
   if (!host) return () => {};
 
+  let saveHovered = false;
+
+  const setHover = (active: boolean): void => {
+    if (saveHovered === active) return;
+    saveHovered = active;
+    onHover(active);
+  };
+
+  const clearHover = (): void => {
+    setHover(false);
+  };
+
   const handleOver = (event: Event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
     if (!target.closest(MAP_VIEW_SCOPE_SAVE_ACTION_SELECTOR)) return;
-    onHover(true);
+    setHover(true);
   };
 
   const handleOut = (event: Event) => {
@@ -21,14 +33,29 @@ export function bindMapViewScopeSaveHover(
     if (!from) return;
     const related = mouseEvent.relatedTarget;
     if (related instanceof Element && related.closest(MAP_VIEW_SCOPE_SAVE_ACTION_SELECTOR)) return;
-    onHover(false);
+    clearHover();
+  };
+
+  const handleDocumentMouseOut = (event: Event): void => {
+    const related = (event as MouseEvent).relatedTarget;
+    if (related !== null) return;
+    if (!saveHovered) return;
+    clearHover();
+  };
+
+  const handleWindowBlur = (): void => {
+    clearHover();
   };
 
   host.addEventListener('mouseover', handleOver);
   host.addEventListener('mouseout', handleOut);
+  document.addEventListener('mouseout', handleDocumentMouseOut);
+  window.addEventListener('blur', handleWindowBlur);
 
   return () => {
     host.removeEventListener('mouseover', handleOver);
     host.removeEventListener('mouseout', handleOut);
+    document.removeEventListener('mouseout', handleDocumentMouseOut);
+    window.removeEventListener('blur', handleWindowBlur);
   };
 }

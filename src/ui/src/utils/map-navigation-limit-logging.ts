@@ -1,4 +1,5 @@
-export const MAP_NAV_LIMIT_LOG_PREFIX = '[gk-map]';
+/** Plain message prefix — pino shows `[gk-map]` from the scoped logger when wired. */
+export const MAP_NAV_LIMIT_LOG_PREFIX = '';
 
 export type MapBoundsEdges = {
   west: number;

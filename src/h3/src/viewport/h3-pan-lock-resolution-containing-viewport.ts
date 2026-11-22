@@ -1,6 +1,10 @@
 import { coordinatesToH3, h3GetResolution } from '../geometry/core';
 import { h3ToBoundary } from '../geometry/boundary';
 import { H3_RESOLUTION_FROM_ZOOM_MAX } from '../geometry/resolution-from-zoom';
+import {
+  clampMapScopeH3Resolution,
+  H3_MAP_SCOPE_MIN_RESOLUTION,
+} from './map-scope-resolution';
 import { approximateViewportBoundsFromCenterZoom } from './map-viewport';
 import type { MapCameraScopeViewport } from './map-camera-scope-cells';
 import type { ViewportBounds } from './viewport-bounds';
@@ -75,7 +79,7 @@ export function h3PanLockResolutionContainingViewport(
   if (!sized) throw new Error('map viewport width and height required');
 
   let outerResolution: number | null = null;
-  for (let res = 0; res <= H3_RESOLUTION_FROM_ZOOM_MAX; res++) {
+  for (let res = H3_MAP_SCOPE_MIN_RESOLUTION; res <= H3_RESOLUTION_FROM_ZOOM_MAX; res++) {
     if (!viewportBoundsContainedInH3CellAtCenter(viewport, res, sized)) break;
     outerResolution = res;
   }
@@ -83,7 +87,7 @@ export function h3PanLockResolutionContainingViewport(
     throw new Error('no h3 resolution contains the map viewport');
   }
 
-  return outerResolution;
+  return clampMapScopeH3Resolution(outerResolution);
 }
 
 /** Pan-lock cell at {@link h3PanLockResolutionContainingViewport} for the live map frame. */
@@ -97,11 +101,18 @@ export function panLockH3CellContainingMapViewport(
 }
 
 export function readMapViewportSizePx(map: {
-  getCanvas?: () => { width?: number; height?: number };
+  getCanvas?: () => {
+    width?: number;
+    height?: number;
+    clientWidth?: number;
+    clientHeight?: number;
+  };
+  getContainer?: () => { clientWidth?: number; clientHeight?: number };
 }): MapViewportSizePx | null {
   const canvas = map.getCanvas?.();
-  const widthPx = canvas?.width;
-  const heightPx = canvas?.height;
+  const container = map.getContainer?.();
+  const widthPx = canvas?.clientWidth || container?.clientWidth || canvas?.width;
+  const heightPx = canvas?.clientHeight || container?.clientHeight || canvas?.height;
   if (!widthPx || !heightPx || widthPx <= 0 || heightPx <= 0) return null;
   return { widthPx, heightPx };
 }

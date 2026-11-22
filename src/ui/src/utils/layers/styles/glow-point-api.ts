@@ -9,7 +9,6 @@ import type { MapInstance } from '../../../providers/types';
 import type { Feature } from '@local-hosting/geokit/core/types';
 import { getFeatureId } from '@local-hosting/geokit/core/geojson';
 import { getCSSVariable, getCSSVariableNumber } from '../../map-surface/theme';
-import { debug } from '../../map-surface/logger';
 import { HOVER_CONFIG, type HoverStateHandlers } from '../../map-surface/feature-state-hover';
 import {
   buildSharedPointFeatureStateHoverPaint,
@@ -52,7 +51,6 @@ export function createSharedPointLayersWithHover(
         type: 'geojson',
         data: EMPTY_GEOJSON,
       });
-      debug.log('[layer-styles] hover source ADD', { hoverSourceId });
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add hover source ${hoverSourceId}:`, err);
     }
@@ -88,7 +86,6 @@ export function createSharedPointLayersWithHover(
         } as any,
         pointLayerId
       );
-      debug.log('[layer-styles] hover glow layer ADD', { hoverLayerId });
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add hover layer ${hoverLayerId}:`, err);
     }
@@ -114,7 +111,6 @@ export function createSharedPointLayersWithHover(
           'circle-stroke-width': 0,
         },
       } as any);
-      debug.log('[layer-styles] hover point layer ADD', { hoverPointLayerId });
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add hover point layer ${hoverPointLayerId}:`, err);
     }
@@ -190,14 +186,7 @@ export function removeGlowPointLayers(map: MapInstance, layerPrefix: string): vo
       map.removeLayer(pointLayerId);
     }
     if (map.getLayer?.(glowLayerId)) {
-      debug.log('[layer-styles] glow layer REMOVE (removeGlowPointLayers)', {
-        where: 'layer-styles.ts removeGlowPointLayers',
-        when: 'before removeLayer',
-        glowLayerId,
-        layerPrefix,
-      });
       map.removeLayer(glowLayerId);
-      debug.log('[layer-styles] glow layer REMOVE done', { glowLayerId });
     }
   } catch (error) {
     console.error(`[gk-layer-styles] Failed to remove layers for ${layerPrefix}:`, error);

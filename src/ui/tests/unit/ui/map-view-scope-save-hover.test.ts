@@ -20,6 +20,20 @@ describe('bindMapViewScopeSaveHover', () => {
     unbind();
   });
 
+  it('clears hover when the pointer leaves the browser (document mouseout)', () => {
+    const host = document.createElement('div');
+    const save = document.createElement('button');
+    save.setAttribute('data-action-id', 'save');
+    host.appendChild(save);
+    const onHover = vi.fn();
+    const unbind = bindMapViewScopeSaveHover(host, onHover);
+    save.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    expect(onHover).toHaveBeenLastCalledWith(true);
+    document.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: null }));
+    expect(onHover).toHaveBeenLastCalledWith(false);
+    unbind();
+  });
+
   it('ignores other action buttons', () => {
     const host = document.createElement('div');
     const snap = document.createElement('button');

@@ -365,6 +365,21 @@ export function isMapUsable(map: MapInstance | null | undefined): boolean {
   }
 }
 
+/**
+ * Whether a style layer exists — safe during style swap, freeze, or dev HMR restore
+ * when MapLibre's getLayer can throw before the style object is attached.
+ */
+type MapWithGetLayer = { getLayer?: (id: string) => unknown };
+
+export function mapHasLayer(map: MapWithGetLayer | null | undefined, layerId: string): boolean {
+  if (!map?.getLayer) return false;
+  try {
+    return Boolean(map.getLayer(layerId));
+  } catch {
+    return false;
+  }
+}
+
 // ============================================================================
 // Resize Utilities
 // ============================================================================

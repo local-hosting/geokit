@@ -4,6 +4,7 @@ import {
   h3PanLockResolutionFromMapZoom,
 } from '../geometry/resolution-from-zoom';
 import { h3PanLockResolutionContainingViewport } from './h3-pan-lock-resolution-containing-viewport';
+import { clampMapScopeH3Resolution } from './map-scope-resolution';
 import type { MapViewportSizePx } from './map-viewport-h3';
 
 /** Map viewport anchor in WGS84 (`[lng, lat]` — matches MapLibre camera center). */
@@ -29,15 +30,40 @@ export function mapCameraScopeH3Cells(
   if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
     throw new Error('map camera center required');
   }
-  const outerResolution = resolveMapCameraScopeOuterResolution(viewport, viewportSizePx);
-  const innerResolution = Math.min(
-    H3_RESOLUTION_FROM_ZOOM_MAX,
-    outerResolution + MAP_CAMERA_SCOPE_INNER_RESOLUTION_DELTA,
+  const outerResolution = clampMapScopeH3Resolution(
+    resolveMapCameraScopeOuterResolution(viewport, viewportSizePx),
   );
+  const innerResolution = mapCameraScopeInnerResolution(outerResolution);
   return {
     outer: coordinatesToH3(outerResolution)([lat, lng]),
     inner: coordinatesToH3(innerResolution)([lat, lng]),
   };
+}
+
+/**
+ * Catalog inner cell at map click / pointer — same resolution as Save, anchored at lng/lat.
+ */
+export function mapCameraScopeInnerH3CellAtLngLat(
+  viewport: MapCameraScopeViewport,
+  lngLat: readonly [number, number],
+  viewportSizePx?: MapViewportSizePx | null,
+): string {
+  const [lng, lat] = lngLat;
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+    throw new Error('lng/lat required for inner scope cell');
+  }
+  const outerResolution = clampMapScopeH3Resolution(
+    resolveMapCameraScopeOuterResolution(viewport, viewportSizePx),
+  );
+  const innerResolution = mapCameraScopeInnerResolution(outerResolution);
+  return coordinatesToH3(innerResolution)([lat, lng]);
+}
+
+function mapCameraScopeInnerResolution(outerResolution: number): number {
+  return Math.min(
+    H3_RESOLUTION_FROM_ZOOM_MAX,
+    outerResolution + MAP_CAMERA_SCOPE_INNER_RESOLUTION_DELTA,
+  );
 }
 
 function resolveMapCameraScopeOuterResolution(

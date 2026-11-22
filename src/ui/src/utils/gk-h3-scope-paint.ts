@@ -11,16 +11,25 @@ export function resolveGkH3StrokeColor(theme: string, accentHex?: string | null)
   return THEME_H3_COLOR_FALLBACK[theme === 'dark' ? 'dark' : 'light'];
 }
 
+const COMMITTED_SCOPE_ORANGE = {
+  light: { fill: '#fb923c', stroke: '#ea580c' },
+  dark: { fill: '#fdba74', stroke: '#f97316' },
+} as const;
+
+function committedScopeOrange(theme: string): { fill: string; stroke: string } {
+  return COMMITTED_SCOPE_ORANGE[theme === 'dark' ? 'dark' : 'light'];
+}
+
 /** Inner geo-scope hex (`gk-h3` on the locker cell). */
 export function coreGkH3PaintForTheme(
   theme: string,
-  accentHex?: string | null,
+  _accentHex?: string | null,
 ): GkH3PaintAttributes {
-  const strokeColor = resolveGkH3StrokeColor(theme, accentHex);
+  const { fill, stroke } = committedScopeOrange(theme);
   return {
-    color: strokeColor,
+    color: fill,
     opacity: theme === 'dark' ? 0.38 : 0.45,
-    strokeColor,
+    strokeColor: stroke,
     strokeWidth: 3,
   };
 }
@@ -28,13 +37,13 @@ export function coreGkH3PaintForTheme(
 /** Outer pan-lock region — see `mapCameraScopeH3Cells` / `panLockH3CellFromMapCamera`. */
 export function outerRegionGkH3PaintForTheme(
   theme: string,
-  accentHex?: string | null,
+  _accentHex?: string | null,
 ): GkH3PaintAttributes {
-  const strokeColor = resolveGkH3StrokeColor(theme, accentHex);
+  const { fill, stroke } = committedScopeOrange(theme);
   return {
-    color: strokeColor,
+    color: fill,
     opacity: 0.05,
-    strokeColor,
+    strokeColor: stroke,
     strokeWidth: 2,
   };
 }
@@ -67,5 +76,19 @@ export function tentativeOuterGkH3PaintForTheme(theme: string): GkH3PaintAttribu
     opacity: theme === 'dark' ? 0.28 : 0.34,
     strokeColor: stroke,
     strokeWidth: 2,
+  };
+}
+
+/** Live pan scope — outer hex matching locker-bar inspect title (`MAP_VIEW_SCOPE_LIVE`). */
+export function liveScopeOuterGkH3PaintForTheme(
+  theme: string,
+  accentHex?: string | null,
+): GkH3PaintAttributes {
+  const strokeColor = resolveGkH3StrokeColor(theme, accentHex);
+  return {
+    color: strokeColor,
+    opacity: theme === 'dark' ? 0.38 : 0.42,
+    strokeColor,
+    strokeWidth: 2.5,
   };
 }

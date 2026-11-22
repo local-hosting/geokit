@@ -166,7 +166,7 @@ export class IsochroneUpgrade extends IsochroneFetchRender {
 
       // Validate conversion produced features
       if (!upgradedData || !upgradedData.features || upgradedData.features.length === 0) {
-        debug.warn('[gk-isochrone] H3 conversion produced no features, keeping raw polygon');
+        debug.warn('H3 conversion produced no features, keeping raw polygon');
         isochroneEl(this).hasUpgradedResolution = false; // Reset so we can try again
         return;
       }

@@ -357,7 +357,7 @@ export class IsochroneBase extends MapChildElement {
                   }
                 } catch (error) {
                   // Map might be in invalid state, try to fetch anyway
-                  debug.warn('[gk-isochrone] Error checking source, attempting fetch:', error);
+                  debug.warn('Error checking source, attempting fetch:', error);
                   isochroneEl(this).waitForStyleLoaded(() => {
                     isochroneEl(this).fetchAndRenderIsochrone();
                   });

@@ -8,6 +8,7 @@
  */
 
 import { BaseControl } from '../base-control';
+import { resolveNavigationShowCompass } from '../../utils/resolve-navigation-show-compass';
 
 export class NavigationControlElement extends BaseControl {
   static observedAttributes = ['position', 'show-compass', 'show-zoom'];
@@ -18,8 +19,13 @@ export class NavigationControlElement extends BaseControl {
 
   protected async createControl(): Promise<any> {
     const provider = this.getUIProvider();
+    const hasShowCompass = this.hasAttribute('show-compass');
+    const showCompass = resolveNavigationShowCompass(
+      hasShowCompass,
+      this.getBooleanAttribute('show-compass', true),
+    );
     const options = {
-      showCompass: this.getBooleanAttribute('show-compass', true),
+      showCompass,
       showZoom: this.getBooleanAttribute('show-zoom', true),
     };
 

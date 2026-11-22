@@ -70,13 +70,13 @@ export class H3Element extends MapChildElement {
   protected override async onMapReady(): Promise<void> {
     await super.onMapReady();
     if (!this.map) return;
-    requestAnimationFrame(() => this.renderH3());
+    this.scheduleRenderH3();
   }
 
   /** Re-add H3 layers after map style change (e.g. theme toggle). */
   protected override onStyleLoad(): void {
     if (!this.map) return;
-    requestAnimationFrame(() => this.renderH3());
+    this.scheduleRenderH3();
   }
 
   private ensureLayerIds(): void {
@@ -93,12 +93,37 @@ export class H3Element extends MapChildElement {
     await super.connectedCallback();
 
     if (this.map) {
-      requestAnimationFrame(() => this.renderH3());
+      this.scheduleRenderH3();
     }
   }
 
-  private renderH3(): void {
+  private styleReadyWait: Promise<void> | null = null;
+  private renderH3Frame = 0;
+  private renderH3Generation = 0;
+
+  private scheduleRenderH3(): void {
+    this.renderH3Generation += 1;
+    if (this.renderH3Frame) return;
+    this.renderH3Frame = requestAnimationFrame(() => {
+      this.renderH3Frame = 0;
+      void this.renderH3();
+    });
+  }
+
+  private async renderH3(): Promise<void> {
     if (!this.map || !this.visible) return;
+    const generationAtStart = this.renderH3Generation;
+
+    if (!this.isMapStyleReady()) {
+      if (!this.styleReadyWait) {
+        this.styleReadyWait = this.waitForMapStyleReady().finally(() => {
+          this.styleReadyWait = null;
+        });
+      }
+      await this.styleReadyWait;
+      if (generationAtStart !== this.renderH3Generation) return;
+      if (!this.map || !this.visible || !this.isMapStyleReady()) return;
+    }
 
     // Determine H3 index
     let h3Index: string | null = null;
@@ -128,10 +153,18 @@ export class H3Element extends MapChildElement {
 
     const ringK = this.ringK;
 
-    if (h3Index === this.currentH3Index && ringK === this.currentRingK) return;
+    const layerExists =
+      this.sourceId &&
+      this.map.getSource?.(this.sourceId) &&
+      (!this.fillLayerId || this.map.getLayer?.(this.fillLayerId));
 
-    this.currentH3Index = h3Index;
-    this.currentRingK = ringK;
+    if (
+      h3Index === this.currentH3Index &&
+      ringK === this.currentRingK &&
+      layerExists
+    ) {
+      return;
+    }
 
     const resolution = explicitH3 ? h3GetResolution(h3Index) : this.resolution;
     const geojson = h3DiskToFeatureCollection(h3Index, ringK, {
@@ -143,16 +176,47 @@ export class H3Element extends MapChildElement {
       return;
     }
 
-    this.removeH3();
+    const existingSource =
+      this.sourceId != null ? this.map.getSource?.(this.sourceId) : undefined;
+    const setData = existingSource &&
+      typeof (existingSource as { setData?: (data: typeof geojson) => void }).setData ===
+        'function'
+      ? (existingSource as { setData: (data: typeof geojson) => void }).setData.bind(
+          existingSource,
+        )
+      : null;
+    const fillLayerReady =
+      Boolean(this.fillLayerId) && Boolean(this.map.getLayer?.(this.fillLayerId!));
 
-    // Add source
-    if (this.map && this.sourceId) {
+    if (
+      setData &&
+      fillLayerReady &&
+      (h3Index !== this.currentH3Index || ringK !== this.currentRingK)
+    ) {
+      if (generationAtStart !== this.renderH3Generation) return;
+      setData(geojson);
+      this.currentH3Index = h3Index;
+      this.currentRingK = ringK;
+      return;
+    }
+
+    if (generationAtStart !== this.renderH3Generation) return;
+    this.removeH3();
+    this.addH3Layers(h3Index, geojson);
+  }
+
+  private addH3Layers(
+    h3Index: string,
+    geojson: ReturnType<typeof h3DiskToFeatureCollection>,
+  ): void {
+    if (!this.map || !this.sourceId) return;
+
+    try {
       this.map.addSource(this.sourceId, {
         type: 'geojson',
         data: geojson,
       });
 
-      // Add fill layer
       if (this.fillLayerId) {
         this.map.addLayer({
           id: this.fillLayerId,
@@ -165,7 +229,6 @@ export class H3Element extends MapChildElement {
         });
       }
 
-      // Add line layer
       if (this.lineLayerId && this.strokeWidth > 0) {
         this.map.addLayer({
           id: this.lineLayerId,
@@ -182,13 +245,22 @@ export class H3Element extends MapChildElement {
         this.bindFillInteractivity(this.fillLayerId);
       }
 
-      // Dispatch event
+      this.currentH3Index = h3Index;
+      this.currentRingK = this.ringK;
+
       this.dispatchEvent(
         new CustomEvent('h3-created', {
           detail: { h3Index: h3Index, element: this },
           bubbles: true,
         })
       );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/style is not done loading/i.test(message)) {
+        void this.waitForMapStyleReady().then(() => this.scheduleRenderH3());
+        return;
+      }
+      console.warn('[gk-h3] Failed to add H3 layers:', error);
     }
   }
 
@@ -242,6 +314,14 @@ export class H3Element extends MapChildElement {
       [this.lineLayerId, this.fillLayerId].filter(Boolean) as string[],
       [this.sourceId].filter(Boolean) as string[]
     );
+
+    this.currentH3Index = null;
+    this.currentRingK = null;
+  }
+
+  protected override onMapUnload(): void {
+    this.removeH3();
+    super.onMapUnload();
   }
 
   override attributeChangedCallback(
@@ -254,9 +334,9 @@ export class H3Element extends MapChildElement {
         this.toggleVisibility();
       } else if (name === 'interactive') {
         this.removeH3();
-        requestAnimationFrame(() => this.renderH3());
+        this.scheduleRenderH3();
       } else {
-        requestAnimationFrame(() => this.renderH3());
+        this.scheduleRenderH3();
       }
     }
   }
@@ -276,6 +356,11 @@ export class H3Element extends MapChildElement {
   }
 
   override disconnectedCallback(): void {
+    this.renderH3Generation += 1;
+    if (this.renderH3Frame) {
+      cancelAnimationFrame(this.renderH3Frame);
+      this.renderH3Frame = 0;
+    }
     this.removeH3();
     super.disconnectedCallback();
   }

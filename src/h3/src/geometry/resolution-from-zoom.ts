@@ -14,8 +14,10 @@ export type H3ResolutionFromZoomOptions = {
   rounding?: 'round' | 'floor';
 };
 
-/** Min resolution for pan-lock / single center hex scoped to the visible map (allows continental zoom). */
-export const H3_PAN_LOCK_RESOLUTION_FROM_ZOOM_MIN = 0;
+import { H3_MAP_SCOPE_MIN_RESOLUTION } from '../viewport/map-scope-resolution';
+
+/** Min resolution for pan-lock — country scale (res 2); never hemispheric 0–1. */
+export const H3_PAN_LOCK_RESOLUTION_FROM_ZOOM_MIN = H3_MAP_SCOPE_MIN_RESOLUTION;
 
 function clampH3Resolution(
   value: number,
@@ -51,8 +53,7 @@ export function h3ResolutionFromZoom(
 }
 
 /**
- * Pan-lock outer hex resolution from map zoom — `floor` curve, min `0`, so one center
- * hex roughly spans the visible map (including low zoom).
+ * Pan-lock outer hex resolution from map zoom — `floor` curve, min country scale (res 2).
  */
 export function h3PanLockResolutionFromMapZoom(
   zoom: number,

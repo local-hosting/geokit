@@ -8,7 +8,6 @@
 import type { MapInstance } from '../../../providers/types';
 import type { Feature } from '@local-hosting/geokit/core/types';
 import { getFeatureId } from '@local-hosting/geokit/core/geojson';
-import { debug } from '../../map-surface/logger';
 import { type HoverStateHandlers } from '../../map-surface/feature-state-hover';
 import {
   buildSharedPointFeatureStateHoverPaint,
@@ -243,7 +242,6 @@ function addSharedPointGlowLayer(config: SharedPointGlowLayerConfig): boolean {
     } else {
       map.addLayer(glowLayerSpec as any);
     }
-    debug.log('[layer-styles] glow layer ADD done', { glowLayerId });
     return !!map.getLayer?.(glowLayerId);
   } catch (error) {
     console.error(`[gk-layer-styles] Failed to add glow layer ${glowLayerId}:`, error);
@@ -562,10 +560,6 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
           promoteId,
           tolerance: 0,
         });
-        debug.log('[layer-styles] source ADD with promoteId before helper', {
-          sourceId,
-          promoteId,
-        });
       }
 
       // Helper only accepts a single color; unwrap ['literal', hex] so we don't flash --gk-point-color blue
@@ -580,7 +574,6 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         showLabel: false,
         cluster: false,
       });
-      debug.log('[layer-styles] point layer ADD via MapTiler helpers.addPoint', { pointLayerId });
       helperSucceeded = true;
 
       // Override minzoom - MapTiler helper may set a default that hides points when zoomed out
@@ -660,7 +653,6 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
         tolerance: 0,
         ...(promoteId ? { promoteId } : {}),
       });
-      debug.log('[layer-styles] source ADD (manual path)', { sourceId });
     } catch (sourceErr) {
       console.error(`[gk-layer-styles] Failed to add source ${sourceId}:`, sourceErr);
     }
@@ -682,13 +674,6 @@ export function createSharedPointLayers(config: SharedPointLayersConfig): void {
   // Create glow layer (bottom) - serves as hit area and visual glow
   // Root cause: SDK coalesceChanges iterates over layout/paint; never pass null/undefined.
   if (!map.getLayer?.(glowLayerId)) {
-    debug.log('[layer-styles] glow layer ADD (createSharedPointLayers)', {
-      where: 'layer-styles.ts createSharedPointLayers',
-      when: 'before addLayer',
-      glowLayerId,
-      sourceId,
-      beforeLayerId: beforeLayerId ?? undefined,
-    });
     addSharedPointGlowLayer({
       map,
       sourceId,
@@ -941,7 +926,6 @@ export function setupSharedPointGlassLayer(
     } else {
       map.addLayer(layerSpec as any);
     }
-    debug.log('[layer-styles] glass layer ADD', { glassLayerId });
   } catch (err) {
     console.error(`[gk-layer-styles] Failed to add glass ${glassLayerId}:`, err);
   }
@@ -1028,7 +1012,6 @@ export function setupSharedPointOuterStrokeLayer(
     } else {
       map.addLayer(layerSpec as any);
     }
-    debug.log('[layer-styles] outer stroke layer ADD', { outerStrokeLayerId });
   } catch (err) {
     console.error(`[gk-layer-styles] Failed to add outer stroke ${outerStrokeLayerId}:`, err);
   }
@@ -1434,7 +1417,6 @@ function setupSelectionShadowLayer(
       } else {
         map.addLayer(layerSpec);
       }
-      debug.log('[layer-styles] selection shadow layer ADD', { shadowLayerId, beforeId });
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add selection shadow ${shadowLayerId}:`, err);
     }
@@ -1473,7 +1455,6 @@ function setupSelectionRingLayer(
         type: 'geojson',
         data: EMPTY_GEOJSON,
       });
-      debug.log('[layer-styles] selection source ADD', { selectionSourceId });
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add selection source ${selectionSourceId}:`, err);
       return;
@@ -1502,7 +1483,6 @@ function setupSelectionRingLayer(
         minzoom: 0,
         paint: ringPaint,
       } as any);
-      debug.log('[layer-styles] selection ring layer ADD', { ringLayerId });
     } catch (err) {
       console.error(`[gk-layer-styles] Failed to add selection ring ${ringLayerId}:`, err);
     }
@@ -1636,9 +1616,7 @@ function setupHoverLayers(
     'venueId',
     ...DEFAULT_SHARED_POINT_ID_PROPERTIES,
   ].filter((v, i, arr): v is string => !!v && arr.indexOf(v) === i);
-  debug.log('[layer-styles] setupHoverLayers', { hitLayerIds, leaveLayerId, sourceId });
   if (!hitLayerIds.length) {
-    debug.log('[layer-styles] setupHoverLayers: no hit layers, skipping');
     return;
   }
 
@@ -1651,7 +1629,6 @@ function setupHoverLayers(
   }
   const previous = bySource.get(sourceId);
   if (previous?.hitKey === hitKey) {
-    debug.log('[layer-styles] setupHoverLayers: already attached', { sourceId, hitKey });
     return;
   }
   previous?.teardown();
@@ -2027,9 +2004,7 @@ function setupHoverLayers(
       bySource.delete(sourceId);
     };
     bySource.set(sourceId, { hitKey, teardown });
-    debug.log('[layer-styles] attached mousemove+click+leave handlers', hitLayerIds);
   } catch (err) {
-    debug.log('[layer-styles] FAILED to attach handlers', hitLayerIds, err);
   }
 }
 

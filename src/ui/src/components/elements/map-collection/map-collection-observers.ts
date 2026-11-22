@@ -32,6 +32,7 @@ const RETRY_BACKOFF_MS = 2000; // Wait 2s between retries
 
 // Health check: only "stuck activating" (map handles placeholder stuck via gk-map-stuck)
 const STUCK_ACTIVATING_MS = 15000;
+const STUCK_RESTORING_PLACEHOLDER_MS = 5000;
 
 // Only activate slots that actually intersect the visible viewport (small margin).
 // IntersectionObserver uses a large rootMargin so we filter here to avoid activating maps above/below the fold.
@@ -97,7 +98,7 @@ export class MapCollectionObservers extends MapCollectionPool {
         }
         mapCollectionEl(this).processVisibilityChanges();
       }, 250);
-      debug.log('[gk-map-collection] handleNewMaps done', {
+      debug.log('handleNewMaps done', {
         slots: mapCollectionEl(this).slots.length,
         note: 'IntersectionObserver + 250ms fallback',
       });
@@ -168,7 +169,38 @@ export class MapCollectionObservers extends MapCollectionPool {
 
     for (const slot of mapCollectionEl(this).getAllSlots()) {
       mapCollectionEl(this).checkStuckActivating(slot, now);
+      mapCollectionEl(this).checkStuckRestoringPlaceholder(slot, now);
     }
+  }
+
+  /** Visible slots frozen mid-restore (e.g. HMR) can miss gk-map-stuck — nudge activation. */
+  protected checkStuckRestoringPlaceholder(slot: SlotInfo, now: number): void {
+    if (slot.isActive || slot.isActivating || !slot.isVisible) {
+      slot.firstSeenRestoringAt = 0;
+      return;
+    }
+    const el = slot.mapElement;
+    const message =
+      typeof el.getPlaceholderMessage === 'function' ? el.getPlaceholderMessage() : '';
+    const isInit = (el as { isInitialized?: boolean }).isInitialized;
+    if (message !== 'Restoring...' || isInit) {
+      slot.firstSeenRestoringAt = 0;
+      return;
+    }
+    if (slot.firstSeenRestoringAt === 0) {
+      slot.firstSeenRestoringAt = now;
+      return;
+    }
+    if (now - slot.firstSeenRestoringAt < STUCK_RESTORING_PLACEHOLDER_MS) return;
+    slot.firstSeenRestoringAt = 0;
+    mapCollectionDebug('health: slot stuck on Restoring..., scheduling retry', {
+      slotId: mapCollectionEl(this).getSlotId(slot.slotElement),
+    });
+    slot.failCount = 0;
+    slot.lastFailTime = 0;
+    slot.isActivating = false;
+    slot.activationStartTime = 0;
+    setTimeout(() => mapCollectionEl(this).activateSlot(slot), 400);
   }
 
   /** If slot has been activating longer than STUCK_ACTIVATING_MS, reset and schedule retry with backoff. */

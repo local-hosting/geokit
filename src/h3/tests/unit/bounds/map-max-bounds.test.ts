@@ -9,6 +9,7 @@ import {
   maxBoundsFromPanLockH3Cell,
   rawMaxBoundsFromH3Cell,
 } from '../../../src/bounds/map-max-bounds';
+import { H3_MAP_SCOPE_MIN_RESOLUTION } from '../../../src/viewport/map-scope-resolution';
 import { MAP_MAX_BOUNDS_BBOX_PAD_FRACTION } from '../../../src/bounds/pad-lng-lat-bounds';
 
 describe('maxBoundsFromH3Cell', () => {
@@ -69,6 +70,12 @@ describe('maxBoundsFromH3Cell', () => {
     const geoScopeCell = '8744cd5a3ffffff';
     const outer = h3CellForMapMaxBounds(geoScopeCell);
     expect(h3GetResolution(outer)).toBeLessThan(h3GetResolution(geoScopeCell));
+  });
+
+  it('does not coarsen country geo scope below the map scope floor', () => {
+    const countryCell = coordinatesToH3(H3_MAP_SCOPE_MIN_RESOLUTION)([35.4, -84.9]);
+    const lockCell = h3CellForMapMaxBounds(countryCell);
+    expect(h3GetResolution(lockCell)).toBe(H3_MAP_SCOPE_MIN_RESOLUTION);
   });
 
   it('maxBoundsFromPanLockH3Cell matches geo-scope coarsen for the same lock cell', () => {

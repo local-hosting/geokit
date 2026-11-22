@@ -108,7 +108,7 @@ export class IsochroneElement extends IsochroneUpgrade {
       }
       return null;
     } catch {
-      debug.warn('[gk-isochrone] Invalid JSON in data attribute');
+      debug.warn('Invalid JSON in data attribute');
       return null;
     }
   }

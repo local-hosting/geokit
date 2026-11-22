@@ -23,49 +23,40 @@ describe('resolveCommittedMapViewScopeViewport', () => {
 describe('resolveShowCommittedMapViewScopeOverlays', () => {
   const viewport = { widthPx: 800, heightPx: 600 };
 
-  it('shows blue scope hexes only when a saved baseline exists and the view is clean', () => {
+  it('shows blue saved scope hexes whenever a saved baseline exists (independent of live pan/zoom)', () => {
     expect(
       resolveShowCommittedMapViewScopeOverlays({
         savedCamera: saved,
-        viewDirty: false,
         viewportSizePx: viewport,
       }),
     ).toBe(true);
     expect(
       resolveShowCommittedMapViewScopeOverlays({
+        savedCamera: null,
+        viewportSizePx: viewport,
+      }),
+    ).toBe(false);
+  });
+
+  it('does not hide blue scope while the user pans or zooms away from the saved view', () => {
+    expect(
+      resolveShowCommittedMapViewScopeOverlays({
         savedCamera: saved,
-        viewDirty: true,
         viewportSizePx: viewport,
       }),
-    ).toBe(false);
-    expect(
-      resolveShowCommittedMapViewScopeOverlays({
-        savedCamera: null,
-        viewDirty: false,
-        viewportSizePx: viewport,
-      }),
-    ).toBe(false);
-    expect(
-      resolveShowCommittedMapViewScopeOverlays({
-        savedCamera: null,
-        viewDirty: true,
-        viewportSizePx: viewport,
-      }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('waits for map canvas size before drawing (reload zoom-only shell is oversized)', () => {
     expect(
       resolveShowCommittedMapViewScopeOverlays({
         savedCamera: saved,
-        viewDirty: false,
         viewportSizePx: null,
       }),
     ).toBe(false);
     expect(
       resolveShowCommittedMapViewScopeOverlays({
         savedCamera: saved,
-        viewDirty: false,
         viewportSizePx: { widthPx: 0, heightPx: 600 },
       }),
     ).toBe(false);

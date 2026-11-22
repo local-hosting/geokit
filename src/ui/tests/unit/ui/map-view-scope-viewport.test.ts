@@ -24,26 +24,23 @@ describe('resolveCommittedMapViewScopeViewport', () => {
 });
 
 describe('resolveTentativeMapViewScopeViewport', () => {
-  it('returns live camera only when dirty and save is hovered', () => {
+  it('returns live camera only while Save is hovered', () => {
     expect(
       resolveTentativeMapViewScopeViewport({
-        viewDirty: true,
         savePreviewHover: true,
         liveCamera: live,
       }),
     ).toBe(live);
     expect(
       resolveTentativeMapViewScopeViewport({
-        viewDirty: false,
-        savePreviewHover: true,
+        savePreviewHover: false,
         liveCamera: live,
       }),
     ).toBeNull();
     expect(
       resolveTentativeMapViewScopeViewport({
-        viewDirty: true,
-        savePreviewHover: false,
-        liveCamera: live,
+        savePreviewHover: true,
+        liveCamera: null,
       }),
     ).toBeNull();
   });

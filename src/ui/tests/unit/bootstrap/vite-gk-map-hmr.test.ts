@@ -41,7 +41,7 @@ describe('vite-gk-map-hmr', () => {
     expect(freezeB).toHaveBeenCalledOnce();
   });
 
-  it('unfreezes only connected gk-map elements', () => {
+  it('unfreezes only connected gk-map elements', async () => {
     const unfreezeConnected = vi.fn().mockResolvedValue(true);
     const unfreezeDetached = vi.fn().mockResolvedValue(true);
     const root = makeRoot([
@@ -49,13 +49,32 @@ describe('vite-gk-map-hmr', () => {
       { connected: false, unfreeze: unfreezeDetached },
     ]);
 
-    restoreConnectedGkMapsAfterViteHmr(root);
+    await restoreConnectedGkMapsAfterViteHmr(root);
 
     expect(unfreezeConnected).toHaveBeenCalledOnce();
     expect(unfreezeDetached).not.toHaveBeenCalled();
   });
 
-  it('refreshes map collections instead of unfreezing pooled gk-map children directly', () => {
+  it('awaits in-flight freeze before unfreezing', async () => {
+    let resolveFreeze!: () => void;
+    const freezeDone = new Promise<void>((resolve) => {
+      resolveFreeze = resolve;
+    });
+    const freeze = vi.fn().mockReturnValue(freezeDone);
+    const unfreeze = vi.fn().mockResolvedValue(true);
+    const root = makeRoot([{ connected: true, freeze, unfreeze }]);
+
+    freezeGkMapsForViteHmr(root);
+    const restore = restoreConnectedGkMapsAfterViteHmr(root);
+    expect(unfreeze).not.toHaveBeenCalled();
+
+    resolveFreeze();
+    await restore;
+
+    expect(unfreeze).toHaveBeenCalledOnce();
+  });
+
+  it('refreshes map collections instead of unfreezing pooled gk-map children directly', async () => {
     const refresh = vi.fn();
     const syncActiveCount = vi.fn();
     const collection = document.createElement('gk-map-collection') as HTMLElement & {
@@ -86,7 +105,7 @@ describe('vite-gk-map-hmr', () => {
     root.appendChild(collection);
     root.appendChild(standalone);
 
-    restoreConnectedGkMapsAfterViteHmr(root);
+    await restoreConnectedGkMapsAfterViteHmr(root);
 
     expect(syncActiveCount).toHaveBeenCalledOnce();
     expect(refresh).toHaveBeenCalledOnce();
@@ -104,7 +123,7 @@ describe('scheduleGkMapRestoreOnViteAfterUpdate', () => {
     vi.useRealTimers();
   });
 
-  it('debounces vite:afterUpdate into restore and notifies listeners', () => {
+  it('debounces vite:afterUpdate into restore and notifies listeners', async () => {
     const listeners = new Map<string, () => void>();
     const hot = {
       on: (event: string, cb: () => void) => {
@@ -130,9 +149,11 @@ describe('scheduleGkMapRestoreOnViteAfterUpdate', () => {
     listeners.get('vite:afterUpdate')?.();
     expect(standaloneUnfreeze).not.toHaveBeenCalled();
 
-    vi.advanceTimersByTime(150);
-    expect(standaloneUnfreeze).toHaveBeenCalledOnce();
-    expect(notified).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(150);
+    await vi.waitFor(() => {
+      expect(standaloneUnfreeze).toHaveBeenCalledOnce();
+      expect(notified).toHaveBeenCalledOnce();
+    });
 
     document.body.removeChild(standalone);
   });

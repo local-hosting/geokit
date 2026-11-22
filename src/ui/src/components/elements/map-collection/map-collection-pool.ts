@@ -6,7 +6,10 @@
  */
 
 import { type MapElement } from '../map/map';
+import { geokitDebug } from '@local-hosting/geokit/core';
 import { debug } from '../../../utils/logger';
+
+const mapCollectionLog = geokitDebug('map-collection');
 import { getProviderConfig } from '../../../providers/registry';
 import {
   delayForWebGLRelease,
@@ -15,6 +18,7 @@ import {
   reconcileLiveMapCountFromDom,
 } from '../map/lifecycle/map-freeze';
 import { resolveSlotEnsureOptions, slotHasBasemapCredentials } from './resolve-slot-ensure-options';
+import { isRecoverableMapInitSkipReason } from '../map/lifecycle/map-init-skip-reason';
 
 interface SlotInfo {
   slotElement: HTMLElement;
@@ -44,16 +48,8 @@ const RETRY_BACKOFF_MS = 2000; // Wait 2s between retries
 const ACTIVATION_VIEWPORT_MARGIN_PX = 50;
 
 function mapCollectionDebug(msg: string, data?: Record<string, unknown>): void {
-  if (
-    typeof window !== 'undefined' &&
-    (window as unknown as { __GEOKIT_DEBUG__?: boolean }).__GEOKIT_DEBUG__
-  ) {
-    if (data !== undefined) {
-      console.warn('[gk-map-collection]', msg, data);
-    } else {
-      console.warn('[gk-map-collection]', msg);
-    }
-  }
+  if (data !== undefined) mapCollectionLog.warn(msg, data);
+  else mapCollectionLog.warn(msg);
 }
 
 import { mapCollectionEl } from './map-collection-el';
@@ -237,7 +233,7 @@ export class MapCollectionPool extends MapCollectionBase {
       const success = await mapCollectionEl(this).unfreezeSlot(slotInfo);
 
       if (success) {
-        debug.log('[gk-map-collection] active', {
+        debug.log('active', {
           slotId: mapCollectionEl(this).getSlotId(slotInfo.slotElement),
           activeCount: mapCollectionEl(this).activeCount,
         });
@@ -249,6 +245,18 @@ export class MapCollectionPool extends MapCollectionBase {
           slotInfo.isActive = false;
           mapCollectionEl(this).activeCount--;
         });
+        const lastSkip = (slotInfo.mapElement as { _lastInitSkipReason?: string | null })
+          ._lastInitSkipReason;
+        if (isRecoverableMapInitSkipReason(lastSkip ?? null)) {
+          mapCollectionDebug('activateSlot: transient init, skip freeze', {
+            slotIndex: mapCollectionEl(this).slots.indexOf(slotInfo),
+            lastSkip,
+          });
+          if (slotInfo.isVisible) {
+            setTimeout(() => mapCollectionEl(this).processVisibilityChanges(), 750);
+          }
+          return;
+        }
         await slotInfo.mapElement.freeze().catch(() => {});
         const rect = slotInfo.slotElement.getBoundingClientRect();
         const layoutPending = rect.width === 0 || rect.height === 0;
@@ -315,7 +323,7 @@ export class MapCollectionPool extends MapCollectionBase {
     await toFreeze.mapElement.freeze();
     toFreeze.isActive = false;
     mapCollectionEl(this).activeCount = Math.max(0, mapCollectionEl(this).activeCount - 1);
-    debug.log('[gk-map-collection] frozen', { slotId, activeCount: mapCollectionEl(this).activeCount });
+    debug.log('frozen', { slotId, activeCount: mapCollectionEl(this).activeCount });
     return true;
   }
 
@@ -369,7 +377,7 @@ export class MapCollectionPool extends MapCollectionBase {
         mapCollectionEl(this).handleNewMapsRafId = requestAnimationFrame(() => {
           mapCollectionEl(this).handleNewMapsRafId = null;
           const count = mapCollectionEl(this).querySelectorAll('gk-map').length;
-          debug.log('[gk-map-collection] rAF handleNewMaps', { gkMapCountInDom: count });
+          debug.log('rAF handleNewMaps', { gkMapCountInDom: count });
           mapCollectionEl(this).handleNewMaps();
         });
       }

@@ -9,6 +9,7 @@ import { mapGpuCreateOptions } from '../utils/map-surface/map-gpu-budget';
 import { ensureMapboxGlCss } from '../utils/map-provider-css';
 import { wrapMapResize } from '../utils/map-utils';
 import { getProviderConfig } from './registry';
+import { resolveMapboxGlRuntime, type MapboxGlRuntime } from './mapbox-gl-runtime';
 import { BaseUIProvider } from './types';
 import type {
   UIProviderConfig,
@@ -29,7 +30,7 @@ function trySetMapboxAccessToken(sdk: unknown, token: string | undefined): void 
 }
 
 export class MapboxUIProvider extends BaseUIProvider {
-  protected sdk: any = null;
+  protected sdk: MapboxGlRuntime | null = null;
   private sdkLoadPromise: Promise<any> | null = null;
   protected config: UIProviderConfig | null = null;
 
@@ -56,29 +57,32 @@ export class MapboxUIProvider extends BaseUIProvider {
     }
 
     // Check if SDK is already loaded globally
-    if (typeof window !== 'undefined' && (window as any).mapboxgl) {
-      this.sdk = (window as any).mapboxgl;
-      trySetMapboxAccessToken(this.sdk, config?.accessToken);
-      return Promise.resolve(this.sdk);
+    const globalSdk =
+      typeof window !== 'undefined' ? (window as Window & { mapboxgl?: unknown }).mapboxgl : undefined;
+    if (globalSdk) {
+      try {
+        this.sdk = resolveMapboxGlRuntime(globalSdk);
+        trySetMapboxAccessToken(this.sdk, config?.accessToken);
+        return Promise.resolve(this.sdk);
+      } catch {
+        // Stale or partial global from a prior failed load — import again.
+      }
     }
 
     // Load SDK dynamically
     this.sdkLoadPromise = (async () => {
       try {
-        // Dynamic import of Mapbox GL JS
-        const mapboxModule = await import('mapbox-gl');
+        let mapboxgl: MapboxGlRuntime;
+        try {
+          mapboxgl = resolveMapboxGlRuntime(await import('mapbox-gl'));
+        } catch {
+          mapboxgl = resolveMapboxGlRuntime(await import('mapbox-gl/esm'));
+        }
 
-        // Mapbox GL JS can be imported as default or named export
-        // Handle both cases
-        const mapboxgl = (mapboxModule as any).default || mapboxModule;
-
-        // Set access token if provided
         trySetMapboxAccessToken(mapboxgl, config?.accessToken);
-        trySetMapboxAccessToken(mapboxModule, config?.accessToken);
 
-        // Expose to window for backward compatibility
         if (typeof window !== 'undefined') {
-          (window as any).mapboxgl = mapboxgl;
+          (window as Window & { mapboxgl?: MapboxGlRuntime }).mapboxgl = mapboxgl;
         }
 
         this.sdk = mapboxgl;
@@ -93,8 +97,13 @@ export class MapboxUIProvider extends BaseUIProvider {
   }
 
   async createMap(container: HTMLElement, options: MapOptions): Promise<any> {
-    if (!this.sdk) {
+    if (!this.sdk || typeof this.sdk.Map !== 'function') {
+      this.sdk = null;
+      this.sdkLoadPromise = null;
       await this.initialize(this.config || {});
+    }
+    if (!this.sdk || typeof this.sdk.Map !== 'function') {
+      throw new Error('Mapbox GL JS Map constructor not available after initialize()');
     }
 
     // Vite injects CSS as <style> (no href); Mapbox warns without the canary rule.
@@ -105,7 +114,6 @@ export class MapboxUIProvider extends BaseUIProvider {
       throw new Error('Mapbox access token is required. Call initialize() with accessToken first.');
     }
     trySetMapboxAccessToken(this.sdk, accessToken);
-    trySetMapboxAccessToken((this.sdk as { default?: unknown }).default, accessToken);
 
     // Build style: theme-keyed / configured style URL wins over stock Mapbox theme names.
     let style = options.style;
@@ -154,22 +162,27 @@ export class MapboxUIProvider extends BaseUIProvider {
       ...(options.extra || {}),
     };
 
-    // Suppress "container should be empty" warning - our child elements are declarative
-    // custom elements that don't render content, they add controls via addControl() API
+    const suppressedWarnings = [
+      'map container element should be empty',
+      'sun direction is attached to a light with viewport anchor',
+    ];
     const originalWarn = console.warn;
-    console.warn = (...args: any[]) => {
-      const message = args.join(' ');
-      if (message.includes('map container element should be empty')) {
-        return; // Suppress this specific warning
+    const filteredWarn = (...args: unknown[]) => {
+      const message = args.map(String).join(' ');
+      if (suppressedWarnings.some((snippet) => message.includes(snippet))) {
+        return;
       }
       originalWarn.apply(console, args);
     };
+    console.warn = filteredWarn;
 
     const map = new this.sdk.Map(mapOptions);
     wrapMapResize(map);
 
-    // Restore console.warn
-    console.warn = originalWarn;
+    const mapWithRemove = map as { once?: (event: string, fn: () => void) => void };
+    mapWithRemove.once?.('remove', () => {
+      console.warn = originalWarn;
+    });
 
     return map;
   }
@@ -180,12 +193,14 @@ export class MapboxUIProvider extends BaseUIProvider {
     }
 
     switch (type) {
-      case 'navigation':
+      case 'navigation': {
+        const showCompass = options.showCompass !== false;
         return new this.sdk.NavigationControl({
-          showCompass: options.showCompass !== false,
+          showCompass,
           showZoom: options.showZoom !== false,
-          visualizePitch: true,
+          visualizePitch: showCompass,
         });
+      }
 
       case 'scale':
         return new this.sdk.ScaleControl({

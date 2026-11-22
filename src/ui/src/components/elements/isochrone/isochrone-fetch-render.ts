@@ -220,7 +220,7 @@ export class IsochroneFetchRender extends IsochroneBase {
             isochroneEl(this).map.setPaintProperty?.(isochroneEl(this).lineLayerId, 'line-width', isochroneEl(this).strokeWidth);
           }
         } catch (paintErr) {
-          debug.warn('[gk-isochrone] setPaintProperty failed', paintErr);
+          debug.warn('setPaintProperty failed', paintErr);
         }
       } else {
         // First render: create source + layers once
@@ -294,7 +294,7 @@ export class IsochroneFetchRender extends IsochroneBase {
               isochroneEl(this).map.moveLayer(isochroneEl(this).fillLayerId, moveTarget);
             }
           } catch (err) {
-            debug.warn('[gk-isochrone] moveLayer failed', { moveTarget, err });
+            debug.warn('moveLayer failed', { moveTarget, err });
           }
         }
       }

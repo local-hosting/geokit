@@ -9,6 +9,7 @@ import {
   padLngLatBounds,
   type LngLatBounds,
 } from './pad-lng-lat-bounds';
+import { H3_MAP_SCOPE_MIN_RESOLUTION } from '../viewport/map-scope-resolution';
 
 export {
   MAP_MAX_BOUNDS_BBOX_PAD_FRACTION,
@@ -30,7 +31,7 @@ export function h3CellForMapMaxBounds(h3Cell: string): string {
     throw new Error(`invalid h3 cell: ${h3Cell}`);
   }
   const resolution = h3GetResolution(expanded);
-  const target = Math.max(0, resolution - MAP_MAX_BOUNDS_COARSEN_STEPS);
+  const target = Math.max(H3_MAP_SCOPE_MIN_RESOLUTION, resolution - MAP_MAX_BOUNDS_COARSEN_STEPS);
   if (target === resolution) return expanded;
   return h3ToParent(expanded, target);
 }

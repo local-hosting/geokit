@@ -95,12 +95,13 @@ import {
 
 import { MapChildrenTrack } from './map-children-track';
 import { applyMapHostLayoutFromAncestors, measureMapHostLayout } from './map-host-layout';
+import { isRecoverableMapInitSkipReason } from './lifecycle/map-init-skip-reason';
 
 export class MapFreezeRuntime extends MapChildrenTrack {
   public async unfreeze(poolIndex?: number): Promise<boolean> {
     // Prevent concurrent unfreeze operations
     if (this._isUnfreezing) {
-      debug.warn('[gk-map] Already unfreezing, skipping duplicate call');
+      debug.warn('Already unfreezing, skipping duplicate call');
       return false;
     }
 
@@ -130,25 +131,19 @@ export class MapFreezeRuntime extends MapChildrenTrack {
 
       // Show placeholder while loading (frozen restore or first init)
       const placeholderMsg = this._isFrozen ? 'Restoring...' : undefined;
-      debug.log('[gk-map] unfreeze: showing placeholder', {
-        message: placeholderMsg ?? 'default',
-        _isFrozen: this._isFrozen,
-      });
       this.showPlaceholder(placeholderMsg);
 
       // If map is frozen, unfreeze it (reinitialize since we destroyed it)
       if (this._isFrozen) {
-        debug.log('[gk-map] unfreeze: calling _unfreeze (restore path)');
         const hasLayout = await this.waitForHostDimensions();
         if (!hasLayout) {
           return this.failUnfreezeWithoutMap('deferred-layout');
         }
         await this._unfreeze();
-        debug.log('[gk-map] unfreeze: _unfreeze returned', {
-          isInitialized: this.isInitialized,
-          hasMap: !!this.map,
-        });
         if (!this.map) {
+          if (isRecoverableMapInitSkipReason(this._lastInitSkipReason)) {
+            return this.failUnfreezeWithoutMap('deferred-layout');
+          }
           return this.failUnfreezeWithoutMap('restore-without-map');
         }
         // Don't wait for 'idle' - it can delay by hundreds of ms; style load is enough for layers
@@ -157,7 +152,7 @@ export class MapFreezeRuntime extends MapChildrenTrack {
         }
         // Resize and repaint so map fills container after scroll-back (container may have been zero-size when frozen)
         resizeAndRepaintMapFn(this.map, this);
-        debug.log('[gk-map] active', { label: this.getMapLabel() });
+        debug.log('active', { label: this.getMapLabel() });
         this.dispatchEvent(
           new CustomEvent('gk-map-unfreeze', {
             detail: { map: this.map, element: this },
@@ -168,7 +163,6 @@ export class MapFreezeRuntime extends MapChildrenTrack {
       }
 
       // Initialize the map (first time or after frozen)
-      debug.log('[gk-map] unfreeze: calling initializeMap (first-time init path)');
       const hasLayout = await this.waitForHostDimensions();
       if (!hasLayout) {
         return this.failUnfreezeWithoutMap('deferred-layout');
@@ -176,15 +170,11 @@ export class MapFreezeRuntime extends MapChildrenTrack {
       await this.initializeMap();
 
       // Don't wait for 'idle' (tiles, etc.) - style load is enough for adding layers; speeds first load
-      debug.log('[gk-map] unfreeze: initializeMap returned', {
-        hasMap: !!this.map,
-        isInitialized: this.isInitialized,
-      });
       if (this.map) {
         if (this.isInitialized) {
           this.hidePlaceholder();
         }
-        debug.log('[gk-map] active', { label: this.getMapLabel() });
+        debug.log('active', { label: this.getMapLabel() });
         this.dispatchEvent(
           new CustomEvent('gk-map-unfreeze', {
             detail: { map: this.map, element: this },
@@ -194,11 +184,14 @@ export class MapFreezeRuntime extends MapChildrenTrack {
         return true;
       }
 
+      if (isRecoverableMapInitSkipReason(this._lastInitSkipReason)) {
+        return this.failUnfreezeWithoutMap('deferred-layout');
+      }
       return this.failUnfreezeWithoutMap('init-without-map');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const kind = classifyMapInitFailure(message);
-      debug.warn('[gk-map]', mapUnavailableLogDetail(kind, message), error);
+      debug.warn(mapUnavailableLogDetail(kind, message), error);
       this._isFrozen = false;
       this.showPlaceholder(mapUnavailableMessage(kind));
       this.dispatchEvent(
@@ -237,7 +230,7 @@ export class MapFreezeRuntime extends MapChildrenTrack {
   private async runFreeze(): Promise<void> {
     // Wait if currently unfreezing to avoid race condition
     if (this._isUnfreezing) {
-      debug.warn('[gk-map] Waiting for unfreeze to complete before freezing');
+      debug.warn('Waiting for unfreeze to complete before freezing');
       // Wait up to 10 seconds for unfreeze to complete
       const maxWait = 10000;
       const startTime = Date.now();
@@ -269,7 +262,7 @@ export class MapFreezeRuntime extends MapChildrenTrack {
 
     // Update pool state - no longer in pool
     this.setPoolState(false);
-    debug.log('[gk-map] frozen', { label: this.getMapLabel() });
+    debug.log('frozen', { label: this.getMapLabel() });
   }
 
   /**
@@ -287,7 +280,7 @@ export class MapFreezeRuntime extends MapChildrenTrack {
 
     // Wait if currently initializing to avoid race condition
     if (this._isInitializing) {
-      debug.warn('[gk-map] Waiting for initialization to complete before teardown');
+      debug.warn('Waiting for initialization to complete before teardown');
       const maxWait = 5000;
       const startTime = Date.now();
       while (this._isInitializing && Date.now() - startTime < maxWait) {
@@ -325,8 +318,7 @@ export class MapFreezeRuntime extends MapChildrenTrack {
       try {
         map.remove();
       } catch (error) {
-        debug.warn(
-          '[gk-map] Error during map removal (map may have been partially initialized):',
+        debug.warn('Error during map removal (map may have been partially initialized):',
           error
         );
       }
@@ -369,7 +361,6 @@ export class MapFreezeRuntime extends MapChildrenTrack {
       return;
     }
 
-    debug.log('[gk-map] _unfreeze start');
     // Map was destroyed, so we need to reinitialize it
     this._isFrozen = false;
 
@@ -378,9 +369,7 @@ export class MapFreezeRuntime extends MapChildrenTrack {
     // Set flag to indicate map was just unfrozen - this helps isochrones restore
     this.dataset.wasJustUnfrozen = 'true';
 
-    debug.log('[gk-map] _unfreeze: calling initializeMap');
     await this.initializeMap();
-    debug.log('[gk-map] _unfreeze: initializeMap returned', { isInitialized: this.isInitialized });
 
     // Clear flag after a short delay to allow isochrones to restore
     setTimeout(() => {
@@ -408,7 +397,6 @@ export class MapFreezeRuntime extends MapChildrenTrack {
       return hasSize();
     };
     if (applyAndCheck()) return true;
-    debug.log('[gk-map] waiting for container dimensions');
     await new Promise<void>((resolve) => {
       const check = () => {
         if (applyAndCheck() || Date.now() - start > timeoutMs) {
@@ -429,7 +417,6 @@ export class MapFreezeRuntime extends MapChildrenTrack {
     cause: 'deferred-layout' | 'restore-without-map' | 'init-without-map',
   ): boolean {
     if (cause === 'deferred-layout') {
-      debug.log('[gk-map] unfreeze deferred until host has layout', { label: this.getMapLabel() });
       this.showPlaceholder('Loading map...');
       return false;
     }
@@ -437,7 +424,7 @@ export class MapFreezeRuntime extends MapChildrenTrack {
     const kind = canCreateAnotherMap() ? ('generic' as const) : ('webgl' as const);
     const logDetail = mapUnavailableLogDetail(kind, `unfreeze returned without map (${cause})`);
     if (kind === 'webgl' || cause === 'restore-without-map') {
-      debug.warn('[gk-map]', logDetail, {
+      debug.warn(logDetail, {
         provider: this.getAttribute('provider'),
         hasAccessToken: Boolean(this.getAttribute('access-token')),
         hasApiKey: Boolean(this.getAttribute('api-key')),

@@ -1,4 +1,5 @@
 import type { MapInstance } from '../../providers/types';
+import { mapHasLayer } from '../map-surface/map-utils';
 import { getSharedPointSelection } from '../layers/styles/shared-point-layers';
 import type { ApplySharedPointPaintOptions, SharedPointLayerIds } from '../paint/shared-point-paint';
 import { syncSharedPointSelectedLayerFilter } from '../paint/shared-point-paint';
@@ -232,7 +233,7 @@ export async function ensureFloatingBadgeMarkerStack(
     `${ids.pointLayerId}-glass`,
     ...buildFloatingBadgeStack(ids).roundedResting,
   ]) {
-    if (!map.getLayer?.(layerId)) continue;
+    if (!mapHasLayer(map, layerId)) continue;
     try {
       if (paint.pointTranslateAnchor) {
         const prop = layerId.includes('rounded') || layerId.includes('badge-icon')

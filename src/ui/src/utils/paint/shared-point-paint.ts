@@ -27,6 +27,7 @@ import {
   scaleRadiusForHover,
 } from '../map-surface/feature-state-hover';
 import { getCSSVariable, getCSSVariableNumber } from '../map-surface/theme';
+import { mapHasLayer } from '../map-surface/map-utils';
 
 /** Min point radius (px). Safari needs ≥2px or circles can vanish when zoomed out. */
 export const SHARED_POINT_MIN_RADIUS_PX = 2.8;
@@ -516,7 +517,7 @@ export function syncSharedPointSelectedLayerFilter(
   ];
 
   for (const layerId of circleBodyLayerIds) {
-    if (!map.getLayer?.(layerId)) continue;
+    if (!mapHasLayer(map, layerId)) continue;
     try {
       map.setFilter(layerId, circleFilter);
     } catch {
@@ -528,7 +529,7 @@ export function syncSharedPointSelectedLayerFilter(
   // under that feature so the two washes do not stack.
   if (glowLayerId) {
     for (const layerId of [glowLayerId, `${glowLayerId}-hover`]) {
-      if (!map.getLayer?.(layerId)) continue;
+      if (!mapHasLayer(map, layerId)) continue;
       try {
         map.setFilter(layerId, excludeSelected);
       } catch {
@@ -546,7 +547,7 @@ export function syncSharedPointSelectedLayerFilter(
     sharedPointHoverBadgeOuterLayerId(options.pointLayerId),
     `${options.pointLayerId}-hover`,
   ]) {
-    if (!map.getLayer?.(layerId)) continue;
+    if (!mapHasLayer(map, layerId)) continue;
     try {
       map.setFilter(layerId, roundedFilter);
     } catch {
@@ -1992,7 +1993,7 @@ export function applySharedPointLayerPaint(
       ? buildSharedPointFeatureStateHoverPaint(featureStateHover)
       : null;
 
-  if (map.getLayer?.(glowLayerId)) {
+  if (mapHasLayer(map, glowLayerId)) {
     map.setPaintProperty?.(glowLayerId, 'circle-color', glowColor);
     if (glowRadiusExpression != null) {
       map.setPaintProperty?.(glowLayerId, 'circle-radius', glowRadiusExpression);
@@ -2030,7 +2031,7 @@ export function applySharedPointLayerPaint(
     }
   }
 
-  if (map.getLayer?.(pointLayerId)) {
+  if (mapHasLayer(map, pointLayerId)) {
     map.setPaintProperty?.(pointLayerId, 'circle-color', pointColorExpression);
     map.setPaintProperty?.(pointLayerId, 'circle-radius', pointRadiusExpression);
     if (pointOpacityExpression != null) {
@@ -2064,7 +2065,7 @@ export function applySharedPointLayerPaint(
   }
 
   const outerStrokeLayerId = sharedPointOuterStrokeLayerId(pointLayerId);
-  if (map.getLayer?.(outerStrokeLayerId) && outerStrokeWidthExpression != null) {
+  if (mapHasLayer(map, outerStrokeLayerId) && outerStrokeWidthExpression != null) {
     const coloredRingWidth = literalNumberFromPaintExpression(strokeWidthExpression);
     const ringForRadius = Array.isArray(strokeWidthExpression)
       ? strokeWidthExpression
@@ -2113,7 +2114,7 @@ export function applySharedPointLayerPaint(
   }
 
   const glassLayerId = sharedPointGlassLayerId(pointLayerId);
-  if (map.getLayer?.(glassLayerId) && glassRadiusExpression != null) {
+  if (mapHasLayer(map, glassLayerId) && glassRadiusExpression != null) {
     const glassPaint = sharedPointGlassPaint({
       glassRadius: glassRadiusExpression,
       glassColor: glassColorExpression ?? strokeColorExpression,
@@ -2136,7 +2137,7 @@ export function applySharedPointLayerPaint(
 
   // Grounded selection chrome stays on the map spot (do not inherit float translate).
   const selectionRingLayerId = `${pointLayerId}-selection-ring`;
-  if (map.getLayer?.(selectionRingLayerId) && pointTranslate != null && !selectionGroundBadge) {
+  if (mapHasLayer(map, selectionRingLayerId) && pointTranslate != null && !selectionGroundBadge) {
     map.setPaintProperty?.(selectionRingLayerId, 'circle-translate', pointTranslate);
     if (pointTranslateAnchor != null) {
       map.setPaintProperty?.(selectionRingLayerId, 'circle-translate-anchor', pointTranslateAnchor);
@@ -2146,14 +2147,14 @@ export function applySharedPointLayerPaint(
   const selectionBadgeLayerId = `${pointLayerId}-selection-badge`;
   const selectionBadgeOuterLayerId = `${pointLayerId}-selection-badge-outer`;
   if (pointTranslateAnchor != null) {
-    if (map.getLayer?.(selectionBadgeLayerId)) {
+    if (mapHasLayer(map, selectionBadgeLayerId)) {
       map.setPaintProperty?.(
         selectionBadgeLayerId,
         'circle-translate-anchor',
         pointTranslateAnchor
       );
     }
-    if (map.getLayer?.(selectionBadgeOuterLayerId)) {
+    if (mapHasLayer(map, selectionBadgeOuterLayerId)) {
       map.setPaintProperty?.(
         selectionBadgeOuterLayerId,
         'circle-translate-anchor',
@@ -2162,7 +2163,7 @@ export function applySharedPointLayerPaint(
     }
   }
   if (
-    map.getLayer?.(selectionBadgeLayerId) &&
+    mapHasLayer(map, selectionBadgeLayerId) &&
     selectionGroundBadge &&
     !sharedPointSelectionSourceHasFeature(map, sourceId)
   ) {
@@ -2192,7 +2193,7 @@ export function applySharedPointLayerPaint(
     );
     map.setPaintProperty?.(selectionBadgeLayerId, 'circle-radius', selectedRadius);
     map.setPaintProperty?.(selectionBadgeLayerId, 'circle-stroke-width', strokeWidthExpression);
-    if (map.getLayer?.(selectionBadgeOuterLayerId) && outerStrokeWidthExpression != null) {
+    if (mapHasLayer(map, selectionBadgeOuterLayerId) && outerStrokeWidthExpression != null) {
       const coloredRingWidth = literalNumberFromPaintExpression(strokeWidthExpression);
       const ringForRadius = Array.isArray(strokeWidthExpression)
         ? strokeWidthExpression
@@ -2216,7 +2217,7 @@ export function applySharedPointLayerPaint(
   // Selection chrome opacity is owned by syncBadgeChrome / clear — do not force-hide here.
 
   const hoverGlowLayerId = `${glowLayerId}-hover`;
-  if (map.getLayer?.(hoverGlowLayerId)) {
+  if (mapHasLayer(map, hoverGlowLayerId)) {
     map.setPaintProperty?.(
       hoverGlowLayerId,
       'circle-radius',
@@ -2242,7 +2243,7 @@ export function attachSharedPointHoverGlowRadiusSync(
 
   const onStyleData = () => {
     if (applied) return;
-    if (!map.getLayer?.(hoverGlowLayerId)) return;
+    if (!mapHasLayer(map, hoverGlowLayerId)) return;
     try {
       map.setPaintProperty?.(
         hoverGlowLayerId,

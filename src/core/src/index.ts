@@ -434,4 +434,12 @@ export { withRetry, delay } from './utils/retry';
 
 // Logger utilities
 export type { LoggerOptions, DebugLogger, Logger } from './utils/logger';
-export { createLogger, createGeokitLogger, geokitTag, formatGeokitMessage } from './utils/logger';
+export {
+  createLogger,
+  createGeokitLogger,
+  geokitNotify,
+  geokitTag,
+  formatGeokitMessage,
+} from './utils/logger';
+export { GEOKIT_LOG_THEME } from './utils/geokit-log-theme';
+export { geokitDebug } from './utils/geokit-debug';

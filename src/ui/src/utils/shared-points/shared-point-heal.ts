@@ -3,6 +3,7 @@
  */
 
 import type { MapInstance } from '../../providers/types';
+import { mapHasLayer } from '../map-surface/map-utils';
 import type { ApplySharedPointPaintOptions, SharedPointLayerIds } from '../paint/shared-point-paint';
 import {
   applySharedPointLayerPaint,
@@ -49,10 +50,10 @@ export function isSharedPointLayerSetFullyComplete(
 ): boolean {
   return (
     !!map.getSource?.(ids.sourceId) &&
-    !!map.getLayer?.(ids.glowLayerId) &&
-    !!map.getLayer?.(ids.pointLayerId) &&
+    mapHasLayer(map, ids.glowLayerId) &&
+    mapHasLayer(map, ids.pointLayerId) &&
     !!map.getSource?.(selectionSourceId(ids.sourceId)) &&
-    !!map.getLayer?.(selectionRingLayerId(ids.pointLayerId))
+    mapHasLayer(map, selectionRingLayerId(ids.pointLayerId))
   );
 }
 
@@ -81,7 +82,7 @@ async function importLayerStyles() {
 }
 
 function readPointRadiusFromMap(map: MapInstance, pointLayerId: string): unknown[] {
-  if (!map.getLayer?.(pointLayerId)) {
+  if (!mapHasLayer(map, pointLayerId)) {
     return SHARED_POINT_RADIUS_EXPRESSION;
   }
   try {
@@ -111,7 +112,7 @@ export async function syncSharedPointGlowPaint(
   ids: SharedPointLayerIds,
   options: EnsureSharedPointLayerSetHealedOptions = {}
 ): Promise<boolean> {
-  if (!map.getLayer?.(ids.glowLayerId) || !map.setPaintProperty) return false;
+  if (!mapHasLayer(map, ids.glowLayerId) || !map.setPaintProperty) return false;
 
   const styles = await importLayerStyles();
   const glowHitAreaScale = options.glowHitAreaScale ?? SHARED_POINT_GLOW_HIT_AREA_SCALE;
@@ -144,7 +145,7 @@ export async function syncSharedPointGlowPaint(
   map.setPaintProperty(ids.glowLayerId, 'circle-opacity', glowOpacity);
   map.setPaintProperty(ids.glowLayerId, 'circle-blur', glowBlur);
 
-  if (map.getLayer?.(ids.pointLayerId)) {
+  if (mapHasLayer(map, ids.pointLayerId)) {
     const pointRadius = readPointRadiusFromMap(map, ids.pointLayerId);
     map.setPaintProperty(ids.pointLayerId, 'circle-radius', pointRadius);
   }
@@ -157,8 +158,8 @@ function tryMountGlowLayer(
   ids: SharedPointLayerIds,
   options: EnsureSharedPointLayerSetHealedOptions
 ): boolean {
-  if (map.getLayer?.(ids.glowLayerId)) return true;
-  if (!map.getLayer?.(ids.pointLayerId) || !map.getSource?.(ids.sourceId) || !map.addLayer) {
+  if (mapHasLayer(map, ids.glowLayerId)) return true;
+  if (!mapHasLayer(map, ids.pointLayerId) || !map.getSource?.(ids.sourceId) || !map.addLayer) {
     return false;
   }
 
@@ -183,7 +184,7 @@ function tryMountGlowLayer(
       } as never,
       ids.pointLayerId
     );
-    return !!map.getLayer?.(ids.glowLayerId);
+    return mapHasLayer(map, ids.glowLayerId);
   } catch {
     return false;
   }
@@ -194,7 +195,7 @@ async function tryMountSelectionRing(
   ids: SharedPointLayerIds,
   options: EnsureSharedPointLayerSetHealedOptions
 ): Promise<boolean> {
-  if (!map.getLayer?.(ids.pointLayerId)) return false;
+  if (!mapHasLayer(map, ids.pointLayerId)) return false;
 
   const styles = await importLayerStyles();
   const pointRadius =
@@ -212,7 +213,7 @@ async function tryMountSelectionRing(
 
   return (
     !!map.getSource?.(selectionSourceId(ids.sourceId)) &&
-    !!map.getLayer?.(selectionRingLayerId(ids.pointLayerId))
+    mapHasLayer(map, selectionRingLayerId(ids.pointLayerId))
   );
 }
 
@@ -229,13 +230,19 @@ function attachGlowStyleDataResync(
       map.off?.('styledata', onStyleData);
       return;
     }
-    void syncSharedPointGlowPaint(map, ids, options).then(ok => {
-      if (ok) resyncs += 1;
-    });
+    void syncSharedPointGlowPaint(map, ids, options)
+      .then(ok => {
+        if (ok) resyncs += 1;
+      })
+      .catch(() => {
+        /* style swap / dev HMR */
+      });
   };
 
   map.on('styledata', onStyleData);
-  void syncSharedPointGlowPaint(map, ids, options);
+  void syncSharedPointGlowPaint(map, ids, options).catch(() => {
+    /* style swap / dev HMR */
+  });
 }
 
 
@@ -244,7 +251,7 @@ export async function syncSharedPointSelectionRingPaint(
   ids: SharedPointLayerIds,
   options: EnsureSharedPointLayerSetHealedOptions = {}
 ): Promise<boolean> {
-  if (!map.getLayer?.(ids.pointLayerId)) return false;
+  if (!mapHasLayer(map, ids.pointLayerId)) return false;
   const styles = await importLayerStyles();
   const pointRadius =
     options.paint?.pointRadiusExpression ?? readPointRadiusFromMap(map, ids.pointLayerId);
@@ -256,7 +263,7 @@ export async function syncSharedPointSelectionRingPaint(
     pointRadius,
     options.selectionPointStrokeWidth ?? 0
   );
-  return !!map.getLayer?.(selectionRingLayerId(ids.pointLayerId));
+  return mapHasLayer(map, selectionRingLayerId(ids.pointLayerId));
 }
 
 async function healOnce(

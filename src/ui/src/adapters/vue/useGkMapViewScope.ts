@@ -6,8 +6,7 @@ import {
   bindMapViewScopeSaveHover,
   mapViewScopeControlActionsJson,
   resolveCommittedMapViewScopeViewport,
-  resolveMapViewScopeInnerCell,
-  resolveMapViewScopeOuterCell,
+  viewScopeCells,
   hasMeasuredMapViewport,
   resolveShowCommittedMapViewScopeOverlays,
   resolveTentativeMapViewScopeViewport,
@@ -67,7 +66,6 @@ export function useGkMapViewScope(options: UseGkMapViewScopeOptions): UseGkMapVi
 
   const tentativeScopeViewport = computed(() =>
     resolveTentativeMapViewScopeViewport({
-      viewDirty: options.viewDirty.value,
       savePreviewHover: savePreviewHover.value,
       liveCamera: options.liveCamera.value,
     }),
@@ -78,48 +76,37 @@ export function useGkMapViewScope(options: UseGkMapViewScopeOptions): UseGkMapVi
   const showCommittedScopeOverlays = computed(() =>
     resolveShowCommittedMapViewScopeOverlays({
       savedCamera: options.savedCamera.value,
-      viewDirty: options.viewDirty.value,
       viewportSizePx: viewportSizePx.value,
     }),
   );
 
-  const innerH3Cell = computed(() => {
-    if (!showCommittedScopeOverlays.value) return null;
-    return resolveMapViewScopeInnerCell(
+  const committedScopeCells = computed(() => {
+    if (!showCommittedScopeOverlays.value) {
+      return { inner: null, outer: null, source: 'none' as const };
+    }
+    return viewScopeCells(
       options.geoScopeCell.value,
       committedScopeViewport.value,
       viewportSizePx.value,
     );
   });
 
-  const outerH3Cell = computed(() => {
-    if (!showCommittedScopeOverlays.value) return null;
-    return resolveMapViewScopeOuterCell(
+  const innerH3Cell = computed(() => committedScopeCells.value.inner);
+  const outerH3Cell = computed(() => committedScopeCells.value.outer);
+
+  const tentativeScopeCells = computed(() => {
+    if (!tentativeScopeViewport.value) {
+      return { inner: null, outer: null, source: 'none' as const };
+    }
+    return viewScopeCells(
       options.geoScopeCell.value,
-      committedScopeViewport.value,
+      tentativeScopeViewport.value,
       viewportSizePx.value,
     );
   });
 
-  const tentativeInnerH3Cell = computed(() =>
-    tentativeScopeViewport.value
-      ? resolveMapViewScopeInnerCell(
-          options.geoScopeCell.value,
-          tentativeScopeViewport.value,
-          viewportSizePx.value,
-        )
-      : null,
-  );
-
-  const tentativeOuterH3Cell = computed(() =>
-    tentativeScopeViewport.value
-      ? resolveMapViewScopeOuterCell(
-          options.geoScopeCell.value,
-          tentativeScopeViewport.value,
-          viewportSizePx.value,
-        )
-      : null,
-  );
+  const tentativeInnerH3Cell = computed(() => tentativeScopeCells.value.inner);
+  const tentativeOuterH3Cell = computed(() => tentativeScopeCells.value.outer);
 
   const showTentativeScopePreview = computed(
     () => Boolean(tentativeScopeViewport.value) && hasMeasuredMapViewport(viewportSizePx.value),
@@ -200,9 +187,14 @@ export function useGkMapViewScope(options: UseGkMapViewScopeOptions): UseGkMapVi
     savePreviewHover.value = false;
   }
 
+  const scopeSource = computed(() => committedScopeCells.value.source);
+  const previewScopeSource = computed(() => tentativeScopeCells.value.source);
+
   return {
     savePreviewHover,
     committedScopeViewport,
+    scopeSource,
+    previewScopeSource,
     innerH3Cell,
     outerH3Cell,
     tentativeInnerH3Cell,

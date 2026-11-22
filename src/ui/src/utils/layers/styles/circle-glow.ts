@@ -9,7 +9,6 @@ import type { MapInstance } from '../../../providers/types';
 import type { Feature } from '@local-hosting/geokit/core/types';
 import { getFeatureId } from '@local-hosting/geokit/core/geojson';
 import { getCSSVariable, getCSSVariableNumber } from '../../map-surface/theme';
-import { debug } from '../../map-surface/logger';
 import { HOVER_CONFIG, type HoverStateHandlers } from '../../map-surface/feature-state-hover';
 import {
   buildSharedPointFeatureStateHoverPaint,
@@ -268,13 +267,6 @@ export function createGlowPointLayers(config: GlowPointLayerConfig): {
 
   // Create glow layer (bottom)
   if (!map.getLayer?.(glowLayerId)) {
-    debug.log('[layer-styles] glow layer ADD (createGlowPointLayers)', {
-      where: 'layer-styles.ts createGlowPointLayers',
-      when: 'before addLayer',
-      glowLayerId,
-      sourceId,
-      beforeLayerId: beforeLayerId ?? undefined,
-    });
     const glowSpec = createCircleLayerSpec({
       id: glowLayerId,
       source: sourceId,
@@ -291,7 +283,6 @@ export function createGlowPointLayers(config: GlowPointLayerConfig): {
       } else {
         map.addLayer(glowSpec as any);
       }
-      debug.log('[layer-styles] glow layer ADD done', { glowLayerId });
     } catch (error) {
       console.error(`[gk-layer-styles] Failed to add glow layer ${glowLayerId}:`, error);
     }

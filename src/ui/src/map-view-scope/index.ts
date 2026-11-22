@@ -10,6 +10,7 @@ export {
 } from './resolve-map-view-scope-viewport';
 export { resolveMapViewScopeInnerCell } from './resolve-map-view-scope-inner-cell';
 export { resolveMapViewScopeOuterCell } from './resolve-map-view-scope-outer-cell';
+export { viewScopeCells, type ViewScopeCells } from './resolve-map-view-scope-cells';
 export {
   MAP_VIEW_SCOPE_CONTROL_ACTIONS,
   mapViewScopeControlActionsJson,

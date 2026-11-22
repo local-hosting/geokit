@@ -2,7 +2,7 @@ import type { LngLatBounds as MapMaxBounds } from './map-max-bounds-core';
 
 export type { LngLatBounds as MapMaxBounds } from './map-max-bounds-core';
 
-/** Matches default `<gk-map min-zoom>` when geo-scope lock is cleared. */
+/** Default `<gk-map min-zoom>` — wide region, not full-globe “outer space”. */
 export const GK_MAP_DEFAULT_MIN_ZOOM = 2;
 
 export type MapMaxBoundsZoomCapable = {

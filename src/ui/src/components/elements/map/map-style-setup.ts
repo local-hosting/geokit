@@ -137,7 +137,7 @@ export class MapStyleSetup extends MapConnectedInit {
       const zoom = parseFloat(this.getAttribute('zoom') || '12');
       await MapOfflineContextLoader.onMapContextLoad(mapId, { zoom });
     } catch (error) {
-      debug.warn('[gk-map] offline prefetch on context load failed', error);
+      debug.warn('offline prefetch on context load failed', error);
     }
   }
 
@@ -159,11 +159,6 @@ export class MapStyleSetup extends MapConnectedInit {
    */
   public showPlaceholder(message?: string): void {
     const text = message ?? this.getAttribute('placeholder-message') ?? 'Loading map...';
-    debug.log('[gk-map] showPlaceholder', {
-      message: text,
-      _isFrozen: this._isFrozen,
-      isInitialized: this.isInitialized,
-    });
 
     // Show spinner for loading/restoring states
     const showSpinner = text === 'Loading map...' || text === 'Restoring...';
@@ -176,8 +171,8 @@ export class MapStyleSetup extends MapConnectedInit {
       if (existingText !== text) {
         existingPlaceholder.setAttribute('data-message', text);
         existingPlaceholder.innerHTML = createPlaceholderContentFn(text, showSpinner);
-        this._startStuckCheckIfLoading(text);
       }
+      this._startStuckCheckIfLoading(text);
       return;
     }
 
@@ -198,7 +193,7 @@ export class MapStyleSetup extends MapConnectedInit {
     this._stuckCheckTimer = setTimeout(() => {
       this._stuckCheckTimer = null;
       if (this.isInitialized || !this.hasPlaceholder()) return;
-      debug.log('[gk-map] stuck: placeholder still visible after timeout', { message });
+      debug.log('stuck: placeholder still visible after timeout', { message });
       this.isInitialized = false;
       this.showPlaceholder('Loading map...');
       this.dispatchEvent(
@@ -218,10 +213,6 @@ export class MapStyleSetup extends MapConnectedInit {
    * Hide placeholder when map is ready (public method for map collection)
    */
   public hidePlaceholder(): void {
-    const hadPlaceholder = this.hasPlaceholder();
-    if (hadPlaceholder) {
-      debug.log('[gk-map] hidePlaceholder', { isInitialized: this.isInitialized });
-    }
     this._clearStuckCheck();
     const selector = getPlaceholderSelector();
     this.querySelectorAll(selector).forEach((placeholder) => placeholder.remove());
@@ -301,7 +292,7 @@ export class MapStyleSetup extends MapConnectedInit {
       if (!this._usingSystemTheme) return;
 
       const newThemeName: ThemeName = e.matches ? 'dark' : 'light';
-      debug.log('[gk-map] System theme changed to', newThemeName);
+      debug.log('System theme changed to', newThemeName);
 
       this._currentTheme = getTheme(newThemeName);
       this.syncThemeClass();

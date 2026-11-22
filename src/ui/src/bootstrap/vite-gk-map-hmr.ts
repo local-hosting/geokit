@@ -24,21 +24,35 @@ function isPoolManagedMap(el: Element): boolean {
   return Boolean(el.closest('gk-map-collection'));
 }
 
+let viteHmrFreezeInFlight: Promise<void> | null = null;
+
 /** Tear down live maps before a gk-map module HMR swap (releases WebGL). */
 export function freezeGkMapsForViteHmr(root: ParentNode = document): void {
+  const tasks: Promise<void>[] = [];
   for (const el of root.querySelectorAll('gk-map-collection')) {
     const collection = el as MapCollectionElement;
-    void collection.freezeAll?.();
+    const frozen = collection.freezeAll?.();
+    if (frozen) tasks.push(Promise.resolve(frozen));
   }
   for (const el of root.querySelectorAll('gk-map')) {
     const map = el as MapElement;
-    void map.freeze?.();
+    const frozen = map.freeze?.();
+    if (frozen) tasks.push(Promise.resolve(frozen));
   }
-  reconcileLiveMapCountFromDom(root);
+  viteHmrFreezeInFlight = Promise.all(tasks).then(() => {
+    reconcileLiveMapCountFromDom(root);
+  });
 }
 
 /** Re-init maps that stayed in the document after module HMR (dispose freezes without reconnect). */
-export function restoreConnectedGkMapsAfterViteHmr(root: ParentNode = document): void {
+export async function restoreConnectedGkMapsAfterViteHmr(
+  root: ParentNode = document,
+): Promise<void> {
+  if (viteHmrFreezeInFlight) {
+    await viteHmrFreezeInFlight;
+    viteHmrFreezeInFlight = null;
+  }
+
   // Drop leaked budget counts before unfreeze so createMap is not blocked forever.
   reconcileLiveMapCountFromDom(root);
 
@@ -72,8 +86,10 @@ function scheduleDebouncedRestore(): void {
   }
   debounceTimer = setTimeout(() => {
     debounceTimer = null;
-    restoreConnectedGkMapsAfterViteHmr();
-    notifyGkMapsRestoredAfterViteHmr();
+    void (async () => {
+      await restoreConnectedGkMapsAfterViteHmr();
+      notifyGkMapsRestoredAfterViteHmr();
+    })();
   }, GK_MAP_VITE_RESTORE_DEBOUNCE_MS);
 }
 
@@ -102,7 +118,7 @@ export function registerGkMapViteHmrHandlers(): void {
     freezeGkMapsForViteHmr();
   });
   hot.accept(() => {
-    restoreConnectedGkMapsAfterViteHmr();
+    void restoreConnectedGkMapsAfterViteHmr();
   });
   scheduleGkMapRestoreOnViteAfterUpdate(hot);
 }

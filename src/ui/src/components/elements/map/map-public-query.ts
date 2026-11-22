@@ -92,7 +92,7 @@ import { MapPublicNav } from './map-public-nav';
 export class MapPublicQuery extends MapPublicNav {
   protected _onStyleLoadReaddLayers(): void {
     if (!this.map) return;
-    debug.log('[gk-map] _onStyleLoadReaddLayers: registering style.load + 500ms fallback');
+    debug.log('_onStyleLoadReaddLayers: registering style.load + 500ms fallback');
 
     const map = this.map as {
       once?: (event: string, handler: (e?: { error?: { message?: string } }) => void) => void;
@@ -109,7 +109,7 @@ export class MapPublicQuery extends MapPublicNav {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const styleLoadHandler = () => {
-      debug.log('[gk-map] style.load fired');
+      debug.log('style.load fired');
       dispatchReadd(false);
     };
 
@@ -128,7 +128,7 @@ export class MapPublicQuery extends MapPublicNav {
               : '') || String(e ?? '');
       if (/style|could not be loaded|distant/i.test(msg)) {
         styleLoadFailed = true;
-        debug.log('[gk-map] style load failed, will not dispatch gk-map-style-load', {
+        debug.log('style load failed, will not dispatch gk-map-style-load', {
           message: msg,
         });
         cleanup();
@@ -156,7 +156,7 @@ export class MapPublicQuery extends MapPublicNav {
 
     const dispatchReadd = (fromTimeout: boolean = false) => {
       if (dispatched || scheduled || styleLoadFailed) {
-        debug.log('[gk-map] dispatchReadd skipped', {
+        debug.log('dispatchReadd skipped', {
           fromTimeout,
           dispatched,
           scheduled,
@@ -165,7 +165,7 @@ export class MapPublicQuery extends MapPublicNav {
         return;
       }
       scheduled = true;
-      debug.log('[gk-map] dispatchReadd scheduled', { fromTimeout });
+      debug.log('dispatchReadd scheduled', { fromTimeout });
       // Double rAF so MapTiler's internal state is settled.
       // When fromTimeout: always dispatch so layers re-add even if style.load never fired (e.g. dark→light).
       requestAnimationFrame(() => {
@@ -174,14 +174,14 @@ export class MapPublicQuery extends MapPublicNav {
           if (dispatched || !this.map) return;
           const ready = isStyleReady();
           if (!fromTimeout && !ready) {
-            debug.log('[gk-map] dispatchReadd: style not ready, skipping dispatch', {
+            debug.log('dispatchReadd: style not ready, skipping dispatch', {
               isStyleLoaded: (this.map as any)?.isStyleLoaded?.(),
             });
             return;
           }
           dispatched = true;
           cleanup();
-          debug.log('[gk-map] dispatching gk-map-style-load', { fromTimeout, styleReady: ready });
+          debug.log('dispatching gk-map-style-load', { fromTimeout, styleReady: ready });
           this.dispatchEvent(
             new CustomEvent('gk-map-style-load', {
               detail: { map: this.map, element: this },

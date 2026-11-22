@@ -225,7 +225,7 @@ export class MapPublicNav extends MapControlsState {
     this._currentTheme = theme;
     this.setAttribute('theme', themeName);
     this.syncThemeClass();
-    debug.log('[gk-map] applyTheme', {
+    debug.log('applyTheme', {
       themeName,
       mapStyle: theme.mapStyle,
       hasMap: !!this.map,
@@ -324,7 +324,7 @@ export class MapPublicNav extends MapControlsState {
 
     const map = this.map as any;
     if (typeof map.setStyle !== 'function') return;
-    debug.log('[gk-map] updateMapStyle', { styleName });
+    debug.log('updateMapStyle', { styleName });
 
     // MapTiler SDK logs "The distant style could not be loaded" in its own error handler; we cannot prevent it.
     // Temporarily filter that single message so the console stays clean when theme/style load fails.
@@ -358,15 +358,14 @@ export class MapPublicNav extends MapControlsState {
       const styleForTheme = await resolveStyle();
       if (styleForTheme == null) {
         if (providerName === 'maptiler' || providerName === 'protomaps') {
-          debug.log(
-            '[gk-map] updateMapStyle skipped: no style for provider (set an API key, style URL, or PMTiles archive)'
+          debug.log('updateMapStyle skipped: no style for provider (set an API key, style URL, or PMTiles archive)'
           );
           return;
         }
         // Other providers: no style for this theme name, fall through to fallbacks
       } else {
         try {
-          debug.log('[gk-map] setStyle via provider resolveStyleForTheme/getStyleForTheme', {
+          debug.log('setStyle via provider resolveStyleForTheme/getStyleForTheme', {
             provider: providerName,
             style: typeof styleForTheme === 'string' ? styleForTheme : '(object)',
           });

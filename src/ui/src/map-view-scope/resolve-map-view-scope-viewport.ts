@@ -15,7 +15,6 @@ export function resolveCommittedMapViewScopeViewport(
 
 export type ResolveShowCommittedMapViewScopeOverlaysOptions = {
   savedCamera: MapCameraScopeViewport | null | undefined;
-  viewDirty: boolean;
   viewportSizePx?: MapViewportSizePx | null;
 };
 
@@ -32,25 +31,24 @@ export function hasMeasuredMapViewport(size: MapViewportSizePx | null | undefine
   );
 }
 
-/** Blue `gk-h3` overlays: saved baseline and the map view matches it (not while panning/zooming). */
+/** Blue `gk-h3` overlays: locker-saved scope (always visible when a baseline exists). */
 export function resolveShowCommittedMapViewScopeOverlays(
   options: ResolveShowCommittedMapViewScopeOverlaysOptions,
 ): boolean {
-  if (!options.savedCamera || options.viewDirty) return false;
+  if (!options.savedCamera) return false;
   return hasMeasuredMapViewport(options.viewportSizePx);
 }
 
 export type ResolveTentativeMapViewScopeViewportOptions = {
-  viewDirty: boolean;
   savePreviewHover: boolean;
   liveCamera: MapCameraScopeViewport | null | undefined;
 };
 
-/** Live viewport preview while hovering Save map position (dirty view only). */
+/** Gray live-scope preview while hovering Save map position. */
 export function resolveTentativeMapViewScopeViewport(
   options: ResolveTentativeMapViewScopeViewportOptions,
 ): MapCameraScopeViewport | null {
-  const { viewDirty, savePreviewHover, liveCamera } = options;
-  if (!viewDirty || !savePreviewHover || !liveCamera) return null;
+  const { savePreviewHover, liveCamera } = options;
+  if (!savePreviewHover || !liveCamera) return null;
   return liveCamera;
 }

@@ -359,6 +359,7 @@
     ]
   },
   "dependencies": {
+    "@westlane/pino-blanc": "portal:../../../westlane/pino-blanc",
     "@turf/along": "^7.3.0",
     "@turf/area": "^7.3.0",
     "@turf/bbox": "^7.3.0",

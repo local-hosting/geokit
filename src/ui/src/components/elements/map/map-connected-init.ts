@@ -52,7 +52,7 @@ import {
 
 
 import { MapBase } from './map-base';
-import { applyMapHostLayoutFromAncestors } from './map-host-layout';
+import { applyMapHostLayoutFromAncestors, measureMapHostLayout } from './map-host-layout';
 import { mapEl } from './map-el';
 
 /** How long a detached gk-map keeps its map before releasing WebGL. */
@@ -228,6 +228,17 @@ export class MapConnectedInit extends MapBase {
     }, delayMs);
   }
 
+  protected noteMapInitSkip(reason: string, extra?: Record<string, unknown>): void {
+    this._lastInitSkipReason = reason;
+    debug.warn('init skipped', {
+      reason,
+      id: (this as HTMLElement).id || undefined,
+      poolManaged: this.hasAttribute('data-pool-managed'),
+      layout: measureMapHostLayout(this as HTMLElement),
+      ...extra,
+    });
+  }
+
   private async runInitializeMap(): Promise<void> {
     this._lastInitSkipReason = null;
     // Tear down any stale/partial map before acquiring the init lock
@@ -236,11 +247,6 @@ export class MapConnectedInit extends MapBase {
     }
 
     this._isInitializing = true;
-    debug.log('[gk-map] initializeMap start', {
-      _isFrozen: this._isFrozen,
-      hasMap: !!this.map,
-      isInitialized: this.isInitialized,
-    });
 
     try {
       // Get provider name from attribute or try auto-detection
@@ -333,7 +339,7 @@ export class MapConnectedInit extends MapBase {
         } catch {
           // No provider set, auto-initialize MapTiler if we have an API key
           if (apiKey) {
-            debug.warn('[gk-map] Auto-initializing MapTiler provider from api-key attribute');
+            debug.warn('Auto-initializing MapTiler provider from api-key attribute');
             await ensureMaptilerUIProviderRegistered();
             provider = await getProviderByName('maptiler', { apiKey });
             if (!this.getAttribute('provider')) {
@@ -412,18 +418,18 @@ export class MapConnectedInit extends MapBase {
       // Create map; if browser is at WebGL context limit, wait for pool eviction first
       let canCreate = await waitUntilCanCreateMap();
       if (!canCreate) {
-        debug.warn('[gk-map] WebGL budget full, waiting for pool eviction');
+        debug.warn('WebGL budget full, waiting for pool eviction');
         mapEl(this).showPlaceholder('Loading map...');
         this.isInitialized = false;
         await delayForWebGLRelease(500);
         if (!this.isConnected) {
-          this._lastInitSkipReason = 'disconnected-during-webgl-wait';
+          this.noteMapInitSkip('disconnected-during-webgl-wait');
           return;
         }
         canCreate = await waitUntilCanCreateMap();
         if (!canCreate) {
-          this._lastInitSkipReason = 'webgl-budget-full';
-          debug.warn('[gk-map] WebGL budget still full after retry');
+          this.noteMapInitSkip('webgl-budget-full');
+          debug.warn('WebGL budget still full after retry');
           this.scheduleStandaloneInitRetry(1000);
           return;
         }
@@ -436,7 +442,7 @@ export class MapConnectedInit extends MapBase {
           this._registeredForWebGLBudget = true;
         }
       } catch (err) {
-        debug.warn('[gk-map] Map creation failed (e.g. too many WebGL contexts):', err);
+        debug.warn('Map creation failed (e.g. too many WebGL contexts):', err);
         mapEl(this).showPlaceholder('Loading map...');
         this.isInitialized = false;
         await delayForWebGLRelease(500);
@@ -450,15 +456,19 @@ export class MapConnectedInit extends MapBase {
                 this._registeredForWebGLBudget = true;
               }
             } catch (retryErr) {
-              this._lastInitSkipReason = 'create-map-retry-failed';
-              debug.warn('[gk-map] Map creation retry failed:', retryErr);
+              this.noteMapInitSkip('create-map-retry-failed', {
+                error: retryErr instanceof Error ? retryErr.message : String(retryErr),
+              });
+              debug.warn('Map creation retry failed:', retryErr);
               this.scheduleStandaloneInitRetry();
               return;
             }
           }
         }
         if (!this.map) {
-          this._lastInitSkipReason = 'create-map-failed';
+          this.noteMapInitSkip('create-map-failed', {
+            error: err instanceof Error ? err.message : String(err),
+          });
           this.scheduleStandaloneInitRetry();
           return;
         }
@@ -466,7 +476,7 @@ export class MapConnectedInit extends MapBase {
 
       const mapInstance = this.map;
       if (!mapInstance) {
-        this._lastInitSkipReason = 'create-map-null-instance';
+        this.noteMapInitSkip('create-map-null-instance');
         this.isInitialized = false;
         this.scheduleStandaloneInitRetry();
         return;
@@ -600,10 +610,6 @@ export class MapConnectedInit extends MapBase {
       // Non-critical setup (controls, URL sync) is deferred to avoid blocking
       const dispatchMapReady = () => {
         if (this.isInitialized) return;
-        debug.log('[gk-map] dispatchMapReady (hiding placeholder)', {
-          _isFrozen: this._isFrozen,
-          source: styleAlreadyLoaded ? 'styleAlreadyLoaded' : 'load-or-fallback',
-        });
         this.isInitialized = true;
         mapEl(this).hidePlaceholder();
 
@@ -616,6 +622,8 @@ export class MapConnectedInit extends MapBase {
         } else {
           this.hasPainted = true;
         }
+
+        debug.log('ready', { label: this.getMapLabel() });
 
         // Dispatch map-ready immediately so layers can be added
         this.dispatchEvent(
@@ -656,11 +664,9 @@ export class MapConnectedInit extends MapBase {
 
       // MapTiler SDK (MapLibre) events: 'load' = style loaded; 'idle' = no pending renders (tiles painted)
       if (styleAlreadyLoaded) {
-        debug.log('[gk-map] style already loaded, dispatching map-ready immediately');
         dispatchMapReady();
       } else {
         if (this.map) {
-          debug.log('[gk-map] waiting for map load event (and 5s fallback)');
           this.map.once('load', () => {
             this.clearStyleLoadPoll();
             dispatchMapReady();
@@ -679,9 +685,6 @@ export class MapConnectedInit extends MapBase {
             const map = this.map as { isStyleLoaded?: () => boolean } | undefined;
             if (typeof map?.isStyleLoaded === 'function' && map.isStyleLoaded()) {
               this.clearStyleLoadPoll();
-              debug.log('[gk-map] fallback: style loaded, dispatching map-ready', {
-                check: fallbackCount,
-              });
               dispatchMapReady();
               return;
             }
@@ -710,7 +713,7 @@ export class MapConnectedInit extends MapBase {
       const message = error instanceof Error ? error.message : String(error);
       const kind = classifyMapInitFailure(message);
       if (kind === 'webgl') {
-        debug.warn('[gk-map]', mapUnavailableLogDetail(kind, message));
+        debug.warn(mapUnavailableLogDetail(kind, message));
       } else {
         console.error('[gk-map]', mapUnavailableLogDetail(kind, message), error);
       }
