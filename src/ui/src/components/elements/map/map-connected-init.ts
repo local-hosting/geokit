@@ -32,7 +32,7 @@ import {
 import {
   isMaplibreLayoutCssLoaded,
 } from './style/map-controls-styles';
-import { ensureMapboxGlCss } from '../../../utils/map-provider-css';
+import { ensureMapboxGlCss, ensureMaplibreGlCss } from '../../../utils/map-provider-css';
 
 
 
@@ -42,6 +42,7 @@ import { ensureMapboxGlCss } from '../../../utils/map-provider-css';
 
 
 import {
+  delayForWebGLRelease,
   registerLiveMap,
   waitUntilCanCreateMap,
 } from './lifecycle/map-freeze';
@@ -51,6 +52,7 @@ import {
 
 
 import { MapBase } from './map-base';
+import { applyMapHostLayoutFromAncestors } from './map-host-layout';
 import { mapEl } from './map-el';
 
 /** How long a detached gk-map keeps its map before releasing WebGL. */
@@ -199,17 +201,35 @@ export class MapConnectedInit extends MapBase {
   }
 
   async initializeMap(): Promise<void> {
-    // Prevent concurrent initialization
-    if (this._isInitializing) {
-      debug.warn('[gk-map] Already initializing, skipping duplicate call');
-      return;
-    }
-
     // Reuse a live map — creating another instance leaks WebGL contexts
     if (this.map && this.isInitialized && !this._isFrozen) {
       return;
     }
 
+    if (this._initializeInFlight) {
+      return this._initializeInFlight;
+    }
+
+    const inFlight = this.runInitializeMap().finally(() => {
+      this._initializeInFlight = null;
+    });
+    this._initializeInFlight = inFlight;
+    return inFlight;
+  }
+
+  /** Retry init when WebGL budget or transient createMap failure left the placeholder visible. */
+  protected scheduleStandaloneInitRetry(delayMs: number = 750): void {
+    if (!this.isConnected || this.hasAttribute('data-pool-managed')) return;
+    if (isUpgradedMapCollectionAncestor(this)) return;
+    if (this.map) return;
+    window.setTimeout(() => {
+      if (!this.isConnected || this.map || this._isInitializing) return;
+      void this.initializeMap();
+    }, delayMs);
+  }
+
+  private async runInitializeMap(): Promise<void> {
+    this._lastInitSkipReason = null;
     // Tear down any stale/partial map before acquiring the init lock
     if (this.map) {
       await mapEl(this).teardownMapInstance({ markFrozen: false });
@@ -243,7 +263,7 @@ export class MapConnectedInit extends MapBase {
           await ensureMapboxGlCss();
         } else if (providerName === 'protomaps') {
           if (!isMaplibreLayoutCssLoaded()) {
-            await import('maplibre-gl/dist/maplibre-gl.css');
+            await ensureMaplibreGlCss();
           }
         }
 
@@ -334,6 +354,8 @@ export class MapConnectedInit extends MapBase {
         throw new Error('Map container not found');
       }
 
+      applyMapHostLayoutFromAncestors(this);
+
       // First-paint style: host style-url (Corio) > map-style > theme stock name.
       // DO NOT use 'style' attribute - that's for CSS, not map tiles!
       const themeAttr = this.getAttribute('theme');
@@ -388,16 +410,23 @@ export class MapConnectedInit extends MapBase {
       };
 
       // Create map; if browser is at WebGL context limit, wait for pool eviction first
-      const canCreate = await waitUntilCanCreateMap();
+      let canCreate = await waitUntilCanCreateMap();
       if (!canCreate) {
-        debug.warn('[gk-map] WebGL budget full, deferring map creation');
+        debug.warn('[gk-map] WebGL budget full, waiting for pool eviction');
         mapEl(this).showPlaceholder('Loading map...');
         this.isInitialized = false;
-        this._isInitializing = false;
-        window.setTimeout(() => {
-          if (!this.isInitialized && this.isConnected) void this.initializeMap();
-        }, 500);
-        return;
+        await delayForWebGLRelease(500);
+        if (!this.isConnected) {
+          this._lastInitSkipReason = 'disconnected-during-webgl-wait';
+          return;
+        }
+        canCreate = await waitUntilCanCreateMap();
+        if (!canCreate) {
+          this._lastInitSkipReason = 'webgl-budget-full';
+          debug.warn('[gk-map] WebGL budget still full after retry');
+          this.scheduleStandaloneInitRetry(1000);
+          return;
+        }
       }
 
       try {
@@ -410,14 +439,36 @@ export class MapConnectedInit extends MapBase {
         debug.warn('[gk-map] Map creation failed (e.g. too many WebGL contexts):', err);
         mapEl(this).showPlaceholder('Loading map...');
         this.isInitialized = false;
-        this._isInitializing = false;
-        return;
+        await delayForWebGLRelease(500);
+        if (this.isConnected && !this.map) {
+          const retryOk = await waitUntilCanCreateMap(4000);
+          if (retryOk) {
+            try {
+              this.map = await provider.createMap(container, options);
+              if (this.map && !this._registeredForWebGLBudget) {
+                registerLiveMap();
+                this._registeredForWebGLBudget = true;
+              }
+            } catch (retryErr) {
+              this._lastInitSkipReason = 'create-map-retry-failed';
+              debug.warn('[gk-map] Map creation retry failed:', retryErr);
+              this.scheduleStandaloneInitRetry();
+              return;
+            }
+          }
+        }
+        if (!this.map) {
+          this._lastInitSkipReason = 'create-map-failed';
+          this.scheduleStandaloneInitRetry();
+          return;
+        }
       }
 
       const mapInstance = this.map;
       if (!mapInstance) {
+        this._lastInitSkipReason = 'create-map-null-instance';
         this.isInitialized = false;
-        this._isInitializing = false;
+        this.scheduleStandaloneInitRetry();
         return;
       }
 

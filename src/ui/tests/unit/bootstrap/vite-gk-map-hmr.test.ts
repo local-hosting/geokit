@@ -1,7 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   freezeGkMapsForViteHmr,
+  onGkMapsRestoredAfterViteHmr,
   restoreConnectedGkMapsAfterViteHmr,
+  scheduleGkMapRestoreOnViteAfterUpdate,
 } from '../../../src/bootstrap/vite-gk-map-hmr';
 
 function makeRoot(maps: Array<{ connected: boolean; freeze?: () => Promise<void>; unfreeze?: () => Promise<boolean> }>) {
@@ -51,5 +53,87 @@ describe('vite-gk-map-hmr', () => {
 
     expect(unfreezeConnected).toHaveBeenCalledOnce();
     expect(unfreezeDetached).not.toHaveBeenCalled();
+  });
+
+  it('refreshes map collections instead of unfreezing pooled gk-map children directly', () => {
+    const refresh = vi.fn();
+    const syncActiveCount = vi.fn();
+    const collection = document.createElement('gk-map-collection') as HTMLElement & {
+      refresh?: () => void;
+      syncActiveCount?: () => void;
+    };
+    collection.refresh = refresh;
+    collection.syncActiveCount = syncActiveCount;
+
+    const poolMapUnfreeze = vi.fn().mockResolvedValue(true);
+    const poolMap = document.createElement('gk-map') as HTMLElement & {
+      unfreeze?: () => Promise<boolean>;
+    };
+    poolMap.unfreeze = poolMapUnfreeze;
+    collection.appendChild(poolMap);
+
+    const standaloneUnfreeze = vi.fn().mockResolvedValue(true);
+    const standalone = document.createElement('gk-map') as HTMLElement & {
+      unfreeze?: () => Promise<boolean>;
+    };
+    standalone.unfreeze = standaloneUnfreeze;
+    Object.defineProperty(standalone, 'isConnected', {
+      configurable: true,
+      get: () => true,
+    });
+
+    const root = document.createElement('div');
+    root.appendChild(collection);
+    root.appendChild(standalone);
+
+    restoreConnectedGkMapsAfterViteHmr(root);
+
+    expect(syncActiveCount).toHaveBeenCalledOnce();
+    expect(refresh).toHaveBeenCalledOnce();
+    expect(poolMapUnfreeze).not.toHaveBeenCalled();
+    expect(standaloneUnfreeze).toHaveBeenCalledOnce();
+  });
+});
+
+describe('scheduleGkMapRestoreOnViteAfterUpdate', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('debounces vite:afterUpdate into restore and notifies listeners', () => {
+    const listeners = new Map<string, () => void>();
+    const hot = {
+      on: (event: string, cb: () => void) => {
+        listeners.set(event, cb);
+      },
+    };
+
+    const standaloneUnfreeze = vi.fn().mockResolvedValue(true);
+    const standalone = document.createElement('gk-map') as HTMLElement & {
+      unfreeze?: () => Promise<boolean>;
+    };
+    standalone.unfreeze = standaloneUnfreeze;
+    Object.defineProperty(standalone, 'isConnected', {
+      configurable: true,
+      get: () => true,
+    });
+    document.body.appendChild(standalone);
+
+    const notified = vi.fn();
+    onGkMapsRestoredAfterViteHmr(notified);
+
+    scheduleGkMapRestoreOnViteAfterUpdate(hot);
+    listeners.get('vite:afterUpdate')?.();
+    expect(standaloneUnfreeze).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(150);
+    expect(standaloneUnfreeze).toHaveBeenCalledOnce();
+    expect(notified).toHaveBeenCalledOnce();
+
+    document.body.removeChild(standalone);
   });
 });

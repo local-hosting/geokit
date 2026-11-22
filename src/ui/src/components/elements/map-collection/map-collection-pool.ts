@@ -7,11 +7,14 @@
 
 import { type MapElement } from '../map/map';
 import { debug } from '../../../utils/logger';
+import { getProviderConfig } from '../../../providers/registry';
 import {
   delayForWebGLRelease,
   getLiveMapCount,
   getWebGLMapBudget,
+  reconcileLiveMapCountFromDom,
 } from '../map/lifecycle/map-freeze';
+import { resolveSlotEnsureOptions, slotHasBasemapCredentials } from './resolve-slot-ensure-options';
 
 interface SlotInfo {
   slotElement: HTMLElement;
@@ -76,6 +79,9 @@ export class MapCollectionPool extends MapCollectionBase {
       return;
     }
 
+    if (typeof document !== 'undefined') {
+      reconcileLiveMapCountFromDom(mapCollectionEl(this));
+    }
     mapCollectionEl(this).syncActiveCount();
     const now = Date.now();
     const { vh, margin } = mapCollectionEl(this).getViewportConstants();
@@ -122,16 +128,34 @@ export class MapCollectionPool extends MapCollectionBase {
     }
   }
 
-  /** Set api key and style on the slot's map element before unfreeze. */
+  /** Fill missing provider/credentials on pool-managed gk-map before unfreeze. */
   protected ensureSlotAttributes(slotInfo: SlotInfo): void {
     const el = slotInfo.mapElement;
     if (typeof el.ensureAttributes !== 'function') return;
-    el.ensureAttributes({
-      apiKey: mapCollectionEl(this).apiKey,
-      provider: 'maptiler',
+    const options = resolveSlotEnsureOptions({
+      existingProvider: el.getAttribute('provider'),
+      collectionProvider: mapCollectionEl(this).basemapProvider,
+      collectionApiKey: mapCollectionEl(this).apiKey,
+      collectionAccessToken: mapCollectionEl(this).accessToken,
       mapStyle: mapCollectionEl(this).mapStyle,
       minZoom: mapCollectionEl(this).minZoom,
       maxZoom: mapCollectionEl(this).maxZoom,
+      mapboxConfig: getProviderConfig('mapbox'),
+      maptilerConfig: getProviderConfig('maptiler'),
+    });
+    el.ensureAttributes(options);
+  }
+
+  protected slotReadyForActivation(slotInfo: SlotInfo): boolean {
+    return slotHasBasemapCredentials({
+      slotProvider: slotInfo.mapElement.getAttribute('provider'),
+      slotAccessToken: slotInfo.mapElement.getAttribute('access-token'),
+      slotApiKey: slotInfo.mapElement.getAttribute('api-key'),
+      collectionProvider: mapCollectionEl(this).basemapProvider,
+      collectionAccessToken: mapCollectionEl(this).accessToken,
+      collectionApiKey: mapCollectionEl(this).apiKey,
+      mapboxConfig: getProviderConfig('mapbox'),
+      maptilerConfig: getProviderConfig('maptiler'),
     });
   }
 
@@ -199,6 +223,17 @@ export class MapCollectionPool extends MapCollectionBase {
       if (!reserved) return;
 
       mapCollectionEl(this).ensureSlotAttributes(slotInfo);
+      if (!mapCollectionEl(this).slotReadyForActivation(slotInfo)) {
+        await mapCollectionEl(this).runPoolExclusive(async () => {
+          slotInfo.isActive = false;
+          mapCollectionEl(this).activeCount--;
+        });
+        mapCollectionDebug('activateSlot: defer until slot has basemap credentials', {
+          slotIndex: mapCollectionEl(this).slots.indexOf(slotInfo),
+        });
+        setTimeout(() => mapCollectionEl(this).processVisibilityChanges(), 120);
+        return;
+      }
       const success = await mapCollectionEl(this).unfreezeSlot(slotInfo);
 
       if (success) {
@@ -215,14 +250,30 @@ export class MapCollectionPool extends MapCollectionBase {
           mapCollectionEl(this).activeCount--;
         });
         await slotInfo.mapElement.freeze().catch(() => {});
-        slotInfo.failCount++;
-        slotInfo.lastFailTime = Date.now();
+        const rect = slotInfo.slotElement.getBoundingClientRect();
+        const layoutPending = rect.width === 0 || rect.height === 0;
+        if (layoutPending && slotInfo.isVisible) {
+          mapCollectionDebug('activateSlot: waiting for card layout before retry', {
+            slotIndex: mapCollectionEl(this).slots.indexOf(slotInfo),
+            width: rect.width,
+            height: rect.height,
+          });
+          setTimeout(() => mapCollectionEl(this).processVisibilityChanges(), 250);
+          return;
+        }
+        const webglSaturated = getLiveMapCount() >= getWebGLMapBudget();
+        if (!webglSaturated) {
+          slotInfo.failCount++;
+          slotInfo.lastFailTime = Date.now();
+        }
         mapCollectionDebug('activateSlot: rollback (unfreeze failed)', {
           slotIndex: mapCollectionEl(this).slots.indexOf(slotInfo),
           failCount: slotInfo.failCount,
+          webglSaturated,
         });
-        if (slotInfo.isVisible && slotInfo.failCount < MAX_FAIL_COUNT) {
-          setTimeout(() => mapCollectionEl(this).processVisibilityChanges(), RETRY_BACKOFF_MS * slotInfo.failCount);
+        if (slotInfo.isVisible && (webglSaturated || slotInfo.failCount < MAX_FAIL_COUNT)) {
+          const delay = webglSaturated ? 500 : RETRY_BACKOFF_MS * Math.max(slotInfo.failCount, 1);
+          setTimeout(() => mapCollectionEl(this).processVisibilityChanges(), delay);
         }
       }
     } finally {

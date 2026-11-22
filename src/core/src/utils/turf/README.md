@@ -4,4 +4,6 @@ Turf.js-backed geometry barrel (`@local-hosting/geokit/core/turf`): containment,
 
 Point buffers in `@local-hosting/geokit/core/buffer` stay turf-free for Vitest; Tier 1.5 parity fixtures use that implementation.
 
+**Vite / browser:** `turf/deps/` is split per package so canvas (and other ESM consumers) do not load the whole Turf graph. Do not add `@turf/buffer` or `@turf/convex` to those modules — use `buffer-point` / `buffer-turf` (Node) and `hull/convex-hull.ts` instead. See `deps/browser-forbidden.ts`.
+
 See `geokit/docs/parity.md` and `geokit-swift` Tier 1.5 modules.

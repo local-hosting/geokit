@@ -34,6 +34,8 @@ export type EnsureMapReadyOptions = {
   apiRouters?: boolean | 'defer';
   importThemeCss?: boolean;
   onPhase?: MapReadyPhaseHandler;
+  /** Register `gk-map-collection` (home grids, pooled previews). Default false — `elements-lite` only. */
+  registerMapCollection?: boolean;
 };
 
 type MapTilerSdkModule = typeof MapTilerSdkNamespace;
@@ -122,6 +124,13 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
   const totalStart = performance.now();
   phase(options.onPhase, 'init start');
 
+  if (typeof document !== 'undefined') {
+    const { reconcileLiveMapCountFromDom } = await import(
+      '../components/elements/map/lifecycle/map-webgl-budget'
+    );
+    reconcileLiveMapCountFromDom(document);
+  }
+
   const providerId = options.provider ?? 'maptiler';
   const maptiler = options.maptiler;
   const apiKey = maptiler?.apiKey;
@@ -154,8 +163,9 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
     const protomapsStep = performance.now();
     const cssImports: Promise<unknown>[] = [];
     if (options.importThemeCss !== false) {
+      const { ensureMaplibreGlCss } = await import('../utils/map-provider-css');
       cssImports.push(import('../theme.css'));
-      cssImports.push(import('maplibre-gl/dist/maplibre-gl.css'));
+      cssImports.push(ensureMaplibreGlCss());
     }
     await Promise.all(cssImports);
     if (options.protomaps) {
@@ -257,6 +267,10 @@ async function initMapProvider(options: EnsureMapReadyOptions): Promise<void> {
     } else {
       await initMapboxProvider(mapbox?.accessToken, apiKey ?? undefined);
     }
+  }
+
+  if (options.registerMapCollection) {
+    await import('../components/elements/map-collection/map-collection');
   }
 
   phase(options.onPhase, 'init done', totalStart);

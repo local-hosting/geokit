@@ -1,16 +1,10 @@
-import { convexTurf, turfPoints } from '../turf/deps';
-/**
- * Calculate the convex hull of a set of points using Turf.js
- */
-
-
-
 import type { LatLon, Polygon } from '../../types';
 import { toLonLatArray } from '../coordinates/conversion';
+import { monotoneChainConvexHullLonLat } from './convex-hull-monotone';
 
 /**
  * Calculate the convex hull of a set of points
- * Uses Turf.js for robust convex hull calculation
+ * Uses a monotone-chain hull on [lon, lat] (no @turf/convex / concaveman — CJS under Vite).
  * Returns a GeoJSON Polygon in [lon, lat] format
  *
  * @param points - Array of points as [lat, lon]
@@ -35,16 +29,10 @@ export function convexHull(points: LatLon[]): Polygon | null {
   try {
     // Convert from [lat, lon] to [lon, lat] for Turf
     const coords = toLonLatArray(points);
-    const collection = turfPoints(coords);
+    const ring = monotoneChainConvexHullLonLat(coords);
+    if (!ring) return null;
 
-    const hull = convexTurf(collection);
-
-    if (!hull || hull.geometry.type !== 'Polygon') {
-      return null;
-    }
-
-    // Return GeoJSON Polygon directly (already in [lon, lat] format)
-    return hull.geometry;
+    return { type: 'Polygon', coordinates: [ring] };
   } catch {
     return null;
   }

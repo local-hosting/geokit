@@ -73,6 +73,7 @@ import {
 import {
   whenStyleReady as whenStyleReadyFn,
   resizeAndRepaintMap as resizeAndRepaintMapFn,
+  canCreateAnotherMap,
   delayForWebGLRelease,
   registerLiveMap,
   unregisterLiveMap,
@@ -93,6 +94,7 @@ import {
 } from '../../../utils/layer-styles';
 
 import { MapChildrenTrack } from './map-children-track';
+import { applyMapHostLayoutFromAncestors, measureMapHostLayout } from './map-host-layout';
 
 export class MapFreezeRuntime extends MapChildrenTrack {
   public async unfreeze(poolIndex?: number): Promise<boolean> {
@@ -137,11 +139,18 @@ export class MapFreezeRuntime extends MapChildrenTrack {
       // If map is frozen, unfreeze it (reinitialize since we destroyed it)
       if (this._isFrozen) {
         debug.log('[gk-map] unfreeze: calling _unfreeze (restore path)');
+        const hasLayout = await this.waitForHostDimensions();
+        if (!hasLayout) {
+          return this.failUnfreezeWithoutMap('deferred-layout');
+        }
         await this._unfreeze();
         debug.log('[gk-map] unfreeze: _unfreeze returned', {
           isInitialized: this.isInitialized,
           hasMap: !!this.map,
         });
+        if (!this.map) {
+          return this.failUnfreezeWithoutMap('restore-without-map');
+        }
         // Don't wait for 'idle' - it can delay by hundreds of ms; style load is enough for layers
         if (this.isInitialized) {
           this.hidePlaceholder();
@@ -149,9 +158,6 @@ export class MapFreezeRuntime extends MapChildrenTrack {
         // Resize and repaint so map fills container after scroll-back (container may have been zero-size when frozen)
         resizeAndRepaintMapFn(this.map, this);
         debug.log('[gk-map] active', { label: this.getMapLabel() });
-        // Dispatch unfreeze event after reinitialization completes
-        // Note: initializeMap() already dispatches gk-map-ready, but we also dispatch
-        // gk-map-unfreeze to make the lifecycle explicit for components that need it
         this.dispatchEvent(
           new CustomEvent('gk-map-unfreeze', {
             detail: { map: this.map, element: this },
@@ -163,6 +169,10 @@ export class MapFreezeRuntime extends MapChildrenTrack {
 
       // Initialize the map (first time or after frozen)
       debug.log('[gk-map] unfreeze: calling initializeMap (first-time init path)');
+      const hasLayout = await this.waitForHostDimensions();
+      if (!hasLayout) {
+        return this.failUnfreezeWithoutMap('deferred-layout');
+      }
       await this.initializeMap();
 
       // Don't wait for 'idle' (tiles, etc.) - style load is enough for adding layers; speeds first load
@@ -184,16 +194,7 @@ export class MapFreezeRuntime extends MapChildrenTrack {
         return true;
       }
 
-      const kind = 'generic' as const;
-      console.error('[gk-map]', mapUnavailableLogDetail(kind, 'unfreeze returned without map'));
-      this.showPlaceholder(mapUnavailableMessage(kind));
-      this.dispatchEvent(
-        new CustomEvent('gk-map-failed', {
-          detail: { element: this, reason: kind },
-          bubbles: true,
-        })
-      );
-      return false;
+      return this.failUnfreezeWithoutMap('init-without-map');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const kind = classifyMapInitFailure(message);
@@ -262,6 +263,8 @@ export class MapFreezeRuntime extends MapChildrenTrack {
     // Browsers can only handle a few WebGL contexts, so we must destroy when frozen
     if (this.map) {
       await this._freeze();
+    } else {
+      this._isFrozen = true;
     }
 
     // Update pool state - no longer in pool
@@ -370,25 +373,7 @@ export class MapFreezeRuntime extends MapChildrenTrack {
     // Map was destroyed, so we need to reinitialize it
     this._isFrozen = false;
 
-    // Wait for container to have dimensions (e.g. after scroll-back, layout may not be done yet)
-    const rect = this.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) {
-      debug.log('[gk-map] _unfreeze: waiting for container dimensions', {
-        width: rect.width,
-        height: rect.height,
-      });
-      await new Promise<void>((resolve) => {
-        const check = () => {
-          const r = this.getBoundingClientRect();
-          if (r.width > 0 && r.height > 0) {
-            resolve();
-          } else {
-            requestAnimationFrame(check);
-          }
-        };
-        requestAnimationFrame(check);
-      });
-    }
+    await this.waitForHostDimensions();
 
     // Set flag to indicate map was just unfrozen - this helps isochrones restore
     this.dataset.wasJustUnfrozen = 'true';
@@ -401,6 +386,81 @@ export class MapFreezeRuntime extends MapChildrenTrack {
     setTimeout(() => {
       delete this.dataset.wasJustUnfrozen;
     }, 2000);
+  }
+
+  protected measureHostLayout(): { width: number; height: number } {
+    return measureMapHostLayout(this);
+  }
+
+  protected applyHostLayoutFromAncestors(): void {
+    applyMapHostLayoutFromAncestors(this);
+  }
+
+  /** Wait until the host has non-zero layout (pool cards can mount before flex sizing). */
+  protected async waitForHostDimensions(timeoutMs: number = 8000): Promise<boolean> {
+    const start = Date.now();
+    const hasSize = () => {
+      const { width, height } = measureMapHostLayout(this);
+      return width > 0 && height > 0;
+    };
+    const applyAndCheck = () => {
+      applyMapHostLayoutFromAncestors(this);
+      return hasSize();
+    };
+    if (applyAndCheck()) return true;
+    debug.log('[gk-map] waiting for container dimensions');
+    await new Promise<void>((resolve) => {
+      const check = () => {
+        if (applyAndCheck() || Date.now() - start > timeoutMs) {
+          resolve();
+          return;
+        }
+        requestAnimationFrame(check);
+      };
+      requestAnimationFrame(check);
+    });
+    return applyAndCheck();
+  }
+
+  /**
+   * unfreeze finished with no map instance — avoid gk-map-failed for recoverable pool/layout cases.
+   */
+  protected failUnfreezeWithoutMap(
+    cause: 'deferred-layout' | 'restore-without-map' | 'init-without-map',
+  ): boolean {
+    if (cause === 'deferred-layout') {
+      debug.log('[gk-map] unfreeze deferred until host has layout', { label: this.getMapLabel() });
+      this.showPlaceholder('Loading map...');
+      return false;
+    }
+
+    const kind = canCreateAnotherMap() ? ('generic' as const) : ('webgl' as const);
+    const logDetail = mapUnavailableLogDetail(kind, `unfreeze returned without map (${cause})`);
+    if (kind === 'webgl' || cause === 'restore-without-map') {
+      debug.warn('[gk-map]', logDetail, {
+        provider: this.getAttribute('provider'),
+        hasAccessToken: Boolean(this.getAttribute('access-token')),
+        hasApiKey: Boolean(this.getAttribute('api-key')),
+      });
+      this.showPlaceholder(mapUnavailableMessage(kind));
+      return false;
+    }
+
+    console.error('[gk-map]', logDetail, {
+      provider: this.getAttribute('provider'),
+      hasAccessToken: Boolean(this.getAttribute('access-token')),
+      hasApiKey: Boolean(this.getAttribute('api-key')),
+      lastInitSkipReason: this._lastInitSkipReason,
+      layout: this.measureHostLayout(),
+    });
+    this.showPlaceholder(mapUnavailableMessage(kind));
+    this.dispatchEvent(
+      new CustomEvent('gk-map-failed', {
+        detail: { element: this, reason: kind },
+        bubbles: true,
+      }),
+    );
+    return false;
   }
 
   public async whenStyleReady(timeout: number = 2000): Promise<void> {

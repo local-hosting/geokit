@@ -1,0 +1,1 @@
+export { default as simplifyTurf } from '@turf/simplify';

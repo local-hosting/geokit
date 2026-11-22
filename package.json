@@ -373,6 +373,60 @@
       "import": "./src/h3/dist/esm/map-ui.js",
       "default": "./src/h3/dist/esm/map-ui.js"
     },
+    "./h3/map-max-bounds": {
+      "source": "./src/h3/src/bounds/map-max-bounds.ts",
+      "types": "./src/h3/dist/esm/bounds/map-max-bounds.d.ts",
+      "import": "./src/h3/dist/esm/bounds/map-max-bounds.js",
+      "default": "./src/h3/dist/esm/bounds/map-max-bounds.js"
+    },
+    "./h3/apply-h3-map-bounds": {
+      "source": "./src/h3/src/bounds/apply-h3-map-bounds.ts",
+      "types": "./src/h3/dist/esm/bounds/apply-h3-map-bounds.d.ts",
+      "import": "./src/h3/dist/esm/bounds/apply-h3-map-bounds.js",
+      "default": "./src/h3/dist/esm/bounds/apply-h3-map-bounds.js"
+    },
+    "./h3/apply-h3-geo-scope-map-bounds": {
+      "source": "./src/h3/src/bounds/apply-h3-map-bounds.ts",
+      "types": "./src/h3/dist/esm/bounds/apply-h3-map-bounds.d.ts",
+      "import": "./src/h3/dist/esm/bounds/apply-h3-map-bounds.js",
+      "default": "./src/h3/dist/esm/bounds/apply-h3-map-bounds.js"
+    },
+    "./h3/apply-h3-pan-lock-map-bounds": {
+      "source": "./src/h3/src/bounds/apply-h3-map-bounds.ts",
+      "types": "./src/h3/dist/esm/bounds/apply-h3-map-bounds.d.ts",
+      "import": "./src/h3/dist/esm/bounds/apply-h3-map-bounds.js",
+      "default": "./src/h3/dist/esm/bounds/apply-h3-map-bounds.js"
+    },
+    "./h3/map-max-bounds-core": {
+      "source": "./src/h3/src/bounds/map-max-bounds-core.ts",
+      "types": "./src/h3/dist/esm/bounds/map-max-bounds-core.d.ts",
+      "import": "./src/h3/dist/esm/bounds/map-max-bounds-core.js",
+      "default": "./src/h3/dist/esm/bounds/map-max-bounds-core.js"
+    },
+    "./h3/cell-map-view": {
+      "source": "./src/h3/src/viewport/cell-map-view.ts",
+      "types": "./src/h3/dist/esm/viewport/cell-map-view.d.ts",
+      "import": "./src/h3/dist/esm/viewport/cell-map-view.js",
+      "default": "./src/h3/dist/esm/viewport/cell-map-view.js"
+    },
+    "./h3/map-camera-scope-cells": {
+      "source": "./src/h3/src/viewport/map-camera-scope-cells.ts",
+      "types": "./src/h3/dist/esm/viewport/map-camera-scope-cells.d.ts",
+      "import": "./src/h3/dist/esm/viewport/map-camera-scope-cells.js",
+      "default": "./src/h3/dist/esm/viewport/map-camera-scope-cells.js"
+    },
+    "./h3/h3-pan-lock-resolution-containing-viewport": {
+      "source": "./src/h3/src/viewport/h3-pan-lock-resolution-containing-viewport.ts",
+      "types": "./src/h3/dist/esm/viewport/h3-pan-lock-resolution-containing-viewport.d.ts",
+      "import": "./src/h3/dist/esm/viewport/h3-pan-lock-resolution-containing-viewport.js",
+      "default": "./src/h3/dist/esm/viewport/h3-pan-lock-resolution-containing-viewport.js"
+    },
+    "./h3/map-viewport-h3": {
+      "source": "./src/h3/src/viewport/map-viewport-h3.ts",
+      "types": "./src/h3/dist/esm/viewport/map-viewport-h3.d.ts",
+      "import": "./src/h3/dist/esm/viewport/map-viewport-h3.js",
+      "default": "./src/h3/dist/esm/viewport/map-viewport-h3.js"
+    },
     "./h3/cell-to-region-index": {
       "types": "./src/h3/dist/esm/cell/cell-to-region-index.d.ts",
       "import": "./src/h3/dist/esm/cell/cell-to-region-index.js",
@@ -490,6 +544,13 @@
       "import": "./src/ui/dist/esm/bootstrap/vite-gk-map-hmr.js",
       "require": "./src/ui/dist/cjs/bootstrap/vite-gk-map-hmr.cjs",
       "default": "./src/ui/dist/esm/bootstrap/vite-gk-map-hmr.js"
+    },
+    "./ui/bootstrap/vite-consumer-resolve": {
+      "source": "./src/ui/src/bootstrap/vite-consumer-resolve.ts",
+      "types": "./src/ui/dist/esm/bootstrap/vite-consumer-resolve.d.ts",
+      "import": "./src/ui/src/bootstrap/vite-consumer-resolve.ts",
+      "require": "./src/ui/dist/cjs/bootstrap/vite-consumer-resolve.cjs",
+      "default": "./src/ui/src/bootstrap/vite-consumer-resolve.ts"
     },
     "./ui/adapters/shared": {
       "source": "./src/ui/src/adapters/shared/index.ts",
@@ -634,6 +695,48 @@
       "import": "./src/ui/dist/esm/utils/map-utils.js",
       "require": "./src/ui/dist/cjs/utils/map-utils.cjs",
       "default": "./src/ui/dist/esm/utils/map-utils.js"
+    },
+    "./ui/preserve-custom-style-overlays": {
+      "source": "./src/ui/src/utils/preserve-custom-style-overlays.ts",
+      "types": "./src/ui/dist/esm/utils/preserve-custom-style-overlays.d.ts",
+      "import": "./src/ui/dist/esm/utils/preserve-custom-style-overlays.js",
+      "require": "./src/ui/dist/cjs/utils/preserve-custom-style-overlays.cjs",
+      "default": "./src/ui/dist/esm/utils/preserve-custom-style-overlays.js"
+    },
+    "./ui/sync-gk-map-child-attributes": {
+      "source": "./src/ui/src/utils/sync-gk-map-child-attributes.ts",
+      "types": "./src/ui/dist/esm/utils/sync-gk-map-child-attributes.d.ts",
+      "import": "./src/ui/dist/esm/utils/sync-gk-map-child-attributes.js",
+      "require": "./src/ui/dist/cjs/utils/sync-gk-map-child-attributes.cjs",
+      "default": "./src/ui/dist/esm/utils/sync-gk-map-child-attributes.js"
+    },
+    "./ui/gk-h3-scope-paint": {
+      "source": "./src/ui/src/utils/gk-h3-scope-paint.ts",
+      "types": "./src/ui/dist/esm/utils/gk-h3-scope-paint.d.ts",
+      "import": "./src/ui/dist/esm/utils/gk-h3-scope-paint.js",
+      "require": "./src/ui/dist/cjs/utils/gk-h3-scope-paint.cjs",
+      "default": "./src/ui/dist/esm/utils/gk-h3-scope-paint.js"
+    },
+    "./ui/map-view-scope": {
+      "source": "./src/ui/src/map-view-scope/index.ts",
+      "types": "./src/ui/dist/esm/map-view-scope/index.d.ts",
+      "import": "./src/ui/dist/esm/map-view-scope/index.js",
+      "require": "./src/ui/dist/cjs/map-view-scope/index.cjs",
+      "default": "./src/ui/dist/esm/map-view-scope/index.js"
+    },
+    "./ui/gk-h3-map-camera-scope": {
+      "source": "./src/ui/src/utils/gk-h3-map-camera-scope.ts",
+      "types": "./src/ui/dist/esm/utils/gk-h3-map-camera-scope.d.ts",
+      "import": "./src/ui/dist/esm/utils/gk-h3-map-camera-scope.js",
+      "require": "./src/ui/dist/cjs/utils/gk-h3-map-camera-scope.cjs",
+      "default": "./src/ui/dist/esm/utils/gk-h3-map-camera-scope.js"
+    },
+    "./ui/map-navigation-limit-logging": {
+      "source": "./src/ui/src/utils/map-navigation-limit-logging.ts",
+      "types": "./src/ui/dist/esm/utils/map-navigation-limit-logging.d.ts",
+      "import": "./src/ui/dist/esm/utils/map-navigation-limit-logging.js",
+      "require": "./src/ui/dist/cjs/utils/map-navigation-limit-logging.cjs",
+      "default": "./src/ui/dist/esm/utils/map-navigation-limit-logging.js"
     },
     "./ui/h3-grid-layer-controller": {
       "source": "./src/ui/src/utils/h3-grid-layer-controller.ts",

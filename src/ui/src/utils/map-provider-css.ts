@@ -24,3 +24,13 @@ export async function ensureMapboxGlCss(): Promise<void> {
   if (isMapboxGlCssLoaded()) return;
   await import('mapbox-gl/dist/mapbox-gl.css');
 }
+
+/** MapLibre layout CSS (Protomaps / MapTiler stack) — idempotent under concurrent bootstrap. */
+let maplibreCssPromise: Promise<void> | null = null;
+
+export function ensureMaplibreGlCss(): Promise<void> {
+  if (!maplibreCssPromise) {
+    maplibreCssPromise = import('maplibre-gl/dist/maplibre-gl.css').then(() => undefined);
+  }
+  return maplibreCssPromise;
+}

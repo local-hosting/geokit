@@ -49,6 +49,8 @@ export class MapCollectionBase extends BaseElement {
   static observedAttributes = [
     'pool-size',
     'api-key',
+    'access-token',
+    'provider',
     'map-style',
     'viewport-padding',
     'min-zoom',
@@ -63,6 +65,8 @@ export class MapCollectionBase extends BaseElement {
   protected mutationObserver: MutationObserver | null = null;
   protected viewportPadding: number = 300;
   protected _apiKey: string | null = null;
+  protected _accessToken: string | null = null;
+  protected _provider: string | null = null;
   protected _mapStyle: string | null = null;
   protected _minZoom: number | null = null;
   protected _maxZoom: number | null = null;
@@ -100,6 +104,12 @@ export class MapCollectionBase extends BaseElement {
     const attrApiKey = mapCollectionEl(this).getAttribute('api-key');
     if (attrApiKey) mapCollectionEl(this)._apiKey = attrApiKey;
 
+    const attrAccessToken = mapCollectionEl(this).getAttribute('access-token');
+    if (attrAccessToken) mapCollectionEl(this)._accessToken = attrAccessToken;
+
+    const attrProvider = mapCollectionEl(this).getAttribute('provider');
+    if (attrProvider) mapCollectionEl(this)._provider = attrProvider;
+
     const attrMapStyle = mapCollectionEl(this).getAttribute('map-style');
     if (attrMapStyle) mapCollectionEl(this)._mapStyle = attrMapStyle;
 
@@ -122,6 +132,10 @@ export class MapCollectionBase extends BaseElement {
       mapCollectionEl(this).viewportPadding = parseInt(newValue, 10);
     } else if (name === 'api-key' && newValue) {
       mapCollectionEl(this)._apiKey = newValue;
+    } else if (name === 'access-token' && newValue) {
+      mapCollectionEl(this)._accessToken = newValue;
+    } else if (name === 'provider' && newValue) {
+      mapCollectionEl(this)._provider = newValue;
     } else if (name === 'map-style' && newValue) {
       mapCollectionEl(this)._mapStyle = newValue;
     } else if (name === 'min-zoom' && newValue) {
@@ -137,6 +151,24 @@ export class MapCollectionBase extends BaseElement {
     if (attrKey) return attrKey;
     const maptilerConfig = getProviderConfig('maptiler');
     if (maptilerConfig?.apiKey) return maptilerConfig.apiKey;
+    return null;
+  }
+
+  get accessToken(): string | null {
+    if (mapCollectionEl(this)._accessToken) return mapCollectionEl(this)._accessToken;
+    const attr = mapCollectionEl(this).getAttribute('access-token');
+    if (attr) return attr;
+    const mapboxConfig = getProviderConfig('mapbox');
+    if (mapboxConfig?.accessToken) return mapboxConfig.accessToken;
+    return null;
+  }
+
+  get basemapProvider(): string | null {
+    if (mapCollectionEl(this)._provider) return mapCollectionEl(this)._provider;
+    const attr = mapCollectionEl(this).getAttribute('provider');
+    if (attr) return attr;
+    if (this.accessToken) return 'mapbox';
+    if (this.apiKey) return 'maptiler';
     return null;
   }
 
@@ -227,7 +259,13 @@ export class MapCollectionBase extends BaseElement {
       const mapEl = e.target as HTMLElement | null;
       if (!mapEl) return;
       const slot = mapCollectionEl(this).getOneSlot((s: SlotInfo) => s.mapElement === mapEl);
-      if (slot) mapCollectionEl(this).resetSlotAndRetry(slot, 1500);
+      if (!slot) return;
+      const reason = (e as CustomEvent<{ reason?: string }>).detail?.reason;
+      if (reason === 'webgl') {
+        setTimeout(() => mapCollectionEl(this).processVisibilityChanges(), 500);
+        return;
+      }
+      mapCollectionEl(this).resetSlotAndRetry(slot, 1500);
     };
     mapCollectionEl(this).addEventListener('gk-map-stuck', mapCollectionEl(this)._stuckOrFailedHandler);
     mapCollectionEl(this).addEventListener('gk-map-failed', mapCollectionEl(this)._stuckOrFailedHandler);

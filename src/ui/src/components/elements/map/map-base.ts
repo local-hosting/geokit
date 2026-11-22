@@ -127,6 +127,8 @@ export class MapBase extends BaseElement {
   protected _isFrozen: boolean = false;
   protected _isUnfreezing: boolean = false; // Prevent race conditions
   protected _freezeInFlight: Promise<void> | null = null;
+  protected _initializeInFlight: Promise<void> | null = null;
+  protected _lastInitSkipReason: string | null = null;
   protected _detachedFreezeTimer: ReturnType<typeof setTimeout> | null = null;
   protected _isInitializing: boolean = false; // Prevent concurrent initialization
   protected _frozenContainerStyle: { display?: string; visibility?: string } | null = null;

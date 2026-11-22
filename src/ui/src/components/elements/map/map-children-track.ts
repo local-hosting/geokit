@@ -334,6 +334,7 @@ export class MapChildrenTrack extends MapPublicQuery {
    */
   public ensureAttributes(options: {
     apiKey?: string | null;
+    accessToken?: string | null;
     provider?: string;
     mapStyle?: string | null;
     minZoom?: number | null;
@@ -341,6 +342,9 @@ export class MapChildrenTrack extends MapPublicQuery {
   }): void {
     if (options.apiKey && !this.getAttribute('api-key')) {
       this.setAttribute('api-key', options.apiKey);
+    }
+    if (options.accessToken && !this.getAttribute('access-token')) {
+      this.setAttribute('access-token', options.accessToken);
     }
     if (options.provider && !this.getAttribute('provider')) {
       this.setAttribute('provider', options.provider);

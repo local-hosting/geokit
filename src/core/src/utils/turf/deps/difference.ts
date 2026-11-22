@@ -1,0 +1,1 @@
+export { default as turfDifference } from '@turf/difference';

@@ -1,0 +1,1 @@
+export { default as lineIntersectTurf } from '@turf/line-intersect';

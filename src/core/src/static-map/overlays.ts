@@ -3,10 +3,9 @@
 import type { ResolvedMapStaticProvider } from '../types/static-map';
 import { DEFAULT_REGION_PATH_STYLE } from './region-path';
 import type { MapRegionPathStyle } from './region-path';
-import { turfBuffer, turfPoint } from '../utils/turf/deps';
+import { bufferPoint } from '../utils/buffer/buffer-point';
 
 const MARKER_RADIUS_METERS = 80;
-const METERS_PER_KM = 1000;
 
 const OVERLAY_PALETTE: MapRegionPathStyle[] = [
   { fill: '%233b82f6cc', stroke: '%231d4ed8', width: 4 },
@@ -21,14 +20,7 @@ function bufferAroundPoint(
   radiusMeters: number,
   steps: number
 ): GeoJSON.Polygon {
-  const buffered = turfBuffer(turfPoint([lng, lat]), radiusMeters / METERS_PER_KM, {
-    units: 'kilometers',
-    steps,
-  });
-  if (!buffered || buffered.geometry.type !== 'Polygon') {
-    throw new Error('Failed to build map overlay');
-  }
-  return buffered.geometry;
+  return bufferPoint([lat, lng], radiusMeters, steps);
 }
 
 function paletteStyle(colorIndex: number, translucent = false): MapRegionPathStyle {

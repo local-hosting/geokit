@@ -14,6 +14,20 @@ function hasAssetExtension(importPath) {
   return ASSET_EXTENSIONS.some((ext) => importPath.endsWith(ext));
 }
 
+/** Prefer a sibling `.js` file when both `name.js` and `name/` exist (e.g. elements-lite). */
+function relativeEsmImportSuffix(fileDir, importPath) {
+  const siblingModule = `${importPath}.js`;
+  const siblingFile = join(fileDir, siblingModule);
+  if (existsSync(siblingFile) && statSync(siblingFile).isFile()) {
+    return siblingModule;
+  }
+  const resolvedPath = join(fileDir, importPath);
+  if (existsSync(resolvedPath) && statSync(resolvedPath).isDirectory()) {
+    return `${importPath}/index.js`;
+  }
+  return siblingModule;
+}
+
 /** @param {Set<string>} ignore relative paths under src/ */
 function srcEntries(ignore = new Set()) {
   /** @param {string} dir @returns {string[]} */
@@ -70,38 +84,20 @@ async function fixEsmImports(dir) {
       /from\s+['"](\.\.?\/[^'"]+)(?<!\.js)(?<!\/index)['"]/g,
       (match, importPath) => {
         if (hasAssetExtension(importPath)) return match;
-
-        const resolvedPath = join(fileDir, importPath);
-        if (existsSync(resolvedPath) && statSync(resolvedPath).isDirectory()) {
-          return `from '${importPath}/index.js'`;
-        }
-
-        return `from '${importPath}.js'`;
+        return `from '${relativeEsmImportSuffix(fileDir, importPath)}'`;
       }
     );
 
     content = content.replace(
       /import\s*\(\s*['"](\.\.?\/[^'"]+)\.ts['"]\s*\)/g,
-      (_match, importPath) => {
-        const resolvedPath = join(fileDir, importPath);
-        if (existsSync(resolvedPath) && statSync(resolvedPath).isDirectory()) {
-          return `import('${importPath}/index.js')`;
-        }
-        return `import('${importPath}.js')`;
-      }
+      (_match, importPath) => `import('${relativeEsmImportSuffix(fileDir, importPath)}')`
     );
 
     content = content.replace(
       /import\s*\(\s*['"](\.\.?\/[^'"]+)(?<!\.js)(?<!\.json)(?<!\/index)['"]\s*\)/g,
       (match, importPath) => {
         if (hasAssetExtension(importPath)) return match;
-
-        const resolvedPath = join(fileDir, importPath);
-        if (existsSync(resolvedPath) && statSync(resolvedPath).isDirectory()) {
-          return `import('${importPath}/index.js')`;
-        }
-
-        return `import('${importPath}.js')`;
+        return `import('${relativeEsmImportSuffix(fileDir, importPath)}')`;
       }
     );
 

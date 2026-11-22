@@ -178,6 +178,41 @@
       "require": "./dist/cjs/utils/map-utils.cjs",
       "default": "./dist/esm/utils/map-utils.js"
     },
+    "./preserve-custom-style-overlays": {
+      "source": "./src/utils/preserve-custom-style-overlays.ts",
+      "types": "./dist/esm/utils/preserve-custom-style-overlays.d.ts",
+      "import": "./dist/esm/utils/preserve-custom-style-overlays.js",
+      "require": "./dist/cjs/utils/preserve-custom-style-overlays.cjs",
+      "default": "./dist/esm/utils/preserve-custom-style-overlays.js"
+    },
+    "./sync-gk-map-child-attributes": {
+      "source": "./src/utils/sync-gk-map-child-attributes.ts",
+      "types": "./dist/esm/utils/sync-gk-map-child-attributes.d.ts",
+      "import": "./dist/esm/utils/sync-gk-map-child-attributes.js",
+      "require": "./dist/cjs/utils/sync-gk-map-child-attributes.cjs",
+      "default": "./dist/esm/utils/sync-gk-map-child-attributes.js"
+    },
+    "./gk-h3-scope-paint": {
+      "source": "./src/utils/gk-h3-scope-paint.ts",
+      "types": "./dist/esm/utils/gk-h3-scope-paint.d.ts",
+      "import": "./dist/esm/utils/gk-h3-scope-paint.js",
+      "require": "./dist/cjs/utils/gk-h3-scope-paint.cjs",
+      "default": "./dist/esm/utils/gk-h3-scope-paint.js"
+    },
+    "./map-view-scope": {
+      "source": "./src/map-view-scope/index.ts",
+      "types": "./dist/esm/map-view-scope/index.d.ts",
+      "import": "./dist/esm/map-view-scope/index.js",
+      "require": "./dist/cjs/map-view-scope/index.cjs",
+      "default": "./dist/esm/map-view-scope/index.js"
+    },
+    "./map-navigation-limit-logging": {
+      "source": "./src/utils/map-navigation-limit-logging.ts",
+      "types": "./dist/esm/utils/map-navigation-limit-logging.d.ts",
+      "import": "./dist/esm/utils/map-navigation-limit-logging.js",
+      "require": "./dist/cjs/utils/map-navigation-limit-logging.cjs",
+      "default": "./dist/esm/utils/map-navigation-limit-logging.js"
+    },
     "./h3-grid-layer-controller": {
       "source": "./src/utils/h3-grid-layer-controller.ts",
       "types": "./dist/esm/utils/h3-grid-layer-controller.d.ts",

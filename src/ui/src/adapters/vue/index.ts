@@ -19,6 +19,8 @@ export type {
 
 export { useGkMapPointEvents } from './useGkMapPointEvents';
 export { useGkMapMoveend } from './useGkMapMoveend';
+export { useGkMapViewScope, type UseGkMapViewScopeOptions, type UseGkMapViewScopeReturn } from './useGkMapViewScope';
+export { readMapViewportSizePx } from '../../map-view-scope';
 export { useGkMapLocalCamera, type UseGkMapLocalCameraOptions } from './useGkMapLocalCamera';
 export {
   applyCameraFrameToMap,

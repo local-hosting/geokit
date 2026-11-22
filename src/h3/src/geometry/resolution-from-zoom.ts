@@ -10,10 +10,20 @@ export type H3ResolutionFromZoomOptions = {
   max?: number;
   /** Multiplier applied to map zoom before rounding. */
   zoomFactor?: number;
+  /** How to convert zoom × factor to an integer resolution. */
+  rounding?: 'round' | 'floor';
 };
 
-function clampH3Resolution(value: number, min: number, max: number): number {
-  const rounded = Math.round(value);
+/** Min resolution for pan-lock / single center hex scoped to the visible map (allows continental zoom). */
+export const H3_PAN_LOCK_RESOLUTION_FROM_ZOOM_MIN = 0;
+
+function clampH3Resolution(
+  value: number,
+  min: number,
+  max: number,
+  rounding: 'round' | 'floor',
+): number {
+  const rounded = rounding === 'floor' ? Math.floor(value) : Math.round(value);
   return Math.min(Math.max(rounded, min), max);
 }
 
@@ -36,5 +46,21 @@ export function h3ResolutionFromZoom(
   const min = options.min ?? H3_RESOLUTION_FROM_ZOOM_MIN;
   const max = options.max ?? H3_RESOLUTION_FROM_ZOOM_MAX;
   const zoomFactor = options.zoomFactor ?? H3_RESOLUTION_FROM_ZOOM_FACTOR;
-  return clampH3Resolution(zoom * zoomFactor, min, max);
+  const rounding = options.rounding ?? 'round';
+  return clampH3Resolution(zoom * zoomFactor, min, max, rounding);
+}
+
+/**
+ * Pan-lock outer hex resolution from map zoom — `floor` curve, min `0`, so one center
+ * hex roughly spans the visible map (including low zoom).
+ */
+export function h3PanLockResolutionFromMapZoom(
+  zoom: number,
+  options: Omit<H3ResolutionFromZoomOptions, 'min' | 'rounding'> = {},
+): number {
+  return h3ResolutionFromZoom(zoom, {
+    ...options,
+    min: H3_PAN_LOCK_RESOLUTION_FROM_ZOOM_MIN,
+    rounding: 'floor',
+  });
 }

@@ -100,6 +100,12 @@ describe('gk-map freeze/unfreeze ordering', () => {
     expect(remove).toHaveBeenCalledOnce();
   });
 
+  it('marks pool slot frozen when freeze runs without a map instance', async () => {
+    const el = createPoolManagedMap() as TestMapElement & { _isFrozen?: boolean };
+    await el.freeze();
+    expect(el._isFrozen).toBe(true);
+  });
+
   it('waits for an in-flight freeze before re-initializing', async () => {
     const el = createPoolManagedMap();
     const remove = vi.fn();
