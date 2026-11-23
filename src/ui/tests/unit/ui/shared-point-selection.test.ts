@@ -32,6 +32,7 @@ function createMockMap(options?: { pitch?: number }) {
         data: entry._data ?? entry.data,
         setData: (data: unknown) => {
           entry.data = data;
+          entry._data = data;
         },
       };
     },
@@ -174,6 +175,132 @@ describe('shared point selection', () => {
       { selected: false }
     );
   });
+
+  it('restores resting ring _color on the main source when selection moves (grounded badge)', () => {
+    const map = createMockMap();
+    const sourceId = 'canvas-places';
+    const pointLayerId = 'canvas-places-point';
+    const resting = '#c3d361';
+    const selectedAccent = '#5182ef';
+    map._sources.set(`${sourceId}-selection`, { data: null });
+    map._sources.set(sourceId, {
+      data: null,
+      _data: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            id: 'place-a',
+            properties: {
+              mapPromoteId: 'place-a',
+              _color: selectedAccent,
+              _colorResting: resting,
+            },
+            geometry: { type: 'Point', coordinates: [-85.7, 38.2] },
+          },
+          {
+            type: 'Feature',
+            id: 'place-b',
+            properties: { mapPromoteId: 'place-b', _colorResting: '#9acd32' },
+            geometry: { type: 'Point', coordinates: [-85.8, 38.3] },
+          },
+        ],
+      },
+    });
+    map.getLayer = vi.fn((id: string) =>
+      id === pointLayerId || id.startsWith(`${pointLayerId}-`) ? {} : undefined
+    );
+    map.setPaintProperty = vi.fn();
+
+    setSharedPointSelection(
+      map as never,
+      sourceId,
+      { featureId: 'place-a', lngLat: { lng: -85.7, lat: 38.2 } },
+      {
+        pointLayerId,
+        promoteId: 'mapPromoteId',
+        selectionGroundBadge: true,
+        selectionGroundBadgeFallbackColor: resting,
+      }
+    );
+
+    setSharedPointSelection(
+      map as never,
+      sourceId,
+      { featureId: 'place-b', lngLat: { lng: -85.8, lat: 38.3 } },
+      {
+        pointLayerId,
+        promoteId: 'mapPromoteId',
+        selectionGroundBadge: true,
+        selectionGroundBadgeFallbackColor: resting,
+      }
+    );
+
+    const main = map._sources.get(sourceId)?._data as {
+      features: Array<{ properties?: Record<string, unknown> }>;
+    };
+    expect(main.features[0]?.properties?._color).toBe(resting);
+    expect(main.features[1]?.properties?._color).not.toBe(selectedAccent);
+  });
+
+  it('keeps app-stamped selection fill when _colorResting is the locker key', () => {
+    const map = createMockMap();
+    const sourceId = 'canvas-places';
+    const pointLayerId = 'canvas-places-point';
+    const lockerKey = '#c3d361';
+    const appBlue = '#2563eb';
+    map._sources.set(`${sourceId}-selection`, { data: null });
+    map._sources.set(sourceId, {
+      data: null,
+      _data: {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: {
+              mapPromoteId: 'place-a',
+              _color: lockerKey,
+              _colorResting: lockerKey,
+            },
+            geometry: { type: 'Point', coordinates: [-85.7, 38.2] },
+          },
+        ],
+      },
+    });
+    map.getLayer = vi.fn((id: string) =>
+      id === pointLayerId || id.startsWith(`${pointLayerId}-`) ? {} : undefined
+    );
+    map.setPaintProperty = vi.fn();
+
+    setSharedPointSelection(
+      map as never,
+      sourceId,
+      {
+        featureId: 'place-a',
+        lngLat: { lng: -85.7, lat: 38.2 },
+        properties: {
+          _color: appBlue,
+          _colorSelected: appBlue,
+          _colorResting: lockerKey,
+          _colorKey: lockerKey,
+        },
+      },
+      {
+        pointLayerId,
+        promoteId: 'mapPromoteId',
+        selectionGroundBadge: true,
+        selectionGroundBadgeFallbackColor: lockerKey,
+      }
+    );
+
+    const ringData = map._sources.get(`${sourceId}-selection`)?.data as {
+      features: Array<{ properties?: Record<string, unknown> }>;
+    };
+    expect(ringData.features[0]?.properties?._color).toBe(appBlue);
+    expect(ringData.features[0]?.properties?._colorSelected).toBe(appBlue);
+    expect(ringData.features[0]?.properties?._colorResting).toBe(lockerKey);
+  });
+
   it('copies selected feature properties onto the ring source', () => {
     const map = createMockMap();
     const sourceId = 'points-test';

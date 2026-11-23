@@ -448,6 +448,24 @@ export function setSharedPointSelection(
     ...(options?.idProperties ?? DEFAULT_SHARED_POINT_ID_PROPERTIES),
   ].filter((v, i, arr): v is string => !!v && arr.indexOf(v) === i);
 
+  const ringFallback =
+    options?.selectionGroundBadgeFallbackColor?.trim() ||
+    SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
+  const nextFeatureId = featureId ? String(featureId) : null;
+  if (
+    options?.selectionGroundBadge &&
+    previousFeatureId &&
+    String(previousFeatureId) !== nextFeatureId
+  ) {
+    restoreSharedPointFeatureRestingRingColor(
+      map,
+      sourceId,
+      String(previousFeatureId),
+      idProperties,
+      ringFallback
+    );
+  }
+
   if (!featureId || !lngLat) {
     syncSharedPointSelectedFeatureState(map, sourceId, previousFeatureId, null);
     if (pointLayerId) {
@@ -488,9 +506,23 @@ export function setSharedPointSelection(
     // Hover may have washed `_color` — keep resting locker key for the ring.
     const keyColor = resolveFloatingBadgeSelectionKeyColor(resolvedProperties, fallback);
     const accentColor = resolveFloatingBadgeSelectionAccentColor(resolvedProperties, fallback);
-    resolvedProperties._color = keyColor;
-    resolvedProperties._colorResting ??= keyColor;
-    resolvedProperties[SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY] = accentColor;
+    const appFill =
+      typeof properties?._color === 'string' ? properties._color.trim() : '';
+    const appAccent =
+      typeof properties?.[SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY] === 'string'
+        ? String(properties[SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY]).trim()
+        : '';
+    const appSelectionChrome =
+      appFill.length > 0 && appAccent.length > 0 && properties != null;
+    if (appSelectionChrome) {
+      resolvedProperties._color = appFill;
+      resolvedProperties[SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY] = appAccent;
+      resolvedProperties._colorResting ??= keyColor;
+    } else {
+      resolvedProperties._color = keyColor;
+      resolvedProperties._colorResting ??= keyColor;
+      resolvedProperties[SHARED_POINT_FLOATING_BADGE_SELECTED_COLOR_PROPERTY] = accentColor;
+    }
     getSharedPointSelectionMap(map).set(sourceId, { featureId, lngLat: resolvedLngLat });
     ensureSelectionRingReady(map, sourceId, options);
     updateSharedPointSelection(map, sourceId, {
@@ -575,6 +607,34 @@ export function clearSharedPointHoverOverlay(map: MapInstance, sourceId: string)
   } catch {
     // Source may have been removed during style swap
   }
+}
+
+/** Ring color for a feature that is no longer selected — never a hover/selected `_color` patch. */
+export function resolveSharedPointRestingRingColorForDeselect(
+  properties: Record<string, unknown> | null | undefined,
+  fallbackColor: string
+): string {
+  const rawFallback = fallbackColor.trim() || SHARED_POINT_FLOATING_BADGE_FALLBACK_COLOR;
+  const resting = properties?._colorResting;
+  if (typeof resting === 'string' && resting.trim()) return resting.trim();
+  const key = properties?.[SHARED_POINT_FLOATING_BADGE_KEY_COLOR_PROPERTY];
+  if (typeof key === 'string' && key.trim()) return key.trim();
+  return sharedPointFloatingBadgeRestingColor(rawFallback);
+}
+
+/** Reset one deselected pin's `_color` on the main GeoJSON source after selection moves. */
+export function restoreSharedPointFeatureRestingRingColor(
+  map: MapInstance,
+  sourceId: string,
+  featureId: string,
+  idProperties: string[],
+  fallbackColor: string
+): void {
+  const properties = lookupSharedPointProperties(map, sourceId, featureId, idProperties);
+  const resting = resolveSharedPointRestingRingColorForDeselect(properties, fallbackColor);
+  patchSharedPointFeatureRingColor(map, sourceId, featureId, resting, idProperties, {
+    restingColor: resting,
+  });
 }
 
 /** Patch one feature's ring `_color` in the main GeoJSON source (in-place hover lighten). */
