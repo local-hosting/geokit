@@ -82,6 +82,18 @@ export function sharedPointHitLayerIds(pointLayerId: string, glowLayerId: string
 /** Mapbox Standard style slot for venue overlays above 3D buildings. */
 export const MAPBOX_VENUE_OVERLAY_SLOT = 'top';
 
+/** Matches `MAP_3D_BUILDINGS_LAYER_ID` in map-terrain-buildings (avoid circular import). */
+const SHARED_POINT_3D_BUILDINGS_LAYER_ID = 'gk-3d-buildings';
+
+/** True when draped terrain or geokit 3D buildings need marker depth heal. */
+export function isSharedPoint3dSurfaceActive(map: MapInstance): boolean {
+  const m = map as {
+    getTerrain?: () => unknown;
+    getLayer?: (id: string) => unknown;
+  };
+  return Boolean(m.getTerrain?.()) || Boolean(m.getLayer?.(SHARED_POINT_3D_BUILDINGS_LAYER_ID));
+}
+
 type MapWithStyleSlots = MapInstance & {
   setSlot?: (layerId: string, slot?: string | null) => void;
   setLayoutProperty?: (layerId: string, name: string, value: unknown) => void;
@@ -210,14 +222,33 @@ function healSymbolLayerAbove3dExtrusions(map: MapWithStyleSlots, layerId: strin
   }
 }
 
-/** Venue markers above Corio / Mapbox Standard 3D buildings and `gk-3d-buildings`. */
-export function applySharedPointLayersAbove3dExtrusions(
-  map: MapInstance,
-  ids: Pick<SharedPointLayerIds, 'glowLayerId' | 'pointLayerId'>,
-): void {
-  const mapSlot = map as MapWithStyleSlots;
-  const { pointLayerId, glowLayerId } = ids;
-  const circleLayerIds = [
+function revertCircleLayerFrom3dExtrusions(map: MapWithStyleSlots, layerId: string): void {
+  if (!map.getLayer?.(layerId) || !map.setPaintProperty) return;
+  try {
+    map.setPaintProperty(layerId, 'circle-emissive-strength', 0);
+    map.setPaintProperty(layerId, 'circle-occlusion-opacity', 1);
+    map.setSlot?.(layerId, undefined);
+  } catch {
+    /* mixed layer types */
+  }
+}
+
+function revertSymbolLayerFrom3dExtrusions(map: MapWithStyleSlots, layerId: string): void {
+  if (!map.getLayer?.(layerId)) return;
+  try {
+    map.setLayoutProperty?.(layerId, 'symbol-z-elevate', false);
+    map.setPaintProperty?.(layerId, 'icon-occlusion-opacity', 1);
+    map.setSlot?.(layerId, undefined);
+  } catch {
+    /* not a symbol layer */
+  }
+}
+
+function sharedPointVenueCircleLayerIds(
+  pointLayerId: string,
+  glowLayerId: string,
+): readonly string[] {
+  return [
     glowLayerId,
     `${glowLayerId}-hover`,
     pointLayerId,
@@ -230,12 +261,10 @@ export function applySharedPointLayersAbove3dExtrusions(
     sharedPointSelectionRingLayerId(pointLayerId),
     `${pointLayerId}-selection-shadow`,
   ];
-  for (const layerId of circleLayerIds) {
-    if (!mapSlot.getLayer?.(layerId)) continue;
-    healCircleLayerAbove3dExtrusions(mapSlot, layerId);
-  }
+}
 
-  const symbolLayerIds = [
+function sharedPointVenueSymbolLayerIds(pointLayerId: string): readonly string[] {
+  return [
     `${pointLayerId}-badge-icon`,
     `${pointLayerId}-selection-badge-icon`,
     `${pointLayerId}-rounded-outer`,
@@ -245,10 +274,52 @@ export function applySharedPointLayersAbove3dExtrusions(
     `${pointLayerId}-selection-rounded-ring`,
     `${pointLayerId}-selection-rounded-body`,
   ];
-  for (const layerId of symbolLayerIds) {
+}
+
+/** Venue markers above Corio / Mapbox Standard 3D buildings and `gk-3d-buildings`. */
+export function applySharedPointLayersAbove3dExtrusions(
+  map: MapInstance,
+  ids: Pick<SharedPointLayerIds, 'glowLayerId' | 'pointLayerId'>,
+): void {
+  const mapSlot = map as MapWithStyleSlots;
+  const { pointLayerId, glowLayerId } = ids;
+  for (const layerId of sharedPointVenueCircleLayerIds(pointLayerId, glowLayerId)) {
+    if (!mapSlot.getLayer?.(layerId)) continue;
+    healCircleLayerAbove3dExtrusions(mapSlot, layerId);
+  }
+  for (const layerId of sharedPointVenueSymbolLayerIds(pointLayerId)) {
     if (!mapSlot.getLayer?.(layerId)) continue;
     healSymbolLayerAbove3dExtrusions(mapSlot, layerId);
   }
+}
+
+/** Undo 3D depth heal when terrain and buildings are off — keeps floating-badge perspective shadow. */
+export function revertSharedPointLayersFrom3dExtrusions(
+  map: MapInstance,
+  ids: Pick<SharedPointLayerIds, 'glowLayerId' | 'pointLayerId'>,
+): void {
+  const mapSlot = map as MapWithStyleSlots;
+  const { pointLayerId, glowLayerId } = ids;
+  for (const layerId of sharedPointVenueCircleLayerIds(pointLayerId, glowLayerId)) {
+    if (!mapSlot.getLayer?.(layerId)) continue;
+    revertCircleLayerFrom3dExtrusions(mapSlot, layerId);
+  }
+  for (const layerId of sharedPointVenueSymbolLayerIds(pointLayerId)) {
+    if (!mapSlot.getLayer?.(layerId)) continue;
+    revertSymbolLayerFrom3dExtrusions(mapSlot, layerId);
+  }
+}
+
+/** Apply 3D heal only while terrain or 3D buildings are active. */
+export function syncSharedPointLayersFor3dSurface(
+  map: MapInstance,
+  ids: Pick<SharedPointLayerIds, 'glowLayerId' | 'pointLayerId'>,
+): void {
+  if (isSharedPoint3dSurfaceActive(map)) {
+    applySharedPointLayersAbove3dExtrusions(map, ids);
+    return;
+  }
+  revertSharedPointLayersFrom3dExtrusions(map, ids);
 }
 
 /** @deprecated Use {@link applySharedPointLayersAbove3dExtrusions}. */

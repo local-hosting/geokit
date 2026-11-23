@@ -781,7 +781,7 @@ export function annotatePointFeaturesStrokeFromFill(
 }
 
 import {
-  applySharedPointLayersAbove3dExtrusions,
+  syncSharedPointLayersFor3dSurface,
   sharedPointGlassLayerId,
   sharedPointHoverBadgeLayerId,
   sharedPointHoverBadgeOuterLayerId,
@@ -2226,7 +2226,7 @@ export function applySharedPointLayerPaint(
   }
 
   if (pointTranslateAnchor === 'viewport') {
-    applySharedPointLayersAbove3dExtrusions(map, { glowLayerId, pointLayerId });
+    syncSharedPointLayersFor3dSurface(map, { glowLayerId, pointLayerId });
   }
 }
 
