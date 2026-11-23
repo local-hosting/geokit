@@ -831,6 +831,18 @@
       "import": "./src/ui/dist/esm/components/controls/terrain-control.js",
       "default": "./src/ui/dist/esm/components/controls/terrain-control.js"
     },
+    "./ui/controls/saved-scope": {
+      "source": "./src/ui/src/components/controls/saved-scope-control.ts",
+      "types": "./src/ui/dist/esm/components/controls/saved-scope-control.d.ts",
+      "import": "./src/ui/dist/esm/components/controls/saved-scope-control.js",
+      "default": "./src/ui/dist/esm/components/controls/saved-scope-control.js"
+    },
+    "./ui/controls/layer-toggles": {
+      "source": "./src/ui/src/components/controls/layer-toggles-control.ts",
+      "types": "./src/ui/dist/esm/components/controls/layer-toggles-control.d.ts",
+      "import": "./src/ui/dist/esm/components/controls/layer-toggles-control.js",
+      "default": "./src/ui/dist/esm/components/controls/layer-toggles-control.js"
+    },
     "./ui/elements/isochrone": {
       "source": "./src/ui/src/components/elements/isochrone/isochrone.ts",
       "types": "./src/ui/dist/esm/components/elements/isochrone/isochrone.d.ts",

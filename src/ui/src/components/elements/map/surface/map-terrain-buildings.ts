@@ -5,10 +5,13 @@
 import { debug } from '../../../../utils/map-surface/logger';
 import { getProviderConfig } from '../../../../providers/registry';
 import type { MapInstance } from '../../../../providers/types';
+import { healOverlayLayerAbove3dTerrain } from '../../../../utils/paint/shared-point/layer-ids';
 
 export interface MapTerrainContext {
   getAttribute(name: string): string | null;
   map: MapInstance | null;
+  /** Fired after each terrain enable/disable application (setTerrain). */
+  afterTerrainUpdate?: () => void;
 }
 
 const TERRAIN_SOURCE_ID = 'gk-terrain-dem';
@@ -37,14 +40,24 @@ export function findBuildingsInsertBeforeLayer(
   return undefined;
 }
 
-/** After 3D buildings mount, keep GeoJSON venue layers on top of fill-extrusion. */
+/**
+ * After 3D terrain or buildings mount, keep GeoJSON venue layers on top and
+ * disable depth occlusion (terrain alone does not add `gk-3d-buildings`).
+ */
 export function ensureGeoJsonOverlaysAbove3dBuildings(map: MapInstance | null | undefined): void {
   const m = map as {
     getStyle?: () => { sources?: Record<string, StyleSourceRef>; layers?: StyleLayerRef[] };
     getLayer?: (id: string) => unknown;
+    getTerrain?: () => unknown;
     moveLayer?: (id: string) => void;
+    setSlot?: (id: string, slot?: string | null) => void;
+    setPaintProperty?: (id: string, k: string, v: unknown) => void;
   } | null;
-  if (!m?.getStyle || !m.getLayer?.(BUILDINGS_LAYER_ID) || !m.moveLayer) return;
+  if (!m?.getStyle || !m.moveLayer) return;
+  const terrainActive = Boolean(m.getTerrain?.());
+  const buildingsActive = Boolean(m.getLayer?.(BUILDINGS_LAYER_ID));
+  if (!terrainActive && !buildingsActive) return;
+
   const style = m.getStyle();
   const sources = style?.sources ?? {};
   const layers = style?.layers ?? [];
@@ -55,13 +68,9 @@ export function ensureGeoJsonOverlaysAbove3dBuildings(map: MapInstance | null | 
     if (t !== 'circle' && t !== 'symbol' && t !== 'line') continue;
     if (!m.getLayer(layer.id)) continue;
     try {
-      m.moveLayer(layer.id);
-      const setSlot = (m as { setSlot?: (id: string, slot?: string | null) => void }).setSlot;
-      setSlot?.(layer.id, 'top');
-      if (t === 'line') {
-        const setPaint = (m as { setPaintProperty?: (id: string, k: string, v: unknown) => void })
-          .setPaintProperty;
-        setPaint?.(layer.id, 'line-occlusion-opacity', 0);
+      healOverlayLayerAbove3dTerrain(m as never, layer.id, t);
+      if (!m.setSlot) {
+        m.moveLayer(layer.id);
       }
     } catch {
       /* concurrent style mutation */
@@ -314,6 +323,15 @@ export function createTerrainZoomHandler(ctx: MapTerrainContext): (() => void) |
       } else {
         clearMapTerrain(map);
         setBasemapTerrainChromeVisible(map, false);
+      }
+      const notify = (): void => {
+        ensureGeoJsonOverlaysAbove3dBuildings(map);
+        ctx.afterTerrainUpdate?.();
+      };
+      if (typeof globalThis.requestAnimationFrame === 'function') {
+        globalThis.requestAnimationFrame(notify);
+      } else {
+        notify();
       }
     } catch {
       // ignore

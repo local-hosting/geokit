@@ -560,6 +560,11 @@ export class MapStyleSetup extends MapConnectedInit {
     this._terrainZoomHandler = createTerrainZoomHandler({
       getAttribute: (n) => this.getAttribute(n),
       map: this.map,
+      afterTerrainUpdate: () => {
+        this.dispatchEvent(
+          new CustomEvent('terrain-overlay-updated', { bubbles: true, composed: true })
+        );
+      },
     });
   }
 

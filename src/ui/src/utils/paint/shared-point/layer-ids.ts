@@ -115,33 +115,74 @@ export function moveSharedPointLayer(
   beforeId?: string
 ): void {
   const m = map as MapWithStyleSlots;
-  if (typeof m.moveLayer !== 'function' || !m.getLayer?.(layerId)) return;
+  if (!m.getLayer?.(layerId)) return;
+
+  const usesSlots = typeof m.setSlot === 'function';
+  const canMoveLayer = typeof m.moveLayer === 'function';
+
   if (beforeId && !m.getLayer?.(beforeId)) {
-    try {
-      m.moveLayer(layerId);
-    } catch {
-      /* style swap */
+    if (usesSlots) {
+      setVenueLayerSlotTop(m, layerId);
+    } else if (canMoveLayer) {
+      try {
+        m.moveLayer(layerId);
+      } catch {
+        /* style swap */
+      }
     }
     return;
   }
-  if (beforeId && typeof m.setSlot === 'function') {
+
+  if (beforeId && usesSlots) {
     const beforeSlot = layerStyleSlot(m, beforeId);
     const layerSlot = layerStyleSlot(m, layerId);
     if (beforeSlot !== layerSlot) {
       const target = beforeSlot ?? layerSlot ?? MAPBOX_VENUE_OVERLAY_SLOT;
       try {
-        if (layerSlot !== target) m.setSlot(layerId, target);
-        if (beforeSlot !== target) m.setSlot(beforeId, target);
+        if (layerSlot !== target) m.setSlot!(layerId, target);
+        if (beforeSlot !== target) m.setSlot!(beforeId, target);
       } catch {
         /* non–Mapbox Standard styles */
       }
     }
   }
+
+  // Mapbox Standard: bare moveLayer(id) crosses style slots and errors.
+  if (beforeId === undefined && usesSlots) {
+    setVenueLayerSlotTop(m, layerId);
+    return;
+  }
+
+  if (!canMoveLayer) return;
+
   try {
     if (beforeId !== undefined) m.moveLayer(layerId, beforeId);
     else m.moveLayer(layerId);
   } catch {
     /* style swap / concurrent mutation */
+  }
+}
+
+/** Circle / symbol / line paint so GeoJSON overlays stay visible over terrain mesh. */
+export function healOverlayLayerAbove3dTerrain(
+  map: MapWithStyleSlots,
+  layerId: string,
+  layerType: string,
+): void {
+  if (layerType === 'circle') {
+    healCircleLayerAbove3dExtrusions(map, layerId);
+    return;
+  }
+  if (layerType === 'symbol') {
+    healSymbolLayerAbove3dExtrusions(map, layerId);
+    return;
+  }
+  if (layerType !== 'line' || !map.setPaintProperty) return;
+  try {
+    map.setPaintProperty(layerId, 'line-occlusion-opacity', 0);
+    setVenueLayerSlotTop(map, layerId);
+  } catch {
+    /* mixed layer types */
   }
 }
 
@@ -151,6 +192,7 @@ function healCircleLayerAbove3dExtrusions(map: MapWithStyleSlots, layerId: strin
     map.setPaintProperty(layerId, 'circle-pitch-alignment', 'viewport');
     map.setPaintProperty(layerId, 'circle-pitch-scale', 'viewport');
     map.setPaintProperty(layerId, 'circle-emissive-strength', 1);
+    map.setPaintProperty(layerId, 'circle-occlusion-opacity', 0);
     setVenueLayerSlotTop(map, layerId);
   } catch {
     /* mixed layer types */
@@ -189,6 +231,7 @@ export function applySharedPointLayersAbove3dExtrusions(
     `${pointLayerId}-selection-shadow`,
   ];
   for (const layerId of circleLayerIds) {
+    if (!mapSlot.getLayer?.(layerId)) continue;
     healCircleLayerAbove3dExtrusions(mapSlot, layerId);
   }
 
@@ -203,6 +246,7 @@ export function applySharedPointLayersAbove3dExtrusions(
     `${pointLayerId}-selection-rounded-body`,
   ];
   for (const layerId of symbolLayerIds) {
+    if (!mapSlot.getLayer?.(layerId)) continue;
     healSymbolLayerAbove3dExtrusions(mapSlot, layerId);
   }
 }

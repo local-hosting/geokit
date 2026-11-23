@@ -9,9 +9,11 @@ function read(rel: string): string {
 }
 
 describe('Mapbox GL CSS load detection (Vite injects style tags without href)', () => {
-  it('exposes isMapboxGlCssLoaded that looks for the Mapbox canary rule', () => {
+  it('exposes isMapboxGlCssApplied / isMapboxGlCssLoaded and waits after CSS import', () => {
     const source = read('utils/map-provider-css.ts');
+    expect(source).toMatch(/export function isMapboxGlCssApplied/);
     expect(source).toMatch(/export function isMapboxGlCssLoaded/);
+    expect(source).toMatch(/waitForMapboxGlCssApplied/);
     expect(source).toMatch(/mapboxgl-canary/);
     expect(source).toMatch(/ensureMapboxGlCss/);
     expect(source).toMatch(/mapbox-gl\/dist\/mapbox-gl\.css/);

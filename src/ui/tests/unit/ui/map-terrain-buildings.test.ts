@@ -62,6 +62,34 @@ describe('map-terrain-buildings', () => {
     );
   });
 
+  it('createTerrainZoomHandler invokes afterTerrainUpdate when terrain is applied', async () => {
+    configure({
+      maptiler: {
+        transformRequest: (url: string) => ({ url: `/proxy/${url}` }),
+      },
+    });
+    const map = createMapStub();
+    const attrs = new Map<string, string>([
+      ['terrain-enabled', 'true'],
+      ['provider', 'maptiler'],
+      ['api-key', 'test-key'],
+    ]);
+    const afterTerrainUpdate = vi.fn();
+    createTerrainZoomHandler({
+      getAttribute: (name) => attrs.get(name) ?? null,
+      map: map as never,
+      afterTerrainUpdate,
+    });
+    await new Promise<void>((resolve) => {
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => resolve());
+      } else {
+        resolve();
+      }
+    });
+    expect(afterTerrainUpdate).toHaveBeenCalled();
+  });
+
   it('createTerrainZoomHandler returns null when terrain-enabled is off', () => {
     const map = createMapStub();
     const handler = createTerrainZoomHandler({
@@ -314,15 +342,49 @@ describe('map-terrain-buildings', () => {
 
   it('ensureGeoJsonOverlaysAbove3dBuildings moves geojson line and circle layers', () => {
     const moveLayer = vi.fn();
+    const setPaintProperty = vi.fn();
     const map = {
-      getLayer: vi.fn((id: string) => (id === 'gk-3d-buildings' || id === 'mesh' ? { id } : null)),
+      getLayer: vi.fn((id: string) =>
+        id === 'gk-3d-buildings' || id === 'mesh' ? { id, type: id === 'mesh' ? 'line' : undefined } : null,
+      ),
+      getTerrain: vi.fn(() => null),
       getStyle: vi.fn(() => ({
         sources: { mesh: { type: 'geojson' } },
         layers: [{ id: 'mesh', type: 'line', source: 'mesh' }],
       })),
       moveLayer,
+      setPaintProperty,
     };
     ensureGeoJsonOverlaysAbove3dBuildings(map as never);
     expect(moveLayer).toHaveBeenCalledWith('mesh');
+    expect(setPaintProperty).toHaveBeenCalledWith('mesh', 'line-occlusion-opacity', 0);
+  });
+
+  it('ensureGeoJsonOverlaysAbove3dBuildings heals circles when only terrain is active', () => {
+    const moveLayer = vi.fn();
+    const setPaintProperty = vi.fn();
+    const setSlot = vi.fn();
+    const map = {
+      getLayer: vi.fn((id: string) =>
+        id === 'places-point' ? { id, type: 'circle' } : null,
+      ),
+      getTerrain: vi.fn(() => ({ source: 'dem' })),
+      getStyle: vi.fn(() => ({
+        sources: { places: { type: 'geojson' } },
+        layers: [{ id: 'places-point', type: 'circle', source: 'places' }],
+      })),
+      moveLayer,
+      setPaintProperty,
+      setSlot,
+    };
+    ensureGeoJsonOverlaysAbove3dBuildings(map as never);
+    expect(moveLayer).not.toHaveBeenCalled();
+    expect(setSlot).toHaveBeenCalledWith('places-point', 'top');
+    expect(setPaintProperty).toHaveBeenCalledWith(
+      'places-point',
+      'circle-emissive-strength',
+      1,
+    );
+    expect(setPaintProperty).toHaveBeenCalledWith('places-point', 'circle-occlusion-opacity', 0);
   });
 });

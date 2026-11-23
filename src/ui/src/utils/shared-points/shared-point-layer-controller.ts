@@ -10,6 +10,7 @@ import {
   isSharedPointLayerSetFullyComplete,
 } from './shared-point-heal';
 import { attachSharedPointFloatingBadgePitchLift } from '../paint/shared-point-pitch-lift';
+import { applySharedPointLayersAbove3dExtrusions } from '../paint/shared-point/layer-ids';
 import {
   attachSharedPointHoverGlowRadiusSync,
   createSharedPointLayersFromPaint,
@@ -188,6 +189,10 @@ export function createSharedPointLayerController(
       currentMapEarly &&
       isSharedPointLayerSetFullyComplete(currentMapEarly as never, idsEarly)
     ) {
+      applySharedPointLayersAbove3dExtrusions(currentMapEarly as never, {
+        glowLayerId: idsEarly.glowLayerId,
+        pointLayerId: idsEarly.pointLayerId,
+      });
       return;
     }
 
