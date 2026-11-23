@@ -46,7 +46,7 @@ describe('shared point 3D surface sync', () => {
     revertSharedPointLayersFrom3dExtrusions(map as never, ids);
     expect(setPaintProperty).toHaveBeenCalledWith(pointLayerId, 'circle-emissive-strength', 0);
     expect(setPaintProperty).toHaveBeenCalledWith(pointLayerId, 'circle-occlusion-opacity', 1);
-    expect(setSlot).toHaveBeenCalledWith(pointLayerId, undefined);
+    expect(setSlot).toHaveBeenCalledWith(pointLayerId, null);
   });
 
   it('syncSharedPointLayersFor3dSurface reverts emissive on flat map and heals on terrain', () => {
@@ -77,5 +77,8 @@ describe('shared point 3D surface sync', () => {
     );
     expect(setPaintProperty).toHaveBeenCalledWith(pointLayerId, 'circle-emissive-strength', 1);
     expect(setSlot).toHaveBeenCalledWith(pointLayerId, 'top');
+    expect(setSlot).not.toHaveBeenCalledWith(glowLayerId, 'top');
+    expect(setPaintProperty).toHaveBeenCalledWith(glowLayerId, 'circle-occlusion-opacity', 0);
+    expect(setPaintProperty).not.toHaveBeenCalledWith(glowLayerId, 'circle-emissive-strength', 1);
   });
 });

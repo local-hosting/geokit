@@ -222,12 +222,30 @@ function healSymbolLayerAbove3dExtrusions(map: MapWithStyleSlots, layerId: strin
   }
 }
 
-function revertCircleLayerFrom3dExtrusions(map: MapWithStyleSlots, layerId: string): void {
+function healGroundShadowCircleAbove3dTerrain(map: MapWithStyleSlots, layerId: string): void {
+  if (!map.getLayer?.(layerId) || !map.setPaintProperty) return;
+  try {
+    map.setPaintProperty(layerId, 'circle-occlusion-opacity', 0);
+  } catch {
+    /* mixed layer types */
+  }
+}
+
+function revertGroundShadowCircleFrom3dExtrusions(map: MapWithStyleSlots, layerId: string): void {
+  if (!map.getLayer?.(layerId) || !map.setPaintProperty) return;
+  try {
+    map.setPaintProperty(layerId, 'circle-occlusion-opacity', 1);
+  } catch {
+    /* mixed layer types */
+  }
+}
+
+function revertBadgeCircleFrom3dExtrusions(map: MapWithStyleSlots, layerId: string): void {
   if (!map.getLayer?.(layerId) || !map.setPaintProperty) return;
   try {
     map.setPaintProperty(layerId, 'circle-emissive-strength', 0);
     map.setPaintProperty(layerId, 'circle-occlusion-opacity', 1);
-    map.setSlot?.(layerId, undefined);
+    map.setSlot?.(layerId, null);
   } catch {
     /* mixed layer types */
   }
@@ -244,13 +262,17 @@ function revertSymbolLayerFrom3dExtrusions(map: MapWithStyleSlots, layerId: stri
   }
 }
 
-function sharedPointVenueCircleLayerIds(
+/** Ground shadow discs — stay in the basemap slot; only depth occlusion changes on 3D terrain. */
+function sharedPointGroundShadowCircleLayerIds(
   pointLayerId: string,
   glowLayerId: string,
 ): readonly string[] {
+  return [glowLayerId, `${glowLayerId}-hover`, `${pointLayerId}-selection-shadow`];
+}
+
+/** Floating badge circle stack — viewport translate + top slot when draped on terrain. */
+function sharedPointBadgeCircleLayerIds(pointLayerId: string): readonly string[] {
   return [
-    glowLayerId,
-    `${glowLayerId}-hover`,
     pointLayerId,
     sharedPointOuterStrokeLayerId(pointLayerId),
     sharedPointGlassLayerId(pointLayerId),
@@ -259,7 +281,6 @@ function sharedPointVenueCircleLayerIds(
     sharedPointSelectionBadgeLayerId(pointLayerId),
     sharedPointSelectionBadgeOuterLayerId(pointLayerId),
     sharedPointSelectionRingLayerId(pointLayerId),
-    `${pointLayerId}-selection-shadow`,
   ];
 }
 
@@ -283,7 +304,11 @@ export function applySharedPointLayersAbove3dExtrusions(
 ): void {
   const mapSlot = map as MapWithStyleSlots;
   const { pointLayerId, glowLayerId } = ids;
-  for (const layerId of sharedPointVenueCircleLayerIds(pointLayerId, glowLayerId)) {
+  for (const layerId of sharedPointGroundShadowCircleLayerIds(pointLayerId, glowLayerId)) {
+    if (!mapSlot.getLayer?.(layerId)) continue;
+    healGroundShadowCircleAbove3dTerrain(mapSlot, layerId);
+  }
+  for (const layerId of sharedPointBadgeCircleLayerIds(pointLayerId)) {
     if (!mapSlot.getLayer?.(layerId)) continue;
     healCircleLayerAbove3dExtrusions(mapSlot, layerId);
   }
@@ -300,9 +325,13 @@ export function revertSharedPointLayersFrom3dExtrusions(
 ): void {
   const mapSlot = map as MapWithStyleSlots;
   const { pointLayerId, glowLayerId } = ids;
-  for (const layerId of sharedPointVenueCircleLayerIds(pointLayerId, glowLayerId)) {
+  for (const layerId of sharedPointGroundShadowCircleLayerIds(pointLayerId, glowLayerId)) {
     if (!mapSlot.getLayer?.(layerId)) continue;
-    revertCircleLayerFrom3dExtrusions(mapSlot, layerId);
+    revertGroundShadowCircleFrom3dExtrusions(mapSlot, layerId);
+  }
+  for (const layerId of sharedPointBadgeCircleLayerIds(pointLayerId)) {
+    if (!mapSlot.getLayer?.(layerId)) continue;
+    revertBadgeCircleFrom3dExtrusions(mapSlot, layerId);
   }
   for (const layerId of sharedPointVenueSymbolLayerIds(pointLayerId)) {
     if (!mapSlot.getLayer?.(layerId)) continue;
