@@ -30,6 +30,10 @@ export type UseGkMapViewScopeOptions = {
   accentHex?: Ref<string | null | undefined> | ComputedRef<string | null | undefined>;
   /** Live map canvas size — outer shell fits the visible map frame when set. */
   viewportSizePx?: Ref<MapViewportSizePx | null | undefined>;
+  /** Save-hover / live pointer anchor for hover `gk-h3` pair (lng, lat). */
+  tentativeAnchorLngLat?: Ref<readonly [number, number] | null | undefined>;
+  /** When false, skip pointer hover on the save control (click-to-arm hosts). */
+  trackSaveControlHover?: boolean;
 };
 
 export type UseGkMapViewScopeReturn = {
@@ -102,6 +106,7 @@ export function useGkMapViewScope(options: UseGkMapViewScopeOptions): UseGkMapVi
       options.geoScopeCell.value,
       tentativeScopeViewport.value,
       viewportSizePx.value,
+      options.tentativeAnchorLngLat?.value ?? null,
     );
   });
 
@@ -134,6 +139,7 @@ export function useGkMapViewScope(options: UseGkMapViewScopeOptions): UseGkMapVi
   watch(
     options.gkMapEl,
     (host, _prev, onCleanup) => {
+      if (options.trackSaveControlHover === false) return;
       onCleanup(
         bindMapViewScopeSaveHover(host, (active) => {
           savePreviewHover.value = active;

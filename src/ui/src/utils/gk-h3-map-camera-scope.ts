@@ -8,6 +8,13 @@ export {
 } from '@local-hosting/geokit/h3/map-camera-scope-cells';
 
 export {
+  resolveMapScopeHoverH3Cell,
+  resolveMapScopeHoverH3Cells,
+  resolveMapScopeHoverOuterFromInner,
+  type MapScopeHoverH3Cells,
+} from '@local-hosting/geokit/h3/map-scope-hover-h3-cells';
+
+export {
   h3CellAtMapCameraCenter,
   h3CellsFillingMapViewport,
   type MapViewportSizePx,

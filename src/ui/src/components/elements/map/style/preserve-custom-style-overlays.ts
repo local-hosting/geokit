@@ -9,6 +9,11 @@ export type StyleOverlaySpec = {
   [key: string]: unknown
 }
 
+/** `gk-h3` scope previews — not durable app overlays across `setStyle`. */
+export function isEphemeralGkH3StyleOverlayId(id: string): boolean {
+  return /^h3-cell(?:-|$)/.test(id)
+}
+
 /**
  * Merge previous custom overlays into the next basemap style.
  * Anything whose id is not already in `nextStyle` is treated as app-owned.
@@ -22,12 +27,16 @@ export function preserveCustomStyleOverlays(
   const nextSources = { ...(nextStyle.sources ?? {}) }
   const nextSourceIds = new Set(Object.keys(nextSources))
   for (const [id, source] of Object.entries(previousStyle.sources ?? {})) {
+    if (isEphemeralGkH3StyleOverlayId(id)) continue
     if (!nextSourceIds.has(id)) nextSources[id] = source
   }
 
   const nextLayers = [...(nextStyle.layers ?? [])]
   const nextLayerIds = new Set(nextLayers.map((layer) => layer.id))
   for (const layer of previousStyle.layers ?? []) {
+    if (isEphemeralGkH3StyleOverlayId(layer.id)) continue
+    const source = typeof layer.source === 'string' ? layer.source : ''
+    if (source && isEphemeralGkH3StyleOverlayId(source)) continue
     if (!nextLayerIds.has(layer.id)) nextLayers.push(layer)
   }
 

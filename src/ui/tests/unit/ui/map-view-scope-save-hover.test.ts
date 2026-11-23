@@ -45,4 +45,29 @@ describe('bindMapViewScopeSaveHover', () => {
     expect(onHover).not.toHaveBeenCalled();
     unbind();
   });
+
+  it('detects save controls reparented under the map container (not under gk-map host)', () => {
+    const host = document.createElement('div') as HTMLDivElement & {
+      getMap?: () => { getContainer: () => HTMLDivElement };
+    };
+    const mapContainer = document.createElement('div');
+    host.getMap = () => ({ getContainer: () => mapContainer });
+    const save = document.createElement('button');
+    save.setAttribute('data-action-id', 'save');
+    save.className = 'gk-ctrl-action-icon gk-ctrl-action-icon--save';
+    const icon = document.createElement('span');
+    icon.className = 'maplibregl-ctrl-icon mapboxgl-ctrl-icon';
+    save.appendChild(icon);
+    mapContainer.appendChild(save);
+    document.body.appendChild(mapContainer);
+    const onHover = vi.fn();
+    const unbind = bindMapViewScopeSaveHover(host, onHover);
+    icon.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    expect(onHover).toHaveBeenLastCalledWith(true);
+    icon.dispatchEvent(
+      new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }),
+    );
+    expect(onHover).toHaveBeenLastCalledWith(false);
+    unbind();
+  });
 });

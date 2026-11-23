@@ -110,6 +110,13 @@ export class H3Element extends MapChildElement {
     });
   }
 
+  /** Drop and re-add H3 layers (e.g. after orphan layer prune on shell resume). */
+  public refreshScopeLayers(): void {
+    this.currentH3Index = null;
+    this.currentRingK = null;
+    this.scheduleRenderH3();
+  }
+
   private async renderH3(): Promise<void> {
     if (!this.map || !this.visible) return;
     const generationAtStart = this.renderH3Generation;

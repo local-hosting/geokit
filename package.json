@@ -415,6 +415,12 @@
       "import": "./src/h3/dist/esm/viewport/map-camera-scope-cells.js",
       "default": "./src/h3/dist/esm/viewport/map-camera-scope-cells.js"
     },
+    "./h3/map-scope-hover-h3-cells": {
+      "source": "./src/h3/src/viewport/map-scope-hover-h3-cells.ts",
+      "types": "./src/h3/dist/esm/viewport/map-scope-hover-h3-cells.d.ts",
+      "import": "./src/h3/dist/esm/viewport/map-scope-hover-h3-cells.js",
+      "default": "./src/h3/dist/esm/viewport/map-scope-hover-h3-cells.js"
+    },
     "./h3/h3-pan-lock-resolution-containing-viewport": {
       "source": "./src/h3/src/viewport/h3-pan-lock-resolution-containing-viewport.ts",
       "types": "./src/h3/dist/esm/viewport/h3-pan-lock-resolution-containing-viewport.d.ts",

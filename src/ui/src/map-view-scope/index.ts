@@ -11,6 +11,13 @@ export {
 export { resolveMapViewScopeInnerCell } from './resolve-map-view-scope-inner-cell';
 export { resolveMapViewScopeOuterCell } from './resolve-map-view-scope-outer-cell';
 export { viewScopeCells, type ViewScopeCells } from './resolve-map-view-scope-cells';
+export { resolveSavedScopeDisplayH3Cells } from './resolve-saved-scope-display-h3-cells';
+export {
+  resolveMapScopeHoverH3Cell,
+  resolveMapScopeHoverH3Cells,
+  resolveMapScopeHoverOuterFromInner,
+  type MapScopeHoverH3Cells,
+} from '@local-hosting/geokit/h3/map-scope-hover-h3-cells';
 export {
   MAP_VIEW_SCOPE_CONTROL_ACTIONS,
   mapViewScopeControlActionsJson,

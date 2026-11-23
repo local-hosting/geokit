@@ -1,10 +1,7 @@
-import { h3ToCoordinates } from '@local-hosting/geokit/h3';
-import {
-  mapCameraScopeH3Cells,
-  type MapCameraScopeViewport,
-} from '@local-hosting/geokit/h3/map-camera-scope-cells';
+import type { MapCameraScopeViewport } from '@local-hosting/geokit/h3/map-camera-scope-cells';
 import type { MapViewportSizePx } from '@local-hosting/geokit/h3/map-viewport-h3';
-import { h3CellForMapMaxBounds } from '@local-hosting/geokit/h3/map-max-bounds-core';
+
+import { resolveSavedScopeDisplayH3Cells } from './resolve-saved-scope-display-h3-cells';
 
 export type ViewScopeCells = {
   inner: string | null;
@@ -12,39 +9,30 @@ export type ViewScopeCells = {
   source: 'camera' | 'locker-geo-scope' | 'none';
 };
 
-/**
- * Pan-lock outer + catalog inner as one pair — avoids mixing locker geo-scope with viewport outer
- * (which can show the same H3 resolution with unrelated indices).
- */
+/** Pan-lock hover inner + outer at the scope viewport (optional anchor override). */
 export function viewScopeCells(
   geoScopeCell: string | null | undefined,
   scopeViewport: MapCameraScopeViewport | null | undefined,
   viewportSizePx?: MapViewportSizePx | null,
+  anchorLngLat?: readonly [number, number] | null,
 ): ViewScopeCells {
-  const trimmed = geoScopeCell?.trim();
-  if (scopeViewport) {
-    try {
-      const { inner: centerInner, outer } = mapCameraScopeH3Cells(scopeViewport, viewportSizePx);
-      if (trimmed) {
-        const [lat, lng] = h3ToCoordinates(trimmed);
-        const lockerOuter = mapCameraScopeH3Cells(
-          { center: [lng, lat], zoom: scopeViewport.zoom },
-          viewportSizePx,
-        ).outer;
-        return { inner: trimmed, outer: lockerOuter, source: 'locker-geo-scope' };
-      }
-      return { inner: centerInner, outer, source: 'camera' };
-    } catch {
-      // fall through
-    }
+  void viewportSizePx;
+  if (!scopeViewport) {
+    const trimmed = geoScopeCell?.trim();
+    if (!trimmed) return { inner: null, outer: null, source: 'none' };
+    const fallback = resolveSavedScopeDisplayH3Cells(trimmed, null, null);
+    if (!fallback) return { inner: null, outer: null, source: 'none' };
+    return { inner: fallback.inner, outer: fallback.outer, source: 'locker-geo-scope' };
   }
-  if (!trimmed) return { inner: null, outer: null, source: 'none' };
+
+  const anchor: readonly [number, number] =
+    anchorLngLat ?? [scopeViewport.center[0], scopeViewport.center[1]];
+
   try {
-    return {
-      inner: trimmed,
-      outer: h3CellForMapMaxBounds(trimmed),
-      source: 'locker-geo-scope',
-    };
+    const pair = resolveSavedScopeDisplayH3Cells(geoScopeCell, scopeViewport, anchor);
+    if (!pair) return { inner: null, outer: null, source: 'none' };
+    const source = geoScopeCell?.trim() ? ('locker-geo-scope' as const) : ('camera' as const);
+    return { inner: pair.inner, outer: pair.outer, source };
   } catch {
     return { inner: null, outer: null, source: 'none' };
   }

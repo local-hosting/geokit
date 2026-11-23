@@ -48,6 +48,30 @@ describe('preserveCustomStyleOverlays', () => {
     ])
   })
 
+  it('drops ephemeral gk-h3 scope preview sources across basemap swaps', () => {
+    const previous = {
+      version: 8,
+      sources: {
+        basemap: { type: 'vector' },
+        'h3-cell-abc': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+        'canvas-venues': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+      },
+      layers: [
+        { id: 'h3-cell-fill-abc', type: 'fill', source: 'h3-cell-abc' },
+        { id: 'canvas-venues-point', type: 'circle', source: 'canvas-venues' },
+      ],
+    }
+    const next = {
+      version: 8,
+      sources: { basemap: { type: 'vector' } },
+      layers: [{ id: 'water', type: 'fill', source: 'basemap' }],
+    }
+    const merged = preserveCustomStyleOverlays(previous, next)
+    expect(merged.sources?.['h3-cell-abc']).toBeUndefined()
+    expect(merged.layers?.map((l) => l.id)).toEqual(['water', 'canvas-venues-point'])
+    expect(merged.sources?.['canvas-venues']).toBeTruthy()
+  })
+
   it('returns next style unchanged when there is no previous style', () => {
     const next = { version: 8, sources: {}, layers: [] }
     expect(preserveCustomStyleOverlays(null, next)).toBe(next)
