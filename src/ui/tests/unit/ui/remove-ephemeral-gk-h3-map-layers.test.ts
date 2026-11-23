@@ -44,4 +44,18 @@ describe('removeEphemeralGkH3LayersFromMap', () => {
     expect(() => removeEphemeralGkH3LayersFromMap(null)).not.toThrow()
     expect(() => removeEphemeralGkH3LayersFromMap({})).not.toThrow()
   })
+
+  it('no-ops when style is not loaded', () => {
+    const removeLayer = vi.fn()
+    const map = {
+      isStyleLoaded: () => false,
+      getStyle: () => {
+        throw new Error('Style is not done loading')
+      },
+      removeLayer,
+      removeSource: vi.fn(),
+    }
+    expect(() => removeEphemeralGkH3LayersFromMap(map)).not.toThrow()
+    expect(removeLayer).not.toHaveBeenCalled()
+  })
 })

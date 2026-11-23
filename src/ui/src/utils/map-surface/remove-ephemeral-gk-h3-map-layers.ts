@@ -1,4 +1,5 @@
 import { isEphemeralGkH3StyleOverlayId } from '../../components/elements/map/style/preserve-custom-style-overlays';
+import { isMapUsable } from './map-utils';
 
 type MapStyleLayer = { id: string; source?: string }
 
@@ -13,7 +14,13 @@ type MapWithStyle = {
 /** Drop orphan `gk-h3` preview layers (e.g. after route remount or GPU pause). */
 export function removeEphemeralGkH3LayersFromMap(map: MapWithStyle | null | undefined): void {
   if (!map?.getStyle || !map.removeLayer || !map.removeSource) return
-  const style = map.getStyle()
+  if (!isMapUsable(map as never)) return
+  let style: ReturnType<NonNullable<MapWithStyle['getStyle']>> | undefined
+  try {
+    style = map.getStyle()
+  } catch {
+    return
+  }
   if (!style) return
 
   const layers = [...(style.layers ?? [])].reverse()

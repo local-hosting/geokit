@@ -8,9 +8,9 @@ export const GK_H3_SCOPE_INNER_STROKE_WIDTH = 0;
 const GK_H3_SCOPE_OUTER_STROKE_ALPHA = 0.16;
 const GK_H3_SCOPE_INNER_STROKE_ALPHA = 0.3;
 
-const GK_H3_SCOPE_COMMITTED_INNER_FILL_OPACITY = { light: 0.16, dark: 0.14 } as const;
-const GK_H3_SCOPE_TENTATIVE_INNER_FILL_OPACITY = { light: 0.15, dark: 0.13 } as const;
-const GK_H3_SCOPE_LIVE_INNER_FILL_OPACITY = { light: 0.09, dark: 0.08 } as const;
+const GK_H3_SCOPE_COMMITTED_INNER_FILL_OPACITY = { light: 0.4, dark: 0.36 } as const;
+const GK_H3_SCOPE_TENTATIVE_INNER_FILL_OPACITY = { light: 0.38, dark: 0.34 } as const;
+const GK_H3_SCOPE_LIVE_INNER_FILL_OPACITY = { light: 0.32, dark: 0.28 } as const;
 
 function scopeInnerFillOpacity(
   theme: string,

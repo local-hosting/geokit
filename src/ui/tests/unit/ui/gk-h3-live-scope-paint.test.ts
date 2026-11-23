@@ -27,6 +27,6 @@ describe('live scope gk-h3 paint', () => {
     expect(outer.strokeColor).toBe(gkH3ScopeOuterStrokeColor(accent));
     expect(inner.strokeWidth).toBe(0);
     expect(inner.color).toBe(outer.color);
-    expect(inner.opacity).toBeLessThan(outer.opacity ?? 1);
+    expect(inner.opacity).toBeGreaterThan(outer.opacity ?? 0);
   });
 });
