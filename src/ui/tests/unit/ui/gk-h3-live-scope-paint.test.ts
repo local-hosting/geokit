@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  gkH3ScopeInnerStrokeColor,
   gkH3ScopeOuterStrokeColor,
   liveScopeInnerGkH3PaintForTheme,
   liveScopeOuterGkH3PaintForTheme,
@@ -20,16 +19,14 @@ describe('live scope gk-h3 paint', () => {
     expect(dark.strokeColor).toBe(gkH3ScopeOuterStrokeColor(accent));
   });
 
-  it('uses a semi-transparent stroke on live inner and outer hexes', () => {
+  it('uses a semi-transparent stroke on live outer hex only', () => {
     const accent = '#2271b3';
     const outer = liveScopeOuterGkH3PaintForTheme('light', accent);
     const inner = liveScopeInnerGkH3PaintForTheme('light', accent);
     expect(outer.strokeWidth).toBeGreaterThan(0);
     expect(outer.strokeColor).toBe(gkH3ScopeOuterStrokeColor(accent));
-    expect(inner.strokeWidth).toBeGreaterThan(0);
-    expect(inner.strokeColor).toBe(gkH3ScopeInnerStrokeColor(accent));
-    expect(inner.strokeColor).not.toBe(outer.strokeColor);
+    expect(inner.strokeWidth).toBe(0);
     expect(inner.color).toBe(outer.color);
-    expect(inner.opacity).toBe(outer.opacity);
+    expect(inner.opacity).toBeLessThan(outer.opacity ?? 1);
   });
 });

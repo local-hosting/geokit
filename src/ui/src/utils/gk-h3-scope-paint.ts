@@ -3,11 +3,21 @@ import type { GkH3PaintAttributes } from './sync-gk-map-child-attributes';
 /** Scope ring line width (committed / tentative / live outer). */
 export const GK_H3_SCOPE_OUTER_STROKE_WIDTH = 2;
 export const GK_H3_SCOPE_LIVE_OUTER_STROKE_WIDTH = 2.5;
-export const GK_H3_SCOPE_INNER_STROKE_WIDTH = GK_H3_SCOPE_OUTER_STROKE_WIDTH;
-export const GK_H3_SCOPE_LIVE_INNER_STROKE_WIDTH = GK_H3_SCOPE_LIVE_OUTER_STROKE_WIDTH;
+export const GK_H3_SCOPE_INNER_STROKE_WIDTH = 0;
 
-const GK_H3_SCOPE_OUTER_STROKE_ALPHA = 0.45;
+const GK_H3_SCOPE_OUTER_STROKE_ALPHA = 0.16;
 const GK_H3_SCOPE_INNER_STROKE_ALPHA = 0.3;
+
+const GK_H3_SCOPE_COMMITTED_INNER_FILL_OPACITY = { light: 0.16, dark: 0.14 } as const;
+const GK_H3_SCOPE_TENTATIVE_INNER_FILL_OPACITY = { light: 0.15, dark: 0.13 } as const;
+const GK_H3_SCOPE_LIVE_INNER_FILL_OPACITY = { light: 0.09, dark: 0.08 } as const;
+
+function scopeInnerFillOpacity(
+  theme: string,
+  table: { light: number; dark: number },
+): number {
+  return table[theme === 'dark' ? 'dark' : 'light'];
+}
 
 function hexRgbWithAlpha(hex: string, alpha: number): string {
   const normalized = hex.trim();
@@ -60,7 +70,7 @@ export function coreGkH3PaintForTheme(
   const { fill, stroke } = committedScopeOrange(theme);
   return {
     color: fill,
-    opacity: theme === 'dark' ? 0.38 : 0.45,
+    opacity: scopeInnerFillOpacity(theme, GK_H3_SCOPE_COMMITTED_INNER_FILL_OPACITY),
     strokeColor: gkH3ScopeInnerStrokeColor(stroke),
     strokeWidth: GK_H3_SCOPE_INNER_STROKE_WIDTH,
   };
@@ -94,7 +104,7 @@ export function tentativeInnerGkH3PaintForTheme(theme: string): GkH3PaintAttribu
   const { fill, stroke } = tentativeScopeColors(theme);
   return {
     color: fill,
-    opacity: theme === 'dark' ? 0.45 : 0.5,
+    opacity: scopeInnerFillOpacity(theme, GK_H3_SCOPE_TENTATIVE_INNER_FILL_OPACITY),
     strokeColor: gkH3ScopeInnerStrokeColor(stroke),
     strokeWidth: GK_H3_SCOPE_INNER_STROKE_WIDTH,
   };
@@ -119,20 +129,21 @@ export function liveScopeOuterGkH3PaintForTheme(
   const strokeColor = resolveGkH3StrokeColor(theme, accentHex);
   return {
     color: strokeColor,
-    opacity: theme === 'dark' ? 0.38 : 0.42,
+    opacity: theme === 'dark' ? 0.2 : 0.24,
     strokeColor: gkH3ScopeOuterStrokeColor(strokeColor),
     strokeWidth: GK_H3_SCOPE_LIVE_OUTER_STROKE_WIDTH,
   };
 }
 
-/** Live pan scope — inner hex (softer stroke than outer). */
+/** Live pan scope — inner hex (fill only; outer carries the outline). */
 export function liveScopeInnerGkH3PaintForTheme(
   theme: string,
   accentHex?: string | null,
 ): GkH3PaintAttributes {
-  const strokeColor = resolveGkH3StrokeColor(theme, accentHex);
+  const outer = liveScopeOuterGkH3PaintForTheme(theme, accentHex);
   return {
-    ...liveScopeOuterGkH3PaintForTheme(theme, accentHex),
-    strokeColor: gkH3ScopeInnerStrokeColor(strokeColor),
+    ...outer,
+    strokeWidth: 0,
+    opacity: scopeInnerFillOpacity(theme, GK_H3_SCOPE_LIVE_INNER_FILL_OPACITY),
   };
 }

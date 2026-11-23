@@ -13,7 +13,7 @@ describe('gk-h3-scope-paint', () => {
     expect(core.color).toBe('#fb923c');
     expect(core.strokeColor).toBe(gkH3ScopeInnerStrokeColor('#ea580c'));
     expect(core.opacity).toBeGreaterThan(0);
-    expect(core.strokeWidth).toBeGreaterThan(0);
+    expect(core.strokeWidth).toBe(0);
     const outer = outerRegionGkH3PaintForTheme('light', '#8e44ad');
     expect(outer.color).toBe('#fb923c');
     expect(outer.strokeColor).toBe(gkH3ScopeOuterStrokeColor('#ea580c'));

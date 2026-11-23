@@ -11,8 +11,8 @@ describe('tentative gk-h3 scope paint', () => {
   it('uses neutral gray for save-preview hexes', () => {
     const inner = tentativeInnerGkH3PaintForTheme('light');
     expect(inner.strokeColor).toBe(gkH3ScopeInnerStrokeColor('#a3a3a3'));
-    expect(inner.strokeWidth).toBeGreaterThan(0);
-    expect(inner.opacity).toBeGreaterThan(0.4);
+    expect(inner.strokeWidth).toBe(0);
+    expect(inner.opacity).toBeLessThan(tentativeOuterGkH3PaintForTheme('light').opacity ?? 1);
     const outer = tentativeOuterGkH3PaintForTheme('dark');
     expect(outer.strokeColor).toBe(gkH3ScopeOuterStrokeColor('#737373'));
     expect(outer.strokeWidth).toBeGreaterThan(0);
