@@ -6,6 +6,7 @@ import {
 import { applyH3MapMaxBoundsToMap } from './apply-h3-map-bounds-runtime';
 
 export {
+  GK_MAP_DEFAULT_MAX_ZOOM,
   GK_MAP_DEFAULT_MIN_ZOOM,
   minZoomForMapMaxBounds,
   type ApplyH3GeoScopeMaxBoundsOptions,

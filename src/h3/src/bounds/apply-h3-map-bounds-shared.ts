@@ -2,8 +2,11 @@ import type { LngLatBounds as MapMaxBounds } from './map-max-bounds-core';
 
 export type { LngLatBounds as MapMaxBounds } from './map-max-bounds-core';
 
-/** Default `<gk-map min-zoom>` — wide region, not full-globe “outer space”. */
-export const GK_MAP_DEFAULT_MIN_ZOOM = 2;
+/** Default `<gk-map min-zoom>` — regional context, not full-globe “outer space”. */
+export const GK_MAP_DEFAULT_MIN_ZOOM = 4;
+
+/** Default `<gk-map max-zoom>` — street detail without over-zooming raster tiles. */
+export const GK_MAP_DEFAULT_MAX_ZOOM = 16;
 
 export type MapMaxBoundsZoomCapable = {
   cameraForBounds?: (

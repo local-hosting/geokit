@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { coordinatesToH3 } from '../../../src/geometry/core';
 import {
   applyH3GeoScopeMaxBoundsToMap,
+  GK_MAP_DEFAULT_MAX_ZOOM,
   GK_MAP_DEFAULT_MIN_ZOOM,
   minZoomForMapMaxBounds,
   applyH3PanLockMaxBoundsToMap,
@@ -13,7 +14,13 @@ const BOUNDS: MapMaxBounds = [-86, 34, -84, 36];
 
 describe('GK_MAP_DEFAULT_MIN_ZOOM', () => {
   it('matches the default gk-map min-zoom attribute', () => {
-    expect(GK_MAP_DEFAULT_MIN_ZOOM).toBe(2);
+    expect(GK_MAP_DEFAULT_MIN_ZOOM).toBe(4);
+  });
+});
+
+describe('GK_MAP_DEFAULT_MAX_ZOOM', () => {
+  it('matches the default gk-map max-zoom attribute', () => {
+    expect(GK_MAP_DEFAULT_MAX_ZOOM).toBe(16);
   });
 });
 

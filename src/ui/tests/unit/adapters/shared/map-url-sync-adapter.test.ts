@@ -1,10 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   bindMapMoveendUrlSync,
+  clampMapZoom,
   sanitizeMapHashFlatView,
 } from '../../../../src/components/elements/map/map-url-sync';
 
 describe('map url sync helpers', () => {
+  it('clampMapZoom respects min and max navigation limits', () => {
+    expect(clampMapZoom(2, { minZoom: 4, maxZoom: 16 })).toBe(4)
+    expect(clampMapZoom(20, { minZoom: 4, maxZoom: 16 })).toBe(16)
+    expect(clampMapZoom(9.25, { minZoom: 4, maxZoom: 16 })).toBe(9.25)
+  })
+
   it('sanitizeMapHashFlatView strips pitch and bearing', () => {
     window.location.hash = '#map=5/40/-90/30/45';
     sanitizeMapHashFlatView({ terrainEnabled: false });

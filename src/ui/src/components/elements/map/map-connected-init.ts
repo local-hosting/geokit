@@ -54,6 +54,7 @@ import {
 import { MapBase } from './map-base';
 import { applyMapHostLayoutFromAncestors, measureMapHostLayout } from './map-host-layout';
 import { mapEl } from './map-el';
+import { clampMapZoom } from './map-url-sync';
 
 /** How long a detached gk-map keeps its map before releasing WebGL. */
 const DETACHED_FREEZE_GRACE_MS = 300;
@@ -401,11 +402,13 @@ export class MapConnectedInit extends MapBase {
 
       // Check for URL hash state if sync-url is enabled
       const urlState = this.hasAttribute('sync-url') ? mapEl(this).parseUrlHashState() : null;
+      const attributeZoom = parseFloat(this.getAttribute('zoom') || '2');
+      const initialZoom = urlState?.zoom ?? attributeZoom;
 
       const options = {
         lat: urlState?.lat ?? parseFloat(this.getAttribute('lat') || '0'),
         lng: urlState?.lng ?? parseFloat(this.getAttribute('lng') || '0'),
-        zoom: urlState?.zoom ?? parseFloat(this.getAttribute('zoom') || '2'),
+        zoom: clampMapZoom(initialZoom, { minZoom, maxZoom }),
         minZoom,
         maxZoom,
         pitch: urlState?.pitch ?? parseFloat(this.getAttribute('pitch') || '0'),

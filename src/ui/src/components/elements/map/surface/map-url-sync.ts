@@ -10,6 +10,22 @@ export interface UrlHashState {
   bearing: number;
 }
 
+/** Clamp zoom to optional gk-map min-zoom / max-zoom navigation limits. */
+export function clampMapZoom(
+  zoom: number,
+  limits: { minZoom?: number; maxZoom?: number } = {},
+): number {
+  let out = zoom;
+  const { minZoom, maxZoom } = limits;
+  if (minZoom !== undefined && Number.isFinite(minZoom)) {
+    out = Math.max(minZoom, out);
+  }
+  if (maxZoom !== undefined && Number.isFinite(maxZoom)) {
+    out = Math.min(maxZoom, out);
+  }
+  return out;
+}
+
 /**
  * Parse map state from URL hash. Format: #map=zoom/lat/lng[/pitch][/bearing]
  */
